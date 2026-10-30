@@ -27,6 +27,7 @@ void registerThirdPartyLicenses() {
       LicenseEntryWithLineBreaks(<String>['AndroidX WebKit'], _androidxWebkitNotice + _apache2),
       // Icons and data.
       LicenseEntryWithLineBreaks(<String>['Phosphor Icons'], _phosphorMit),
+      LicenseEntryWithLineBreaks(<String>['Lobe Icons'], _lobeIconsMit),
       LicenseEntryWithLineBreaks(<String>['Material Icons'], _materialIconsNotice + _apache2),
       LicenseEntryWithLineBreaks(<String>['discourse-emojis'], _discourseEmojisMit),
     ]),
@@ -195,6 +196,14 @@ const _phosphorMit = '''
 MIT License
 
 Copyright (c) 2023 Phosphor Icons
+
+$_mitTerms''';
+
+/// Lobe Icons: model-family PNG artwork in `assets/model_icons/`.
+const _lobeIconsMit = '''
+MIT License
+
+Copyright (c) 2023 LobeHub
 
 $_mitTerms''';
 

@@ -11,6 +11,7 @@ import 'package:dsh_app/ui/chat/empty_state.dart';
 import 'package:dsh_app/ui/chat/model_sheet.dart';
 import 'package:dsh_app/ui/chat/widgets/whale_tail.dart';
 import 'package:dsh_app/ui/common/app_sheet.dart';
+import 'package:dsh_app/ui/common/model_icon.dart';
 import 'package:dsh_app/ui/common/segmented_pill.dart';
 import 'package:dsh_app/ui/common/sheet_title_bar.dart';
 import 'package:dsh_app/ui/theme/theme.dart';
@@ -94,6 +95,16 @@ Future<ChatHarness> _openSheet(
   await pumpFrames(tester, 6);
   await tester.tap(find.byType(ModelChip));
   await pumpFrames(tester, 8);
+  // Decode the new local artwork before taking screenshots; image decoding is
+  // asynchronous even when the sheet's opening animation has finished.
+  await tester.runAsync(() async {
+    for (final image in tester.widgetList<Image>(
+      find.descendant(of: find.byType(ModelIcon), matching: find.byType(Image)),
+    )) {
+      await precacheImage(image.image, tester.element(find.byType(MaterialApp)));
+    }
+  });
+  await tester.pump();
   return harness;
 }
 
@@ -162,6 +173,8 @@ void main() {
       expect(find.text('DeepSeek'), findsOneWidget);
       expect(find.text('V4 Pro'), findsOneWidget);
       expect(find.text('V41 Flash'), findsOneWidget);
+      expect(find.byType(ModelIcon), findsNWidgets(2));
+      expect(tester.widget<ModelIcon>(find.byType(ModelIcon).first).id, 'deepseek-v4-pro');
       expect(find.text('思考深度'), findsOneWidget);
       // Only the effort selector is a segmented pill.
       expect(find.byType(SegmentedPill<String>), findsOneWidget);

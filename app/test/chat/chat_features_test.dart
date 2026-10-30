@@ -406,6 +406,12 @@ void main() {
         await pumpChat(tester, ChatHarness(), brightness: brightness);
         await tester.tap(find.byType(ModelChip));
         await pumpFrames(tester, 10);
+        await tester.runAsync(() async {
+          for (final image in tester.widgetList<Image>(find.byType(Image))) {
+            await precacheImage(image.image, tester.element(find.byType(MaterialApp)));
+          }
+        });
+        await tester.pump();
         await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/model_sheet_$suffix.png'));
       });
 

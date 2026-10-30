@@ -166,6 +166,19 @@ DS Bot 的 NOTICE 原文附在文末。
 
 ## 二、素材
 
+### Lobe Icons（MIT）
+
+| 项 | 内容 |
+|---|---|
+| 项目 | Lobe Icons，https://github.com/lobehub/lobe-icons |
+| 版本 | `@lobehub/icons-static-png@2.5.0`，提交 `2c6750520b6f12b18990b60a9e2cda7c6370e00b` |
+| 版权人 | Copyright (c) 2023 LobeHub |
+| 许可 | MIT；品牌与商标权利属于各自权利人 |
+| 用途 | 模型选择列表按模型 ID / 名称关键词显示模型系列图标 |
+| 文件 | `app/assets/model_icons/light/*.png`、`app/assets/model_icons/dark/*.png`；保留上游 PNG 原始内容，以模型系列 ID 重命名 |
+
+来源包：`https://registry.npmjs.org/@lobehub/icons-static-png/-/icons-static-png-2.5.0.tgz`。每个模型系列选用上游 `-color.png`（存在时）或单色 PNG 的 light / dark 两个主题版本。MIT 原文随 App 的开源许可页分发。
+
 ### Phosphor Icons（MIT）
 
 | 项 | 内容 |
@@ -273,6 +286,7 @@ Copyright (c) 2026 DSH Remote contributors                     (ds-harness-remot
 Copyright (c) 2026 qiannianhuanxiang                           (DSHA)
 Copyright (c) 2018 Civilized Discourse Construction Kit, Inc.  (discourse_docker)
 Copyright (c) 2023 Phosphor Icons                              (Phosphor Icons)
+Copyright (c) 2023 LobeHub                                     (Lobe Icons)
 Copyright (c) 2021 RikkaW                                      (Shizuku-API)
 ```
 

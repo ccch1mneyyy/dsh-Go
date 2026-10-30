@@ -24,6 +24,7 @@ const _expected = <String, String>{
   'XZ for Java': 'Copyright (C) The XZ for Java authors and contributors',
   'AndroidX WebKit': 'The Android Open Source Project',
   'Phosphor Icons': 'Copyright (c) 2023 Phosphor Icons',
+  'Lobe Icons': 'Copyright (c) 2023 LobeHub',
   'Material Icons': 'Google',
   'discourse-emojis': 'Joffrey Jaffeux',
   'JetBrains Mono': 'Copyright 2020 The JetBrains Mono Project Authors',
@@ -77,6 +78,7 @@ void main() {
       'DSHA',
       'Shizuku-API',
       'Phosphor Icons',
+      'Lobe Icons',
       'discourse-emojis',
     ]) {
       expect(textOf(package), contains(_mit), reason: package);

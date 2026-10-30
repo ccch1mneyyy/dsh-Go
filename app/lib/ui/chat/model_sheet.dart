@@ -15,6 +15,7 @@ import '../../state/models_state.dart';
 import '../../state/settings_state.dart';
 import '../common/app_sheet.dart';
 import '../common/empty_view.dart';
+import '../common/model_icon.dart';
 import '../common/pressable.dart';
 import '../common/segmented_pill.dart';
 import '../common/sheet_title_bar.dart';
@@ -743,7 +744,7 @@ class _ModelGrid extends StatelessWidget {
   }
 }
 
-/// 一张模型卡:短名 + 一行描述,右上角选择圈。选中时卡面染一层很淡的主色、
+/// 一张模型卡:图标、短名 + 一行描述,右上角选择圈。选中时卡面染一层很淡的主色、
 /// 描一圈主色细边、圈里是实心对勾 —— 这一屏唯一的实心主色。
 class _ModelCard extends StatelessWidget {
   const _ModelCard({super.key, required this.model, required this.selected, required this.onTap});
@@ -800,6 +801,8 @@ class _ModelCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
+                    ModelIcon(id: model.id, name: model.name),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         name,

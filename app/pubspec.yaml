@@ -120,6 +120,9 @@ flutter:
           weight: 700
 
   assets:
+    # Model-family artwork (Lobe Icons, MIT), selected by model ID/name.
+    - assets/model_icons/light/
+    - assets/model_icons/dark/
     # Phone layout for the embedded DSH Web (see lib/ui/web/web_view_page.dart).
     - assets/web/
     # Whale-tail activity sprites (lib/ui/chat/widgets/whale_tail.dart),
