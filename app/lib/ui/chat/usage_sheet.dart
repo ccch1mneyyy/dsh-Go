@@ -30,7 +30,7 @@ String formatTokens(int n) {
     }
     return buf.toString();
   }
-  if (AppLocale.isEnglish) {
+  if (AppLocale.usesWesternConventions) {
     return n < 1000000
         ? appL10n.activityTokensTenThousands(trim(n / 1000))
         : appL10n.activityTokensHundredMillions(trim(n / 1000000));

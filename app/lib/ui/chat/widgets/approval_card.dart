@@ -88,7 +88,11 @@ class _ApprovalCardState extends State<ApprovalCard> {
 
   String? get _reason {
     final display = widget.request.displayReason;
-    final localized = display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'] ?? display['en'];
+    final localized = switch (AppLocale.current.languageCode) {
+      'pt' => display['pt-BR'] ?? display['pt'] ?? display['en'] ?? display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'],
+      'en' => display['en'] ?? display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'],
+      _ => display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'] ?? display['en'],
+    };
     final text = (localized ?? widget.request.reason)?.trim();
     return text == null || text.isEmpty ? null : text;
   }

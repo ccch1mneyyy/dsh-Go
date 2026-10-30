@@ -188,8 +188,8 @@ String approvalText(ApprovalRequest request) {
   };
   final display = request.displayReason;
   final reason = snippet(
-    (AppLocale.isEnglish
-            ? display['en'] ?? display['zh-CN'] ?? display['zh-Hans'] ?? display['zh']
+    (AppLocale.usesWesternConventions
+            ? display['pt-BR'] ?? display['pt'] ?? display['en'] ?? display['zh-CN'] ?? display['zh-Hans'] ?? display['zh']
             : display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'] ?? display['en']) ??
         request.reason,
     max: 90,
