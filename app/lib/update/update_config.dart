@@ -20,7 +20,7 @@
 library;
 
 /// GitHub repository the releases live in.
-const updateRepo = 'ccch1mneyyy/dsh-go';
+const updateRepo = String.fromEnvironment('DSH_UPDATE_REPO', defaultValue: 'ccch1mneyyy/dsh-go');
 
 /// `releases/latest` of the REST API: tag, notes, assets with sizes and
 /// SHA-256 digests. Unauthenticated: 60 requests per hour per IP.

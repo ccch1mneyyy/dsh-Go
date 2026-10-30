@@ -49,7 +49,24 @@ API enablement. Future protocol versions need compatibility checks. Reconnects
 reload history but cannot resurrect unresolved approval IDs not resent by the
 server. Unknown send outcomes are not automatically retransmitted.
 
-## Validation
+## Preview distribution
+
+Unofficial Codex previews use the separate `.codexpreview` Android package and
+the ARM64 flavor. Set `ORG_GRADLE_PROJECT_codexPreview=true` and
+`DSH_BETA_TOKEN_FILE=` when using `tooling/build-apk.sh`. Pass
+`--build-name 1.0.2-codex-preview.1` before `--`, and
+`--dart-define=DSH_UPDATE_REPO=OWNER/REPOSITORY` after it to select the fork's
+release source without changing the upstream default. Generate release assets
+with `tooling/release_assets.py --repo OWNER/REPOSITORY --version VERSION
+arm64=APK_PATH` and publish them as a prerelease. GitHub's `releases/latest`
+excludes prereleases; install these previews manually from the release page.
+
+Keep signing keys outside the repository. When migrating an existing preview
+from a local test key, use an APK Signature Scheme v3 signing lineage; retain
+the old signer for v1/v2 compatibility on Android 8. Verify the signatures on
+both older and newer Android API ranges before distribution.
+
+## Validation results
 
 The development implementation passed 182 relevant App tests, 25 backend tests
 and 12 client tests, plus static analysis. Live SSH/SFTP and Codex checks covered

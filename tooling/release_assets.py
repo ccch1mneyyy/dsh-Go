@@ -110,6 +110,7 @@ def main() -> None:
         "a +build given here must match them.",
     )
     parser.add_argument("--notes", type=pathlib.Path, help="Markdown release notes (shown in the app)")
+    parser.add_argument("--repo", default=REPO, help="GitHub owner/repository for this release")
     parser.add_argument("--out", type=pathlib.Path, default=ROOT / "dist")
     parser.add_argument("--base-url", help="absolute or relative URL prefix for the APKs in update.json")
     parser.add_argument(
@@ -172,7 +173,7 @@ def main() -> None:
         "title": f"DSH Go {name}",
         "publishedAt": datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "notes": args.notes.read_text(encoding="utf-8").strip() if args.notes else "",
-        "page": f"https://github.com/{REPO}/releases/tag/{tag}",
+        "page": f"https://github.com/{args.repo}/releases/tag/{tag}",
         "assets": assets,
     }
     (args.out / "update.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -187,7 +188,7 @@ def main() -> None:
         print("  " + line)
     print("  update.json")
     notes = f" --notes-file {args.notes}" if args.notes else ""
-    print(f"\ngh release create {tag} {args.out}/* --repo {REPO} --title 'DSH Go {name}'{notes}")
+    print(f"\ngh release create {tag} {args.out}/* --repo {args.repo} --title 'DSH Go {name}'{notes}")
 
 
 if __name__ == "__main__":
