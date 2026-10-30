@@ -9,6 +9,20 @@ import org.junit.Test
 class PetPushTest {
     private val now = 1_729_850_000_000L
 
+    @Test fun progressIsOptionalBoundedAndHasItsOwnTarget() {
+        assertNull(PetPush.fromMap(emptyMap<String, Any>(), now).progress)
+        val p = PetPush.fromMap(mapOf(
+            "progress" to mapOf("text" to "  Calling:\nread_file  ",
+                "target" to mapOf("sessionId" to "tracked", "host" to "local")),
+            "target" to mapOf("sessionId" to "alert"),
+        ), now)
+        assertEquals("Calling: read_file", p.progress?.text)
+        assertEquals("tracked", p.progress?.sessionId)
+        assertEquals("progress", p.progress?.kind)
+        assertNull(PetPush.fromMap(mapOf("progress" to mapOf("text" to " ")), now).progress)
+        assertEquals(48, PetPush.fromMap(mapOf("progress" to mapOf("text" to "x".repeat(200))), now).progress?.text?.length)
+    }
+
     @Test fun readsInterfaceMdPayload() {
         val p = PetPush.fromMap(
             mapOf(

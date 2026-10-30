@@ -290,6 +290,23 @@ class PetHostChoice {
 /// Id of the 「不显示」 choice.
 const noPetId = 'none';
 
+/// A live overlay phase, separate from expiring result/request bubbles.
+@immutable
+class PetProgress {
+  const PetProgress({required this.text, required this.target});
+
+  final String text;
+  final PetTarget target;
+
+  Map<String, Object?> toMap() => {'text': text, 'target': target.toMap()};
+
+  @override
+  bool operator ==(Object other) => other is PetProgress && other.text == text && other.target == target;
+
+  @override
+  int get hashCode => Object.hash(text, target);
+}
+
 /// What the pet shows right now. Equal values need no redraw and no push.
 @immutable
 class PetState {
@@ -306,6 +323,7 @@ class PetState {
     this.reduceMotion = false,
     this.canStop = false,
     this.hosts = const [],
+    this.progress,
   });
 
   final PetStateName state;
@@ -336,6 +354,23 @@ class PetState {
   /// 安静模式: moves only, no bubbles.
   final bool quiet;
   final bool reduceMotion;
+  final PetProgress? progress;
+
+  PetState withProgress(PetProgress? value) => PetState(
+    state: state,
+    tier: tier,
+    bubble: bubble,
+    target: target,
+    active: active,
+    foreground: foreground,
+    packId: packId,
+    size: size,
+    quiet: quiet,
+    reduceMotion: reduceMotion,
+    canStop: canStop,
+    hosts: hosts,
+    progress: value,
+  );
 
   /// [target] runs on the host in use: the floating pet's 「停止当前任务」.
   final bool canStop;
@@ -356,6 +391,7 @@ class PetState {
     'reduceMotion': reduceMotion,
     'canStop': canStop,
     'hosts': [for (final h in hosts) h.toMap()],
+    if (progress case final progress?) 'progress': progress.toMap(),
   };
 
   @override
@@ -372,7 +408,8 @@ class PetState {
       other.quiet == quiet &&
       other.reduceMotion == reduceMotion &&
       other.canStop == canStop &&
-      listEquals(other.hosts, hosts);
+      listEquals(other.hosts, hosts) &&
+      other.progress == progress;
 
   @override
   int get hashCode => Object.hash(
@@ -388,6 +425,7 @@ class PetState {
     reduceMotion,
     canStop,
     Object.hashAll(hosts),
+    progress,
   );
 
   @override

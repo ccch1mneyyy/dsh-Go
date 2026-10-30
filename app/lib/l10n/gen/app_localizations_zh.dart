@@ -14230,6 +14230,17 @@ class L10nZh extends L10n {
   String get starSettingsTitle => '给 DSH Go 点个 star';
 
   @override
+  String get statePetThinking => '正在思考';
+
+  @override
+  String get statePetWriting => '正在生成回复';
+
+  @override
+  String statePetCallingTool(String tool) {
+    return '正在调用：$tool';
+  }
+
+  @override
   String get stateDiagnosticsSubject => 'DSH Go 诊断包';
 
   @override

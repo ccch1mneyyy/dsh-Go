@@ -14984,6 +14984,17 @@ class L10nEn extends L10n {
   String get starSettingsTitle => 'Star DSH Go on GitHub';
 
   @override
+  String get statePetThinking => 'Thinking';
+
+  @override
+  String get statePetWriting => 'Generating reply';
+
+  @override
+  String statePetCallingTool(String tool) {
+    return 'Calling: $tool';
+  }
+
+  @override
   String get stateDiagnosticsSubject => 'DSH Go diagnostics bundle';
 
   @override

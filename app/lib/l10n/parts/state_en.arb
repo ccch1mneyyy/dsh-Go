@@ -1,4 +1,8 @@
 {
+  "statePetThinking": "Thinking",
+  "statePetWriting": "Generating reply",
+  "statePetCallingTool": "Calling: {tool}",
+  "@statePetCallingTool": {"placeholders": {"tool": {"type": "String"}}},
   "stateDiagnosticsSubject": "DSH Go diagnostics bundle",
   "stateStoragePermission": "No storage permission to save to Downloads",
   "stateDiagnosticsStorageFull": "Not enough storage to create the diagnostics bundle",

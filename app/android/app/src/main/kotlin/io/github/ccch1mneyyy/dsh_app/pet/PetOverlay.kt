@@ -1017,6 +1017,7 @@ internal object PetOverlay {
         }
         val ctx = hostContext ?: return
         if (bubbleId == b.id && alive(bubbleView?.let { windowTickets[it] })) return
+        val updatingProgress = bubbleId?.startsWith("progress|") == true && b.kind == "progress"
         removeBubble()
         val ticket = windows.claim(OverlayWindowOwner.Role.BUBBLE) ?: return
         val view = BubbleView(ctx) { if (alive(ticket)) onBubbleTap(b) }
@@ -1045,7 +1046,7 @@ internal object PetOverlay {
         bubbleParams = params
         bubbleCard = card
         bubbleFor = shown
-        if (animationsOn()) {
+        if (!updatingProgress && animationsOn()) {
             // Comes out of the tail's side, towards where it rests.
             val d = ctx.dp(4f).toFloat()
             view.alpha = 0f
@@ -1133,7 +1134,7 @@ internal object PetOverlay {
 
     private fun onBubbleTap(b: PetBubble) {
         machine.onTouch(now())
-        machine.bubbles.dismiss()
+        if (b.kind != "progress") machine.bubbles.dismiss()
         removeBubble()
         val push = machine.last
         if (b.sessionId != null) open(b.sessionId, b.host, b.title) else open(push?.sessionId, push?.host, b.title)

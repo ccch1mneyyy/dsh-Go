@@ -25994,6 +25994,24 @@ abstract class L10n {
   /// **'给 DSH Go 点个 star'**
   String get starSettingsTitle;
 
+  /// No description provided for @statePetThinking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在思考'**
+  String get statePetThinking;
+
+  /// No description provided for @statePetWriting.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在生成回复'**
+  String get statePetWriting;
+
+  /// No description provided for @statePetCallingTool.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在调用：{tool}'**
+  String statePetCallingTool(String tool);
+
   /// No description provided for @stateDiagnosticsSubject.
   ///
   /// In zh, this message translates to:

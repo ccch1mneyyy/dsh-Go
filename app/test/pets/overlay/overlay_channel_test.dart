@@ -35,6 +35,7 @@ void main() {
         size: PetSize.large,
         quiet: false,
         reduceMotion: true,
+        progress: const PetProgress(text: '正在调用：read_file', target: PetTarget(HostRef.local, 'tracked')),
       );
       await PetOverlayChannel().push(state);
       expect(native.methods, ['push']);
@@ -45,6 +46,8 @@ void main() {
       expect(args['size'], 'large');
       expect(args['active'], isTrue);
       expect(args['reduceMotion'], isTrue);
+      expect((args['progress'] as Map)['text'], '正在调用：read_file');
+      expect(((args['progress'] as Map)['target'] as Map)['sessionId'], 'tracked');
       expect((args['target'] as Map)['sessionId'], 's1');
       final bubble = args['bubble'] as Map;
       expect(bubble['text'], '修复登录 · 做完了');

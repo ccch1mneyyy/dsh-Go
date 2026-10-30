@@ -19,6 +19,7 @@ import android.util.Log
  *     [--ez active true --es size medium --es bubble 做完了 --es title 修复登录 --es bubbleId b1 --el ttl 6000]
  *     [--es detail '回复的头两行' | --es askText '运行：git push' --es askKind approval --ez approvable true
  *      --es choices 'A|B|C' --es eventId e1] [--ez canStop true --es hosts '本机|电脑 · SSH']
+ *     [--es progress '正在调用：read_file' --ez quiet false]
  * … --es cmd ask [--ez fresh true]   (问一句's bar, as the menu opens it)
  * adb shell am broadcast -a io.github.ccch1mneyyy.dsh_app.PET_PROBE --es cmd enable --ez on true
  * … --es cmd always --ez on true | --es cmd unsnooze | --es cmd permission | --es cmd state
@@ -42,6 +43,13 @@ internal object PetOverlayProbe {
                             "host" to intent.getStringExtra("host"),
                             "active" to (if (intent.hasExtra("active")) intent.getBooleanExtra("active", false) else null),
                             "size" to (intent.getStringExtra("size") ?: "medium"),
+                            "quiet" to intent.getBooleanExtra("quiet", false),
+                            "progress" to intent.getStringExtra("progress")?.let { text ->
+                                mapOf("text" to text, "target" to mapOf(
+                                    "sessionId" to intent.getStringExtra("session"),
+                                    "host" to intent.getStringExtra("host"),
+                                ))
+                            },
                             "bubble" to intent.getStringExtra("bubble")?.let { text ->
                                 mapOf(
                                     "id" to (intent.getStringExtra("bubbleId") ?: "probe-${System.nanoTime()}"),
