@@ -353,10 +353,14 @@ Future<void> showModelSheet(
 ///
 ///   ((  DeepSeek  )   OpenRouter            )    渠道多于一个时
 ///
-///   ╭─────────────────╮  ╭─────────────────╮
-///   │ V4 Pro       (✓)│  │ V41 Flash    ( )│
-///   │ 更强的推理与编码  │  │ 更快、更省        │
-///   ╰─────────────────╯  ╰─────────────────╯
+///   ╭──────────────────────────────────────╮
+///   │ V4 Pro                            (✓)│
+///   │ 更强的推理与编码                       │
+///   ╰──────────────────────────────────────╯
+///   ╭──────────────────────────────────────╮
+///   │ V41 Flash                         ( )│
+///   │ 更快、更省                             │
+///   ╰──────────────────────────────────────╯
 ///
 ///   思考深度
 ///   (( 不思考 )  低      ( 高 )     最高   )
@@ -518,7 +522,7 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
               switchOutCurve: AppMotion.exit,
               layoutBuilder: (current, previous) =>
                   Stack(alignment: Alignment.topCenter, children: [...previous, ?current]),
-              child: _ModelGrid(
+              child: _ModelList(
                 key: ValueKey(shown.id),
                 models: shown.models,
                 selected: selected,
@@ -700,9 +704,9 @@ class _ChannelChip extends StatelessWidget {
   }
 }
 
-/// 两列等宽的模型卡,同一行等高、间距 12;单数时最后一张占满整行。
-class _ModelGrid extends StatelessWidget {
-  const _ModelGrid({super.key, required this.models, required this.selected, required this.onPick});
+/// 单列整宽模型卡,纵向间距 12;卡片高度随模型名换行增长。
+class _ModelList extends StatelessWidget {
+  const _ModelList({super.key, required this.models, required this.selected, required this.onPick});
 
   final List<ModelInfo> models;
   final ModelInfo? selected;
@@ -722,28 +726,13 @@ class _ModelGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < models.length; i += 2) ...[
-          if (i > 0) const SizedBox(height: gap),
-          if (i + 1 < models.length)
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: card(models[i])),
-                  const SizedBox(width: gap),
-                  Expanded(child: card(models[i + 1])),
-                ],
-              ),
-            )
-          else
-            card(models[i]),
-        ],
+        for (var i = 0; i < models.length; i++) ...[if (i > 0) const SizedBox(height: gap), card(models[i])],
       ],
     );
   }
 }
 
-/// 一张模型卡:短名 + 一行描述,右上角选择圈。选中时卡面染一层很淡的主色、
+/// 一张模型卡:可换行的短名 + 一行描述,右上角选择圈。选中时卡面染一层很淡的主色、
 /// 描一圈主色细边、圈里是实心对勾 —— 这一屏唯一的实心主色。
 class _ModelCard extends StatelessWidget {
   const _ModelCard({super.key, required this.model, required this.selected, required this.onTap});
@@ -799,15 +788,9 @@ class _ModelCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(height: 1.35),
-                      ),
-                    ),
+                    Expanded(child: Text(name, style: theme.textTheme.titleMedium?.copyWith(height: 1.35))),
                     const SizedBox(width: 8),
                     _CheckMark(selected: selected),
                   ],

@@ -1,5 +1,5 @@
 // The model sheet: channel filter, model cards, the capsule effort selector.
-// Behaviour, geometry (insets, equal cards, one dismissal handle) and goldens
+// Behaviour, geometry (insets, full-width cards, one dismissal handle) and goldens
 // (light + dark). Regenerate with
 // `flutter test --update-goldens test/chat/model_sheet_test.dart`.
 
@@ -16,6 +16,7 @@ import 'package:dsh_app/ui/common/sheet_title_bar.dart';
 import 'package:dsh_app/ui/theme/theme.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -23,6 +24,7 @@ import 'support/harness.dart';
 
 const _off = ReasoningEffort('off', 'Off', null);
 const _high = ReasoningEffort('high', 'High', null);
+const _longModelName = 'Qwen3 Coder 480B A35B Instruct (Extended Context)';
 
 /// DeepSeek (two models with efforts) + OpenRouter (one without efforts).
 final multiCatalog = ModelCatalog(
@@ -40,7 +42,7 @@ final multiCatalog = ModelCatalog(
         efforts: [_off, _high],
         defaultEffort: 'high',
       ),
-      ModelInfo(provider: 'openrouter', id: 'qwen/qwen3-coder', name: 'Qwen3-Coder', description: '阿里的代码模型'),
+      ModelInfo(provider: 'openrouter', id: 'qwen/qwen3-coder', name: _longModelName, description: '阿里的代码模型'),
     ]),
   ],
   failures: const [],
@@ -303,7 +305,7 @@ void main() {
 
   group('geometry', () {
     for (final scale in [1.0, 1.3]) {
-      testWidgets('20 in from both sides, equal cards (text ×$scale)', (tester) async {
+      testWidgets('20 in from both sides, full-width cards (text ×$scale)', (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = scale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
         await _openSheet(tester, _harness(multiCatalog));
@@ -314,9 +316,8 @@ void main() {
         expect(pro.left, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
         expect(width - flash.right, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
         expect(pro.width, moreOrLessEquals(flash.width, epsilon: 0.5));
-        expect(pro.height, moreOrLessEquals(flash.height, epsilon: 0.5));
-        expect(pro.top, moreOrLessEquals(flash.top, epsilon: 0.5));
-        expect(flash.left - pro.right, moreOrLessEquals(12, epsilon: 0.5));
+        expect(pro.left, moreOrLessEquals(flash.left, epsilon: 0.5));
+        expect(flash.top - pro.bottom, moreOrLessEquals(12, epsilon: 0.5));
 
         // Filter and effort pill span exactly the cards' width.
         final pills = find.byType(SegmentedPill<String>);
@@ -332,6 +333,12 @@ void main() {
         expect(find.byTooltip('关闭'), findsNothing);
         expect(title.left, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
         expect(width - title.right, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
+
+        await tester.tap(find.text('OpenRouter'));
+        await pumpFrames(tester, 6);
+        final name = find.text(_longModelName);
+        expect(tester.renderObject<RenderParagraph>(name).didExceedMaxLines, isFalse);
+        expect(tester.getRect(name).bottom, lessThanOrEqualTo(tester.getRect(_card(_longModelName)).bottom));
         expect(tester.takeException(), isNull);
       });
     }
