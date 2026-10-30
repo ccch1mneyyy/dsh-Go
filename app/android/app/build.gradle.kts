@@ -13,6 +13,8 @@ val keyProps = Properties().apply {
 }
 
 // Per-ABI runtime bundles produced by runtime/build-runtime.sh.
+val codexPreview = providers.gradleProperty("codexPreview").orNull == "true"
+
 val runtimeOut = rootProject.file("../../runtime/out")
 
 // versionCode is the build minute, same encoding as tooling/build_number.py:
@@ -37,6 +39,12 @@ android {
 
     defaultConfig {
         applicationId = "io.github.ccch1mneyyy.dsh_app"
+        if (codexPreview) {
+            applicationIdSuffix = ".codexpreview"
+            // The preview is arm64-only, including third-party JNI libraries.
+            ndk { abiFilters.clear(); abiFilters.add("arm64-v8a") }
+        }
+        manifestPlaceholders["dshAppLabel"] = if (codexPreview) "DSH Go · Codex 测试" else "DSH Go"
         // java.nio.file (symlinks while unpacking the rootfs) needs API 26.
         minSdk = 26
         // Target 28 like Termux, so the API 29+ exec restriction on app-private
@@ -60,6 +68,7 @@ android {
 
     sourceSets {
         getByName("arm64") {
+            if (codexPreview) res.srcDir("src/codexPreview/res")
             assets.srcDir(File(runtimeOut, "arm64-v8a/assets"))
             jniLibs.srcDir(File(runtimeOut, "arm64-v8a/jniLibs"))
         }

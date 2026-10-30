@@ -3803,6 +3803,8 @@
   "remoteRelayProviderServer": "Service by {project} · Current server: {server}",
   "remoteQuotedHostName": "“{name}”",
   "remoteErrorDetail": "{message} ({detail})",
+  "remoteCodexWorkspace": "Codex workspace",
+  "remoteCodexWorkspaceHint": "Browse remote Codex over SSH · Read only",
   "riskDontShowAgain": "Don’t show again",
   "riskAskAi": "Not sure? Ask AI",
   "riskConfirmAlwaysAction": "Skip confirmation",

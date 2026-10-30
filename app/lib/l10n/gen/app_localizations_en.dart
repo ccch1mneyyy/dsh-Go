@@ -13207,6 +13207,12 @@ class L10nEn extends L10n {
   }
 
   @override
+  String get remoteCodexWorkspace => 'Codex workspace';
+
+  @override
+  String get remoteCodexWorkspaceHint => 'Browse remote Codex over SSH · Read only';
+
+  @override
   String get riskDontShowAgain => 'Don’t show again';
 
   @override

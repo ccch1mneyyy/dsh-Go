@@ -8147,6 +8147,8 @@
       }
     }
   },
+  "remoteCodexWorkspace": "Codex 工作台",
+  "remoteCodexWorkspaceHint": "通过 SSH 查看远程 Codex 对话 · 只读",
   "riskDontShowAgain": "不再提示",
   "riskAskAi": "不确定？问 AI",
   "riskConfirmAlwaysAction": "始终免确认",

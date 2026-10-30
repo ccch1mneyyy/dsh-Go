@@ -239,3 +239,10 @@ class SessionUsageController extends Notifier<SessionUsage> {
 final sessionUsageProvider = NotifierProvider.autoDispose.family<SessionUsageController, SessionUsage, String>(
   SessionUsageController.new,
 );
+
+/// Account quota belongs to the active connection, never the phone login.
+final accountUsageProvider = FutureProvider.autoDispose<Map<String, Object?>>((ref) async {
+  final client = ref.watch(activeConnectionProvider).value?.client;
+  if (client == null) throw StateError('未连接');
+  return client.accountUsage();
+});

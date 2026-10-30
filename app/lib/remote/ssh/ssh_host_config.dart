@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 /// How an SSH host authenticates. The secret itself lives in the
 /// [SecretStore] under [SshSecrets] keys, never in this config.
+enum RemoteBackend { dsh, codex }
+
 enum SshAuthMethod { password, privateKey }
 
 /// The remote `dsh web` launch command used when none is configured.
@@ -14,6 +16,9 @@ class SshHostConfig {
     required this.name,
     required this.host,
     this.port = 22,
+    this.backend = RemoteBackend.dsh,
+    this.codexBinary,
+    this.codexSocket,
     required this.user,
     this.auth = SshAuthMethod.password,
     this.launchCommand = defaultDshLaunchCommand,
@@ -29,6 +34,9 @@ class SshHostConfig {
   final String name;
   final String host;
   final int port;
+  final RemoteBackend backend;
+  final String? codexBinary;
+  final String? codexSocket;
   final String user;
   final SshAuthMethod auth;
 
@@ -51,7 +59,17 @@ class SshHostConfig {
 
   /// Fields that require a new SSH session when they change (name and the
   /// pinned key don't).
-  String get connectionKey => [host, port, user, auth.name, launchCommand.trim()].join('\u0000');
+  String get connectionKey => [
+    host,
+    port,
+    user,
+    auth.name,
+    launchCommand.trim(),
+    backend.name,
+    codexBinary,
+    codexSocket,
+    if (backend == RemoteBackend.codex) workingDirectory,
+  ].join('\u0000');
 
   /// Changing where we connect forgets the pinned key: it belonged to the old
   /// machine.
@@ -59,6 +77,9 @@ class SshHostConfig {
     String? name,
     String? host,
     int? port,
+    RemoteBackend? backend,
+    String? codexBinary,
+    String? codexSocket,
     String? user,
     SshAuthMethod? auth,
     String? launchCommand,
@@ -72,6 +93,9 @@ class SshHostConfig {
       name: name ?? this.name,
       host: host ?? this.host,
       port: port ?? this.port,
+      backend: backend ?? this.backend,
+      codexBinary: codexBinary ?? this.codexBinary,
+      codexSocket: codexSocket ?? this.codexSocket,
       user: user ?? this.user,
       auth: auth ?? this.auth,
       launchCommand: launchCommand ?? this.launchCommand,
@@ -86,6 +110,9 @@ class SshHostConfig {
     'name': name,
     'host': host,
     'port': port,
+    'backend': backend.name,
+    if (codexBinary != null) 'codexBinary': codexBinary,
+    if (codexSocket != null) 'codexSocket': codexSocket,
     'user': user,
     'auth': auth.name,
     'launchCommand': launchCommand,
@@ -108,6 +135,9 @@ class SshHostConfig {
       id: id,
       name: name is String && name.trim().isNotEmpty ? name : host,
       host: host,
+      backend: raw['backend'] == 'codex' ? RemoteBackend.codex : RemoteBackend.dsh,
+      codexBinary: raw['codexBinary'] is String ? raw['codexBinary'] as String : null,
+      codexSocket: raw['codexSocket'] is String ? raw['codexSocket'] as String : null,
       port: port is int && port > 0 && port < 65536 ? port : 22,
       user: user,
       auth: SshAuthMethod.values.firstWhere((m) => m.name == raw['auth'], orElse: () => SshAuthMethod.password),
@@ -131,6 +161,9 @@ class SshHostConfig {
       other.name == name &&
       other.host == host &&
       other.port == port &&
+      other.backend == backend &&
+      other.codexBinary == codexBinary &&
+      other.codexSocket == codexSocket &&
       other.user == user &&
       other.auth == auth &&
       other.launchCommand == launchCommand &&
@@ -139,8 +172,21 @@ class SshHostConfig {
       other.hostKeyFingerprint == hostKeyFingerprint;
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, host, port, user, auth, launchCommand, workingDirectory, hostKeyType, hostKeyFingerprint);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    host,
+    port,
+    user,
+    auth,
+    launchCommand,
+    workingDirectory,
+    hostKeyType,
+    hostKeyFingerprint,
+    backend,
+    codexBinary,
+    codexSocket,
+  );
 }
 
 /// The secret material for one SSH host, loaded from the [SecretStore].

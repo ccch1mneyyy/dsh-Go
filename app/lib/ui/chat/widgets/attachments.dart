@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/l10n.dart';
 import '../../../media/gallery.dart' show imageProviderBytes;
 import '../../../state/attachments.dart';
+import '../../../state/artifacts.dart';
+import '../artifact_preview.dart';
 import '../../shell/page_frame.dart';
 import '../../theme/app_icons.dart';
 import '../../theme/theme.dart';
@@ -200,7 +202,18 @@ class SentAttachments extends StatelessWidget {
       for (final img in images) _SessionImage(sessionId: sessionId!, attachment: img, single: single),
       for (final d in drafts)
         if (!d.isImage) FileCard(name: d.name, bytes: d.size),
-      for (final f in files) FileCard(name: f.name ?? l10n.chatFile, bytes: f.bytes),
+      for (final f in files)
+        GestureDetector(
+          onTap: sessionId != null && f.raw['path'] is String
+              ? () => Navigator.of(context).push(
+                  ArtifactPreviewPage.route(
+                    sessionId: sessionId!,
+                    artifact: Artifact(path: f.raw['path'] as String, origin: ArtifactOrigin.linked, turn: 0),
+                  ),
+                )
+              : null,
+          child: FileCard(name: f.name ?? l10n.chatFile, bytes: f.bytes),
+        ),
     ];
     return Wrap(alignment: WrapAlignment.end, spacing: 4, runSpacing: 4, children: children);
   }

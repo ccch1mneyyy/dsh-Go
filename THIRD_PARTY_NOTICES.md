@@ -670,3 +670,15 @@ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - SIL Open Font License 1.1：`app/assets/fonts/OFL.txt`
 - GNU LGPL-3.0（spake2-android、libtalloc）：https://www.gnu.org/licenses/lgpl-3.0.txt ；它以 GNU GPL-3.0 为基础，两份全文一并附在 App 内许可页的 spake2-android 条目里：https://www.gnu.org/licenses/gpl-3.0.txt
 - GNU GPL-2.0（proot）：随 APK 附带于 `assets/runtime/licenses/proot-COPYING.txt`
+
+
+## Codex SSH byte-stream WebSocket transport
+
+`packages/codex_client/lib/src/vendor/web_socket_channel/` contains the framing
+subset of [dart-lang/web_socket_channel 2.4.5](https://pub.dev/packages/web_socket_channel/versions/2.4.5),
+under BSD-3-Clause. Original headers and LICENSE are retained; original file hashes
+are in UPSTREAM.json. The platform connector imports and URI factory were removed
+from channel.dart so it can operate directly on the official Codex proxy's byte
+stream without pinning DSH Go's browser dependencies to an older package:web.
+The decoder inputs normalize SSH buffer offsets. No other upstream files were modified.
+The notice is also included in codex_client/LICENSE for Flutter's bundled license registry.

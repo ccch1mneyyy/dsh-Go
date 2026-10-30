@@ -203,6 +203,7 @@ final readListIdentityProvider = Provider<ReadListIdentity?>((ref) {
         host.hostKeyType,
         host.hostKeyFingerprint,
         epoch,
+        if (connection?.client.capabilities.backend == 'codex') connection?.client.accountIdentity,
       ]);
       if (connection != null &&
           (host.workingDirectory?.trim().isNotEmpty ?? false) &&

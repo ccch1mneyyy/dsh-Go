@@ -332,7 +332,7 @@ class _SshRow extends ConsumerWidget {
         icon: hostKindIcon(HostKind.ssh),
         tinted: false,
         title: config.name,
-        subtitle: config.address,
+        subtitle: '${config.backend == RemoteBackend.codex ? "Codex · " : ""}${config.address}',
         onTap: onTap,
         value: view == null ? null : _HostState(view),
         trailing: _EdgeIconButton(

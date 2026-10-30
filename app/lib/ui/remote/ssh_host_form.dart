@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../remote/ssh/ssh_link.dart';
+import '../../remote/codex/codex_link.dart';
+import '../../remote/link_status.dart' show HostLink;
 import '../../state/attachments.dart';
 import '../../state/connection_state.dart';
 import '../../state/hosts_state.dart';
@@ -49,6 +51,10 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
   final _privateKey = TextEditingController();
   final _passphrase = TextEditingController();
 
+  late RemoteBackend _backend = widget.existing?.backend ?? RemoteBackend.dsh;
+  late final _codexBinary = TextEditingController(text: widget.existing?.codexBinary ?? '');
+  late final _codexSocket = TextEditingController(text: widget.existing?.codexSocket ?? '');
+
   late SshAuthMethod _auth = widget.existing?.auth ?? SshAuthMethod.password;
   late String? _keyType = widget.existing?.hostKeyType;
   late String? _keyFingerprint = widget.existing?.hostKeyFingerprint;
@@ -68,7 +74,7 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
   /// To bring the first field with a problem into view.
   final _fieldKeys = {for (final f in _F.values) f: GlobalKey()};
 
-  SshHostLink? _test;
+  HostLink? _test;
   StreamSubscription<HostLinkStatus>? _testSub;
   late HostLinkStatus? _testStatus = widget.initialStatus;
 
@@ -82,6 +88,8 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
     _port,
     _user,
     _command,
+    _codexBinary,
+    _codexSocket,
     _cwd,
     _password,
     _privateKey,
@@ -89,6 +97,9 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
   ]);
 
   String _signature() => jsonEncode({
+    'backend': _backend.name,
+    'codexBinary': _codexBinary.text,
+    'codexSocket': _codexSocket.text,
     'name': _name.text,
     'host': _host.text,
     'port': _port.text,
@@ -165,7 +176,19 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
   void dispose() {
     unawaited(_testSub?.cancel());
     unawaited(_test?.close());
-    for (final c in [_name, _host, _port, _user, _command, _cwd, _password, _privateKey, _passphrase]) {
+    for (final c in [
+      _name,
+      _host,
+      _port,
+      _user,
+      _command,
+      _cwd,
+      _password,
+      _privateKey,
+      _passphrase,
+      _codexBinary,
+      _codexSocket,
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -213,6 +236,9 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
       port: port!,
       user: user,
       auth: _auth,
+      backend: _backend,
+      codexBinary: _codexBinary.text.trim(),
+      codexSocket: _codexSocket.text.trim(),
       launchCommand: _command.text.trim().isEmpty ? defaultDshLaunchCommand : _command.text.trim(),
       workingDirectory: _cwd.text.trim().isEmpty ? null : _cwd.text.trim(),
       hostKeyType: keyValid ? _keyType : null,
@@ -235,22 +261,40 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
     await _testSub?.cancel();
     await _test?.close();
     final secrets = _secrets;
-    final link = SshHostLink(
-      config: config,
-      loadSecrets: () async => secrets,
-      promptHostKey: (prompt) async => mounted && await confirmHostKey(context, prompt),
-      pinHostKey: (key) async {
-        if (mounted) {
-          setState(() {
-            _keyType = key.type;
-            _keyFingerprint = key.fingerprint;
-            _keyFor = '${config.host}:${config.port}';
-          });
-        }
-      },
-      transportFactory: ref.read(sshTransportFactoryProvider),
-      retryFirstOpen: false,
-    );
+    Future<void> pin(PresentedHostKey key) async {
+      if (mounted) {
+        setState(() {
+          _keyType = key.type;
+          _keyFingerprint = key.fingerprint;
+          _keyFor = '${config.host}:${config.port}';
+        });
+      }
+    }
+
+    final HostLink link = _backend == RemoteBackend.codex
+        ? CodexHostLink(
+            config: config,
+            submissionLedger: {},
+            loadSecrets: () async => secrets,
+            pinHostKey: pin,
+            promptHostKey: (prompt) async => mounted && await confirmHostKey(context, prompt),
+          )
+        : SshHostLink(
+            config: config,
+            loadSecrets: () async => secrets,
+            promptHostKey: (prompt) async => mounted && await confirmHostKey(context, prompt),
+            pinHostKey: (key) async {
+              if (mounted) {
+                setState(() {
+                  _keyType = key.type;
+                  _keyFingerprint = key.fingerprint;
+                  _keyFor = '${config.host}:${config.port}';
+                });
+              }
+            },
+            transportFactory: ref.read(sshTransportFactoryProvider),
+            retryFirstOpen: false,
+          );
     _test = link;
     setState(() => _testStatus = const HostLinkStatus(HostLinkPhase.connecting, step: HostLinkStep.connect));
     _testSub = link.statuses.listen((s) {
@@ -384,7 +428,9 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
 
     final page = AppPage.list(
       title: _editing ? l10n.remoteEditHost : l10n.remoteAddSshHost,
-      subtitle: _editing ? null : Text(l10n.remoteSshHostIntro),
+      subtitle: _editing
+          ? null
+          : Text(_backend == RemoteBackend.codex ? '连接服务器上已登录的 Codex，使用原版聊天界面' : l10n.remoteSshHostIntro),
       // One column, not a lazy list: every field stays built so the first one
       // with a problem can be scrolled into view.
       children: [
@@ -394,6 +440,14 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
             SettingsSection(
               title: l10n.remoteHostBasicInfo,
               children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SegmentedPill<RemoteBackend>(
+                    segments: const [PillSegment(RemoteBackend.dsh, 'DSH'), PillSegment(RemoteBackend.codex, 'Codex')],
+                    selected: _backend,
+                    onChanged: (v) => setState(() => _backend = v),
+                  ),
+                ),
                 FormFieldGroup(
                   children: [
                     FormFieldBlock(
@@ -557,27 +611,40 @@ class _SshHostFormPageState extends ConsumerState<SshHostFormPage> {
               ],
             ),
             SettingsSection(
-              title: 'DSH',
-              footer: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: installHint.first),
-                    TextSpan(
-                      text: installCommand,
-                      style: AppType.monoLabel(color: scheme.onSurfaceVariant),
+              title: _backend == RemoteBackend.codex ? 'Codex' : 'DSH',
+              footer: _backend == RemoteBackend.codex
+                  ? const Text('使用服务器既有登录。路径留空使用默认值；不启动或重启远端服务。')
+                  : Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: installHint.first),
+                          TextSpan(
+                            text: installCommand,
+                            style: AppType.monoLabel(color: scheme.onSurfaceVariant),
+                          ),
+                          TextSpan(text: installHint.last),
+                        ],
+                      ),
                     ),
-                    TextSpan(text: installHint.last),
-                  ],
-                ),
-              ),
               children: [
                 FormFieldGroup(
                   children: [
-                    FormFieldBlock(
-                      label: l10n.remoteStartCommand,
-                      helper: l10n.remoteStartCommandHelp,
-                      child: TextField(controller: _command, autocorrect: false, style: mono),
-                    ),
+                    if (_backend == RemoteBackend.codex) ...[
+                      FormFieldBlock(
+                        label: 'Codex 可执行文件（可选）',
+                        child: TextField(controller: _codexBinary, autocorrect: false, style: mono),
+                      ),
+                      FormFieldBlock(
+                        label: '控制 socket（可选）',
+                        child: TextField(controller: _codexSocket, autocorrect: false, style: mono),
+                      ),
+                    ],
+                    if (_backend == RemoteBackend.dsh)
+                      FormFieldBlock(
+                        label: l10n.remoteStartCommand,
+                        helper: l10n.remoteStartCommandHelp,
+                        child: TextField(controller: _command, autocorrect: false, style: mono),
+                      ),
                     FormFieldBlock(
                       label: l10n.remoteWorkingDirectory,
                       helper: l10n.remoteWorkingDirectoryHelp,

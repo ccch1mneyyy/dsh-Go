@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../state/bots_state.dart';
+import '../../state/connection_state.dart';
 import '../../state/sessions_state.dart';
 import '../common/app_sheet.dart' show groupTitleStyle;
 import '../common/feature_tile.dart';
@@ -54,6 +55,17 @@ class AllFeaturesPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    if (!ref.watch(advancedBackendProvider)) {
+      return AppPage.list(
+        title: l10n.stateAllFeatures,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('当前 Codex 后端支持会话、文本聊天、模型选择、停止/插话和常规审批。DSH 专属功能在切回 DSH 主机后可用。'),
+          ),
+        ],
+      );
+    }
     final sessionId = ref.watch(currentSessionProvider);
     final title = sessionId == null
         ? null

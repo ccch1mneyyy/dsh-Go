@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/l10n.dart';
 import 'hosts_state.dart';
+import 'connection_state.dart';
 import 'read_list_cache.dart';
 import 'read_list_identity.dart';
 
@@ -477,6 +478,7 @@ int workspaceConversationCount(Workspace w, Iterable<String> visible) {
 /// The workspace a new conversation starts in: the drawer's selection,
 /// checked against the host's list once that has arrived.
 Future<String?> workspaceForNewSession(Ref ref) async {
+  if (!ref.read(advancedBackendProvider)) return null;
   final selected = await ref.read(workspacePrefsProvider.notifier).selection();
   if (selected == null) return null;
   final registry = ref.read(workspacesProvider);

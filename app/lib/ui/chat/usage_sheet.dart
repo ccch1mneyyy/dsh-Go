@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../state/usage_state.dart';
+import '../../state/connection_state.dart';
 import '../common/app_sheet.dart';
 import '../common/sheet_title_bar.dart';
 import '../theme/theme.dart';
@@ -175,7 +176,10 @@ class UsageSheet extends ConsumerWidget {
             SheetTitleBar(l10n.activityUsage),
             SessionUsageSections(usage: usage, pricing: pricing, sheet: true, margin: _margin),
             const SizedBox(height: 16),
-            BalanceCard(title: l10n.activityUsageBalance, margin: _margin),
+            if (ref.watch(activeConnectionProvider).value?.client.capabilities.backend == 'codex')
+              const CodexQuotaCard()
+            else
+              BalanceCard(title: l10n.activityUsageBalance, margin: _margin),
           ],
         ),
       ),
@@ -424,6 +428,88 @@ class _Stat extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(label, style: theme.textTheme.bodySmall?.copyWith(color: DshColors.of(context).textTertiary)),
+      ],
+    );
+  }
+}
+
+/// Reuses the usage sheet; unavailable quota is never displayed as zero.
+class CodexQuotaCard extends ConsumerWidget {
+  const CodexQuotaCard({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(accountUsageProvider);
+    final en = AppLocale.isEnglish;
+    Map<String, Object?> map(Object? v) => v is Map ? Map<String, Object?>.from(v) : {};
+    Widget text(String value) => Padding(padding: const EdgeInsets.all(16), child: Text(value));
+    return SheetGroup(
+      title: en ? 'Codex account quota' : 'Codex 账号额度',
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      children: [
+        Row(
+          children: [
+            Expanded(child: text(en ? 'Server account · refresh to update' : '服务器账号 · 点击刷新更新')),
+            IconButton(
+              tooltip: en ? 'Refresh' : '刷新',
+              onPressed: () => ref.invalidate(accountUsageProvider),
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        state.when(
+          loading: () => const Padding(padding: EdgeInsets.all(16), child: LinearProgressIndicator()),
+          error: (e, s) => text(en ? 'Quota unavailable. Retry after connecting.' : '暂时无法读取额度，请检查连接后重试。'),
+          data: (data) {
+            final buckets = map(data['rateLimitsByLimitId']);
+            if (buckets.isEmpty && map(data['rateLimits']).isNotEmpty) buckets['codex'] = data['rateLimits'];
+            final widgets = <Widget>[];
+            if (data['ordinaryUsageAllowed'] == false) {
+              widgets.add(text(en ? 'Included usage is currently unavailable.' : '服务器报告当前套餐内用量不可用。'));
+            }
+            for (final entry in buckets.entries) {
+              final bucket = map(entry.value);
+              final name = bucket['limitName']?.toString() ?? entry.key;
+              final plan = bucket['planType']?.toString();
+              widgets.add(text('$name${plan == null ? '' : ' · $plan'}'));
+              var found = false;
+              for (final key in ['primary', 'secondary']) {
+                final window = map(bucket[key]);
+                final used = window['usedPercent'];
+                if (used is! num) continue;
+                found = true;
+                final mins = window['windowDurationMins'];
+                final label = mins is num
+                    ? (mins % 1440 == 0
+                          ? '${mins ~/ 1440}${en ? ' days' : ' 天'}'
+                          : mins % 60 == 0
+                          ? '${mins ~/ 60}${en ? ' hours' : ' 小时'}'
+                          : '$mins min')
+                    : (key == 'primary' ? (en ? 'Primary window' : '主额度窗口') : (en ? 'Secondary window' : '次额度窗口'));
+                final reset = window['resetsAt'];
+                final time = reset is num
+                    ? DateTime.fromMillisecondsSinceEpoch(reset.toInt() * 1000).toLocal().toString().split('.').first
+                    : null;
+                widgets.add(
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$label · ${en ? 'used' : '已用'} ${used.toStringAsFixed(1)}%'),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(value: (used / 100).clamp(0.0, 1.0)),
+                        if (time != null) Text('${en ? 'Resets' : '重置时间'}：$time'),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              if (!found) widgets.add(text(en ? 'No quota windows reported' : '服务器未提供额度窗口'));
+            }
+            if (widgets.isEmpty) widgets.add(text(en ? 'Quota unavailable for this account' : '当前账号暂无可用额度数据'));
+            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: widgets);
+          },
+        ),
       ],
     );
   }

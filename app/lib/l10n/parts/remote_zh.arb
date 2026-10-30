@@ -990,5 +990,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "remoteCodexWorkspace": "Codex 工作台",
+  "remoteCodexWorkspaceHint": "通过 SSH 查看远程 Codex 对话 · 只读"
 }

@@ -87,6 +87,39 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    if (!ref.watch(advancedBackendProvider)) {
+      return AppPage.list(
+        title: l10n.commonSettings,
+        children: [
+          SettingsSection(
+            title: 'Codex',
+            children: [
+              SettingsTile(
+                icon: AppIcons.computer,
+                title: l10n.commonRemoteHost,
+                subtitle: '沿用服务器账号；模型在聊天顶部选择',
+                onTap: () => _push(context, const RemoteScreen()),
+              ),
+            ],
+          ),
+          SettingsSection(
+            title: l10n.hubGroupGeneral,
+            children: [
+              SettingsTile(icon: AppIcons.swap, title: '外观', onTap: () => _push(context, const AppearancePage())),
+              SettingsTile(icon: AppIcons.configure, title: '界面', onTap: () => _push(context, const InterfacePage())),
+              const LanguageSettingsTile(tint: SettingsHues.general),
+              const NotificationSettingsTile(tint: SettingsHues.general),
+              const PerformanceSettingsTile(tint: SettingsHues.general),
+              SettingsTile(icon: AppIcons.info, title: '关于', onTap: () => _push(context, const AboutPage())),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('当前为 Codex 基本聊天版本。插件、手机操控、文件附件和其他高级功能尚未适配。切回 DSH 可使用其原有功能。'),
+          ),
+        ],
+      );
+    }
     final settings = ref.watch(settingsProvider);
     final runtime = ref.watch(localRuntimeProvider);
     final engine = EngineStatusView.of(runtime);

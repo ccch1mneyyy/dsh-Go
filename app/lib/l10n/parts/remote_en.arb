@@ -400,5 +400,7 @@
   "remoteRelayProvider": "Service by {project}",
   "remoteRelayProviderServer": "Service by {project} · Current server: {server}",
   "remoteQuotedHostName": "“{name}”",
-  "remoteErrorDetail": "{message} ({detail})"
+  "remoteErrorDetail": "{message} ({detail})",
+  "remoteCodexWorkspace": "Codex workspace",
+  "remoteCodexWorkspaceHint": "Browse remote Codex over SSH · Read only"
 }

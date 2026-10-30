@@ -27,3 +27,15 @@ site/build/
 
 # Release assets (tooling/release_assets.py)
 /dist/
+
+# Flutter package test/build output
+packages/*/build/
+
+# Local credentials and private diagnostics (keep outside source control)
+**/key.properties
+*.jks
+*.keystore
+.env
+.env.*
+!.env.example
+/private-diagnostics/

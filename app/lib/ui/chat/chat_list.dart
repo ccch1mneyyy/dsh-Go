@@ -737,7 +737,7 @@ class _ChatListState extends ConsumerState<ChatList> {
       item = replyWithText(item, text);
     }
     final chat = ref.read(chatProvider(widget.sessionId).notifier);
-    final branchable = chat.branchPointAfter(item) != null;
+    final branchable = ref.watch(advancedBackendProvider) && chat.branchPointAfter(item) != null;
     // 「重新回答」: the conversation's last reply, its turn over cleanly.
     final prompt = branchable && widget.onResend != null
         ? regenerablePrompt(ref.read(chatProvider(widget.sessionId)), item)
@@ -747,7 +747,7 @@ class _ChatListState extends ConsumerState<ChatList> {
       showActions: showActions,
       onBranch: branchable ? () => _branch(item) : null,
       branching: _forkingId == item.id,
-      onRegenerate: prompt == null ? null : () => _regenerate(item, prompt),
+      onRegenerate: prompt == null || !ref.watch(advancedBackendProvider) ? null : () => _regenerate(item, prompt),
       regenerating: _regeneratingId == item.id,
       onQuote: widget.onQuote,
       footnote: footnote == null ? null : _footnote(footnote),
@@ -941,7 +941,7 @@ class _ChatListState extends ConsumerState<ChatList> {
         attachments: item.images.isEmpty && item.files.isEmpty
             ? null
             : SentAttachments.echoed(sessionId: widget.sessionId, images: item.images, files: item.files),
-        onEdit: widget.onEditPrompt == null ? null : () => _editPrompt(item),
+        onEdit: widget.onEditPrompt == null || !ref.watch(advancedBackendProvider) ? null : () => _editPrompt(item),
       ),
       PendingRow(:final prompt) => _pendingBubble(prompt),
       AssistantRow(:final item, :final showActions, :final footnote) => _reply(item, showActions, footnote),
@@ -953,7 +953,7 @@ class _ChatListState extends ConsumerState<ChatList> {
         item: item,
         card: card,
         onRespond: _respond,
-        onAllowAll: _allowAll,
+        onAllowAll: ref.watch(advancedBackendProvider) ? _allowAll : null,
         autoAnswered: _autoAnswered,
         onOpenSubagent: _openSubagent,
       ),
@@ -961,7 +961,7 @@ class _ChatListState extends ConsumerState<ChatList> {
         tools: tools,
         live: live,
         onRespond: _respond,
-        onAllowAll: _allowAll,
+        onAllowAll: ref.watch(advancedBackendProvider) ? _allowAll : null,
         autoAnswered: _autoAnswered,
         onOpenSubagent: _openSubagent,
       ),
@@ -975,7 +975,11 @@ class _ChatListState extends ConsumerState<ChatList> {
       ChangeCardRow(:final files) => ChangeCard(files: files),
       ArtifactCardRow(:final group) => ArtifactCard(sessionId: widget.sessionId, group: group),
       CommandNoticeRow(:final notice) => CommandRow(notice: notice),
-      ApprovalRow(:final request) => ApprovalCard(request: request, onRespond: _respond, onAllowAll: _allowAll),
+      ApprovalRow(:final request) => ApprovalCard(
+        request: request,
+        onRespond: _respond,
+        onAllowAll: ref.watch(advancedBackendProvider) ? _allowAll : null,
+      ),
       QuestionRow(:final request) => QuestionCard(request: request, onAnswer: _answer, onReject: _rejectQuestion),
     };
   }

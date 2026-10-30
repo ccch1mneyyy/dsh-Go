@@ -12559,6 +12559,12 @@ class L10nZh extends L10n {
   }
 
   @override
+  String get remoteCodexWorkspace => 'Codex 工作台';
+
+  @override
+  String get remoteCodexWorkspaceHint => '通过 SSH 查看远程 Codex 对话 · 只读';
+
+  @override
   String get riskDontShowAgain => '不再提示';
 
   @override

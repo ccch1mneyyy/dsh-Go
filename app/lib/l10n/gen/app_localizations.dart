@@ -22910,6 +22910,18 @@ abstract class L10n {
   /// **'{message}（{detail}）'**
   String remoteErrorDetail(String message, String detail);
 
+  /// No description provided for @remoteCodexWorkspace.
+  ///
+  /// In zh, this message translates to:
+  /// **'Codex 工作台'**
+  String get remoteCodexWorkspace;
+
+  /// No description provided for @remoteCodexWorkspaceHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过 SSH 查看远程 Codex 对话 · 只读'**
+  String get remoteCodexWorkspaceHint;
+
   /// No description provided for @riskDontShowAgain.
   ///
   /// In zh, this message translates to:
