@@ -23,6 +23,7 @@ import { STATUS_CODES, get as httpGet } from "node:http";
 import { get as httpsGet } from "node:https";
 import { createPluginConfig, pluginConfigUnavailable } from "./plugin-config.js";
 import { NativeCore } from "./native/core.js";
+import { isOfficial, packageInventory } from "./inventory.js";
 import { effectiveLimits } from "./native/limits.js";
 import { STREAM_PATH, createNativeRoutes } from "./native/routes.js";
 
@@ -42,18 +43,11 @@ const MAX_OCCUPANTS = 200;
 const SLOT_KEY = /^[A-Za-z0-9_.:-]{1,128}$/;
 
 const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
-const isOfficial = (pkg) => typeof pkg === "string" && pkg.startsWith("@deepseek-ai/");
 const str = (v, max) => (typeof v === "string" && v.length <= max ? v : undefined);
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 const int = (v) => Math.round(num(v));
 
 /** `@scope/name/sub` -> `@scope/name`, `name/sub` -> `name`; paths and `cordis:` rows -> undefined. */
-function packageOf(specifier) {
-  if (typeof specifier !== "string" || specifier === "" || /^(\.|\/|file:|cordis:|[A-Za-z]:)/.test(specifier)) return undefined;
-  const parts = specifier.split("/");
-  return specifier.startsWith("@") ? (parts.length >= 2 ? `${parts[0]}/${parts[1]}` : undefined) : parts[0];
-}
-
 function cachePath() {
   const home = process.env.DSH_HOME?.trim() || join(homedir(), ".dsh");
   return join(home, "cache", "dsh-go-bridge", "occupancy.json");
@@ -221,20 +215,7 @@ function installFallbackGuard(webCtx, open) {
 }
 
 function packageList(ctx, graph) {
-  const packages = new Map();
-  for (const entry of graph?.entries ?? []) {
-    if (typeof entry?.id === "string") packages.set(entry.id, { name: entry.id, hasClient: true, rev: entry.rev ?? null, official: isOfficial(entry.id) });
-  }
-  try {
-    for (const entry of ctx.get("loader")?.entries() ?? []) {
-      if (entry.disabled || entry.fiber === undefined) continue;
-      const pkg = packageOf(entry.options?.name);
-      if (pkg !== undefined && !packages.has(pkg)) packages.set(pkg, { name: pkg, hasClient: false, rev: null, official: isOfficial(pkg) });
-    }
-  } catch (error) {
-    ctx.logger?.warn?.(error);
-  }
-  return [...packages.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return packageInventory(() => ctx.get("loader")?.entries(), graph, (error) => ctx.logger?.warn?.(error));
 }
 
 export function apply(ctx, config) {
@@ -324,7 +305,7 @@ export function apply(ctx, config) {
         // graph a page loaded now would boot (they differ after a plugin change -> probe).
         ...(occupancy === undefined ? {} : { bootRev: occupancy.bootRev }),
         currentRev,
-        packages: packageList(webCtx, graph),
+        ...packageList(webCtx, graph),
         slots: occupancy === undefined ? null : occupancy.slots,
         occupancy: occupancy === undefined ? null : {
           reportedAt: occupancy.reportedAt,

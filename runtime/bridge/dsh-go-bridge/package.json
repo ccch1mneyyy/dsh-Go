@@ -13,6 +13,7 @@
     "lib/index.js",
     "lib/plugin-config.js",
     "lib/config-source.js",
+    "lib/inventory.js",
     "lib/client.js",
     "lib/native/*.js",
     "cordis.patch.yml"
