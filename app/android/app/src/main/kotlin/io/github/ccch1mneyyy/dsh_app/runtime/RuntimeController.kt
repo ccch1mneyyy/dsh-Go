@@ -812,7 +812,7 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         try {
             logFile.parentFile?.mkdirs()
             if (logFile.length() > MAX_LOG_BYTES) logFile.renameTo(File(logFile.path + ".1"))
-            logFile.appendText(line + "\n")
+            logFile.appendText(LogStamp.fileLine(line, System.currentTimeMillis()) + "\n")
         } catch (_: Exception) {
         }
     }
