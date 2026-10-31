@@ -528,6 +528,19 @@ class _MarkdownBodyState extends State<MarkdownBody> {
   // can rebuild its parent without rescanning the unchanged Markdown.
   late String _source = MarkdownBody.prepareSource(widget.text, streaming: widget.streaming);
 
+  /// 这棵树里有没有 ProviderScope。只在依赖变化时向上找一次 —— 正文随流式
+  /// 每 32ms 重建一次，不必每次都走一遍 InheritedWidget 的查找。
+  ///
+  /// ProviderScope 挂在应用根上，装好之后不会中途消失，所以缓存到下一次
+  /// didChangeDependencies 为止是安全的。
+  bool _scoped = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scoped = _hasProviderScope(context);
+  }
+
   @override
   void didUpdateWidget(MarkdownBody oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -574,7 +587,7 @@ class _MarkdownBodyState extends State<MarkdownBody> {
     );
 
     // Golden 和几何测试不套 ProviderScope:那时按默认那一档画。
-    Widget markdown = _hasProviderScope(context)
+    Widget markdown = _scoped
         ? Consumer(builder: (context, ref, _) => withTint(ref.watch(tableTintProvider)))
         : withTint(TableTint.follow);
     // 表格、成块公式横向放不下时,两端淡出提示还能横滑。
