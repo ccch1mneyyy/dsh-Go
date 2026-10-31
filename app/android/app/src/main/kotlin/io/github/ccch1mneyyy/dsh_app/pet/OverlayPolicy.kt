@@ -129,6 +129,8 @@ data class PetPush(
     val canStop: Boolean = false,
     /** The hosts 切换主机 offers; empty with only one. */
     val hosts: List<PetHost> = emptyList(),
+    /** Live phase, separate from expiring result/request alerts. */
+    val progress: PetBubble? = null,
 ) {
     /** Idle and asleep play a still frame with an occasional action; the rest plays at full speed. */
     val calm: Boolean get() = state == PetPack.IDLE || state == SLEEPING || state == ROAM
@@ -186,6 +188,13 @@ data class PetPush(
                     val h = raw as? Map<*, *> ?: return@mapNotNull null
                     val ref = (h["ref"] as? String)?.takeIf { it.length <= 2_000 } ?: return@mapNotNull null
                     PetHost(ref, clean(h["label"] as? String, MAX_TITLE) ?: return@mapNotNull null, h["current"] == true)
+                },
+                progress = (m["progress"] as? Map<*, *>)?.let { raw ->
+                    val text = clean(raw["text"] as? String, MAX_TEXT) ?: return@let null
+                    val target = raw["target"] as? Map<*, *>
+                    val session = clean(target?.get("sessionId") as? String, MAX_ID)
+                    val host = (target?.get("host") as? String)?.takeIf { it.length <= 2_000 }
+                    PetBubble("progress|$host|$session|$text", "progress", text, null, session, host, Long.MAX_VALUE)
                 },
             )
         }
@@ -372,12 +381,13 @@ class OverlayMachine {
         if (appForeground) return hidden("app on screen")
         if (snoozed(now)) return hidden("snoozed", wakeAt = snoozedUntil)
 
-        val bubble = bubbles.current(now)
+        val alert = bubbles.current(now)
+        val bubble = if (push.quiet) null else alert ?: push.progress
         val recent = lastActiveAt > 0 && now - lastActiveAt < IDLE_COLLAPSE_MS
         if (!(alwaysShow || push.active || bubble != null || recent || holding)) return hidden("nothing going on")
 
         val wakeAt = listOfNotNull(
-            bubble?.untilMs,
+            alert?.untilMs,
             if (!alwaysShow && !push.active && lastActiveAt > 0) lastActiveAt + IDLE_COLLAPSE_MS else null,
         ).minOrNull()
         if (phoneTask) return hidden("phone task", keepAlive = true, wakeAt = wakeAt)

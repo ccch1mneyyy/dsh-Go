@@ -16,6 +16,30 @@ class OverlayMachineTest {
 
     private fun bubble(id: String, until: Long) = PetBubble(id, "done", "做完了", "修复登录", "s1", null, until)
 
+    @Test fun progressStaysVisibleButResultsTakePriorityUntilTheyExpire() {
+        val progress = PetBubble("progress:s1:thinking", "progress", "正在思考", null, "s1", "local", Long.MAX_VALUE)
+        val m = ready()
+        m.onPush(push("thinking").copy(progress = progress), t0)
+        assertEquals(progress, m.decide(t0 + 1).bubble)
+        assertFalse(m.decide(t0 + dim * 2).dimmed)
+        val later = t0 + dim * 2
+        val result = bubble("done", later + 100)
+        m.onPush(push("working", bubble = result).copy(progress = progress), later + 10)
+        assertEquals(result, m.decide(later + 20).bubble)
+        assertEquals(progress, m.decide(later + 101).bubble)
+        m.onPush(push("idle"), later + 102)
+        assertNull(m.decide(later + 103).bubble)
+    }
+
+    @Test fun quietModeAndProducerResetClearProgress() {
+        val progress = PetBubble("p", "progress", "Thinking", null, "s1", null, Long.MAX_VALUE)
+        val m = ready()
+        m.onPush(push("thinking").copy(progress = progress, quiet = true), t0)
+        assertNull(m.decide(t0 + 1).bubble)
+        m.resetProducer()
+        assertNull(m.decide(t0 + 2).bubble)
+    }
+
     /** Enabled, permitted, pack loaded, app in the background, nothing going on. */
     private fun ready(): OverlayMachine = OverlayMachine().apply {
         enabled = true

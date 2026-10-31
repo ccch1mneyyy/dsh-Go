@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'overlay_channel.dart';
 import 'pet_overlay_actions.dart';
+import 'pet_progress.dart';
 import 'pet_signals.dart';
 import 'pet_state.dart';
 import 'pet_voice_dialog.dart';
@@ -16,12 +17,16 @@ final petOverlayPushProvider = Provider<Future<void> Function(PetState state)>(
   (ref) => ref.watch(petOverlayChannelProvider).push,
 );
 
+final petOverlayStateProvider = Provider<PetState>(
+  (ref) => ref.watch(petStateProvider).withProgress(ref.watch(petProgressProvider)),
+);
+
 /// Watch it to keep the overlay fed: pushes the state on start and on every
 /// change (equal states are not pushed twice). Failures are dropped: no
 /// native side in tests, or the overlay is off.
 final petOverlayBridgeProvider = Provider<void>((ref) {
   ref.watch(petOverlayActionBridgeProvider);
-  ref.listen<PetState>(petStateProvider, (previous, next) {
+  ref.listen<PetState>(petOverlayStateProvider, (previous, next) {
     if (previous == next) return;
     final push = ref.read(petOverlayPushProvider);
     unawaited(() async {

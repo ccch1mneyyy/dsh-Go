@@ -1,4 +1,8 @@
 {
+  "statePetThinking": "正在思考",
+  "statePetWriting": "正在生成回复",
+  "statePetCallingTool": "正在调用：{tool}",
+  "@statePetCallingTool": {"placeholders": {"tool": {"type": "String"}}},
   "stateDiagnosticsSubject": "DSH Go 诊断包",
   "stateStoragePermission": "没有存储权限，存不进「下载」",
   "stateDiagnosticsStorageFull": "存储空间不足，没能生成诊断包",

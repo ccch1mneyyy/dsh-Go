@@ -309,7 +309,6 @@ class RunPulse extends ChangeNotifier {
 /// 读过 [events] 之后是否还在压缩上下文:最后一个 `compaction/start` 之后
 /// 既没有 `compaction/end`,也没有 `turn/end`(崩溃留下的半截括号会被下一个
 /// 结束的轮次收掉)。[merge] 为 false 时从头算(新快照),否则接着 [current]。
-@visibleForTesting
 DateTime? compactingAfter(Iterable<SessionLogEvent> events, DateTime? current, bool merge) {
   var since = merge ? current : null;
   for (final event in events) {
