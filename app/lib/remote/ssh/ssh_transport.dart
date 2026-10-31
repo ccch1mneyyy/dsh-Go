@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:typed_data';
 
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../l10n/l10n.dart';
 import '../link_status.dart';
@@ -122,6 +122,18 @@ const _sshCipherProfile = String.fromEnvironment('DSH_SSH_CIPHER', defaultValue:
 SSHAlgorithms sshClientAlgorithms({String profile = _sshCipherProfile}) =>
     profile == 'legacy' ? const SSHAlgorithms() : const SSHAlgorithms(cipher: sshCipherPreference);
 
+/// `--dart-define=DSH_SSH_TRACE=cipher` in a profile build prints the
+/// negotiated kex, cipher and MAC once per key exchange. Never in release.
+const _sshTrace = String.fromEnvironment('DSH_SSH_TRACE');
+const _traceNegotiation = !kReleaseMode && _sshTrace == 'cipher';
+
+/// Keeps only what a perf A/B needs to read; passing null otherwise keeps
+/// dartssh2's per-packet debug callbacks from costing anything.
+void _printNegotiation(String? line) {
+  if (line == null) return;
+  if (line.contains('CipherType') || line.contains('MacType')) debugPrint('dsh-ssh $line');
+}
+
 /// dartssh2-backed transport.
 class DartSshTransport implements SshTransport {
   DartSshTransport._(this._client);
@@ -155,6 +167,7 @@ class DartSshTransport implements SshTransport {
       username: params.username,
       identities: identities,
       algorithms: sshClientAlgorithms(),
+      printDebug: _traceNegotiation ? _printNegotiation : null,
       onPasswordRequest: params.auth == SshAuthMethod.password ? () => params.secrets.password : null,
       // Keyboard-interactive servers ask for the same password.
       onUserInfoRequest: params.auth == SshAuthMethod.password
