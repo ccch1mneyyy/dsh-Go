@@ -1,6 +1,6 @@
 // Portions derived from PiPilot (https://github.com/CikeSeven/pi_pilot), MIT, Copyright (c) 2026 CikeSeven. See THIRD_PARTY_NOTICES.md.
 // Local changes: a glass bottom sheet fed by `session/modelCatalog`, with a
-// channel filter, model cards and a capsule effort selector.
+// channel filter, model search, model cards and a capsule effort selector.
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -16,6 +16,7 @@ import '../../state/settings_state.dart';
 import '../common/app_sheet.dart';
 import '../common/empty_view.dart';
 import '../common/pressable.dart';
+import '../common/search_capsule.dart';
 import '../common/segmented_pill.dart';
 import '../common/sheet_title_bar.dart';
 import '../common/smooth_size.dart';
@@ -351,6 +352,8 @@ Future<void> showModelSheet(
 ///                    ───
 ///   选择模型                               (×)
 ///
+///   ( 搜索模型                            )
+///
 ///   ((  DeepSeek  )   OpenRouter            )    渠道多于一个时
 ///
 ///   ╭──────────────────────────────────────╮
@@ -366,7 +369,7 @@ Future<void> showModelSheet(
 ///   (( 不思考 )  低      ( 高 )     最高   )
 /// ```
 ///
-/// 渠道条只是筛选,不改当前选择;打开时停在当前模型所在的渠道。
+/// 渠道条和搜索只筛选,不改当前选择;打开时停在当前模型所在的渠道。
 class _ModelSheet extends ConsumerStatefulWidget {
   const _ModelSheet({required this.current, required this.onSelected});
 
@@ -383,13 +386,28 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
   /// The channel being browsed; null follows the selected model's.
   String? _channel;
 
+  final _search = TextEditingController();
+  final _scroll = ScrollController();
+  String _query = '';
+
   /// Closes the sheet once the effort thumb has landed.
   Timer? _close;
 
   @override
   void dispose() {
     _close?.cancel();
+    _search.dispose();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  void _resetScroll() {
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  void _searchModels(String value) {
+    setState(() => _query = value.trim().toLowerCase());
+    _resetScroll();
   }
 
   void _pickModel(ModelInfo model) {
@@ -404,6 +422,7 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
       model: model.id,
       reasoningEffort: supported ? keep : startingEffort(model),
     );
+    FocusScope.of(context).unfocus();
     setState(() {
       _selection = next;
       _channel = model.provider;
@@ -434,9 +453,11 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
     final catalogAsync = ref.watch(modelCatalogProvider);
     final view = ref.watch(modelListViewProvider);
     final catalog = view.value;
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final inlineControls = keyboard > 0 && MediaQuery.orientationOf(context) == Orientation.landscape;
 
     final Widget body;
-    var picking = false;
+    Widget? controls;
     if (catalog == null) {
       body = catalogAsync.isLoading
           ? const _Loading()
@@ -468,23 +489,44 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
           failure: catalog.failures.isEmpty ? null : catalog.failures.first.message,
         );
       } else {
-        picking = true;
-        body = _picker(groups, findModel(catalog, _selection), readOnly: view.readOnly);
+        final selected = findModel(catalog, _selection);
+        final shownId = _channel ?? selected?.provider;
+        final shown = groups.firstWhere((g) => g.id == shownId, orElse: () => groups.first);
+        controls = _searchControls(groups, shown, inline: inlineControls);
+        body = _picker(shown, selected, readOnly: view.readOnly);
       }
     }
 
     final sheet = SafeArea(
       top: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SheetTitleBar(catalog == null ? l10n.viewModelSelect : readListHeading(l10n.viewModelSelect, view.status)),
-            body,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: keyboard),
+        child: CustomScrollView(
+          controller: _scroll,
+          shrinkWrap: true,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
+            if (controls == null || !inlineControls)
+              SliverToBoxAdapter(
+                child: SheetTitleBar(
+                  catalog == null ? l10n.viewModelSelect : readListHeading(l10n.viewModelSelect, view.status),
+                ),
+              ),
+            if (controls != null)
+              PinnedHeaderSliver(
+                child: ColoredBox(
+                  // Pinned controls cover model cards scrolling underneath.
+                  color: DshSurfaces.of(context).sheet.fallbackFill.withValues(alpha: 1),
+                  child: controls,
+                ),
+              ),
+            SliverToBoxAdapter(child: body),
             // 「管理模型 ›」: 设置 › 模型, over the sheet (back returns here).
-            if (picking) ...[const SizedBox(height: 12), const ManageModelsLink()],
+            if (controls != null)
+              const SliverToBoxAdapter(
+                child: Padding(padding: EdgeInsets.only(top: 12), child: ManageModelsLink()),
+              ),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 20)),
           ],
         ),
       ),
@@ -492,24 +534,63 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
     return UiTrace(scope: 'models', child: sheet);
   }
 
-  Widget _picker(List<ProviderGroup> groups, ModelInfo? selected, {required bool readOnly}) {
-    final shownId = _channel ?? selected?.provider;
-    final shown = groups.firstWhere((g) => g.id == shownId, orElse: () => groups.first);
+  Widget _searchControls(List<ProviderGroup> groups, ProviderGroup shown, {required bool inline}) => Flex(
+    direction: inline ? Axis.horizontal : Axis.vertical,
+    crossAxisAlignment: inline ? CrossAxisAlignment.center : CrossAxisAlignment.stretch,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Flexible(
+        flex: inline ? 1 : 0,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(SheetTitleBar.inset, 4, inline ? 0 : SheetTitleBar.inset, inline ? 4 : 12),
+          child: SearchCapsule(
+            controller: _search,
+            hint: context.l10n.engineProviderSearchModels,
+            onChanged: _searchModels,
+            onClear: () {
+              _search.clear();
+              _searchModels('');
+            },
+          ),
+        ),
+      ),
+      Flexible(
+        flex: inline ? 1 : 0,
+        child: groups.length > 1
+            ? Padding(
+                padding: EdgeInsets.only(top: 4, bottom: inline ? 4 : 16),
+                child: _ChannelBar(
+                  groups: groups,
+                  shown: shown.id,
+                  onChanged: (id) {
+                    setState(() => _channel = id);
+                    _resetScroll();
+                  },
+                ),
+              )
+            : SheetSectionLabel(shown.name),
+      ),
+    ],
+  );
+
+  Widget _picker(ProviderGroup shown, ModelInfo? selected, {required bool readOnly}) {
     final efforts = selected?.efforts ?? const <ReasoningEffort>[];
     final quick = AppMotion.of(context, AppMotion.quick);
     const inset = SheetTitleBar.inset;
+    final visible = _query.isEmpty
+        ? shown.models
+        : [
+            for (final model in shown.models)
+              if (model.id.toLowerCase().contains(_query) ||
+                  model.name.toLowerCase().contains(_query) ||
+                  shortModelName(model.name).toLowerCase().contains(_query))
+                model,
+          ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (groups.length > 1)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 16),
-            child: _ChannelBar(groups: groups, shown: shown.id, onChanged: (id) => setState(() => _channel = id)),
-          )
-        else
-          SheetSectionLabel(shown.name),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: inset),
           child: SmoothSize(
@@ -520,14 +601,29 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
               duration: quick,
               switchInCurve: AppMotion.enter,
               switchOutCurve: AppMotion.exit,
-              layoutBuilder: (current, previous) =>
-                  Stack(alignment: Alignment.topCenter, children: [...previous, ?current]),
-              child: _ModelList(
-                key: ValueKey(shown.id),
-                models: shown.models,
-                selected: selected,
-                onPick: readOnly ? null : _pickModel,
+              layoutBuilder: (current, previous) => Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  for (final old in previous) ExcludeSemantics(child: IgnorePointer(child: old)),
+                  ?current,
+                ],
               ),
+              child: visible.isEmpty
+                  ? Padding(
+                      key: ValueKey('empty-${shown.id}'),
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Text(
+                        context.l10n.engineProviderNoMatchingModels,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    )
+                  : _ModelList(
+                      key: ValueKey(shown.id),
+                      models: visible,
+                      selected: selected,
+                      onPick: readOnly ? null : _pickModel,
+                    ),
             ),
           ),
         ),

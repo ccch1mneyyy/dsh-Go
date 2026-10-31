@@ -11,9 +11,11 @@ import 'package:dsh_app/ui/chat/empty_state.dart';
 import 'package:dsh_app/ui/chat/model_sheet.dart';
 import 'package:dsh_app/ui/chat/widgets/whale_tail.dart';
 import 'package:dsh_app/ui/common/app_sheet.dart';
+import 'package:dsh_app/ui/common/search_capsule.dart';
 import 'package:dsh_app/ui/common/segmented_pill.dart';
 import 'package:dsh_app/ui/common/sheet_title_bar.dart';
 import 'package:dsh_app/ui/theme/theme.dart';
+import 'package:dsh_app/ui/theme/app_icons.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -100,6 +102,8 @@ Future<ChatHarness> _openSheet(
 }
 
 Finder _card(String name) => find.ancestor(of: find.text(name), matching: find.byType(GlassSurface)).first;
+
+Finder get _searchField => find.descendant(of: find.byType(SearchCapsule), matching: find.byType(TextField));
 
 ModelSelection? _picked(WidgetTester tester, ChatHarness harness) {
   final container = ProviderScope.containerOf(tester.element(find.byType(ChatScreen)));
@@ -303,6 +307,94 @@ void main() {
     });
   });
 
+  group('search', () {
+    testWidgets('a filtered-out card cannot be picked during its exit animation', (tester) async {
+      final harness = await _openSheet(
+        tester,
+        _harness(
+          multiCatalog,
+          model: const ModelSelection(provider: 'deepseek-official', model: 'deepseek-v4-pro'),
+        ),
+      );
+      await tester.enterText(_searchField, 'no-such-model');
+      await tester.pump();
+      expect(find.text('没有匹配的模型'), findsOneWidget);
+      await tester.tapAt(tester.getCenter(_card('V41 Flash')));
+      await pumpFrames(tester, 6);
+      expect(harness.controllers['s1']!.models, isEmpty);
+    });
+
+    testWidgets('matches names, displayed short names and IDs, ignoring case and outer spaces', (tester) async {
+      await _openSheet(tester, _harness(multiCatalog));
+      for (final query in ['  DEEPSEEK-V4-PRO  ', 'v4 pro']) {
+        await tester.enterText(_searchField, query);
+        await pumpFrames(tester, 6);
+        expect(find.text('V4 Pro'), findsOneWidget);
+        expect(find.text('V41 Flash'), findsNothing);
+      }
+      await tester.tap(find.text('OpenRouter'));
+      await pumpFrames(tester, 6);
+      for (final query in ['EXTENDED CONTEXT', ' QWEN/QWEN3-CODER ']) {
+        await tester.enterText(_searchField, query);
+        await pumpFrames(tester, 6);
+        expect(find.text(_longModelName), findsOneWidget);
+        expect(find.text('Kimi K2'), findsNothing);
+        expect(find.text('GLM 4.6'), findsNothing);
+      }
+    });
+
+    testWidgets('keeps the query across channels without changing the selected model', (tester) async {
+      final harness = await _openSheet(
+        tester,
+        _harness(
+          multiCatalog,
+          model: const ModelSelection(provider: 'openrouter', model: 'z-ai/glm-4.6'),
+        ),
+      );
+      await tester.enterText(_searchField, 'qwen');
+      await pumpFrames(tester, 6);
+      await tester.tap(find.text('DeepSeek'));
+      await pumpFrames(tester, 6);
+      expect(find.text('没有匹配的模型'), findsOneWidget);
+      expect(tester.widget<TextField>(_searchField).controller!.text, 'qwen');
+      expect(harness.controllers['s1']!.models, isEmpty);
+      await tester.tap(find.text('OpenRouter'));
+      await pumpFrames(tester, 6);
+      expect(find.text(_longModelName), findsOneWidget);
+      await tester.tap(_card(_longModelName));
+      await pumpFrames(tester, 4);
+      expect(_picked(tester, harness)!.model, 'qwen/qwen3-coder');
+      expect(harness.controllers['s1']!.models, hasLength(1));
+    });
+
+    testWidgets('clearing a no-match query restores the provider list', (tester) async {
+      await _openSheet(tester, _harness(multiCatalog));
+      await tester.enterText(_searchField, 'no-such-model');
+      await pumpFrames(tester, 6);
+      expect(find.text('没有匹配的模型'), findsOneWidget);
+      await tester.tap(find.descendant(of: find.byType(SearchCapsule), matching: find.byIcon(AppIcons.clear)));
+      await pumpFrames(tester, 6);
+      expect(tester.widget<TextField>(_searchField).controller!.text, isEmpty);
+      expect(find.text('没有匹配的模型'), findsNothing);
+      expect(find.text('V4 Pro'), findsOneWidget);
+      expect(find.text('V41 Flash'), findsOneWidget);
+      expect(find.text(_longModelName), findsNothing);
+    });
+
+    testWidgets('reopening starts with an empty query', (tester) async {
+      await _openSheet(tester, _harness(multiCatalog));
+      await tester.enterText(_searchField, 'no-such-model');
+      await pumpFrames(tester, 6);
+      await tester.binding.handlePopRoute();
+      await pumpFrames(tester, 6);
+      await tester.tap(find.byType(ModelChip));
+      await pumpFrames(tester, 8);
+      expect(tester.widget<TextField>(_searchField).controller!.text, isEmpty);
+      expect(find.text('V4 Pro'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('geometry', () {
     for (final scale in [1.0, 1.3]) {
       testWidgets('20 in from both sides, full-width cards (text ×$scale)', (tester) async {
@@ -348,6 +440,23 @@ void main() {
     final suffix = brightness == Brightness.dark ? 'dark' : 'light';
 
     group('goldens ($suffix)', () {
+      for (final (query, name) in [('qwen', 'search'), ('no-such-model', 'search_empty')]) {
+        testWidgets(name, (tester) async {
+          await _openSheet(
+            tester,
+            _harness(
+              multiCatalog,
+              model: const ModelSelection(provider: 'openrouter', model: 'z-ai/glm-4.6'),
+            ),
+            brightness: brightness,
+          );
+          await tester.enterText(_searchField, query);
+          FocusManager.instance.primaryFocus?.unfocus();
+          await pumpFrames(tester, 8);
+          await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/model_sheet_${name}_$suffix.png'));
+        });
+      }
+
       testWidgets('two channels, effort shown', (tester) async {
         await _openSheet(
           tester,

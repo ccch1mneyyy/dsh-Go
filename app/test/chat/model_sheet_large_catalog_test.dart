@@ -6,6 +6,7 @@ import 'package:dsh_app/ui/chat/chat_screen.dart';
 import 'package:dsh_app/ui/chat/empty_state.dart';
 import 'package:dsh_app/ui/chat/model_sheet.dart';
 import 'package:dsh_app/ui/chat/widgets/whale_tail.dart';
+import 'package:dsh_app/ui/common/search_capsule.dart';
 import 'package:dsh_app/ui/theme/theme.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/test_fonts.dart' show withTestFonts;
+import '../landscape/support.dart' show Win, phoneLeft, setKeyboard, useWin;
 import 'support/harness.dart';
 
 const _names = [
@@ -57,6 +59,8 @@ final _catalog = ModelCatalog(
 );
 
 Finder _card(int index) => find.byKey(ValueKey('ac\u0000preview-$index'));
+
+Finder get _searchField => find.descendant(of: find.byType(SearchCapsule), matching: find.byType(TextField));
 
 Finder get _scrollable => find.descendant(
   of: find.byType(BottomSheet),
@@ -123,7 +127,52 @@ void main() {
     });
   }
 
-  testWidgets('golden 60 models without descriptions: top, middle and bottom', (tester) async {
+  testWidgets('search and provider controls stay reachable after scrolling a long list', (tester) async {
+    final harness = await _open(tester);
+    await tester.scrollUntilVisible(_card(29), 500, scrollable: _scrollable);
+    await pumpFrames(tester, 4);
+    final pinnedTop = tester.getTopLeft(find.byType(SearchCapsule)).dy;
+    await tester.scrollUntilVisible(find.byType(ManageModelsLink), 500, scrollable: _scrollable);
+    await pumpFrames(tester, 4);
+    expect(tester.getTopLeft(find.byType(SearchCapsule)).dy, moreOrLessEquals(pinnedTop));
+    expect(_searchField.hitTestable(), findsOneWidget);
+    expect(find.text('ac').hitTestable(), findsOneWidget);
+    await tester.enterText(_searchField, 'PREVIEW-59');
+    await pumpFrames(tester, 6);
+    expect(_card(0), findsNothing);
+    expect(_card(59).hitTestable(), findsOneWidget);
+    await tester.tap(_card(59));
+    await pumpFrames(tester, 4);
+    expect(harness.controllers['s1']!.models.last.model, 'preview-59');
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final win in [const Win('portrait', Size(390, 864), top: 40, bottom: 20), phoneLeft]) {
+    testWidgets('search stays above the keyboard with large text (${win.name})', (tester) async {
+      final harness = await _open(tester, scale: 1.3);
+      const keyboard = 200.0;
+      useWin(tester, win);
+      await pumpFrames(tester, 6);
+      await tester.enterText(_searchField, 'pre');
+      setKeyboard(tester, win, keyboard);
+      await pumpFrames(tester, 4);
+      final editable = find.descendant(of: _searchField, matching: find.byType(EditableText));
+      expect(tester.widget<EditableText>(editable).focusNode.hasFocus, isTrue);
+      tester.testTextInput.enterText('PREVIEW-59');
+      await pumpFrames(tester, 8);
+      final field = tester.getRect(_searchField);
+      expect(field.bottom, lessThanOrEqualTo(win.size.height - keyboard));
+      expect(_searchField.hitTestable(), findsOneWidget);
+      expect(find.text('ac').hitTestable(), findsOneWidget);
+      expect(_card(59).hitTestable(), findsOneWidget);
+      await tester.tap(_card(59));
+      await pumpFrames(tester, 4);
+      expect(harness.controllers['s1']!.models.last.model, 'preview-59');
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('golden 60 models without descriptions: top, middle, bottom and search', (tester) async {
     await _open(tester);
     final viewport = tester.getRect(_scrollable);
     final fullyVisible = List.generate(60, _card).where((finder) {
@@ -142,6 +191,10 @@ void main() {
     await pumpFrames(tester, 4);
     expect(find.byType(ManageModelsLink).hitTestable(), findsOneWidget);
     await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/model_sheet_large_bottom_dark.png'));
+    await tester.enterText(_searchField, 'Nano Banana');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await pumpFrames(tester, 8);
+    await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/model_sheet_large_search_dark.png'));
     expect(tester.takeException(), isNull);
   });
 }

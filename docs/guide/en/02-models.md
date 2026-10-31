@@ -10,6 +10,7 @@ Tap the model capsule at the top right of a chat to open **Choose model**:
 
 - With several providers, pick a provider at the top, then a model. Switching providers alone doesn't change the current model.
 - Model cards form a single column, with long names wrapping onto more lines. Scroll down to see the remaining models.
+- Use **Search models** to filter the current provider by name or model ID, ignoring case. You can search or switch providers while scrolling. Switching providers keeps the query. Clear it to see all models in the current provider.
 - Tapping a model takes effect at once. If the model has more than one level, **Thinking effort** appears below.
 
 Typing `/model` in the composer opens it too.
