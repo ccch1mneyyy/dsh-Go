@@ -7,10 +7,10 @@ import '../chat/render/markdown_body.dart';
 import '../../state/connection_state.dart';
 import '../../ui_config/ui_config_source.dart';
 
-/// A read-only native view of the shared dsh-mesh memory directory.
+/// Native, read-only view of the shared dsh-mesh memory.
 ///
 /// The host writes a small manifest to `$DSH_HOME/dsh-go/dsh-mesh.json`;
-/// this page reads that manifest and individual Markdown files through
+/// this page reads that manifest and the individual Markdown files through
 /// `workspaceFiles/read`, so it works for local and DSH Remote hosts without
 /// the dsh-go bridge.
 class MemoryPage extends ConsumerStatefulWidget {
@@ -23,18 +23,29 @@ class MemoryPage extends ConsumerStatefulWidget {
 }
 
 class _MemoryFile {
-  const _MemoryFile({required this.path, required this.title, required this.kind, required this.size});
+  const _MemoryFile({
+    required this.path,
+    required this.title,
+    required this.kind,
+    required this.size,
+    required this.description,
+    this.updatedAt,
+  });
 
   final String path;
   final String title;
   final String kind;
   final int size;
+  final String description;
+  final DateTime? updatedAt;
 
   factory _MemoryFile.fromJson(Map<String, dynamic> json) => _MemoryFile(
     path: '${json['path'] ?? ''}',
     title: '${json['title'] ?? json['path'] ?? ''}',
     kind: '${json['kind'] ?? ''}',
     size: (json['size'] as num?)?.toInt() ?? 0,
+    description: '${json['description'] ?? ''}',
+    updatedAt: DateTime.tryParse('${json['updatedAt'] ?? ''}'),
   );
 }
 
@@ -151,6 +162,8 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const Icon(Icons.cloud_off_outlined, size: 40),
+              const SizedBox(height: 12),
               Text('还读不到共享记忆', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Text(_error!, textAlign: TextAlign.center),
@@ -172,48 +185,24 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       sections.putIfAbsent(_sectionOf(file.path), () => []).add(file);
     }
 
-    final rows = <Widget>[
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-        child: Text('${manifest.files.length} 条 · ${manifest.device}', style: Theme.of(context).textTheme.bodySmall),
-      ),
+    final content = <Widget>[
+      _Hero(manifest: manifest),
+      for (final title in order)
+        if (sections[title] case final files? when files.isNotEmpty)
+          _SectionCard(
+            title: title,
+            files: files,
+            icon: _sectionIcon(title),
+            color: _sectionColor(context, title),
+            onOpen: _open,
+            titleOf: _displayTitle,
+          ),
+      const SizedBox(height: 28),
     ];
-    for (final title in order) {
-      final files = sections[title];
-      if (files == null || files.isEmpty) continue;
-      rows.add(
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Row(
-            children: [
-              Icon(_sectionIcon(title), size: 18),
-              const SizedBox(width: 8),
-              Text(title, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(width: 6),
-              Text('${files.length}', style: Theme.of(context).textTheme.bodySmall),
-            ],
-          ),
-        ),
-      );
-      for (final file in files) {
-        rows.add(
-          ListTile(
-            dense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            leading: Icon(_iconFor(file.path)),
-            title: Text(_displayTitle(file)),
-            subtitle: Text(file.path, maxLines: 1, overflow: TextOverflow.ellipsis),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _open(file),
-          ),
-        );
-      }
-      rows.add(const Divider(height: 1));
-    }
 
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView(children: rows),
+      child: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 24), children: content),
     );
   }
 
@@ -240,8 +229,11 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       case '技能':
         return Icons.extension_outlined;
       case '事实':
+        return Icons.lightbulb_outline;
       case '决策':
+        return Icons.alt_route_outlined;
       case '项目':
+        return Icons.work_outline;
       case '记忆库':
         return Icons.psychology_outlined;
       case '会话摘要':
@@ -251,21 +243,285 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     }
   }
 
-  IconData _iconFor(String path) {
-    if (path == 'AGENTS.shared.md') return Icons.description_outlined;
-    switch (_sectionOf(path)) {
+  Color _sectionColor(BuildContext context, String section) {
+    final scheme = Theme.of(context).colorScheme;
+    switch (section) {
+      case '共享规则':
+        return scheme.tertiary;
       case '技能':
-        return Icons.code_outlined;
-      case '会话摘要':
-        return Icons.chat_outlined;
+        return scheme.primary;
       case '事实':
+        return scheme.secondary;
       case '决策':
+        return scheme.error;
       case '项目':
-      case '记忆库':
-        return Icons.notes_outlined;
+        return scheme.tertiary;
+      case '会话摘要':
+        return scheme.primary;
       default:
-        return Icons.folder_outlined;
+        return scheme.secondary;
     }
+  }
+}
+
+class _Hero extends StatelessWidget {
+  const _Hero({required this.manifest});
+
+  final _MemoryManifest manifest;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final counts = <String, int>{};
+    for (final file in manifest.files) {
+      final section = _sectionOf(file.path);
+      counts[section] = (counts[section] ?? 0) + 1;
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [scheme.primaryContainer.withValues(alpha: 0.9), scheme.surfaceContainerLow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(Icons.auto_awesome_outlined, color: scheme.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('共享记忆', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${manifest.files.length} 条 · ${manifest.device}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.lock_outline, size: 18, color: scheme.onSurfaceVariant.withValues(alpha: 0.7)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final entry in counts.entries)
+                _StatChip(label: entry.key, count: entry.value, color: _sectionColor(context, entry.key)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '只读 · 跨设备同步 · Markdown',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _sectionOf(String path) {
+    if (path == 'AGENTS.shared.md') return '共享规则';
+    if (path.startsWith('skills/')) return '技能';
+    if (path.startsWith('memory/facts/')) return '事实';
+    if (path.startsWith('memory/decisions/')) return '决策';
+    if (path.startsWith('memory/projects/')) return '项目';
+    if (path.startsWith('memory/')) return '记忆库';
+    if (path.startsWith('sessions/')) return '会话摘要';
+    return '其他';
+  }
+
+  Color _sectionColor(BuildContext context, String section) {
+    final scheme = Theme.of(context).colorScheme;
+    switch (section) {
+      case '共享规则':
+        return scheme.tertiary;
+      case '技能':
+        return scheme.primary;
+      case '事实':
+        return scheme.secondary;
+      case '决策':
+        return scheme.error;
+      case '项目':
+        return scheme.tertiary;
+      case '会话摘要':
+        return scheme.primary;
+      default:
+        return scheme.secondary;
+    }
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.label, required this.count, required this.color});
+
+  final String label;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text('$label $count', style: Theme.of(context).textTheme.labelMedium),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.title,
+    required this.files,
+    required this.icon,
+    required this.color,
+    required this.onOpen,
+    required this.titleOf,
+  });
+
+  final String title;
+  final List<_MemoryFile> files;
+  final IconData icon;
+  final Color color;
+  final Future<void> Function(_MemoryFile) onOpen;
+  final String Function(_MemoryFile) titleOf;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.45)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, size: 18, color: color),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${files.length}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.35)),
+            for (var i = 0; i < files.length; i++) ...[
+              _MemoryTile(file: files[i], title: titleOf(files[i]), color: color, onTap: () => onOpen(files[i])),
+              if (i != files.length - 1)
+                Divider(height: 1, indent: 64, color: scheme.outlineVariant.withValues(alpha: 0.28)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MemoryTile extends StatelessWidget {
+  const _MemoryTile({required this.file, required this.title, required this.color, required this.onTap});
+
+  final _MemoryFile file;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final description = file.description.trim();
+    final subtitle = description.isNotEmpty && description != '>' && description != '|' ? description : file.path;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 11, 10, 11),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.09), borderRadius: BorderRadius.circular(11)),
+              child: Icon(Icons.description_outlined, size: 19, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right, size: 20, color: scheme.onSurfaceVariant.withValues(alpha: 0.7)),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -277,21 +533,57 @@ class _MemoryFilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: Text(file.title, overflow: TextOverflow.ellipsis)),
       body: SelectionArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(file.path, style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.45)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      file.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      file.path,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                    if (file.updatedAt != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '更新于 ${_fmtDate(file.updatedAt!)}',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               MarkdownBody(text: text),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _fmtDate(DateTime value) {
+    final local = value.toLocal();
+    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} '
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 }
