@@ -1,0 +1,13 @@
+diff --git a/ohos/src/main/ets/io.flutter.plugins/webview_flutter/WebViewClientHostApiImpl.ets b/ohos/src/main/ets/io.flutter.plugins/webview_flutter/WebViewClientHostApiImpl.ets
+index 4583385..2f53ead 100644
+--- a/ohos/src/main/ets/io.flutter.plugins/webview_flutter/WebViewClientHostApiImpl.ets
++++ b/ohos/src/main/ets/io.flutter.plugins/webview_flutter/WebViewClientHostApiImpl.ets
+@@ -68,7 +68,7 @@ export class WebViewClientImpl implements WebViewClient {
+ 
+   shouldOverrideUrlLoading(view: WebViewPlatformView, request: WebResourceRequest): boolean {
+     this.flutterApi.requestLoadingImpl(this, view, request, this.emptyReply);
+-    return this.returnValueForShouldOverrideUrlLoading;
++    return this.returnValueForShouldOverrideUrlLoading && request.isMainFrame();
+   }
+ 
+   doUpdateVisitedHistory(view: WebViewPlatformView, url: string, isReload: boolean) {

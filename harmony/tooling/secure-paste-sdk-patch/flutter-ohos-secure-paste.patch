@@ -1,0 +1,96 @@
+diff --git a/packages/flutter/lib/src/material/text_field.dart b/packages/flutter/lib/src/material/text_field.dart
+index 5b44b81..0afc16a 100644
+--- a/packages/flutter/lib/src/material/text_field.dart
++++ b/packages/flutter/lib/src/material/text_field.dart
+@@ -24,6 +24,7 @@ import 'debug.dart';
+ import 'desktop_text_selection.dart';
+ import 'input_decorator.dart';
+ import 'magnifier.dart';
++import 'ohos_paste_toolbar.dart';
+ import 'material_localizations.dart';
+ import 'material_state.dart';
+ import 'selectable_text.dart' show iOSHorizontalOffset;
+@@ -917,6 +918,9 @@ class TextField extends StatefulWidget {
+     BuildContext context,
+     EditableTextState editableTextState,
+   ) {
++    if (defaultTargetPlatform == TargetPlatform.ohos && !kIsWeb) {
++      return buildOhosPasteToolbar(context, editableTextState);
++    }
+     if (SystemContextMenu.isSupportedByField(editableTextState)) {
+       return SystemContextMenu.editableText(editableTextState: editableTextState);
+     }
+diff --git a/packages/flutter/lib/src/material/ohos_paste_toolbar.dart b/packages/flutter/lib/src/material/ohos_paste_toolbar.dart
+new file mode 100644
+--- /dev/null
++++ b/packages/flutter/lib/src/material/ohos_paste_toolbar.dart
+@@ -0,0 +1,69 @@
++import 'package:flutter/services.dart';
++import 'package:flutter/widgets.dart';
++
++import 'adaptive_text_selection_toolbar.dart';
++import 'material_localizations.dart';
++import 'text_button.dart';
++
++/// 系统请求独立于临时菜单，原生确认框结束后检查原输入状态。
++Future<void> requestOhosPaste(EditableTextState field) async {
++  if (!field.mounted || field.widget.readOnly) return;
++  final before = field.textEditingValue;
++  if (!before.selection.isValid) return;
++  final text = await const MethodChannel('dsh/secure_paste').invokeMethod<String>('requestPaste');
++  if (!field.mounted || text == null) return;
++  final current = field.textEditingValue;
++  if (current.text != before.text || current.selection != before.selection) return;
++  applyOhosPastedText(field, text);
++}
++
++/// 保留其他菜单动作，只替换可写输入框的粘贴入口。
++Widget buildOhosPasteToolbar(BuildContext context, EditableTextState field) {
++  final items = field.contextMenuButtonItems;
++  final children = AdaptiveTextSelectionToolbar.getAdaptiveButtons(context, items).toList();
++  final pasteIndex = items.indexWhere((item) => item.type == ContextMenuButtonType.paste);
++  final enabled = !field.widget.readOnly && field.textEditingValue.selection.isValid;
++  if (enabled) {
++    final button = OhosSecurePasteButton(onRequest: () => requestOhosPaste(field));
++    if (pasteIndex >= 0) {
++      children[pasteIndex] = button;
++    } else {
++      children.insert(0, button);
++    }
++  }
++  return TextFieldTapRegion(
++    child: AdaptiveTextSelectionToolbar(anchors: field.contextMenuAnchors, children: children),
++  );
++}
++
++/// 仅在真实系统控件成功返回文本后更新选区，继续使用输入格式化器。
++void applyOhosPastedText(EditableTextState field, String text) {
++  if (!field.mounted || field.widget.readOnly || text.isEmpty) return;
++  final value = field.textEditingValue;
++  final selection = value.selection;
++  if (!selection.isValid || selection.end > value.text.length) return;
++  final next = value.copyWith(
++    text: selection.textBefore(value.text) + text + selection.textAfter(value.text),
++    selection: TextSelection.collapsed(offset: selection.start + text.length),
++    composing: TextRange.empty,
++  );
++  field.userUpdateTextEditingValue(next, SelectionChangedCause.toolbar);
++  field.bringIntoView(field.textEditingValue.selection.extent);
++  field.hideToolbar();
++}
++
++/// 这里只打开原生确认框，实际授权仍需用户点击系统PasteButton。
++class OhosSecurePasteButton extends StatelessWidget {
++  const OhosSecurePasteButton({super.key, required this.onRequest});
++  final VoidCallback onRequest;
++
++  @override
++  Widget build(BuildContext context) => SizedBox(
++    width: 96,
++    height: 44,
++    child: TextButton(
++      onPressed: onRequest,
++      child: Text(MaterialLocalizations.of(context).pasteButtonLabel),
++    ),
++  );
++}

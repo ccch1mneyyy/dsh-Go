@@ -1,0 +1,182 @@
+diff --git a/lib/src/adaptive_text_selection_toolbar.dart b/lib/src/adaptive_text_selection_toolbar.dart
+index 4576a1b..2f5ab47 100644
+--- a/lib/src/adaptive_text_selection_toolbar.dart
++++ b/lib/src/adaptive_text_selection_toolbar.dart
+@@ -193,6 +193,7 @@ class CupertinoAdaptiveTextSelectionToolbar extends StatelessWidget {
+     List<ContextMenuButtonItem> buttonItems,
+   ) {
+     switch (defaultTargetPlatform) {
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+       case TargetPlatform.fuchsia:
+       case TargetPlatform.iOS:
+@@ -219,6 +220,7 @@ class CupertinoAdaptiveTextSelectionToolbar extends StatelessWidget {
+         children ?? getAdaptiveButtons(context, buttonItems!).toList();
+ 
+     switch (defaultTargetPlatform) {
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+       case TargetPlatform.iOS:
+       case TargetPlatform.fuchsia:
+diff --git a/lib/src/app.dart b/lib/src/app.dart
+index cc968ea..7d9737e 100644
+--- a/lib/src/app.dart
++++ b/lib/src/app.dart
+@@ -506,6 +506,7 @@ class CupertinoScrollBehavior extends ScrollBehavior {
+       case TargetPlatform.windows:
+         assert(details.controller != null);
+         return CupertinoScrollbar(controller: details.controller, child: child);
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+       case TargetPlatform.fuchsia:
+       case TargetPlatform.iOS:
+diff --git a/lib/src/button.dart b/lib/src/button.dart
+index 62571ad..8491bc1 100644
+--- a/lib/src/button.dart
++++ b/lib/src/button.dart
+@@ -313,7 +313,7 @@ class CupertinoButton extends StatefulWidget {
+   static double tapMoveSlop() {
+     return switch (defaultTargetPlatform) {
+       TargetPlatform.iOS ||
+-      TargetPlatform.android ||
++      TargetPlatform.ohos || TargetPlatform.android ||
+       TargetPlatform.fuchsia => kCupertinoButtonTapMoveSlop,
+       TargetPlatform.macOS || TargetPlatform.linux || TargetPlatform.windows => 0.0,
+     };
+diff --git a/lib/src/checkbox.dart b/lib/src/checkbox.dart
+index 059ad0c..bc36e44 100644
+--- a/lib/src/checkbox.dart
++++ b/lib/src/checkbox.dart
+@@ -438,7 +438,7 @@ class _CupertinoCheckboxState extends State<CupertinoCheckbox>
+         widget.tapTargetSize ??
+         switch (defaultTargetPlatform) {
+           TargetPlatform.iOS ||
+-          TargetPlatform.android ||
++          TargetPlatform.ohos || TargetPlatform.android ||
+           TargetPlatform.fuchsia => const Size.square(kMinInteractiveDimensionCupertino),
+           TargetPlatform.macOS ||
+           TargetPlatform.linux ||
+diff --git a/lib/src/dialog.dart b/lib/src/dialog.dart
+index 8253d30..7a825f6 100644
+--- a/lib/src/dialog.dart
++++ b/lib/src/dialog.dart
+@@ -1667,6 +1667,7 @@ class _ActionSheetButtonBackgroundState extends State<_ActionSheetButtonBackgrou
+   void _emitVibration() {
+     switch (defaultTargetPlatform) {
+       case TargetPlatform.iOS:
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+         HapticFeedback.selectionClick();
+       case TargetPlatform.fuchsia:
+@@ -2176,6 +2177,7 @@ class _AlertDialogButtonBackgroundState extends State<_AlertDialogButtonBackgrou
+   void _emitVibration() {
+     switch (defaultTargetPlatform) {
+       case TargetPlatform.iOS:
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+         HapticFeedback.selectionClick();
+       case TargetPlatform.fuchsia:
+diff --git a/lib/src/expansion_tile.dart b/lib/src/expansion_tile.dart
+index e00dc49..fd6c1f6 100644
+--- a/lib/src/expansion_tile.dart
++++ b/lib/src/expansion_tile.dart
+@@ -185,6 +185,7 @@ class _CupertinoExpansionTileState extends State<CupertinoExpansionTile> {
+         semanticsHint = _tileController.isExpanded
+             ? '${localizations.collapsedHint}\n ${localizations.expansionTileExpandedHint}'
+             : '${localizations.expandedHint}\n ${localizations.expansionTileCollapsedHint}';
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+       case TargetPlatform.fuchsia:
+       case TargetPlatform.linux:
+diff --git a/lib/src/menu_anchor.dart b/lib/src/menu_anchor.dart
+index 211a215..818dd97 100644
+--- a/lib/src/menu_anchor.dart
++++ b/lib/src/menu_anchor.dart
+@@ -34,6 +34,7 @@ bool get _isCupertino {
+     case TargetPlatform.iOS:
+     case TargetPlatform.macOS:
+       return true;
++    case TargetPlatform.ohos:
+     case TargetPlatform.android:
+     case TargetPlatform.fuchsia:
+     case TargetPlatform.linux:
+@@ -2529,6 +2530,7 @@ class _CupertinoMenuItemInteractionHandlerState
+ 
+     switch (defaultTargetPlatform) {
+       case TargetPlatform.iOS:
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+         HapticFeedback.selectionClick();
+       case TargetPlatform.fuchsia:
+diff --git a/lib/src/picker.dart b/lib/src/picker.dart
+index d0d02fd..da735e1 100644
+--- a/lib/src/picker.dart
++++ b/lib/src/picker.dart
+@@ -282,6 +282,7 @@ class _CupertinoPickerState extends State<CupertinoPicker> {
+           HapticFeedback.selectionClick();
+           SystemSound.play(SystemSoundType.tick);
+         }
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+       case TargetPlatform.fuchsia:
+       case TargetPlatform.linux:
+diff --git a/lib/src/slider.dart b/lib/src/slider.dart
+index d3587ab..601d71d 100644
+--- a/lib/src/slider.dart
++++ b/lib/src/slider.dart
+@@ -281,6 +281,7 @@ class _CupertinoSliderState extends State<CupertinoSlider> with TickerProviderSt
+         } else {
+           HapticFeedback.selectionClick();
+         }
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+       case TargetPlatform.fuchsia:
+       case TargetPlatform.linux:
+diff --git a/lib/src/switch.dart b/lib/src/switch.dart
+index f679e70..fd03dce 100644
+--- a/lib/src/switch.dart
++++ b/lib/src/switch.dart
+@@ -700,6 +700,7 @@ class _CupertinoSwitchState extends State<CupertinoSwitch>
+     switch (defaultTargetPlatform) {
+       case TargetPlatform.iOS:
+         HapticFeedback.lightImpact();
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+       case TargetPlatform.fuchsia:
+       case TargetPlatform.linux:
+diff --git a/lib/src/text_field.dart b/lib/src/text_field.dart
+index 88b0830..f8c26b8 100644
+--- a/lib/src/text_field.dart
++++ b/lib/src/text_field.dart
+@@ -1138,6 +1138,7 @@ class CupertinoTextField extends StatefulWidget {
+           ValueNotifier<MagnifierInfo> magnifierInfo,
+         ) {
+           switch (defaultTargetPlatform) {
++            case TargetPlatform.ohos:
+             case TargetPlatform.android:
+             case TargetPlatform.iOS:
+               return CupertinoTextMagnifier(controller: controller, magnifierInfo: magnifierInfo);
+@@ -1321,6 +1322,7 @@ class _CupertinoTextFieldState extends State<CupertinoTextField>
+       case TargetPlatform.linux:
+       case TargetPlatform.windows:
+       case TargetPlatform.fuchsia:
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+         if (cause == SelectionChangedCause.longPress) {
+           _editableText.bringIntoView(selection.extent);
+@@ -1330,6 +1332,7 @@ class _CupertinoTextFieldState extends State<CupertinoTextField>
+     switch (defaultTargetPlatform) {
+       case TargetPlatform.iOS:
+       case TargetPlatform.fuchsia:
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+         break;
+       case TargetPlatform.macOS:
+@@ -1537,6 +1540,7 @@ class _CupertinoTextFieldState extends State<CupertinoTextField>
+     VoidCallback? handleDidLoseAccessibilityFocus;
+     switch (defaultTargetPlatform) {
+       case TargetPlatform.iOS:
++      case TargetPlatform.ohos:
+       case TargetPlatform.android:
+       case TargetPlatform.fuchsia:
+         textSelectionControls ??= cupertinoTextSelectionHandleControls;

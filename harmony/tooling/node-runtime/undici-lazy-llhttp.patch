@@ -1,0 +1,34 @@
+--- a/deps/undici/undici.js
++++ b/deps/undici/undici.js
+@@ -6425,10 +6425,18 @@
+       });
+     }
+     __name(lazyllhttp, "lazyllhttp");
+     var llhttpInstance = null;
+-    var llhttpPromise = lazyllhttp();
+-    llhttpPromise.catch();
++    var llhttpPromise = null;
++    function ensureLlhttp() {
++      if (llhttpPromise === null) {
++        llhttpPromise = lazyllhttp();
++        llhttpPromise.catch(() => {
++        });
++      }
++      return llhttpPromise;
++    }
++    __name(ensureLlhttp, "ensureLlhttp");
+     var currentParser = null;
+     var currentBufferRef = null;
+     var currentBufferSize = 0;
+     var currentBufferPtr = null;
+@@ -6868,9 +6876,9 @@
+       if (!llhttpInstance) {
+         const noop = /* @__PURE__ */ __name(() => {
+         }, "noop");
+         socket.on("error", noop);
+-        llhttpInstance = await llhttpPromise;
++        llhttpInstance = await ensureLlhttp();
+         llhttpPromise = null;
+         socket.off("error", noop);
+       }
+       if (socket.errored) {

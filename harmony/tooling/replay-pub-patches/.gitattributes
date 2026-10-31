@@ -1,0 +1,3 @@
+# 补丁与许可原始字节参与固定hash校验，检出时不得改写换行。
+patches/*.patch -text
+licenses/*.LICENSE -text

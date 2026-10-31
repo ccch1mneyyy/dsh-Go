@@ -1,0 +1,9 @@
+# 仅保留自有源码，排除Flutter与Hvigor生成的工具状态及引擎依赖。
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+ohos/build/
+ohos/oh_modules/
+ohos/BuildProfile.ets
+ohos/oh-package-lock.json5
+ohos/libs/flutter.har

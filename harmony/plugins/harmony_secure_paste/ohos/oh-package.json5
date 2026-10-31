@@ -1,0 +1,9 @@
+{
+  "name": "harmony_secure_paste",
+  "version": "0.0.1",
+  "main": "index.ets",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:libs/flutter.har"
+  }
+}

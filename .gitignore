@@ -27,3 +27,14 @@ site/build/
 
 # Release assets (tooling/release_assets.py)
 /dist/
+# HarmonyOS / Flutter-OH build outputs and local tool state
+app/ohos/entry/build/
+app/ohos/oh_modules/
+app/ohos/.hvigor/
+app/ohos/node_modules/
+app/ohos/local.properties
+app/ohos/entry/src/main/resources/rawfile/flutter_assets/
+harmony/plugins/*/build/
+harmony/plugins/*/.dart_tool/
+harmony/plugins/*/oh_modules/
+**/*.dill

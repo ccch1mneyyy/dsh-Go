@@ -1,0 +1,16 @@
+{
+  "app": {
+    "bundleName": "io.github.xunguangzlj.dshgo.native",
+    "vendor": "DSH Go community",
+    "versionCode": 2,
+    "versionName": "0.2.0",
+    "icon": "$media:dsh_launcher",
+    "alternateIcons": [
+      { "name": "night", "icon": "$media:dsh_launcher_night" },
+      { "name": "frost", "icon": "$media:dsh_launcher_frost" },
+      { "name": "ink", "icon": "$media:dsh_launcher_ink" }
+    ],
+    "label": "$string:app_name"
+  }
+}
+

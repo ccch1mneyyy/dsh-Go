@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "DSH Go 鸿蒙应用"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "DSH Go 主界面"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "DSH Go"
+    }
+  ]
+}

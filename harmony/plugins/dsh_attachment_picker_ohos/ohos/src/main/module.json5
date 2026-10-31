@@ -1,0 +1,7 @@
+{
+  "module": {
+    "name": "dsh_attachment_picker_ohos",
+    "type": "har",
+    "deviceTypes": ["default", "tablet"]
+  }
+}

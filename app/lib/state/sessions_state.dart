@@ -14,7 +14,7 @@ import 'read_list_identity.dart';
 import 'settings_state.dart';
 import 'workspaces_state.dart';
 
-/// Default working directory for sessions created on the phone (inside the rootfs).
+/// 旧运行时未提供实际目录时，保留Android原有的客体默认目录。
 const localWorkspaceDir = '/root/workspace';
 
 class ArchiveCommitResult {
@@ -551,7 +551,7 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
     final created = await createSessionInWorkspace(
       conn.client,
       await workspaceForNewSession(ref),
-      cwd: conn.isLocal ? localWorkspaceDir : conn.workingDirectory,
+      cwd: conn.workingDirectory ?? (conn.isLocal ? localWorkspaceDir : null),
     );
     // Safe mode keeps the default preset: the agent there repairs the engine
     // with a full shell already, and every command should still be asked.

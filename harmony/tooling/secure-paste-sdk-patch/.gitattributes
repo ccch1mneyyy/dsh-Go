@@ -1,0 +1,4 @@
+# hash保护的源码和补丁保留原始字节，不受检出换行设置影响。
+ohos_paste_toolbar.dart -text
+flutter-ohos-secure-paste.patch -text
+flutter-ohos-secure-paste-lf.patch -text

@@ -1,0 +1,22 @@
+name: dsh_attachment_picker_ohos
+description: 保留 DSH 原版附件接口的鸿蒙平台实现。
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: '>=3.41.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  file_picker_platform_interface: ^4.2.0
+  image_picker_platform_interface: ^2.11.2
+  cross_file: ^0.3.5+4
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  plugin:
+    platforms:
+      ohos:
+        pluginClass: DshAttachmentPickerPlugin
+        dartPluginClass: DshAttachmentPickerOhos
