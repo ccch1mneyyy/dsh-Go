@@ -66,6 +66,7 @@
   "searchKwNotifyFailed": "出错提醒,失败",
   "searchKwNotifyApproval": "审批提醒,确认提醒",
   "searchKwNotifyQuestion": "提问提醒",
+  "searchKwNotifyLive": "灵动岛,实时活动,流体云,超级岛,原子岛,胶囊,状态栏进度,锁屏进度",
   "searchKwNotifySystem": "声音,横幅,锁屏,系统通知",
   "searchKwPhoneConfirm": "别问我,免确认,每次都询问,始终免确认,确认",
   "searchKwPhoneAutoCollapse": "悬浮条,收起,悬浮球",

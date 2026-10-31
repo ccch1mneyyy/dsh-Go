@@ -66,6 +66,7 @@
   "searchKwNotifyFailed": "error,failed,stopped",
   "searchKwNotifyApproval": "approval,waiting for you",
   "searchKwNotifyQuestion": "question,asks you",
+  "searchKwNotifyLive": "dynamic island,live update,live activity,status bar chip,now bar,live alerts,lock screen progress",
   "searchKwNotifySystem": "sound,banner,lock screen,system",
   "searchKwPhoneConfirm": "don't ask,confirm,always ask,no confirmation",
   "searchKwPhoneAutoCollapse": "floating bar,collapse,bubble",

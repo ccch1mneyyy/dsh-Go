@@ -7828,6 +7828,89 @@ class L10nEn extends L10n {
   String get searchKwIconShortcut => 'shortcut,custom icon,home screen picture';
 
   @override
+  String get liveThinking => 'Thinking';
+
+  @override
+  String get liveWorking => 'Working';
+
+  @override
+  String get liveJuggling => 'Subagents at work';
+
+  @override
+  String get liveSweeping => 'Compacting the context';
+
+  @override
+  String liveRunsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chats running',
+      one: '1 chat running',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get liveChipThinking => 'Thinking';
+
+  @override
+  String get liveChipWorking => 'Working';
+
+  @override
+  String get liveChipJuggling => 'Helpers';
+
+  @override
+  String get liveChipSweeping => 'Tidying';
+
+  @override
+  String get liveChipApproval => 'Approve';
+
+  @override
+  String get liveChipQuestion => 'Reply';
+
+  @override
+  String get liveChipDone => 'Done';
+
+  @override
+  String get liveChipFailed => 'Failed';
+
+  @override
+  String get livePublicRunning => 'DSH is working';
+
+  @override
+  String get livePublicWaiting => 'DSH is waiting for you';
+
+  @override
+  String get livePublicDone => 'DSH is done';
+
+  @override
+  String get livePublicFailed => 'DSH ran into an error';
+
+  @override
+  String get liveSettingsTitle => 'Live activity';
+
+  @override
+  String get liveSettingsSwitch => 'Show live activity';
+
+  @override
+  String get liveSettingsSubtitle =>
+      'While DSH works, waits on you or controls the phone: in the status bar chip and on the lock screen, and in the island on phones that have one';
+
+  @override
+  String get liveSettingsFooter =>
+      'Android 16 Live Updates. Shown on Xiaomi HyperOS 3.1+, OPPO / OnePlus ColorOS 16, Honor MagicOS 10 and Pixel; vivo\'s Atomic Island and Samsung\'s Now Bar are open only to apps the maker partners with.';
+
+  @override
+  String get liveUnsupported => 'This phone\'s system doesn\'t support live activities yet';
+
+  @override
+  String get liveBlockedTitle => 'Live activities are off for DSH Go';
+
+  @override
+  String get liveBlockedText =>
+      'Turn on live activities for DSH Go in system settings (some phones call it “Show on Live Alerts”)';
+
+  @override
   String get localeTitle => 'Language';
 
   @override
@@ -13866,6 +13949,10 @@ class L10nEn extends L10n {
 
   @override
   String get searchKwNotifyQuestion => 'question,asks you';
+
+  @override
+  String get searchKwNotifyLive =>
+      'dynamic island,live update,live activity,status bar chip,now bar,live alerts,lock screen progress';
 
   @override
   String get searchKwNotifySystem => 'sound,banner,lock screen,system';

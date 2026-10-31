@@ -23,6 +23,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.media.AudioManager
@@ -236,6 +237,9 @@ internal object PetOverlay {
         removeWindows()
         evaluate()
     }
+
+    /** [PetSprites.portrait] of the pack [id]; null before [init] or when it has none. Any thread. */
+    fun portrait(id: String, state: String, px: Int): Bitmap? = if (initialized) sprites.portrait(id, state, px) else null
 
     fun push(args: Map<*, *>) {
         if (!initialized) return

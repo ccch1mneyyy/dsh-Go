@@ -13580,6 +13580,150 @@ abstract class L10n {
   /// **'快捷方式,自定义图标,桌面图片,换图标'**
   String get searchKwIconShortcut;
 
+  /// No description provided for @liveThinking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在思考'**
+  String get liveThinking;
+
+  /// No description provided for @liveWorking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在干活'**
+  String get liveWorking;
+
+  /// No description provided for @liveJuggling.
+  ///
+  /// In zh, this message translates to:
+  /// **'子代理在帮忙'**
+  String get liveJuggling;
+
+  /// No description provided for @liveSweeping.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在整理上下文'**
+  String get liveSweeping;
+
+  /// No description provided for @liveRunsCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 个对话在跑'**
+  String liveRunsCount(int count);
+
+  /// No description provided for @liveChipThinking.
+  ///
+  /// In zh, this message translates to:
+  /// **'思考中'**
+  String get liveChipThinking;
+
+  /// No description provided for @liveChipWorking.
+  ///
+  /// In zh, this message translates to:
+  /// **'干活中'**
+  String get liveChipWorking;
+
+  /// No description provided for @liveChipJuggling.
+  ///
+  /// In zh, this message translates to:
+  /// **'协作中'**
+  String get liveChipJuggling;
+
+  /// No description provided for @liveChipSweeping.
+  ///
+  /// In zh, this message translates to:
+  /// **'整理中'**
+  String get liveChipSweeping;
+
+  /// No description provided for @liveChipApproval.
+  ///
+  /// In zh, this message translates to:
+  /// **'待确认'**
+  String get liveChipApproval;
+
+  /// No description provided for @liveChipQuestion.
+  ///
+  /// In zh, this message translates to:
+  /// **'待回答'**
+  String get liveChipQuestion;
+
+  /// No description provided for @liveChipDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get liveChipDone;
+
+  /// No description provided for @liveChipFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'出错'**
+  String get liveChipFailed;
+
+  /// No description provided for @livePublicRunning.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH 正在干活'**
+  String get livePublicRunning;
+
+  /// No description provided for @livePublicWaiting.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH 在等你处理'**
+  String get livePublicWaiting;
+
+  /// No description provided for @livePublicDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH 做完了'**
+  String get livePublicDone;
+
+  /// No description provided for @livePublicFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH 出错了'**
+  String get livePublicFailed;
+
+  /// No description provided for @liveSettingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'实时活动'**
+  String get liveSettingsTitle;
+
+  /// No description provided for @liveSettingsSwitch.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示实时活动'**
+  String get liveSettingsSwitch;
+
+  /// No description provided for @liveSettingsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'干活、等你处理、操作手机时，显示在状态栏胶囊和锁屏上；支持的手机会放进灵动岛'**
+  String get liveSettingsSubtitle;
+
+  /// No description provided for @liveSettingsFooter.
+  ///
+  /// In zh, this message translates to:
+  /// **'Android 16 的实时活动（Live Updates）：小米 HyperOS 3.1+、OPPO / 一加 ColorOS 16、荣耀 MagicOS 10 和 Pixel 会显示；vivo 原子岛和三星 Now Bar 目前只对厂商合作的应用开放。'**
+  String get liveSettingsFooter;
+
+  /// No description provided for @liveUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'这台手机的系统还不支持实时活动'**
+  String get liveUnsupported;
+
+  /// No description provided for @liveBlockedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统没有允许实时活动'**
+  String get liveBlockedTitle;
+
+  /// No description provided for @liveBlockedText.
+  ///
+  /// In zh, this message translates to:
+  /// **'在系统设置里为 DSH Go 打开「实时活动」（有的手机叫「在流体云中显示」）'**
+  String get liveBlockedText;
+
   /// No description provided for @localeTitle.
   ///
   /// In zh, this message translates to:
@@ -24145,6 +24289,12 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'提问提醒'**
   String get searchKwNotifyQuestion;
+
+  /// No description provided for @searchKwNotifyLive.
+  ///
+  /// In zh, this message translates to:
+  /// **'灵动岛,实时活动,流体云,超级岛,原子岛,胶囊,状态栏进度,锁屏进度'**
+  String get searchKwNotifyLive;
 
   /// No description provided for @searchKwNotifySystem.
   ///

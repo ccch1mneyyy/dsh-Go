@@ -7414,6 +7414,81 @@ class L10nZh extends L10n {
   String get searchKwIconShortcut => '快捷方式,自定义图标,桌面图片,换图标';
 
   @override
+  String get liveThinking => '正在思考';
+
+  @override
+  String get liveWorking => '正在干活';
+
+  @override
+  String get liveJuggling => '子代理在帮忙';
+
+  @override
+  String get liveSweeping => '正在整理上下文';
+
+  @override
+  String liveRunsCount(int count) {
+    return '$count 个对话在跑';
+  }
+
+  @override
+  String get liveChipThinking => '思考中';
+
+  @override
+  String get liveChipWorking => '干活中';
+
+  @override
+  String get liveChipJuggling => '协作中';
+
+  @override
+  String get liveChipSweeping => '整理中';
+
+  @override
+  String get liveChipApproval => '待确认';
+
+  @override
+  String get liveChipQuestion => '待回答';
+
+  @override
+  String get liveChipDone => '完成';
+
+  @override
+  String get liveChipFailed => '出错';
+
+  @override
+  String get livePublicRunning => 'DSH 正在干活';
+
+  @override
+  String get livePublicWaiting => 'DSH 在等你处理';
+
+  @override
+  String get livePublicDone => 'DSH 做完了';
+
+  @override
+  String get livePublicFailed => 'DSH 出错了';
+
+  @override
+  String get liveSettingsTitle => '实时活动';
+
+  @override
+  String get liveSettingsSwitch => '显示实时活动';
+
+  @override
+  String get liveSettingsSubtitle => '干活、等你处理、操作手机时，显示在状态栏胶囊和锁屏上；支持的手机会放进灵动岛';
+
+  @override
+  String get liveSettingsFooter =>
+      'Android 16 的实时活动（Live Updates）：小米 HyperOS 3.1+、OPPO / 一加 ColorOS 16、荣耀 MagicOS 10 和 Pixel 会显示；vivo 原子岛和三星 Now Bar 目前只对厂商合作的应用开放。';
+
+  @override
+  String get liveUnsupported => '这台手机的系统还不支持实时活动';
+
+  @override
+  String get liveBlockedTitle => '系统没有允许实时活动';
+
+  @override
+  String get liveBlockedText => '在系统设置里为 DSH Go 打开「实时活动」（有的手机叫「在流体云中显示」）';
+
+  @override
   String get localeTitle => '语言';
 
   @override
@@ -13203,6 +13278,9 @@ class L10nZh extends L10n {
 
   @override
   String get searchKwNotifyQuestion => '提问提醒';
+
+  @override
+  String get searchKwNotifyLive => '灵动岛,实时活动,流体云,超级岛,原子岛,胶囊,状态栏进度,锁屏进度';
 
   @override
   String get searchKwNotifySystem => '声音,横幅,锁屏,系统通知';

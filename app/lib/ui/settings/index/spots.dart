@@ -870,6 +870,12 @@ abstract final class Spots {
     title: (l) => l.pluginsQuestions,
     keywords: (l) => l.searchKwNotifyQuestion,
   );
+  static final notifyLive = SettingSpot(
+    'notify-live',
+    page: SettingsPageId.notifications,
+    title: (l) => l.liveSettingsSwitch,
+    keywords: (l) => l.searchKwNotifyLive,
+  );
   static final notifySystem = SettingSpot(
     'notify-system',
     page: SettingsPageId.notifications,
@@ -1051,6 +1057,7 @@ final _rows = <SettingSpot>[
   Spots.notifyFailed,
   Spots.notifyApproval,
   Spots.notifyQuestion,
+  Spots.notifyLive,
   Spots.notifySystem,
   Spots.shareConfig,
   Spots.usageStats,

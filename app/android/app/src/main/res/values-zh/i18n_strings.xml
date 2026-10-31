@@ -34,6 +34,10 @@
         <item quantity="other">%1$d 条提醒</item>
     </plurals>
     <string name="notify_new_reminder">有新提醒</string>
+    <string name="live_channel">实时活动</string>
+    <string name="live_channel_description">DSH 在干活、等你处理或在操作手机时，显示在状态栏和锁屏上</string>
+    <string name="live_chip_phone">操作中</string>
+    <string name="live_chip_paused">已暂停</string>
     <!-- overlay -->
     <string name="overlay_allow_task_no_ask">允许，本任务不再问</string>
     <string name="overlay_allow_task">允许（本任务）</string>
