@@ -291,6 +291,9 @@ final skillCommandsProvider = Provider.autoDispose.family<List<SlashCommand>, St
 
 /// Everything the palette offers for [sessionId].
 final slashCommandsProvider = Provider.autoDispose.family<List<SlashCommand>, String?>((ref, sessionId) {
+  if (!ref.watch(advancedBackendProvider)) {
+    return appSlashCommands.where((c) => c.name == 'new' || c.name == 'model').toList();
+  }
   final host = ref.watch(hostCommandsProvider(sessionId)).value ?? const [];
   return mergeSlashCommands(host, skills: ref.watch(skillCommandsProvider(sessionId)));
 });

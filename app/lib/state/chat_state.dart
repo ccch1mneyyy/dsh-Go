@@ -546,7 +546,9 @@ class ChatController extends Notifier<ChatState> {
     // error. What was loaded stays until a new snapshot replaces it.
     if (client == null) return _retained(loading: false);
     _sameClock = ref.read(activeConnectionProvider).value!.isLocal;
-    if (_sameClock) {
+    if (_sameClock || !client.capabilities.supportsQuietWatch) {
+      _awayTimer?.cancel();
+      _awayLong = false;
       _quiet = false;
     } else {
       _onScreen(ref.read(appForegroundProvider), building: true);

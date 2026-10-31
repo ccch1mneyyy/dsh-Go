@@ -1,0 +1,14 @@
+name: codex_client
+description: Read-only Codex app-server client over an existing byte transport.
+version: 0.0.1
+publish_to: none
+environment:
+  sdk: ^3.13.5
+dependencies:
+  dartssh2: ^4.1.0
+  stream_channel: ^2.1.4
+  async: ^2.13.1
+  crypto: ^3.0.7
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

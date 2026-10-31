@@ -1,0 +1,13 @@
+{
+  "package": "web_socket_channel",
+  "version": "2.4.5",
+  "source": "https://pub.dev/packages/web_socket_channel/versions/2.4.5",
+  "license": "BSD-3-Clause",
+  "sha256BeforeModification": {
+    "lib/src/channel.dart": "b218f6ca17d71c542da63cccd48cfc15d2ede719e3e4c665af021ab4c8ae96b2",
+    "lib/src/exception.dart": "957d5d81561fa5af348fd226f3360b7e2334c435076a7a1d12d385b5f769dcb9",
+    "lib/src/copy/io_sink.dart": "61853ecc7540b200f8538f1250d7d6da0514f359968a3fed92eed268c02f0a2f",
+    "lib/src/copy/web_socket.dart": "249473c91aa8e6a1ec5d53bb3c53f075fb2d63dbb2c857c056c86178fc420f03",
+    "lib/src/copy/web_socket_impl.dart": "dca89ae3bcb7f74b3ada6ca23bd983bcd46d07a7ab596b04359a318391d073b2"
+  }
+}

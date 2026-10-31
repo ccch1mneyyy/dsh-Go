@@ -666,7 +666,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                 for (final (mode, icon, title, subtitle) in [
                   (SendMode.steer, AppIcons.steer, appL10n.chatSteer, appL10n.chatSteerHint),
                   (SendMode.interrupt, AppIcons.interrupt, appL10n.chatInterruptAndSend, appL10n.chatInterruptHint),
-                  (SendMode.queue, AppIcons.queued, appL10n.chatQueue, appL10n.chatQueueHint),
+                  if (ref.read(advancedBackendProvider))
+                    (SendMode.queue, AppIcons.queued, appL10n.chatQueue, appL10n.chatQueueHint),
                 ])
                   SettingsTile(
                     tinted: false,
@@ -788,8 +789,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         context,
         // DSH Remote stages no files: photos only.
         files: client?.supportsEndpoint('fileUploads/upload') ?? true,
-        sessionId: ref.read(currentSessionProvider),
-        generate: ref.read(mediaPluginProvider) != MediaPluginState.absent,
+        sessionId: ref.read(advancedBackendProvider) ? ref.read(currentSessionProvider) : null,
+        generate: ref.read(advancedBackendProvider) && ref.read(mediaPluginProvider) != MediaPluginState.absent,
       );
       if (choice is GenerateChoice) {
         if (ownsDraft()) _enterGenerate();
@@ -1141,7 +1142,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
   }
 
   void _openUsage(String sessionId, ModelSelection? model) {
-    ref.read(balanceProvider.notifier).refresh();
+    if (ref.read(advancedBackendProvider)) ref.read(balanceProvider.notifier).refresh();
+    ref.invalidate(accountUsageProvider);
     showUsageSheet(context, sessionId: sessionId, model: model);
   }
 
@@ -1284,6 +1286,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         : ref.watch(
             sessionsProvider.select((async) => async.value?.where((s) => s.sessionId == sessionId).firstOrNull?.title),
           );
+    final advanced = ref.watch(advancedBackendProvider);
+    final attachmentsEnabled = ref.watch(activeConnectionProvider).value?.client.capabilities.attachments ?? advanced;
     final pendingModel = ref.watch(pendingModelProvider);
     final commands = ref.watch(slashCommandsProvider(sessionId));
     final contextFraction = sessionId == null
@@ -1498,7 +1502,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                               },
                         // The title pill opens the whole session's details (on a
                         // wide window it folds and unfolds the panel beside us).
-                        onTitleTap: sessionId == null
+                        onTitleTap: sessionId == null || !advanced
                             ? null
                             : () => SessionDetailPage.open(context, sessionId, toggle: true),
                         trailing: ModelChip(
@@ -1627,7 +1631,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                     duration: AppMotion.of(context, AppMotion.standard),
                                     curve: AppMotion.std,
                                     alignment: Alignment.bottomCenter,
-                                    child: connected
+                                    child: connected && advanced
                                         ? const _BalanceBannerSlot()
                                         : const SizedBox(width: double.infinity),
                                   ),
@@ -1680,7 +1684,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                 // (ui.json's and plugins'): they give the
                                 // activity strip its place while a reply
                                 // generates; nothing at all without any.
-                                if (!readOnly)
+                                if (!readOnly && advanced)
                                   _DockAside(
                                     aside: typing,
                                     child: NativeComposerBar(sessionId: sessionId, visible: !(chat?.running ?? false)),
@@ -1710,7 +1714,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                         ? l10n.commonWaitingAnswer
                                         : null,
                                     placeholder: generate == null
-                                        ? null
+                                        ? (advanced ? null : l10n.chatComposerHint.replaceFirst('DSH', 'Codex'))
                                         : _editing && !generate.isVideo
                                         ? l10n.mediaHintEdit
                                         : generate.isVideo
@@ -1718,12 +1722,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                         : l10n.mediaHintImage,
                                     onSend: _send,
                                     onSendOptions: chat?.controlReady ?? true ? _sendOptions : null,
-                                    voice: _voice,
+                                    voice: advanced ? _voice : null,
                                     onKeyEvent: _mentions.handleKey,
-                                    onContentInserted: connected ? _pasteContent : null,
+                                    onContentInserted: connected && attachmentsEnabled ? _pasteContent : null,
                                     onStop: _stop,
                                     hasAttachments: _drafts.isNotEmpty,
-                                    leading: AttachButton(onPressed: connected ? _attach : null),
+                                    leading: attachmentsEnabled
+                                        ? AttachButton(onPressed: connected ? _attach : null)
+                                        : const SizedBox.shrink(),
                                     tray: ComposerTrayStack.maybe(
                                       quote: switch (quote) {
                                         final quote? => QuoteChip(
@@ -1740,8 +1746,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                               labels: frameLabels(generate, generateModel, _drafts.length),
                                             ),
                                     ),
-                                    accessory: sessionId == null || contextFraction == null
+                                    accessory: sessionId == null
                                         ? null
+                                        : contextFraction == null
+                                        ? (advanced
+                                              ? null
+                                              : IconButton(
+                                                  tooltip: l10n.activityUsage,
+                                                  onPressed: () => _openUsage(sessionId, chat?.model),
+                                                  icon: const Icon(Icons.data_usage_outlined),
+                                                ))
                                         : ContextRing(
                                             fraction: contextFraction,
                                             onTap: () => _openUsage(sessionId, chat?.model),

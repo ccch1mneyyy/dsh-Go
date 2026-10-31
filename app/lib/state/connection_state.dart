@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/l10n.dart';
 import '../remote/link_status.dart';
+import '../remote/codex/codex_link.dart';
 import '../remote/network_watch.dart';
 import '../remote/relay/relay_backend.dart';
 import '../remote/ssh/ssh_link.dart';
@@ -154,6 +155,8 @@ final sshLinkFactoryProvider = Provider<SshLinkFactory>(
   },
 );
 
+final codexSendLedgerProvider = Provider.family<Map<String, Future<String>>, String>((ref, key) => {});
+
 /// The live link to a remote host; null for 本机 or an unknown host. Kept while
 /// something watches it (the active connection, a status row); closed after.
 final hostLinkProvider = Provider.autoDispose.family<HostLink?, HostRef>((ref, host) {
@@ -166,6 +169,23 @@ final hostLinkProvider = Provider.autoDispose.family<HostLink?, HostRef>((ref, h
       final key = ref.watch(hostsProvider.select((s) => s.sshById(host.id)?.connectionKey));
       if (key == null) return null;
       final config = ref.read(hostsProvider).sshById(host.id)!;
+      if (config.backend == RemoteBackend.codex) {
+        final hosts = ref.read(hostsProvider.notifier);
+        final link = CodexHostLink(
+          config: config,
+          loadSecrets: () => hosts.loadSecrets(config.id),
+          pinHostKey: (key) => hosts.pinHostKey(config.id, key),
+          kicks: ref.read(networkKicksProvider),
+          submissionLedger: ref.read(
+            codexSendLedgerProvider('${config.id}:${config.connectionKey}:${config.hostKeyFingerprint}'),
+          ),
+        );
+        ref.listen(hostsProvider.select((s) => s.sshById(host.id)), (_, next) {
+          if (next != null && next.connectionKey == link.config.connectionKey) link.config = next;
+        });
+        ref.onDispose(() => unawaited(link.close()));
+        return link;
+      }
       final link = ref.read(sshLinkFactoryProvider)(ref, config);
       // Renames, cwd and re-pinned keys apply in place.
       ref.listen(hostsProvider.select((s) => s.sshById(host.id)), (_, next) {
@@ -236,11 +256,15 @@ class RemoteConnectionController extends AsyncNotifier<HostConnection?> {
 
     HostConnection wrap(DshClient client) => HostConnection(
       client: client,
-      name: name,
+      name: link is CodexHostLink ? '${name ?? "服务器"} · Codex' : name,
       isLocal: false,
       kind: host.kind,
       hostId: host.id,
-      workingDirectory: link is SshHostLink ? link.resolvedWorkingDirectory : null,
+      workingDirectory: link is SshHostLink
+          ? link.resolvedWorkingDirectory
+          : link is CodexHostLink
+          ? link.resolvedWorkingDirectory
+          : null,
     );
 
     if (link is SshHostLink) {
@@ -370,3 +394,12 @@ AsyncValue<HostConnection?> _connectionForHost(Ref ref, HostRef host) {
       return ref.watch(remoteConnectionProvider(host));
   }
 }
+
+/// Capability gate also works while the selected remote host is reconnecting.
+final advancedBackendProvider = Provider<bool>((ref) {
+  final host = ref.watch(activeHostProvider);
+  if (host.kind == HostKind.ssh) {
+    return ref.watch(hostsProvider.select((s) => s.sshById(host.id)?.backend)) != RemoteBackend.codex;
+  }
+  return true;
+});

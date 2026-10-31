@@ -12876,6 +12876,15 @@ class L10nZh extends L10n {
   String get remoteNetworkObservedAt => '最近观测';
 
   @override
+  String get remoteCodexWorkspace => 'Codex 工作台';
+
+  @override
+  String get remoteCodexWorkspaceHint => '通过 SSH 查看远程 Codex 对话 · 只读';
+
+  @override
+  String get remoteDshPluginsRequireDsh => '此功能仅适用于 DSH 插件，请先切换到 DSH 主机。';
+
+  @override
   String get riskDontShowAgain => '不再提示';
 
   @override

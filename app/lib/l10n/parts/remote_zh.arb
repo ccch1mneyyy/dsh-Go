@@ -1034,5 +1034,8 @@
     }
   },
   "remoteNetworkSnapshotHint": "显示最近一次确认的路径与延迟，刷新可重新检测。",
-  "remoteNetworkObservedAt": "最近观测"
+  "remoteNetworkObservedAt": "最近观测",
+  "remoteCodexWorkspace": "Codex 工作台",
+  "remoteCodexWorkspaceHint": "通过 SSH 查看远程 Codex 对话 · 只读",
+  "remoteDshPluginsRequireDsh": "此功能仅适用于 DSH 插件，请先切换到 DSH 主机。"
 }

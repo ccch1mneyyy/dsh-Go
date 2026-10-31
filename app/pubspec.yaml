@@ -52,6 +52,10 @@ dependencies:
   re_highlight: ^0.0.3
   path_provider: ^2.1.6
   url_launcher: ^6.3.3
+  codex_backend:
+    path: ../packages/codex_backend
+  codex_client:
+    path: ../packages/codex_client
   dsh_client:
     path: ../packages/dsh_client
   dsh_remote:

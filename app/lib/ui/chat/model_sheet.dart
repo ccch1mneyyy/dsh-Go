@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../state/models_state.dart';
+import '../../state/connection_state.dart';
 import '../../state/settings_state.dart';
 import '../common/app_sheet.dart';
 import '../common/empty_view.dart';
@@ -574,11 +575,12 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
 }
 
 /// 选择模型底部的「管理模型 ›」:居中的文字键,去 设置 › 模型。
-class ManageModelsLink extends StatelessWidget {
+class ManageModelsLink extends ConsumerWidget {
   const ManageModelsLink({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(advancedBackendProvider)) return const SizedBox.shrink();
     final l10n = context.l10n;
     return Center(
       child: TextButton(

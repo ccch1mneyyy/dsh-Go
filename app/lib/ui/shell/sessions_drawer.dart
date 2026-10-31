@@ -230,7 +230,11 @@ class SessionsDrawer extends ConsumerWidget {
                             onHost: () => showHostSheet(context, onManage: () => onOpen(DrawerDestination.remote)),
                             onFeatures: () => onOpen(DrawerDestination.features),
                             onSettings: () => onOpen(DrawerDestination.settings),
-                            onSettingsHold: () => onOpen(DrawerDestination.settingsSearch),
+                            onSettingsHold: () => onOpen(
+                              ref.read(advancedBackendProvider)
+                                  ? DrawerDestination.settingsSearch
+                                  : DrawerDestination.settings,
+                            ),
                           ),
                         ),
                       ),

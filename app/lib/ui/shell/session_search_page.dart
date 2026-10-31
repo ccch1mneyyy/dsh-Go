@@ -630,7 +630,16 @@ class _ContentFooter extends ConsumerWidget {
           ],
         ),
       ),
-      ContentSearchStatus.ready when view.hasMore => line(Text(l10n.shellContentSearchLimit, style: style)),
+      ContentSearchStatus.ready when view.hasMore => line(
+        Text(
+          ref.watch(activeConnectionProvider).value?.client.capabilities.backend == 'codex'
+              ? (AppLocale.isEnglish
+                    ? 'Some history could not be searched; results may be incomplete.'
+                    : '部分历史未完成搜索，结果可能不完整。')
+              : l10n.shellContentSearchLimit,
+          style: style,
+        ),
+      ),
       _ => const SizedBox.shrink(),
     };
   }

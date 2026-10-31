@@ -437,5 +437,8 @@
   "remoteNetworkFallbackTurnTimeout": "TURN timed out; using Relay.",
   "remoteNetworkFallbackPathUnverified": "The WebRTC route type hasn’t been confirmed.",
   "remoteNetworkSnapshotHint": "Shows the last confirmed route and latency. Refresh to check again.",
-  "remoteNetworkObservedAt": "Last checked"
+  "remoteNetworkObservedAt": "Last checked",
+  "remoteCodexWorkspace": "Codex workspace",
+  "remoteCodexWorkspaceHint": "Browse remote Codex over SSH · Read only",
+  "remoteDshPluginsRequireDsh": "Plugins require a DSH backend. Switch to a DSH host to continue."
 }

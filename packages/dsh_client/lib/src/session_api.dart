@@ -165,7 +165,20 @@ final class SessionControlProjection extends SessionControlUpdate {
 /// use the local HTTP/WebSocket carrier, [DshClient.withCarrier] /
 /// [connectCarrier] accept others (for example the encrypted tunnel from
 /// `package:dsh_remote`).
+class ChatCapabilities {
+  const ChatCapabilities({this.backend = 'dsh', this.advanced = true, this.supportsQuietWatch = true, this.attachments = true});
+  final String backend;
+  final bool advanced;
+  final bool attachments;
+
+  /// Can suppress token events while retaining durable events and approvals.
+  final bool supportsQuietWatch;
+}
+
 class DshClient {
+  ChatCapabilities get capabilities => const ChatCapabilities();
+  String? get accountIdentity => null;
+
   /// Local `dsh web` over HTTP + WebSocket ([DshHttpCarrier]).
   DshClient(
     DshConnection connection, {
@@ -290,6 +303,10 @@ class DshClient {
       '(this client uses ${carrier.kind})',
     ),
   };
+
+  /// Backend account quotas, separate from per-session token usage.
+  Future<Map<String, Object?>> accountUsage() async =>
+      throw const DshRemoteException('METHOD_NOT_ALLOWED', 'Account usage unavailable');
 
   /// Whether [endpoint] is reachable through this client's carrier (remote
   /// tunnels serve a fixed allow-list; `fileUploads/upload` is not on it).
