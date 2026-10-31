@@ -73,13 +73,25 @@ final petProgressTargetProvider = NotifierProvider<PetProgressTargetController, 
   PetProgressTargetController.new,
 );
 
+/// Rebuilds the passive watch for each ready connection generation.
+///
+/// [DshClient.watch] closes after exhausting its own retry budget. The client
+/// survives a mux reconnect, so without this dependency Riverpod keeps the
+/// failed stream provider and the overlay cannot resume progress.
+final petProgressReadyGenerationsProvider = StreamProvider.autoDispose.family<int, Stream<MuxGeneration>>(
+  (ref, generations) => generations.map((generation) => generation.number),
+);
+
 /// A seam for event fixtures; passive follow never activates a session.
 final petProgressEventsProvider = Provider.autoDispose.family<Stream<DshEvent>?, PetTarget>((ref, target) {
   if (!target.host.isLocal && ref.watch(activeHostProvider) != target.host) return null;
   final connection = target.host.isLocal
       ? ref.watch(localConnectionProvider).asData?.value
       : ref.watch(activeConnectionProvider).asData?.value;
-  return connection?.client.watch(
+  final client = connection?.client;
+  if (client == null) return null;
+  ref.watch(petProgressReadyGenerationsProvider(client.mux.generations));
+  return client.watch(
     target.sessionId,
     options: const WatchOptions(turnWindow: TurnWindow(1, 1), maxMessages: 100, includeSyncEvents: true),
   );

@@ -129,6 +129,26 @@ void main() {
     await events.close();
   });
 
+  test('a ready generation rebuilds providers that reopen the live watch', () async {
+    final generations = StreamController<MuxGeneration>();
+    final container = ProviderContainer();
+    var builds = 0;
+    final dependent = Provider<int>((ref) {
+      ref.watch(petProgressReadyGenerationsProvider(generations.stream));
+      return ++builds;
+    });
+    final sub = container.listen(dependent, (_, _) {});
+    expect(builds, 1);
+
+    generations.add(const MuxGeneration(1, 'client-1', '/home/user'));
+    await pumpEventQueue();
+    expect(builds, 2);
+
+    sub.close();
+    container.dispose();
+    await generations.close();
+  });
+
   test('realistic follow frames produce waiting and named tool phases', () async {
     final events = File('test/chat/fixtures/follow_run_info.jsonl')
         .readAsLinesSync()
