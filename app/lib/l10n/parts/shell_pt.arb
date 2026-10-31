@@ -234,7 +234,7 @@
   "shellJsonControlCharacter": "O texto contém um caracter de controle",
   "shellJsonBadNumber": "Formato de número inválido",
   "shellSkillInstallPrompt": "Instalar o DSH Go habilidade de interface {skill} nesta máquina:",
-  "shellSkillInstallDirectory": "1. Crie a pasta de destino `$DSH HOME/skills/{skill}/` se necessário (ou `~/.dsh/skills/{skill}/` se DSH HOME não estiver definido).",
+  "shellSkillInstallDirectory": "1. Crie a pasta de destino `$DSH_HOME/skills/{skill}/` se necessário (ou `~/.dsh/skills/{skill}/` se `DSH_HOME` não estiver definido).",
   "shellSkillInstallFiles": "2. Escreva cada arquivo abaixo em seu caminho relativo dado, mantendo o conteúdo exatamente como fornecido.",
   "shellSkillInstallConfirm": "4. Diga-me quando está instalado.",
   "shellSkillInstallFile": "Arquivo `{path}`:",

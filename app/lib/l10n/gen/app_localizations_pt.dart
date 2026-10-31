@@ -303,7 +303,7 @@ class L10nPt extends L10n {
   String get activityThinkingBreakDown => 'Deixa-me explicar.';
 
   @override
-  String get activityThinkingTrain => 'Todos a bordo do comboio de pensamento';
+  String get activityThinkingTrain => 'Todos a bordo do trem do pensamento';
 
   @override
   String get activityThinkingSomething => 'Hmm... há algo aqui';
@@ -321,7 +321,7 @@ class L10nPt extends L10n {
   String get activityThinkingWaves => 'Ondas cerebrais a chegar';
 
   @override
-  String get activityThinkingCoffee => 'Café cervejeiro do cérebro';
+  String get activityThinkingCoffee => 'O cérebro está passando um café';
 
   @override
   String get activityThinkingDraft => 'A redigir na minha cabeça';
@@ -1233,7 +1233,7 @@ class L10nPt extends L10n {
   String get activityUsageAfterMessage => 'Aparece depois de enviar uma mensagem';
 
   @override
-  String get activityUsageContextFull => 'O contexto está quase cheio. Enviar /compactar para compactá-lo';
+  String get activityUsageContextFull => 'O contexto está quase cheio. Envie /compact para compactá-lo';
 
   @override
   String get activitySpanZero => '0 seg';
@@ -4267,7 +4267,7 @@ class L10nPt extends L10n {
   String get chatOneQuestion => 'Uma pergunta para você';
 
   @override
-  String get chatMultipleChoices => 'Selecione uma opção';
+  String get chatMultipleChoices => 'Selecione uma ou mais opções';
 
   @override
   String get chatCustomAnswer => 'Outra resposta';
@@ -6356,13 +6356,13 @@ class L10nPt extends L10n {
   }
 
   @override
-  String get featuresWeekdayMon => 'Mon';
+  String get featuresWeekdayMon => 'Seg';
 
   @override
   String get featuresWeekdayTue => 'Ter';
 
   @override
-  String get featuresWeekdayWed => 'Casar';
+  String get featuresWeekdayWed => 'Qua';
 
   @override
   String get featuresWeekdayThu => 'Qui';
@@ -6374,7 +6374,7 @@ class L10nPt extends L10n {
   String get featuresWeekdaySat => 'Sáb';
 
   @override
-  String get featuresWeekdaySun => 'Sol';
+  String get featuresWeekdaySun => 'Dom';
 
   @override
   String get featuresMonthJan => 'Janeiro';
@@ -7175,12 +7175,12 @@ class L10nPt extends L10n {
 
   @override
   String featuresPresetCreateRequest(String name, String id, String directory) {
-    return 'Criar a predefinição do agente “$name” ($id): Escreva estes dois arquivos verbatim na área de trabalho, em seguida, use install bundle do plugin manager para instalar o `$directory` diretório. Faz só isto.\n\n';
+    return 'Crie a predefinição do agente “$name” ($id): escreva estes dois arquivos exatamente como fornecidos no espaço de trabalho e, em seguida, use plugin_manager e install_bundle para instalar o diretório `$directory`. Faça somente isso.\n\n';
   }
 
   @override
   String featuresPresetUpdateRequest(String name, String id, String replacing, String directory) {
-    return 'Atualizar a predefinição do agente “$name” ($id): Escreva estes dois arquivos verbatim na área de trabalho. Usar plugin  gerenciador para remover pacote `$replacing`, então use install bundle para instalar o `$directory` diretório. Faz só isto.\n\n';
+    return 'Atualize a predefinição do agente “$name” ($id): escreva estes dois arquivos exatamente como fornecidos no espaço de trabalho. Use plugin_manager para remover o pacote `$replacing` e install_bundle para instalar o diretório `$directory`. Faça somente isso.\n\n';
   }
 
   @override
@@ -7935,7 +7935,7 @@ class L10nPt extends L10n {
 
   @override
   String get localEnvUninstallBody =>
-      'As conversas, os espaços de trabalho, os plugins, as configurações da interface e as habilidades deste celular serão excluídos.';
+      'As conversas, os espaços de trabalho, os plugins, as configurações, as configurações da interface e as habilidades deste celular serão excluídos.';
 
   @override
   String get localEnvUninstallConfirm => 'Desinstalar';
@@ -10656,7 +10656,7 @@ class L10nPt extends L10n {
   String get pluginsInstalling => 'Instalar';
 
   @override
-  String get pluginsGet => 'Vai-te embora.';
+  String get pluginsGet => 'Obter';
 
   @override
   String get pluginsLoadingCannotCancel => 'Carregando o plugin. Este passo não pode ser cancelado.';
@@ -12121,7 +12121,7 @@ class L10nPt extends L10n {
 
   @override
   String remotePrivateKeyFormats(String error) {
-    return 'Suporta chaves privadas Ed25519, RSA e ECDSA em formatos OpenSSH e PEM.\n$error';
+    return 'Aceita chaves privadas Ed25519, RSA e ECDSA nos formatos OpenSSH e PEM.\n$error';
   }
 
   @override
@@ -12147,7 +12147,7 @@ class L10nPt extends L10n {
 
   @override
   String remoteAuthorizedKeysHelp(String username, String error) {
-    return 'Verifique se a chave pública está em $username~/.ssh/autorized keys.\n$error';
+    return 'Verifique se a chave pública está em ~/.ssh/authorized_keys para o usuário $username.\n$error';
   }
 
   @override
@@ -12836,7 +12836,7 @@ class L10nPt extends L10n {
   String get remoteSshPasswordRequired => 'Digite uma senha SSH ou use uma chave privada';
 
   @override
-  String get remoteSshKeyRequired => 'Colar a chave privada completa (começando com ------ BEGIN)';
+  String get remoteSshKeyRequired => 'Cole a chave privada completa (começando com -----BEGIN)';
 
   @override
   String get remoteHostKeyResetTitle => 'Repor a impressão digital da máquina?';
@@ -12863,7 +12863,8 @@ class L10nPt extends L10n {
   }
 
   @override
-  String get remoteErrPublicKeyFile => 'Esta não é uma chave privada. Escolha o arquivo sem .pub (como id ed25519).';
+  String get remoteErrPublicKeyFile =>
+      'Este arquivo não contém uma chave privada. Escolha o arquivo sem `.pub` (por exemplo, `id_ed25519`).';
 
   @override
   String get remotePrivateKeyImported => 'Chave privada importada. Você pode excluir o arquivo original.';
@@ -14651,7 +14652,7 @@ class L10nPt extends L10n {
 
   @override
   String shellSkillInstallDirectory(String skill) {
-    return '1. Crie a pasta de destino `\$DSH HOME/skills/$skill/` se necessário (ou `~/.dsh/skills/$skill/` se DSH HOME não estiver definido).';
+    return '1. Crie a pasta de destino `\$DSH_HOME/skills/$skill/` se necessário (ou `~/.dsh/skills/$skill/` se `DSH_HOME` não estiver definido).';
   }
 
   @override
@@ -15878,10 +15879,10 @@ class L10nPt extends L10n {
   }
 
   @override
-  String get stateCommandPlanHint => '[desligar o pedido]';
+  String get stateCommandPlanHint => '[off | request]';
 
   @override
-  String get stateCommandGoalHint => '[objetivo : claro : pausa : retomar]';
+  String get stateCommandGoalHint => '[goal | clear | pause | resume]';
 
   @override
   String stateShareReadFailed(String name) {
@@ -16030,12 +16031,12 @@ class L10nPt extends L10n {
 
   @override
   String stateSafeRepairPrompt(String what) {
-    return 'Meu DSH tem um problema no modo normal ($what). Siga as instruções de modo seguro para encontrar a causa. Corrigir a configuração da web usando alterações reversíveis, verificar a inicialização com dsh-app-plugins teste, em seguida, me diga o que mudou.';
+    return 'Meu DSH tem um problema no modo normal ($what). Siga as instruções do modo seguro para encontrar a causa. Corrija a configuração da web usando alterações reversíveis e verifique a inicialização com `dsh-app-plugins trial`. Depois, conte o que mudou.';
   }
 
   @override
   String stateScheduleCreatePrompt(String title, String rule, String args) {
-    return 'Criar automação “$title”: $rule.\nChamar schedule create exatamente uma vez, usando estes argumentos inalterados. Não execute a tarefa agora.\n\n```json\n$args\n```';
+    return 'Crie a automação “$title”: $rule.\nChame `schedule_create` exatamente uma vez, usando estes argumentos sem alterações. Não execute a tarefa agora.\n\n```json\n$args\n```';
   }
 
   @override
@@ -17449,7 +17450,7 @@ class L10nPt extends L10n {
 
   @override
   String viewShareInstallCommand(String value) {
-    return 'Instalar: dsh plug- in add $value';
+    return 'Instalar: dsh plugin add $value';
   }
 
   @override
@@ -17544,13 +17545,13 @@ class L10nPt extends L10n {
   @override
   String viewScheduleWeekdayName(String day) {
     String _temp0 = intl.Intl.selectLogic(day, {
-      '1': 'Mon',
+      '1': 'Seg',
       '2': 'Ter',
-      '3': 'Casar',
+      '3': 'Qua',
       '4': 'Qui',
       '5': 'Sex',
       '6': 'Sáb',
-      'other': 'Sol',
+      'other': 'Dom',
     });
     return '$_temp0';
   }

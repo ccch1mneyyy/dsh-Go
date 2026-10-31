@@ -169,7 +169,7 @@
 O DSH Go reúne uma interface de conversa, um ambiente de execução no celular e conexões remotas. É um projeto de terceiros baseado no [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). O mecanismo DSH roda no celular; as solicitações ao modelo continuam sendo processadas pelo provedor que você configurar.
 
 - **Execução no celular:** instale Ubuntu, Node.js e DSH pelo aplicativo, sem root nem instalação separada do Termux.
-- **Conexões remotas:** use o DSH no computador ou servidor por SSH ou DSH Remote.
+- **Conexões remotas:** use o DSH no computador ou no servidor, por SSH ou pelo DSH Remote.
 - **Conversas e ferramentas:** alterne modelos, envie imagens, use entrada de voz e responda a pedidos de aprovação ou perguntas. Há interfaces de conversa nativa e web.
 - **Interfaces de plugins:** use cartões de ferramentas, formulários e painéis nativos de plugins adaptados ao DSH Go. O repositório inclui SDK, guias e exemplos.
 - **Controle do celular:** após conceder as permissões necessárias, permita que o mecanismo local leia a tela, toque e digite. Você pode interrompê-lo a qualquer momento.

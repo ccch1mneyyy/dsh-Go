@@ -143,7 +143,7 @@
   "pluginsDetailsTitle": "Detalhes do plug-in",
   "pluginsPackageInfoError": "Informação do pacote inválida: {error}",
   "pluginsInstalling": "Instalar",
-  "pluginsGet": "Vai-te embora.",
+  "pluginsGet": "Obter",
   "pluginsLoadingCannotCancel": "Carregando o plugin. Este passo não pode ser cancelado.",
   "pluginsInstallDuration": "Leva um minuto ou dois. Pode deixar esta página.",
   "pluginsViewInstallLogs": "Ver os registros de instalação",

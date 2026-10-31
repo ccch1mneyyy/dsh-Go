@@ -1279,12 +1279,17 @@ String? _componentSummary(DshUiNode node) {
 String formatDshUiNumber(double value) {
   if (!value.isFinite) return '—';
   final abs = value.abs();
-  if (abs >= 1e15) return value.toStringAsExponential(1);
+  if (abs >= 1e15) return _localizeDshUiNumber(value.toStringAsExponential(1));
   final digits = abs >= 100 ? 0 : (abs >= 10 ? 1 : 2);
   var fixed = value.toStringAsFixed(digits);
   if (digits > 0) fixed = fixed.replaceFirst(RegExp(r'\.?0+$'), '');
   if (fixed == '-0') fixed = '0';
-  return _group(fixed);
+  return _localizeDshUiNumber(_group(fixed));
+}
+
+String _localizeDshUiNumber(String value) {
+  if (AppLocale.current.languageCode != 'pt') return value;
+  return value.replaceAll(',', '\u0000').replaceAll('.', ',').replaceAll('\u0000', '.');
 }
 
 /// 紧凑的刻度：一万以上用「万」，一亿以上用「亿」。

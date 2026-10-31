@@ -15,7 +15,7 @@
   "localEnvUninstall": "Desinstalar o ambiente de execução",
   "localEnvUninstallHint": "Liberar espaço de armazenamento",
   "localEnvUninstallTitle": "Desinstalar o ambiente de execução?",
-  "localEnvUninstallBody": "As conversas, os espaços de trabalho, os plugins, as configurações da interface e as habilidades deste celular serão excluídos.",
+  "localEnvUninstallBody": "As conversas, os espaços de trabalho, os plugins, as configurações, as configurações da interface e as habilidades deste celular serão excluídos.",
   "localEnvUninstallConfirm": "Desinstalar",
   "localEnvUninstallFailed": "Não foi possível desinstalar. Tente novamente.",
   "localEnvPhoneNeedsRuntime": "Disponível após a instalação neste celular",

@@ -188,9 +188,17 @@ String approvalText(ApprovalRequest request) {
   };
   final display = request.displayReason;
   final reason = snippet(
-    (AppLocale.usesWesternConventions
-            ? display['pt-BR'] ?? display['pt'] ?? display['en'] ?? display['zh-CN'] ?? display['zh-Hans'] ?? display['zh']
-            : display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'] ?? display['en']) ??
+    (switch (AppLocale.current.languageCode) {
+          'pt' =>
+            display['pt-BR'] ??
+                display['pt'] ??
+                display['en'] ??
+                display['zh-CN'] ??
+                display['zh-Hans'] ??
+                display['zh'],
+          'en' => display['en'] ?? display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'],
+          _ => display['zh-CN'] ?? display['zh-Hans'] ?? display['zh'] ?? display['en'],
+        }) ??
         request.reason,
     max: 90,
   );

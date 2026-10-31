@@ -140,7 +140,7 @@
 
 <h3 align="center">中文、English，也说 Português</h3>
 
-<p align="center">全部界面支持英文和巴西葡萄牙语，在设置里切换，默认跟随系统。</p>
+<p align="center">全部界面支持中文、英文和巴西葡萄牙语，在设置里切换，默认跟随系统。</p>
 
 <p align="center">
   <picture>
