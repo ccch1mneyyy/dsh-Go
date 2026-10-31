@@ -203,6 +203,13 @@ class _PetStageState extends ConsumerState<PetStage> {
 
 /// Tells the pet what the conversation on screen is doing (its activity,
 /// compaction, an open card), from the page's own chat state.
+final _stageFocusProvider = Provider.autoDispose.family<PetFocus?, String?>((ref, id) {
+  if (id == null) return null;
+  final host = ref.watch(activeHostProvider);
+  final compacting = ref.watch(petCompactingProvider(id));
+  return ref.watch(chatProvider(id).select((s) => petFocusOf(host, id, s, compacting: compacting)));
+});
+
 class _FocusReporter extends ConsumerStatefulWidget {
   const _FocusReporter({required this.sessionId, required this.child});
 
@@ -226,8 +233,9 @@ class _FocusReporterState extends ConsumerState<_FocusReporter> {
   void _report(PetFocus? focus) {
     if (focus == _reported) return;
     _reported = focus;
-    // Not while building: after this frame.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Android stops Flutter frames in the background. Keep reporting data
+    // changes there too, or stale activity suppresses the turn-end bubble.
+    scheduleMicrotask(() {
       if (mounted) _focus.report(_reported);
     });
   }
@@ -242,14 +250,9 @@ class _FocusReporterState extends ConsumerState<_FocusReporter> {
 
   @override
   Widget build(BuildContext context) {
-    final id = widget.sessionId;
-    final host = ref.watch(activeHostProvider);
-    if (id == null) {
-      _report(null);
-    } else {
-      final compacting = ref.watch(petCompactingProvider(id));
-      _report(ref.watch(chatProvider(id).select((s) => petFocusOf(host, id, s, compacting: compacting))));
-    }
+    final provider = _stageFocusProvider(widget.sessionId);
+    ref.listen(provider, (_, focus) => _report(focus));
+    _report(ref.read(provider));
     return widget.child;
   }
 }
