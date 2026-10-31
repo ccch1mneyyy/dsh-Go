@@ -1031,9 +1031,9 @@ DshUiNode _options(Map<String, Object?> raw, String path, _Ctx ctx) {
       ctx.note('$at.label', appL10n.viewUiSkippedItemLabel);
       continue;
     }
-    // 插件视图：点按回传 value（缺省 label）。
+    // 插件视图：点按回传完整 value（缺省 label）。
     final rawValue = ctx.p.plugin && item is Map ? item['value'] : null;
-    final value = rawValue is String && rawValue.isNotEmpty ? _clip(rawValue, DshUiLimits.label) : null;
+    final value = rawValue is String ? rawValue : null;
     final selectionKey = value ?? (ctx.p.plugin ? _rawOptionKey(rawLabel) : null) ?? label;
     // 回复只带 label（插件视图带 value）：同名的两项分不出来，后一项丢掉。
     if (!seen.add(selectionKey)) {

@@ -182,6 +182,23 @@ void main() {
       }
     });
 
+    test('explicit plugin option values are preserved exactly', () {
+      final longValue = List.filled(220, 'v').join();
+      final view = parsed({
+        'type': 'options',
+        'id': 'choice',
+        'options': [
+          {'label': 'Empty value', 'value': ''},
+          {'label': 'Long value', 'value': longValue},
+        ],
+        'selected': ['', longValue],
+      });
+      final options = only<DshUiOptions>(view);
+      expect(options.options.map((option) => option.key), ['', longValue]);
+      expect(options.options.map((option) => option.value), ['', longValue]);
+      expect(options.selected, ['', longValue]);
+    });
+
     test('text is restricted in plugin views only', () {
       final view = parsed(textView);
       expect(view.nodes.whereType<DshUiText>().every((t) => t.restricted), isTrue);
