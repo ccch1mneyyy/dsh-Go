@@ -151,13 +151,15 @@ class MarkdownBody extends StatefulWidget {
           decorationThickness: 0.6,
         ),
         hr: HrStyle(thickness: 0.5, color: colors.outlineVariant),
-        // 表格:细线网格、圆角与代码井一致、表头加粗;列宽随内容,但单列
+        // 表格:细线网格、方角、表头加粗;列宽随内容,但单列
         // 不超过 [_maxColumnWidth](长文字在列内换行),整表放不下时横向滚动。
+        // 方角:表头与隔行的底色是矩形填充,没有跟着圆角裁剪(gpt_markdown
+        // 1.4.0),圆角会让四角露出方形色块;上游修好后可换回 AppShape.md。
         table: TableStyle(
           // 比代码井的描边重一点:深色下行线也要看得见。
           borderColor: colors.onSurface.withValues(alpha: theme.brightness == Brightness.dark ? 0.18 : 0.14),
           borderWidth: 0.5,
-          borderRadius: const Radius.circular(AppShape.md),
+          borderRadius: Radius.zero,
           headerBackground: dsh.codeWellHeader,
           cellPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           columnWidth: const MinColumnWidth(IntrinsicColumnWidth(), FixedColumnWidth(_maxColumnWidth)),
