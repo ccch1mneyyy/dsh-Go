@@ -495,6 +495,20 @@ class SettingsEditSession implements SettingsEditor {
     _checkSecretTarget(field);
     await _controller.clearSecret(field);
   }
+
+  /// Writes a credential the page names itself, against the snapshot this
+  /// editor came from: a key sheet left open across a host switch must not
+  /// store the key on the new host.
+  Future<void> setCredential(String ref, String value) async {
+    if (!active) throw EngineSettingsFailure(_staleEditorMessage);
+    await _controller.setCredentialFor(_snapshot._origin!, ref, value);
+  }
+
+  /// Removes a directly named credential, with the same snapshot affinity.
+  Future<void> clearCredential(String ref) async {
+    if (!active) throw EngineSettingsFailure(_staleEditorMessage);
+    await _controller.clearCredentialFor(_snapshot._origin!, ref);
+  }
 }
 
 String get _staleEditorMessage => appL10n.engineSettingsHostChanged;
@@ -869,6 +883,46 @@ class EngineSettingsController extends AsyncNotifier<EngineSettings?> {
       if (!ok) throw EngineSettingsFailure(_current?.errorOf(field) ?? appL10n.commonSaveFailed);
       return;
     }
+    try {
+      await client.clearProviderKey(ref: ref);
+    } catch (error) {
+      throw EngineSettingsFailure(describeSettingsError(error));
+    }
+    if (!_accepts(origin)) throw EngineSettingsFailure(_staleEditorMessage);
+    await _refreshCredentials();
+  }
+
+  /// Stores a credential the page names itself, not one a schema field
+  /// declares. The media settings page gives every service its own
+  /// environment-style reference (`DSH_MEDIA_<SERVICE>_API_KEY`), so its key
+  /// rows write here instead of through a fixed secret slot. Throws
+  /// [EngineSettingsFailure]; the host decides whether [ref] may be written.
+  Future<void> setCredential(String ref, String value) => setCredentialFor(_origin, ref, value);
+
+  /// [setCredential] against the host generation [origin] the caller's
+  /// snapshot came from, so a page or sheet built against an older host
+  /// cannot acquire the new one's credential store.
+  Future<void> setCredentialFor(Object origin, String ref, String value) async {
+    if (!_accepts(origin)) throw EngineSettingsFailure(_staleEditorMessage);
+    final client = _client;
+    if (client == null || _current == null) throw EngineSettingsFailure(appL10n.commonEngineUnreachable);
+    try {
+      await client.setProviderKey(value, ref: ref);
+    } catch (error) {
+      throw EngineSettingsFailure(describeSettingsError(error));
+    }
+    if (!_accepts(origin)) throw EngineSettingsFailure(_staleEditorMessage);
+    await _refreshCredentials();
+  }
+
+  /// Removes a credential named directly, as [setCredential] wrote it.
+  Future<void> clearCredential(String ref) => clearCredentialFor(_origin, ref);
+
+  /// [clearCredential] against the snapshot's host generation.
+  Future<void> clearCredentialFor(Object origin, String ref) async {
+    if (!_accepts(origin)) throw EngineSettingsFailure(_staleEditorMessage);
+    final client = _client;
+    if (client == null || _current == null) throw EngineSettingsFailure(appL10n.commonEngineUnreachable);
     try {
       await client.clearProviderKey(ref: ref);
     } catch (error) {
