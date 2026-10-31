@@ -1,5 +1,5 @@
 // The model sheet: channel filter, model cards, the capsule effort selector.
-// Behaviour, geometry (insets, equal cards, one dismissal handle) and goldens
+// Behaviour, geometry (insets, full-width cards, one dismissal handle) and goldens
 // (light + dark). Regenerate with
 // `flutter test --update-goldens test/chat/model_sheet_test.dart`.
 
@@ -11,11 +11,14 @@ import 'package:dsh_app/ui/chat/empty_state.dart';
 import 'package:dsh_app/ui/chat/model_sheet.dart';
 import 'package:dsh_app/ui/chat/widgets/whale_tail.dart';
 import 'package:dsh_app/ui/common/app_sheet.dart';
+import 'package:dsh_app/ui/common/search_capsule.dart';
 import 'package:dsh_app/ui/common/segmented_pill.dart';
 import 'package:dsh_app/ui/common/sheet_title_bar.dart';
 import 'package:dsh_app/ui/theme/theme.dart';
+import 'package:dsh_app/ui/theme/app_icons.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -23,6 +26,7 @@ import 'support/harness.dart';
 
 const _off = ReasoningEffort('off', 'Off', null);
 const _high = ReasoningEffort('high', 'High', null);
+const _longModelName = 'Qwen3 Coder 480B A35B Instruct (Extended Context)';
 
 /// DeepSeek (two models with efforts) + OpenRouter (one without efforts).
 final multiCatalog = ModelCatalog(
@@ -40,7 +44,7 @@ final multiCatalog = ModelCatalog(
         efforts: [_off, _high],
         defaultEffort: 'high',
       ),
-      ModelInfo(provider: 'openrouter', id: 'qwen/qwen3-coder', name: 'Qwen3-Coder', description: '阿里的代码模型'),
+      ModelInfo(provider: 'openrouter', id: 'qwen/qwen3-coder', name: _longModelName, description: '阿里的代码模型'),
     ]),
   ],
   failures: const [],
@@ -98,6 +102,8 @@ Future<ChatHarness> _openSheet(
 }
 
 Finder _card(String name) => find.ancestor(of: find.text(name), matching: find.byType(GlassSurface)).first;
+
+Finder get _searchField => find.descendant(of: find.byType(SearchCapsule), matching: find.byType(TextField));
 
 ModelSelection? _picked(WidgetTester tester, ChatHarness harness) {
   final container = ProviderScope.containerOf(tester.element(find.byType(ChatScreen)));
@@ -301,9 +307,97 @@ void main() {
     });
   });
 
+  group('search', () {
+    testWidgets('a filtered-out card cannot be picked during its exit animation', (tester) async {
+      final harness = await _openSheet(
+        tester,
+        _harness(
+          multiCatalog,
+          model: const ModelSelection(provider: 'deepseek-official', model: 'deepseek-v4-pro'),
+        ),
+      );
+      await tester.enterText(_searchField, 'no-such-model');
+      await tester.pump();
+      expect(find.text('没有匹配的模型'), findsOneWidget);
+      await tester.tapAt(tester.getCenter(_card('V41 Flash')));
+      await pumpFrames(tester, 6);
+      expect(harness.controllers['s1']!.models, isEmpty);
+    });
+
+    testWidgets('matches names, displayed short names and IDs, ignoring case and outer spaces', (tester) async {
+      await _openSheet(tester, _harness(multiCatalog));
+      for (final query in ['  DEEPSEEK-V4-PRO  ', 'v4 pro']) {
+        await tester.enterText(_searchField, query);
+        await pumpFrames(tester, 6);
+        expect(find.text('V4 Pro'), findsOneWidget);
+        expect(find.text('V41 Flash'), findsNothing);
+      }
+      await tester.tap(find.text('OpenRouter'));
+      await pumpFrames(tester, 6);
+      for (final query in ['EXTENDED CONTEXT', ' QWEN/QWEN3-CODER ']) {
+        await tester.enterText(_searchField, query);
+        await pumpFrames(tester, 6);
+        expect(find.text(_longModelName), findsOneWidget);
+        expect(find.text('Kimi K2'), findsNothing);
+        expect(find.text('GLM 4.6'), findsNothing);
+      }
+    });
+
+    testWidgets('keeps the query across channels without changing the selected model', (tester) async {
+      final harness = await _openSheet(
+        tester,
+        _harness(
+          multiCatalog,
+          model: const ModelSelection(provider: 'openrouter', model: 'z-ai/glm-4.6'),
+        ),
+      );
+      await tester.enterText(_searchField, 'qwen');
+      await pumpFrames(tester, 6);
+      await tester.tap(find.text('DeepSeek'));
+      await pumpFrames(tester, 6);
+      expect(find.text('没有匹配的模型'), findsOneWidget);
+      expect(tester.widget<TextField>(_searchField).controller!.text, 'qwen');
+      expect(harness.controllers['s1']!.models, isEmpty);
+      await tester.tap(find.text('OpenRouter'));
+      await pumpFrames(tester, 6);
+      expect(find.text(_longModelName), findsOneWidget);
+      await tester.tap(_card(_longModelName));
+      await pumpFrames(tester, 4);
+      expect(_picked(tester, harness)!.model, 'qwen/qwen3-coder');
+      expect(harness.controllers['s1']!.models, hasLength(1));
+    });
+
+    testWidgets('clearing a no-match query restores the provider list', (tester) async {
+      await _openSheet(tester, _harness(multiCatalog));
+      await tester.enterText(_searchField, 'no-such-model');
+      await pumpFrames(tester, 6);
+      expect(find.text('没有匹配的模型'), findsOneWidget);
+      await tester.tap(find.descendant(of: find.byType(SearchCapsule), matching: find.byIcon(AppIcons.clear)));
+      await pumpFrames(tester, 6);
+      expect(tester.widget<TextField>(_searchField).controller!.text, isEmpty);
+      expect(find.text('没有匹配的模型'), findsNothing);
+      expect(find.text('V4 Pro'), findsOneWidget);
+      expect(find.text('V41 Flash'), findsOneWidget);
+      expect(find.text(_longModelName), findsNothing);
+    });
+
+    testWidgets('reopening starts with an empty query', (tester) async {
+      await _openSheet(tester, _harness(multiCatalog));
+      await tester.enterText(_searchField, 'no-such-model');
+      await pumpFrames(tester, 6);
+      await tester.binding.handlePopRoute();
+      await pumpFrames(tester, 6);
+      await tester.tap(find.byType(ModelChip));
+      await pumpFrames(tester, 8);
+      expect(tester.widget<TextField>(_searchField).controller!.text, isEmpty);
+      expect(find.text('V4 Pro'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('geometry', () {
     for (final scale in [1.0, 1.3]) {
-      testWidgets('20 in from both sides, equal cards (text ×$scale)', (tester) async {
+      testWidgets('20 in from both sides, full-width cards (text ×$scale)', (tester) async {
         tester.platformDispatcher.textScaleFactorTestValue = scale;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
         await _openSheet(tester, _harness(multiCatalog));
@@ -314,9 +408,8 @@ void main() {
         expect(pro.left, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
         expect(width - flash.right, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
         expect(pro.width, moreOrLessEquals(flash.width, epsilon: 0.5));
-        expect(pro.height, moreOrLessEquals(flash.height, epsilon: 0.5));
-        expect(pro.top, moreOrLessEquals(flash.top, epsilon: 0.5));
-        expect(flash.left - pro.right, moreOrLessEquals(12, epsilon: 0.5));
+        expect(pro.left, moreOrLessEquals(flash.left, epsilon: 0.5));
+        expect(flash.top - pro.bottom, moreOrLessEquals(12, epsilon: 0.5));
 
         // Filter and effort pill span exactly the cards' width.
         final pills = find.byType(SegmentedPill<String>);
@@ -332,6 +425,12 @@ void main() {
         expect(find.byTooltip('关闭'), findsNothing);
         expect(title.left, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
         expect(width - title.right, moreOrLessEquals(SheetTitleBar.inset, epsilon: 0.5));
+
+        await tester.tap(find.text('OpenRouter'));
+        await pumpFrames(tester, 6);
+        final name = find.text(_longModelName);
+        expect(tester.renderObject<RenderParagraph>(name).didExceedMaxLines, isFalse);
+        expect(tester.getRect(name).bottom, lessThanOrEqualTo(tester.getRect(_card(_longModelName)).bottom));
         expect(tester.takeException(), isNull);
       });
     }
@@ -341,6 +440,23 @@ void main() {
     final suffix = brightness == Brightness.dark ? 'dark' : 'light';
 
     group('goldens ($suffix)', () {
+      for (final (query, name) in [('qwen', 'search'), ('no-such-model', 'search_empty')]) {
+        testWidgets(name, (tester) async {
+          await _openSheet(
+            tester,
+            _harness(
+              multiCatalog,
+              model: const ModelSelection(provider: 'openrouter', model: 'z-ai/glm-4.6'),
+            ),
+            brightness: brightness,
+          );
+          await tester.enterText(_searchField, query);
+          FocusManager.instance.primaryFocus?.unfocus();
+          await pumpFrames(tester, 8);
+          await expectLater(find.byType(MaterialApp), matchesGoldenFile('goldens/model_sheet_${name}_$suffix.png'));
+        });
+      }
+
       testWidgets('two channels, effort shown', (tester) async {
         await _openSheet(
           tester,
