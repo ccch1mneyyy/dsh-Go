@@ -126,6 +126,49 @@ void main() {
       ]);
     });
 
+    for (final multi in [false, true]) {
+      testWidgets('option invoke enforces the serialized 4 KiB boundary (${multi ? 'multi' : 'single'})', (
+        tester,
+      ) async {
+        final r = _Recorder();
+        String keyFor(int length) => List.filled(length, 'x').join();
+        Map<String, Object> argsFor(String key) => multi
+            ? {
+                'values': [key],
+              }
+            : {'value': key};
+        var exact = '';
+        for (var length = 0; length <= 4096; length++) {
+          final candidate = keyFor(length);
+          if (utf8.encode(jsonEncode(argsFor(candidate))).length == 4096) {
+            exact = candidate;
+            break;
+          }
+        }
+        expect(exact, isNotEmpty);
+
+        Map<String, Object> view(String key) => {
+          'type': 'options',
+          'id': 'boundary',
+          'multi': multi,
+          'options': [
+            {'label': 'Limite', 'value': key},
+          ],
+        };
+
+        await pumpView(tester, view(exact), onAction: r.call);
+        await tester.tap(find.text('Limite'));
+        await pumpFrames(tester);
+        expect(r.calls, hasLength(1));
+        expect(utf8.encode(jsonEncode(r.calls.single.args)), hasLength(4096));
+
+        await pumpView(tester, view('$exact x'), onAction: r.call);
+        await tester.tap(find.text('Limite'));
+        await pumpFrames(tester);
+        expect(r.calls, hasLength(1), reason: 'oversized selection must not be dispatched');
+      });
+    }
+
     testWidgets('confirm sends confirmed: true / false', (tester) async {
       final r = _Recorder();
       await pumpView(tester, choiceView, data: const {}, onAction: r.call);

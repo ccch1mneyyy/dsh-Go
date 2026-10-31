@@ -15,6 +15,7 @@ import '../../../plugins/native/native_icons.dart' show nativeIcon;
 import '../../common/pressable.dart';
 import '../../theme/app_icons.dart';
 import '../../theme/theme.dart';
+import 'dsh_ui_bind.dart' show measureDshUiJson;
 import 'dsh_ui_model.dart';
 import 'dsh_ui_plugin.dart';
 import 'dsh_ui_plugin_figures.dart';
@@ -840,22 +841,19 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
     } else {
       next = {option.key};
     }
+    final args = node.multi
+        ? {
+            'values': [
+              for (final o in node.options)
+                if (next.contains(o.key)) o.key,
+            ],
+          }
+        : {'value': option.key};
+    if (!measureDshUiJson(args, maxBytes: DshUiControlLimits.valueBytes).ok) return;
     setState(() => _local = next);
     final ok = await invoke(
       option.key,
-      PluginAction(
-        id: node.id,
-        args: node.multi
-            ? {
-                'values': [
-                  for (final o in node.options)
-                    if (next.contains(o.key)) o.key,
-                ],
-              }
-            : {'value': option.key},
-        source: PluginActionSource.option,
-        path: node.path,
-      ),
+      PluginAction(id: node.id, args: args, source: PluginActionSource.option, path: node.path),
     );
     if (!ok && mounted) setState(() => _local = before);
   }
