@@ -401,6 +401,16 @@ class ChatAlertsController extends Notifier<ChatAlert?> {
       if (request == null) return NotifyActionResult.gone;
       final choices = petChoices(request);
       if (choice == null || choices == null || !choices.contains(choice)) return NotifyActionResult.failed;
+      final client = attached.$1.client;
+      if (client.capabilities.backend == 'codex') {
+        // Codex uses server request IDs, not DSH's $events/result. Keep the
+        // displayed request bound to this connection; never retry after loss.
+        if (!current() || !identical(client.mux.generation, generation)) return NotifyActionResult.gone;
+        await client.answerQuestion(request, [
+          QuestionAnswer(request.questions.single.id, selected: [choice]),
+        ]);
+        return NotifyActionResult.handled;
+      }
       final sent = await answerNativeRequest(
         client: attached.$1.client,
         generation: generation,

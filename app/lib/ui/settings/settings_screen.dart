@@ -115,7 +115,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Padding(
             padding: EdgeInsets.all(24),
-            child: Text('当前为 Codex 基本聊天版本。插件、手机操控、文件附件和其他高级功能尚未适配。切回 DSH 可使用其原有功能。'),
+            child: Text('当前为 Codex 基本聊天版本。插件、手机操控和其他 DSH 专属功能尚未适配。切回 DSH 可使用其原有功能。'),
           ),
         ],
       );

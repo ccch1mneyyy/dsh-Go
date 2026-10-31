@@ -12,6 +12,7 @@ import '../../share_code/plugin_share.dart' show sharedPluginFromBundle;
 import '../../state/plugin_config/plugin_config_state.dart';
 import '../../links/plugin_links.dart' show marketPluginLink;
 import '../../state/plugins_state.dart';
+import '../../state/connection_state.dart';
 import '../../update/version.dart';
 import '../common/app_sheet.dart';
 import '../common/list_page_row.dart';
@@ -95,6 +96,9 @@ class MarketPluginSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    if (!ref.watch(advancedBackendProvider)) {
+      return Padding(padding: const EdgeInsets.all(24), child: Text(l10n.remoteDshPluginsRequireDsh));
+    }
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).languageCode;
     final plugin = entry.plugin;
@@ -379,6 +383,9 @@ class BundleSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    if (!ref.watch(advancedBackendProvider)) {
+      return Padding(padding: const EdgeInsets.all(24), child: Text(l10n.remoteDshPluginsRequireDsh));
+    }
     final theme = Theme.of(context);
     final colors = DshColors.of(context);
     final host = ref.watch(pluginHostProvider);

@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/l10n.dart';
 import '../share_hosted/hosted_config.dart' show shareHostOrigin;
 import '../state/plugins_state.dart';
+import '../state/connection_state.dart';
 import '../ui/plugins/plugin_detail_sheet.dart' show showMarketPluginSheet;
 import 'app_links.dart';
 
@@ -58,9 +59,17 @@ Future<bool> openMarketPluginLink(BuildContext context, Uri uri) async {
   final l10n = context.l10n;
   final container = ProviderScope.containerOf(context, listen: false);
   final messenger = ScaffoldMessenger.maybeOf(context);
+  bool requiresDsh() {
+    if (container.read(advancedBackendProvider)) return false;
+    messenger?.showSnackBar(SnackBar(content: Text(l10n.remoteDshPluginsRequireDsh)));
+    return true;
+  }
+
+  if (requiresDsh()) return true;
   try {
     final entry = await findMarketEntry(container, name);
     if (!context.mounted) return true;
+    if (requiresDsh()) return true;
     if (entry == null) {
       messenger?.showSnackBar(SnackBar(content: Text(l10n.marketLinkNotFound(name))));
       return true;

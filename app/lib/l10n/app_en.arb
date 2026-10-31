@@ -3904,6 +3904,7 @@
   "remoteNetworkObservedAt": "Last checked",
   "remoteCodexWorkspace": "Codex workspace",
   "remoteCodexWorkspaceHint": "Browse remote Codex over SSH · Read only",
+  "remoteDshPluginsRequireDsh": "Plugins require a DSH backend. Switch to a DSH host to continue.",
   "riskDontShowAgain": "Don’t show again",
   "riskAskAi": "Not sure? Ask AI",
   "riskConfirmAlwaysAction": "Skip confirmation",

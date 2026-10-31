@@ -13537,6 +13537,9 @@ class L10nEn extends L10n {
   String get remoteCodexWorkspaceHint => 'Browse remote Codex over SSH · Read only';
 
   @override
+  String get remoteDshPluginsRequireDsh => 'Plugins require a DSH backend. Switch to a DSH host to continue.';
+
+  @override
   String get riskDontShowAgain => 'Don’t show again';
 
   @override

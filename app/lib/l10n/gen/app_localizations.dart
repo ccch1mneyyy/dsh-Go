@@ -23516,6 +23516,12 @@ abstract class L10n {
   /// **'通过 SSH 查看远程 Codex 对话 · 只读'**
   String get remoteCodexWorkspaceHint;
 
+  /// No description provided for @remoteDshPluginsRequireDsh.
+  ///
+  /// In zh, this message translates to:
+  /// **'此功能仅适用于 DSH 插件，请先切换到 DSH 主机。'**
+  String get remoteDshPluginsRequireDsh;
+
   /// No description provided for @riskDontShowAgain.
   ///
   /// In zh, this message translates to:
