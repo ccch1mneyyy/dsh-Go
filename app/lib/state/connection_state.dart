@@ -351,6 +351,12 @@ class ConnectionDiagnostics {
         'phase': status.phase.name,
         if (status.step != null) 'step': status.step!.name,
         'attempt': status.attempt,
+        if (status.path case final path?) 'transport': path.name,
+        if (status.network case final network?) ...{
+          if (network.connectDuration case final duration?) 'connectDurationMs': duration.inMilliseconds,
+          if (network.roundTripTime case final duration?) 'roundTripTimeMs': duration.inMilliseconds,
+          'fallbackReason': ?network.safeFallbackReason,
+        },
         if (status.error case final error?) ...{'errorKind': error.kind.name, 'retryable': error.retryable},
       });
     }
