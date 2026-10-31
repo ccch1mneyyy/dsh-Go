@@ -7,6 +7,7 @@ import 'package:dsh_app/l10n/l10n.dart';
 import 'package:dsh_app/pets/pet_mood.dart';
 import 'package:dsh_app/pets/pet_progress.dart';
 import 'package:dsh_app/pets/pet_state.dart';
+import 'package:dsh_app/state/connection_state.dart';
 import 'package:dsh_app/state/hosts_state.dart';
 import 'package:dsh_app/ui/chat/run_info.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -129,24 +130,51 @@ void main() {
     await events.close();
   });
 
-  test('a ready generation rebuilds providers that reopen the live watch', () async {
-    final generations = StreamController<MuxGeneration>();
-    final container = ProviderContainer();
-    var builds = 0;
-    final dependent = Provider<int>((ref) {
-      ref.watch(petProgressReadyGenerationsProvider(generations.stream));
-      return ++builds;
-    });
-    final sub = container.listen(dependent, (_, _) {});
-    expect(builds, 1);
+  test('real progress provider reopens its watch on a new mux generation', () async {
+    final carrier = _ProgressCarrier();
+    final client = _ProgressClient(carrier);
+    await client.mux.ready(timeout: const Duration(seconds: 2));
+    final container = ProviderContainer(
+      overrides: [
+        localConnectionProvider.overrideWith(() => _Local(client)),
+        petProgressTargetProvider.overrideWith(() => _Target(a)),
+        petPrefsProvider.overrideWith(() => FixedPetPrefs(const PetPrefs(packId: 'deepy-whale', quiet: false))),
+        petOverlayProvider.overrideWith(_Overlay.new),
+      ],
+    );
+    container.read(appForegroundProvider.notifier).set(false);
+    final sub = container.listen(petProgressProvider, (_, _) {});
+    await _until(() => client.watches == 1);
+    expect(client.watchTargets, ['a']);
 
-    generations.add(const MuxGeneration(1, 'client-1', '/home/user'));
-    await pumpEventQueue();
-    expect(builds, 2);
+    final snapshot = SessionSnapshotEvent.fromJson('a', {
+      'records': [
+        {
+          'event': {
+            'seq': 0,
+            'time': DateTime(2026, 10, 31).millisecondsSinceEpoch,
+            'type': 'turn/start',
+            'data': {'turn': 1},
+          },
+        },
+      ],
+      'cursor': 0,
+    });
+    client.streams.first.add(snapshot);
+    await _until(() => container.read(petProgressProvider)?.text == '正在思考');
+
+    carrier.link!.lose();
+    await _until(() => client.mux.generation?.number == 2);
+    await _until(() => client.watches >= 2);
+    client.streams.last.add(snapshot);
+    await _until(() => container.read(petProgressProvider)?.text == '正在思考');
 
     sub.close();
     container.dispose();
-    await generations.close();
+    for (final stream in client.streams) {
+      await stream.close();
+    }
+    await client.close();
   });
 
   test('realistic follow frames produce waiting and named tool phases', () async {
@@ -241,4 +269,110 @@ class _Overlay extends PetOverlayController {
   @override
   PetOverlayStatus build() => const PetOverlayStatus(enabled: true, permission: PetOverlayPermission.granted);
   void disable() => state = const PetOverlayStatus(enabled: false);
+}
+
+class _Local extends LocalConnectionController {
+  _Local(this.client);
+
+  final DshClient client;
+
+  @override
+  Future<HostConnection?> build() async => HostConnection(client: client, isLocal: true);
+}
+
+class _ProgressClient extends DshClient {
+  _ProgressClient(super.carrier)
+    : super.withCarrier(
+        muxOptions: const MuxOptions(readyTimeout: Duration(seconds: 2), retryCaps: [Duration(milliseconds: 10)]),
+      );
+
+  int watches = 0;
+  final watchTargets = <String>[];
+  final streams = <StreamController<DshEvent>>[];
+
+  @override
+  Stream<DshEvent> watch(String sessionId, {WatchOptions options = const WatchOptions()}) {
+    watches++;
+    watchTargets.add(sessionId);
+    final stream = StreamController<DshEvent>();
+    streams.add(stream);
+    return stream.stream;
+  }
+}
+
+class _ProgressCarrier extends DshCarrier {
+  _ProgressLink? link;
+  int _clients = 0;
+
+  @override
+  String get kind => 'pet-progress-memory';
+
+  @override
+  DshTracer? get tracer => null;
+
+  @override
+  Future<RpcResult> call(String endpoint, Map<String, Object?> args, {Duration? timeout}) async =>
+      const RpcError(DshRemoteException('gateway/not-found', 'not scripted'));
+
+  @override
+  Future<DshMuxLink> openLink(MuxOptions options) async {
+    final next = _ProgressLink(this);
+    link = next;
+    return next;
+  }
+
+  @override
+  Future<void> close() async {}
+}
+
+class _ProgressLink implements DshMuxLink {
+  _ProgressLink(this.carrier);
+
+  final _ProgressCarrier carrier;
+  DshMuxFrameHandler? _onFrame;
+  DshMuxLossHandler? _onLost;
+
+  void lose() => _onLost?.call(const DshCarrierLostException('pet progress link dropped'), null);
+
+  @override
+  void start({required DshMuxFrameHandler onFrame, required DshMuxLossHandler onLost}) {
+    _onFrame = onFrame;
+    _onLost = onLost;
+  }
+
+  @override
+  void open(String streamId, String endpoint, Map<String, Object?> payload) {
+    if (endpoint != r'$events') return;
+    scheduleMicrotask(
+      () => _onFrame?.call({
+        'type': 'item',
+        'streamId': streamId,
+        'value': {
+          'type': 'ready',
+          'clientId': 'pet-progress-${++carrier._clients}',
+          'host': {'home': '/home/user'},
+        },
+      }),
+    );
+  }
+
+  @override
+  void sendItem(String streamId, Object? value) {}
+
+  @override
+  void endUplink(String streamId) {}
+
+  @override
+  void cancel(String streamId) {}
+
+  @override
+  Future<void> close(int code, String reason) async {}
+}
+
+Future<void> _until(bool Function() condition) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 3));
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) fail('condition was not met');
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
 }
