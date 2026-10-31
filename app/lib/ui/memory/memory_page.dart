@@ -165,35 +165,106 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     if (manifest == null || manifest.files.isEmpty) {
       return const Center(child: Text('共享记忆目录还是空的。'));
     }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView.separated(
-        itemCount: manifest.files.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final file = manifest.files[index];
-          return ListTile(
+
+    const order = ['共享规则', '技能', '事实', '决策', '项目', '记忆库', '会话摘要', '其他'];
+    final sections = <String, List<_MemoryFile>>{};
+    for (final file in manifest.files) {
+      sections.putIfAbsent(_sectionOf(file.path), () => []).add(file);
+    }
+
+    final rows = <Widget>[
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Text('${manifest.files.length} 条 · ${manifest.device}', style: Theme.of(context).textTheme.bodySmall),
+      ),
+    ];
+    for (final title in order) {
+      final files = sections[title];
+      if (files == null || files.isEmpty) continue;
+      rows.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            children: [
+              Icon(_sectionIcon(title), size: 18),
+              const SizedBox(width: 8),
+              Text(title, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(width: 6),
+              Text('${files.length}', style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
+        ),
+      );
+      for (final file in files) {
+        rows.add(
+          ListTile(
             dense: true,
-            leading: Icon(_iconFor(file.kind)),
-            title: Text(file.title),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            leading: Icon(_iconFor(file.path)),
+            title: Text(_displayTitle(file)),
             subtitle: Text(file.path, maxLines: 1, overflow: TextOverflow.ellipsis),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _open(file),
-          );
-        },
-      ),
+          ),
+        );
+      }
+      rows.add(const Divider(height: 1));
+    }
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(children: rows),
     );
   }
 
-  IconData _iconFor(String kind) {
-    switch (kind) {
-      case 'AGENTS.shared.md':
-      case 'memory':
-      case 'sessions':
-      case 'skills':
-        return Icons.folder_outlined;
+  String _sectionOf(String path) {
+    if (path == 'AGENTS.shared.md') return '共享规则';
+    if (path.startsWith('skills/')) return '技能';
+    if (path.startsWith('memory/facts/')) return '事实';
+    if (path.startsWith('memory/decisions/')) return '决策';
+    if (path.startsWith('memory/projects/')) return '项目';
+    if (path.startsWith('memory/')) return '记忆库';
+    if (path.startsWith('sessions/')) return '会话摘要';
+    return '其他';
+  }
+
+  String _displayTitle(_MemoryFile file) {
+    if (file.path == 'AGENTS.shared.md' && file.title == file.path) return '共享规则';
+    return file.title;
+  }
+
+  IconData _sectionIcon(String section) {
+    switch (section) {
+      case '共享规则':
+        return Icons.gavel_outlined;
+      case '技能':
+        return Icons.extension_outlined;
+      case '事实':
+      case '决策':
+      case '项目':
+      case '记忆库':
+        return Icons.psychology_outlined;
+      case '会话摘要':
+        return Icons.forum_outlined;
       default:
-        return Icons.description_outlined;
+        return Icons.folder_outlined;
+    }
+  }
+
+  IconData _iconFor(String path) {
+    if (path == 'AGENTS.shared.md') return Icons.description_outlined;
+    switch (_sectionOf(path)) {
+      case '技能':
+        return Icons.code_outlined;
+      case '会话摘要':
+        return Icons.chat_outlined;
+      case '事实':
+      case '决策':
+      case '项目':
+      case '记忆库':
+        return Icons.notes_outlined;
+      default:
+        return Icons.folder_outlined;
     }
   }
 }
