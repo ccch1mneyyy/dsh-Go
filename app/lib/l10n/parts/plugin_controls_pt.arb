@@ -15,6 +15,7 @@
   "plugInputNestedForm": "Formas não podem ser aninhadas",
   "plugInputSubmitMissing": "O formulário precisa de uma ação de submissão",
   "plugInputTooLarge": "Muito contente. Encurta-o e tente novamente.",
+  "pluginOptionSelectionTooLarge": "Seleção não enviada: excede 4 KiB. Remova mais opções para enviá-la.",
   "plugInputCheckFields": "Verificar os campos realçados",
   "plugInputFailed": "Não salvo. Tente novamente.",
   "plugInputSubmit": "Gravar",

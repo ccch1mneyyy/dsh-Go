@@ -9515,6 +9515,9 @@ class L10nZh extends L10n {
   String get plugInputTooLarge => '内容过多，请缩短后重试';
 
   @override
+  String get pluginOptionSelectionTooLarge => '选择未发送：超过 4 KiB。请再移除一些选项后发送。';
+
+  @override
   String get plugInputCheckFields => '请检查标出的项目';
 
   @override

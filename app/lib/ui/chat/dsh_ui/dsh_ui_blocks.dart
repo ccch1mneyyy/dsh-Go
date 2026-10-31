@@ -822,11 +822,15 @@ class DshUiPluginOptions extends StatefulWidget {
 class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking {
   /// 点下后、插件更新 `selected` 之前的选中项。
   Set<String>? _local;
+  bool _oversizedDraft = false;
 
   @override
   void didUpdateWidget(DshUiPluginOptions old) {
     super.didUpdateWidget(old);
-    if (old.node != widget.node) _local = null;
+    if (old.node != widget.node) {
+      _local = null;
+      _oversizedDraft = false;
+    }
   }
 
   Set<String> get _selected => _local ?? widget.node.selected.toSet();
@@ -834,9 +838,10 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
   Future<void> _tap(DshUiOption option) async {
     final node = widget.node;
     final before = _local;
+    final selectedBefore = _selected;
     final Set<String> next;
     if (node.multi) {
-      next = {..._selected};
+      next = {...selectedBefore};
       if (!next.remove(option.key)) next.add(option.key);
     } else {
       next = {option.key};
@@ -849,13 +854,32 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
             ],
           }
         : {'value': option.key};
-    if (utf8.encode(jsonEncode(args)).length > DshUiControlLimits.valueBytes) return;
-    setState(() => _local = next);
+    if (utf8.encode(jsonEncode(args)).length > DshUiControlLimits.valueBytes) {
+      // Let users work down an already oversized multi-selection. These local
+      // deselections are visibly marked as unsent until the full payload fits.
+      if (node.multi && selectedBefore.contains(option.key)) {
+        setState(() {
+          _local = next;
+          _oversizedDraft = true;
+        });
+      }
+      return;
+    }
+    final wasOversizedDraft = _oversizedDraft;
+    setState(() {
+      _local = next;
+      _oversizedDraft = false;
+    });
     final ok = await invoke(
       option.key,
       PluginAction(id: node.id, args: args, source: PluginActionSource.option, path: node.path),
     );
-    if (!ok && mounted) setState(() => _local = before);
+    if (!ok && mounted) {
+      setState(() {
+        _local = before;
+        _oversizedDraft = wasOversizedDraft;
+      });
+    }
   }
 
   @override
@@ -878,6 +902,13 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
             busy: busy(node.options[i].key),
             enabled: interactive && !waiting,
             onTap: () => _tap(node.options[i]),
+          ),
+        ],
+        if (_oversizedDraft) ...[
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.pluginOptionSelectionTooLarge,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
       ],

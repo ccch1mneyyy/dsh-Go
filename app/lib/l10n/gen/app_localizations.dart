@@ -17565,6 +17565,12 @@ abstract class L10n {
   /// **'内容过多，请缩短后重试'**
   String get plugInputTooLarge;
 
+  /// No description provided for @pluginOptionSelectionTooLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择未发送：超过 4 KiB。请再移除一些选项后发送。'**
+  String get pluginOptionSelectionTooLarge;
+
   /// No description provided for @plugInputCheckFields.
   ///
   /// In zh, this message translates to:

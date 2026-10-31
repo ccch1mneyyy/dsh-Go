@@ -212,6 +212,34 @@ void main() {
       expect(r.calls, hasLength(1), reason: 'JSON-escaped surrogate payload is over the byte limit');
     });
 
+    testWidgets('oversized multi-selection can be reduced and staged deselections are marked', (tester) async {
+      final r = _Recorder();
+      final values = [for (var i = 0; i < 5; i++) '$i${List.filled(1099, 'x').join()}'];
+      await pumpView(tester, {
+        'type': 'options',
+        'id': 'large-selection',
+        'multi': true,
+        'options': [
+          for (var i = 0; i < values.length; i++) {'label': 'Opção $i', 'value': values[i]},
+        ],
+        'selected': values,
+      }, onAction: r.call);
+      await tester.tap(find.text('Opção 0'));
+      await pumpFrames(tester);
+      expect(r.calls, isEmpty, reason: 'four values still exceed the payload limit');
+      expect(find.text('选择未发送：超过 4 KiB。请再移除一些选项后发送。'), findsOneWidget);
+      final first = tester.widget<DshUiOptionRow>(
+        find.ancestor(of: find.text('Opção 0'), matching: find.byType(DshUiOptionRow)),
+      );
+      expect(first.selected, isFalse);
+
+      await tester.tap(find.text('Opção 1'));
+      await pumpFrames(tester);
+      expect(r.calls, hasLength(1));
+      expect(r.calls.single.args, {'values': values.skip(2).toList()});
+      expect(find.text('选择未发送：超过 4 KiB。请再移除一些选项后发送。'), findsNothing);
+    });
+
     testWidgets('confirm sends confirmed: true / false', (tester) async {
       final r = _Recorder();
       await pumpView(tester, choiceView, data: const {}, onAction: r.call);
