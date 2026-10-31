@@ -556,6 +556,8 @@ void main() {
       try {
         expect(formatDshUiNumber(3800), '3.800');
         expect(formatDshUiNumber(12.345), '12,3');
+        expect(formatDshUiValue(1.5), '1,5');
+        expect(formatDshUiValue(41800), '41.800');
         expect(formatDshUiCompact(1500), '1,5K');
       } finally {
         AppLocale.use(previous);

@@ -1101,10 +1101,10 @@ String? _clip(String? text, int max) {
 String formatDshUiValue(double value) {
   if (value == value.roundToDouble() && value.abs() < 1e15) {
     final whole = value.round();
-    return whole.abs() >= 10000 ? _group(whole.toString()) : '$whole';
+    return _localizeDshUiNumber(whole.abs() >= 10000 ? _group(whole.toString()) : '$whole');
   }
   final fixed = value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
-  return value.abs() >= 10000 ? _group(fixed) : fixed;
+  return _localizeDshUiNumber(value.abs() >= 10000 ? _group(fixed) : fixed);
 }
 
 String _group(String digits) {

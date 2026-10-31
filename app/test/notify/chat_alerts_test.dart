@@ -61,12 +61,20 @@ void main() {
       reason: 'fallback reason',
       displayReason: {'en': 'English reason', 'pt-BR': 'Motivo em português'},
     );
+    const blankPortuguese = ApprovalRequest(
+      eventId: 'approval-blank',
+      sessionId: 's1',
+      toolName: 'bash',
+      reason: 'fallback reason',
+      displayReason: {'en': 'English reason', 'pt-BR': '   '},
+    );
     final previous = AppLocale.current;
     try {
       AppLocale.use(AppLocale.en);
       expect(approvalText(request), contains('English reason'));
       AppLocale.use(AppLocale.ptBR);
       expect(approvalText(request), contains('Motivo em português'));
+      expect(approvalText(blankPortuguese), contains('English reason'));
     } finally {
       AppLocale.use(previous);
     }
