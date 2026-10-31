@@ -8,12 +8,13 @@ import '../../state/connection_state.dart';
 import '../../ui_config/ui_config_source.dart';
 import 'memory_paths.dart';
 
-/// Native, read-only view of the shared dsh-mesh memory.
+/// Native view of the shared dsh-mesh memory.
 ///
 /// The host writes a small manifest to `$DSH_HOME/dsh-go/dsh-mesh.json`;
 /// this page reads that manifest and the individual Markdown files through
 /// `workspaceFiles/read`, so it works for local and DSH Remote hosts without
-/// the dsh-go bridge.
+/// the dsh-go bridge. Inbox actions run `/mesh-memory …` on the host through
+/// `commands/execute`, so they work over Remote as well.
 class MemoryPage extends ConsumerStatefulWidget {
   const MemoryPage({super.key, this.sessionId});
 
@@ -50,12 +51,34 @@ class _MemoryFile {
   );
 }
 
+class _InboxItem {
+  const _InboxItem({required this.path, required this.title, required this.turns, this.updatedAt});
+
+  final String path;
+  final String title;
+  final int turns;
+  final DateTime? updatedAt;
+
+  factory _InboxItem.fromJson(Map<String, dynamic> json) => _InboxItem(
+    path: '${json['path'] ?? ''}',
+    title: '${json['title'] ?? json['path'] ?? ''}',
+    turns: (json['turns'] as num?)?.toInt() ?? 0,
+    updatedAt: DateTime.tryParse('${json['updatedAt'] ?? ''}'),
+  );
+}
+
 class _MemoryManifest {
-  const _MemoryManifest({required this.root, required this.device, required this.files});
+  const _MemoryManifest({
+    required this.root,
+    required this.device,
+    required this.files,
+    this.inbox = const [],
+  });
 
   final String root;
   final String device;
   final List<_MemoryFile> files;
+  final List<_InboxItem> inbox;
 }
 
 class _MemoryPageState extends ConsumerState<MemoryPage> {
@@ -92,9 +115,18 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           if (item is Map<String, dynamic>) _MemoryFile.fromJson(item),
         // A manifest cannot make the page read outside the memory root.
       ].where((file) => memoryEntryPath(root, file.path) != null).toList(growable: false);
+      final inbox = [
+        for (final item in (map['inbox'] as List? ?? const []))
+          if (item is Map<String, dynamic>) _InboxItem.fromJson(item),
+      ].where((item) => meshMemoryCommand('accept', item.path) != null).toList(growable: false);
       if (!mounted) return;
       setState(() {
-        _manifest = _MemoryManifest(root: root, device: '${map['device'] ?? ''}', files: files);
+        _manifest = _MemoryManifest(
+          root: root,
+          device: '${map['device'] ?? ''}',
+          files: files,
+          inbox: inbox,
+        );
         _loading = false;
       });
     } catch (error) {
@@ -172,6 +204,58 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     }
   }
 
+  Future<void> _accept(_InboxItem item, String kind) async {
+    final line = meshMemoryCommand('accept', item.path, kind: kind);
+    if (line != null) await _runCommand(line);
+  }
+
+  Future<void> _reject(_InboxItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('忽略这条草稿？'),
+        content: Text(item.title),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('忽略')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final line = meshMemoryCommand('reject', item.path);
+    if (line != null) await _runCommand(line);
+  }
+
+  Future<void> _flush() => _runCommand('/mesh-memory flush');
+
+  /// Runs a `/mesh-memory` command on the host through `commands/execute`.
+  ///
+  /// The command table lives on the host, so this works for both the local
+  /// engine and DSH Remote hosts (both carry `commands/execute`); the page
+  /// never mutates the shared memory by itself.
+  Future<void> _runCommand(String line) async {
+    final client = ref.read(activeConnectionProvider).value?.client;
+    if (client == null) return;
+    try {
+      final session = widget.sessionId ?? await DshUiRemoteHost(client).recentSessionId();
+      if (session == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('没有可用于执行命令的会话')));
+        return;
+      }
+      final result = await client.executeCommand(session, line);
+      if (!mounted) return;
+      final text = result.text?.trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(text != null && text.isNotEmpty ? text : (result.success ? '已执行' : '执行失败'))),
+      );
+      if (result.success) await _load();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('执行失败：$error')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -205,7 +289,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       );
     }
     final manifest = _manifest;
-    if (manifest == null || manifest.files.isEmpty) {
+    if (manifest == null || (manifest.files.isEmpty && manifest.inbox.isEmpty)) {
       return const Center(child: Text('共享记忆目录还是空的。'));
     }
 
@@ -216,6 +300,8 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     }
 
     final content = <Widget>[
+      if (manifest.inbox.isNotEmpty)
+        _InboxCard(items: manifest.inbox, onAccept: _accept, onReject: _reject, onFlush: _flush),
       _Hero(manifest: manifest),
       for (final title in order)
         if (sections[title] case final files? when files.isNotEmpty)
@@ -291,6 +377,119 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       default:
         return scheme.secondary;
     }
+  }
+}
+
+class _InboxCard extends StatelessWidget {
+  const _InboxCard({
+    required this.items,
+    required this.onAccept,
+    required this.onReject,
+    required this.onFlush,
+  });
+
+  final List<_InboxItem> items;
+  final Future<void> Function(_InboxItem, String) onAccept;
+  final Future<void> Function(_InboxItem) onReject;
+  final Future<void> Function() onFlush;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 8, 8),
+            child: Row(
+              children: [
+                Icon(Icons.inbox_outlined, size: 20, color: scheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '待确认 ${items.length} 条',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(onPressed: onFlush, child: const Text('立即整理')),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.35)),
+          for (var i = 0; i < items.length; i++) ...[
+            _InboxRow(item: items[i], onAccept: onAccept, onReject: onReject),
+            if (i != items.length - 1)
+              Divider(height: 1, indent: 16, color: scheme.outlineVariant.withValues(alpha: 0.28)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InboxRow extends StatelessWidget {
+  const _InboxRow({required this.item, required this.onAccept, required this.onReject});
+
+  final _InboxItem item;
+  final Future<void> Function(_InboxItem, String) onAccept;
+  final Future<void> Function(_InboxItem) onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final when = item.updatedAt == null ? '' : ' · ${_fmt(item.updatedAt!)}';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 8, 6, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${item.turns} 轮$when',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            tooltip: '接受为…',
+            onSelected: (kind) => onAccept(item, kind),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'notes', child: Text('接受为笔记')),
+              PopupMenuItem(value: 'facts', child: Text('接受为事实')),
+              PopupMenuItem(value: 'decisions', child: Text('接受为决策')),
+              PopupMenuItem(value: 'projects', child: Text('接受为项目')),
+            ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Text('接受', style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          TextButton(onPressed: () => onReject(item), child: const Text('忽略')),
+        ],
+      ),
+    );
+  }
+
+  String _fmt(DateTime value) {
+    final local = value.toLocal();
+    return '${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} '
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 }
 

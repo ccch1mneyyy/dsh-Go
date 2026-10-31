@@ -35,4 +35,37 @@ void main() {
       expect(memoryEntryPath('', 'a.md'), isNull);
     });
   });
+
+  group('meshMemoryCommand', () {
+    test('builds accept/reject lines for a plain sessions path', () {
+      expect(
+        meshMemoryCommand('accept', 'sessions/session-1.md'),
+        '/mesh-memory accept sessions/session-1.md notes',
+      );
+      expect(
+        meshMemoryCommand('accept', 'sessions/session-1.md', kind: 'facts'),
+        '/mesh-memory accept sessions/session-1.md facts',
+      );
+      expect(
+        meshMemoryCommand('reject', 'sessions/session-1.md'),
+        '/mesh-memory reject sessions/session-1.md',
+      );
+    });
+
+    test('falls back to notes for an unknown kind', () {
+      expect(
+        meshMemoryCommand('accept', 'sessions/a.md', kind: 'bogus'),
+        '/mesh-memory accept sessions/a.md notes',
+      );
+    });
+
+    test('rejects paths outside the inbox', () {
+      expect(meshMemoryCommand('accept', '../secret'), isNull);
+      expect(meshMemoryCommand('accept', '/etc/passwd'), isNull);
+      expect(meshMemoryCommand('accept', r'C:\x.md'), isNull);
+      expect(meshMemoryCommand('accept', 'memory/facts/a.md'), isNull);
+      expect(meshMemoryCommand('accept', 'sessions/../x.md'), isNull);
+      expect(meshMemoryCommand('delete', 'sessions/a.md'), isNull);
+    });
+  });
 }
