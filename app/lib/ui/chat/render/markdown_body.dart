@@ -97,7 +97,7 @@ class MarkdownBody extends StatefulWidget {
     final tableFills = tableTintFills(
       tint,
       headerColor: dsh.codeWellHeader,
-      stripeColor: colors.onSurface.withValues(alpha: theme.brightness == Brightness.dark ? 0.04 : 0.03),
+      stripeColor: colors.onSurface.withValues(alpha: theme.brightness == Brightness.dark ? 0.06 : 0.05),
     );
     final shrink = secondary ? 0.9 : 1.0;
     TextStyle heading(double size, {double height = 1.45}) => TextStyle(
