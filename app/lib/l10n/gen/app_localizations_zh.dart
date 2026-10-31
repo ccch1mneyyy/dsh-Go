@@ -7240,6 +7240,27 @@ class L10nZh extends L10n {
   String get hubInterfacePhoneLayout => '手机布局';
 
   @override
+  String get hubTableTint => '表格底色';
+
+  @override
+  String get hubTableTintFollow => '跟随主题';
+
+  @override
+  String get hubTableTintFill => '淡底整表';
+
+  @override
+  String get hubTableTintNone => '无底色';
+
+  @override
+  String get hubTableTintFillHint => '隔行淡一档，长表格更好扫读';
+
+  @override
+  String get hubTableTintFollowHint => '表头浅底，表身跟随正文';
+
+  @override
+  String get hubTableTintNoneHint => '只剩网格线，最轻';
+
+  @override
   String get hubAbout => '关于 DSH Go';
 
   @override
@@ -13095,6 +13116,9 @@ class L10nZh extends L10n {
 
   @override
   String get searchKwTextSize => '字号,字体,文字大小,大字,字体大小';
+
+  @override
+  String get searchKwTableTint => '表格,底色,表头,斑马纹,条纹,背景';
 
   @override
   String get searchKwFoldTurns => '收起,折叠,过程,步骤';

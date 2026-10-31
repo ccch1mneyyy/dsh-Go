@@ -7650,6 +7650,27 @@ class L10nEn extends L10n {
   String get hubInterfacePhoneLayout => 'Phone layout';
 
   @override
+  String get hubTableTint => 'Table tint';
+
+  @override
+  String get hubTableTintFollow => 'Theme';
+
+  @override
+  String get hubTableTintFill => 'Tinted';
+
+  @override
+  String get hubTableTintNone => 'Plain';
+
+  @override
+  String get hubTableTintFillHint => 'Alternating rows, easier to scan long tables';
+
+  @override
+  String get hubTableTintFollowHint => 'Header tint only, body follows the reply';
+
+  @override
+  String get hubTableTintNoneHint => 'Grid lines only, the lightest';
+
+  @override
   String get hubAbout => 'About DSH Go';
 
   @override
@@ -13757,6 +13778,9 @@ class L10nEn extends L10n {
 
   @override
   String get searchKwTextSize => 'font,font size,text size,larger text';
+
+  @override
+  String get searchKwTableTint => 'table,tint,header,stripe,row,background';
 
   @override
   String get searchKwFoldTurns => 'collapse,fold,steps';

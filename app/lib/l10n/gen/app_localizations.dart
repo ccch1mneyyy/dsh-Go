@@ -13243,6 +13243,46 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'手机布局'**
   String get hubInterfacePhoneLayout;
+  /// No description provided for @hubTableTint.
+  ///
+  /// In zh, this message translates to:
+  /// **'表格底色'**
+  String get hubTableTint;
+
+  /// No description provided for @hubTableTintFollow.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随主题'**
+  String get hubTableTintFollow;
+
+  /// No description provided for @hubTableTintFill.
+  ///
+  /// In zh, this message translates to:
+  /// **'淡底整表'**
+  String get hubTableTintFill;
+
+  /// No description provided for @hubTableTintNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'无底色'**
+  String get hubTableTintNone;
+
+  /// No description provided for @hubTableTintFillHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'隔行淡一档，长表格更好扫读'**
+  String get hubTableTintFillHint;
+  /// No description provided for @hubTableTintFollowHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'表头浅底，表身跟随正文'**
+  String get hubTableTintFollowHint;
+
+  /// No description provided for @hubTableTintNoneHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'只剩网格线，最轻'**
+  String get hubTableTintNoneHint;
 
   /// No description provided for @hubAbout.
   ///
@@ -23929,6 +23969,11 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'字号,字体,文字大小,大字,字体大小'**
   String get searchKwTextSize;
+  /// No description provided for @searchKwTableTint.
+  ///
+  /// In zh, this message translates to:
+  /// **'表格,底色,表头,斑马纹,条纹,背景'**
+  String get searchKwTableTint;
 
   /// No description provided for @searchKwFoldTurns.
   ///
