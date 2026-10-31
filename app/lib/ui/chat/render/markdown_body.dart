@@ -462,11 +462,12 @@ class MarkdownBody extends StatefulWidget {
   }
 
   /// What gpt_markdown is given for [text]: maths delimiters normalised,
-  /// table headers bold and, while [streaming], the unfinished tail
-  /// repaired and the cursor sentinel placed.
+  /// tables separated from the paragraph above and their headers bold, and,
+  /// while [streaming], the unfinished tail repaired and the cursor sentinel
+  /// placed.
   @visibleForTesting
   static String prepareSource(String text, {bool streaming = false}) {
-    final source = boldTableHeaders(normalizeMath(text, streaming: streaming));
+    final source = boldTableHeaders(blankLineBeforeTables(normalizeMath(text, streaming: streaming)));
     if (!streaming) return source;
     return _withCursor(repairStreamingMarkdown(source));
   }
