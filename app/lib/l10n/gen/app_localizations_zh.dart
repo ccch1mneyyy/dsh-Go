@@ -8009,6 +8009,193 @@ class L10nZh extends L10n {
   String get searchKwMediaGeneration => '生图,画图,文生图,视频生成,AI 绘画,生成图片,生成视频';
 
   @override
+  String get mediaSettingsDefaults => '默认';
+
+  @override
+  String get mediaSettingsLegacyDefault => '旧版通用默认';
+
+  @override
+  String get mediaSettingsLegacyDefaultHint => '0.2.x 的设置；图片和视频没有单独默认时使用';
+
+  @override
+  String get mediaSettingsLegacyDefaultStale => '指向的服务已不可用；清除它可避免生成时报错';
+
+  @override
+  String get mediaSettingsLegacyDefaultClear => '清除旧版通用默认';
+
+  @override
+  String get mediaSettingsDefaultModel => '默认模型';
+
+  @override
+  String get mediaSettingsDefaultFooterLegacy => '旧版插件只有一个默认模型；更新插件后可以分别设置图片和视频。';
+
+  @override
+  String get mediaSettingsDefaultsFooter => '图片和视频分别选择默认模型；留空自动使用第一个可用的。';
+
+  @override
+  String get mediaSettingsNoVideoModels => '这台主机的目录里还没有视频模型';
+
+  @override
+  String get mediaSettingsServices => '服务';
+
+  @override
+  String get mediaSettingsAddService => '添加服务';
+
+  @override
+  String get mediaSettingsAddServiceHint => '从服务商预设开始，地址、协议和模型都会自动带好';
+
+  @override
+  String mediaSettingsServiceLimit(int count) {
+    return '最多 $count 个服务';
+  }
+
+  @override
+  String get mediaSettingsNoServices => '还没有服务。添加一个服务商就能开始生成图片或视频。';
+
+  @override
+  String get mediaSettingsNoModels => '未选模型';
+
+  @override
+  String get mediaSettingsKeyMissing => '未配置 API Key';
+
+  @override
+  String get mediaSettingsCatalogMissing => '这个主机的插件没有提供模型目录；已有服务仍可编辑，但暂时不能新增服务或选择默认模型。';
+
+  @override
+  String get mediaSettingsCatalogBroken => '模型目录读不了（可能版本不兼容）；已有服务仍可编辑，但暂时不能新增服务或选择默认模型。';
+
+  @override
+  String get mediaSettingsCatalogEmpty => '模型目录里还没有模型；已有服务仍可编辑，但暂时不能新增服务或选择默认模型。';
+
+  @override
+  String get mediaSettingsNoPresets => '目录里还没有可添加的服务。';
+
+  @override
+  String get mediaSettingsLimits => '请求上限';
+
+  @override
+  String get mediaSettingsLimitsHint => '限制单次请求的图片张数和字节数；默认是插件硬上限';
+
+  @override
+  String get mediaSettingsMaxImages => '单次图片张数';
+
+  @override
+  String get mediaSettingsMaxImageBytes => '单张原件字节上限';
+
+  @override
+  String get mediaSettingsMaxResponseBytes => '服务响应字节上限';
+
+  @override
+  String get mediaSettingsMaxTotalImageBytes => '单次图片总字节上限';
+
+  @override
+  String get mediaSettingsMaxVideoBytes => '视频原件字节上限';
+
+  @override
+  String get mediaSettingsBudget => '费用保护';
+
+  @override
+  String get mediaSettingsDailyBudget => '每日预算（元）';
+
+  @override
+  String get mediaSettingsDailyBudgetHint => '按上海日期重置；用完即暂停生成';
+
+  @override
+  String get mediaSettingsUnknownPriceHold => '无可靠价格时每次预留（元）';
+
+  @override
+  String get mediaSettingsUnknownPriceHoldHint => '逐次确认的预留金额，不是供应商的收费上限';
+
+  @override
+  String get mediaSettingsApiKey => 'API Key';
+
+  @override
+  String get mediaSettingsReuseKey => '复用密钥';
+
+  @override
+  String get mediaSettingsReuseKeyHint => '同一服务商的图片和视频共用一个 API Key，不用再填一次。';
+
+  @override
+  String get mediaSettingsReuseKeyNone => '同一服务商还没有其它服务。';
+
+  @override
+  String get mediaSettingsReuseKeyShared => '已复用';
+
+  @override
+  String get mediaSettingsModels => '模型';
+
+  @override
+  String get mediaSettingsModelsEmpty => '目录里没有这个协议的模型';
+
+  @override
+  String get mediaSettingsModelKeepOne => '至少保留一个模型';
+
+  @override
+  String get mediaSettingsModelMissing => '目录中不存在';
+
+  @override
+  String get mediaSettingsAdvanced => '高级';
+
+  @override
+  String get mediaSettingsBaseUrl => 'API 根地址';
+
+  @override
+  String get mediaSettingsBaseUrlInvalid => '地址要以 https:// 开头';
+
+  @override
+  String get mediaSettingsProvider => '服务商标识';
+
+  @override
+  String get mediaSettingsKeyRef => '凭据名';
+
+  @override
+  String get mediaSettingsKeyRefInvalid => '凭据名只能包含字母、数字和下划线';
+
+  @override
+  String get mediaSettingsResponseFormat => '返回格式';
+
+  @override
+  String get mediaSettingsResponseFormatAuto => '按协议';
+
+  @override
+  String get mediaSettingsServiceId => '服务 ID';
+
+  @override
+  String get mediaSettingsServiceGone => '这个服务已经不在了';
+
+  @override
+  String get mediaSettingsServiceGoneBody => '它可能已在别处被删掉。返回上一页可以重新添加。';
+
+  @override
+  String get mediaSettingsDelete => '删除服务';
+
+  @override
+  String mediaSettingsDeleteTitle(String name) {
+    return '删除「$name」？';
+  }
+
+  @override
+  String get mediaSettingsDeleteBody => '只会从这台主机的设置里删掉这个服务，API Key 会保留；指向它的默认模型会一并清空。';
+
+  @override
+  String get mediaSettingsNoImageModels => '目录里还没有图像模型';
+
+  @override
+  String get mediaSettingsNoAvailableService => '还没有可用的服务（先添加并填好 Key）';
+
+  @override
+  String get mediaSettingsNoImageService => '还没有可用的图像服务（先添加并填好 Key）';
+
+  @override
+  String get mediaSettingsNoVideoService => '还没有可用的视频服务（先添加并填好 Key）';
+
+  @override
+  String get mediaSettingsKeyExternal => '由其它设置管理，这里只引用';
+
+  @override
+  String get mediaSettingsEnabledHint => '关闭后不再用这个服务生成';
+
+  @override
   String get nearbyThisChat => '本对话';
 
   @override

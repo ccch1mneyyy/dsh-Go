@@ -1,8 +1,8 @@
 # @ccch1mneyyy/dsh-media
 
-DSH Go 的主机侧媒体插件，版本 `0.2.0`。提供生成图片、用一句话编辑图片、后台生成视频；服务密钥留在 Host credentials，原件保存到当前工作区。设置命名空间保持 `dsh-media`，媒体结果使用冻结的 `meta["dsh-go/media"]` v1。
+DSH Go 的主机侧媒体插件，版本 `0.3.0`。提供生成图片、用一句话编辑图片、后台生成视频；服务密钥留在 Host credentials，原件保存到当前工作区。设置命名空间保持 `dsh-media`，媒体结果使用冻结的 `meta["dsh-go/media"]` v1。
 
-此版本已通过本地 HTTP mock 和真实 DSH `0.2.1-rc.4` headless 会话；尚未调用付费服务或在 Android / PRoot 上验证。模型可用性、审核、配额和最终费用由供应商决定。此仓库准备了发布包，未发布到 npm，也未预装进 App 运行时；发布后由插件市场安装。
+0.2.0 已通过本地 HTTP mock 和真实 DSH `0.2.1-rc.4` headless 会话；0.3.0 通过完整 Node 测试，未重跑 headless。尚未调用付费服务或在 Android / PRoot 上验证。模型可用性、审核、配额和最终费用由供应商决定。此仓库准备了发布包，未发布到 npm，也未预装进 App 运行时；发布后由插件市场安装。
 
 ## 支持范围
 
@@ -20,9 +20,13 @@ DSH Go 的主机侧媒体插件，版本 `0.2.0`。提供生成图片、用一�
 
 ## 配置
 
-1. 在主机插件设置中创建服务，先关闭“启用”。填唯一服务 ID、协议、API 根地址和允许的模型 ID。
-2. 明确填写凭据引用。四个固定槽是 `DSH_MEDIA_SLOT_1_API_KEY` 至 `DSH_MEDIA_SLOT_4_API_KEY`；通过对应槽的只写密钥按钮保存 Key。也可引用已知的 Host credentials 引用，不自动枚举其他模型渠道。
-3. 检查模型、地址、费用保护，再启用。图片与视频使用不同 profile，分别建服务；可以明确选择共用同一个 Key 引用。
+三步即可开始：
+
+1. **添加服务**：从服务商预设中选择图片或视频（火山方舟、阿里云百炼、硅基流动、OpenAI、Gemini）。服务 ID、请求协议、API 根地址、返回格式和模型 ID 会按预设自动带入，无需手动拼写。图片与视频分别建一个服务；同一服务商的图片和视频可以共用同一个凭据。
+2. **填 API Key**：新版 App 会为每个服务自动生成凭据名（例如方舟图片和视频都用 `DSH_MEDIA_ARK_API_KEY`，同一服务商复用同一个），只需要在服务详情里保存一次 Key；也可以在「高级」里改成任意已配置的 env 风格凭据名来引用已有 Key。旧版四个固定槽 `DSH_MEDIA_SLOT_1_API_KEY` 至 `DSH_MEDIA_SLOT_4_API_KEY` 仍可用，但仅为兼容保留，新版设置不需要在这里重复填写。
+3. **启用**：分别选择图片默认服务和模型、视频默认服务和模型，检查费用保护后启用。`generate_image` / `edit_image` 使用图片默认值，`generate_video` 使用视频默认值；类型默认值解析不到时回落旧版通用 `defaults.serviceId` / `defaults.modelId`，再回落首个可用候选。
+
+预设来自 `data/models.json` 的 `presets[]`，App 通过服务的目录元数据读取；旧版 App 忽略该字段，现有配置与旧版通用默认值保持原行为。
 
 例如方舟图片与视频服务（只有引用，不含 Key）：
 
@@ -34,17 +38,19 @@ services:
     baseUrl: https://ark.cn-beijing.volces.com
     profile: ark-image
     models: doubao-seedream-5-0-pro-260628
-    keyRef: DSH_MEDIA_SLOT_1_API_KEY
+    keyRef: DSH_MEDIA_ARK_API_KEY
   - id: ark_video
     enabled: true
     provider: ark
     baseUrl: https://ark.cn-beijing.volces.com
     profile: ark-video
     models: doubao-seedance-2-5-260628
-    keyRef: DSH_MEDIA_SLOT_1_API_KEY
+    keyRef: DSH_MEDIA_ARK_API_KEY
 defaults:
-  serviceId: ark_image
-  modelId: doubao-seedream-5-0-pro-260628
+  imageServiceId: ark_image
+  imageModelId: doubao-seedream-5-0-pro-260628
+  videoServiceId: ark_video
+  videoModelId: doubao-seedance-2-5-260628
 budget:
   dailyCny: '20'
   unknownPriceHoldCny: '20'
@@ -52,7 +58,7 @@ limits:
   maxImages: 1
 ```
 
-百炼两个 profile 的根地址都是 `https://dashscope.aliyuncs.com`，也支持目录声明的北京工作空间地址。硅基流动为 `https://api.siliconflow.cn`；OpenAI 为 `https://api.openai.com/v1`。Gemini 兼容根地址为 `https://generativelanguage.googleapis.com/v1beta/openai`，`responseFormat: b64_json`。其他 profile 的 `responseFormat` 留空。
+百炼两个 profile 的根地址都是 `https://dashscope.aliyuncs.com`，也支持目录声明的北京工作空间地址。硅基流动为 `https://api.siliconflow.cn`；OpenAI 为 `https://api.openai.com/v1`。Gemini 兼容根地址为 `https://generativelanguage.googleapis.com/v1beta/openai`，`responseFormat: b64_json`。其他 profile 的 `responseFormat` 留空；预设已包含上述值。
 
 ## 使用与恢复
 
@@ -81,3 +87,5 @@ Host 重启后，原会话可调用 `resume_media(rid)` 继续查询已保存的
 It supports OpenAI / Gemini-compatible images, Ark Seedream / Seedance, Alibaba Wan and SiliconFlow Qwen / Wan. Editing uses one workspace image. Video generation runs as a real background job; `get_media_result` retrieves its media result after the completion notice. `resume_media(rid)` explicitly resumes a saved provider task in its original session without submitting again. Provider cancellation is confirmed only when the API reports it; SiliconFlow cancellation is unavailable.
 
 All currently bundled prices are unknown. Every generation requires explicit one-time approval. The default CNY 20 daily ledger and CNY 20 per-request hold limit local reservations, **not actual provider bills**. Accepted or uncertain submissions retain their hold. No paid-provider, Android or PRoot validation is claimed. The package is prepared for publication but this change does not publish or preinstall it.
+
+Version 0.3.0 also publishes provider presets in the plugin catalogue. The App builds a service from a preset, writes any env-style credential name such as `DSH_MEDIA_ARK_API_KEY`, reuses one key for the image and video services of the same provider, and keeps separate image/video defaults. The four fixed slots remain for compatibility only, and a legacy `serviceId`/`modelId` default keeps its exact previous behavior.

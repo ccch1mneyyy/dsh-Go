@@ -14660,6 +14660,372 @@ abstract class L10n {
   /// **'生图,画图,文生图,视频生成,AI 绘画,生成图片,生成视频'**
   String get searchKwMediaGeneration;
 
+  /// No description provided for @mediaSettingsDefaults.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认'**
+  String get mediaSettingsDefaults;
+
+  /// No description provided for @mediaSettingsLegacyDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'旧版通用默认'**
+  String get mediaSettingsLegacyDefault;
+
+  /// No description provided for @mediaSettingsLegacyDefaultHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'0.2.x 的设置；图片和视频没有单独默认时使用'**
+  String get mediaSettingsLegacyDefaultHint;
+
+  /// No description provided for @mediaSettingsLegacyDefaultStale.
+  ///
+  /// In zh, this message translates to:
+  /// **'指向的服务已不可用；清除它可避免生成时报错'**
+  String get mediaSettingsLegacyDefaultStale;
+
+  /// No description provided for @mediaSettingsLegacyDefaultClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除旧版通用默认'**
+  String get mediaSettingsLegacyDefaultClear;
+
+  /// No description provided for @mediaSettingsDefaultModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认模型'**
+  String get mediaSettingsDefaultModel;
+
+  /// No description provided for @mediaSettingsDefaultFooterLegacy.
+  ///
+  /// In zh, this message translates to:
+  /// **'旧版插件只有一个默认模型；更新插件后可以分别设置图片和视频。'**
+  String get mediaSettingsDefaultFooterLegacy;
+
+  /// No description provided for @mediaSettingsDefaultsFooter.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片和视频分别选择默认模型；留空自动使用第一个可用的。'**
+  String get mediaSettingsDefaultsFooter;
+
+  /// No description provided for @mediaSettingsNoVideoModels.
+  ///
+  /// In zh, this message translates to:
+  /// **'这台主机的目录里还没有视频模型'**
+  String get mediaSettingsNoVideoModels;
+
+  /// No description provided for @mediaSettingsServices.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务'**
+  String get mediaSettingsServices;
+
+  /// No description provided for @mediaSettingsAddService.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加服务'**
+  String get mediaSettingsAddService;
+
+  /// No description provided for @mediaSettingsAddServiceHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'从服务商预设开始，地址、协议和模型都会自动带好'**
+  String get mediaSettingsAddServiceHint;
+
+  /// No description provided for @mediaSettingsServiceLimit.
+  ///
+  /// In zh, this message translates to:
+  /// **'最多 {count} 个服务'**
+  String mediaSettingsServiceLimit(int count);
+
+  /// No description provided for @mediaSettingsNoServices.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有服务。添加一个服务商就能开始生成图片或视频。'**
+  String get mediaSettingsNoServices;
+
+  /// No description provided for @mediaSettingsNoModels.
+  ///
+  /// In zh, this message translates to:
+  /// **'未选模型'**
+  String get mediaSettingsNoModels;
+
+  /// No description provided for @mediaSettingsKeyMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'未配置 API Key'**
+  String get mediaSettingsKeyMissing;
+
+  /// No description provided for @mediaSettingsCatalogMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个主机的插件没有提供模型目录；已有服务仍可编辑，但暂时不能新增服务或选择默认模型。'**
+  String get mediaSettingsCatalogMissing;
+
+  /// No description provided for @mediaSettingsCatalogBroken.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型目录读不了（可能版本不兼容）；已有服务仍可编辑，但暂时不能新增服务或选择默认模型。'**
+  String get mediaSettingsCatalogBroken;
+
+  /// No description provided for @mediaSettingsCatalogEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型目录里还没有模型；已有服务仍可编辑，但暂时不能新增服务或选择默认模型。'**
+  String get mediaSettingsCatalogEmpty;
+
+  /// No description provided for @mediaSettingsNoPresets.
+  ///
+  /// In zh, this message translates to:
+  /// **'目录里还没有可添加的服务。'**
+  String get mediaSettingsNoPresets;
+
+  /// No description provided for @mediaSettingsLimits.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求上限'**
+  String get mediaSettingsLimits;
+
+  /// No description provided for @mediaSettingsLimitsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'限制单次请求的图片张数和字节数；默认是插件硬上限'**
+  String get mediaSettingsLimitsHint;
+
+  /// No description provided for @mediaSettingsMaxImages.
+  ///
+  /// In zh, this message translates to:
+  /// **'单次图片张数'**
+  String get mediaSettingsMaxImages;
+
+  /// No description provided for @mediaSettingsMaxImageBytes.
+  ///
+  /// In zh, this message translates to:
+  /// **'单张原件字节上限'**
+  String get mediaSettingsMaxImageBytes;
+
+  /// No description provided for @mediaSettingsMaxResponseBytes.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务响应字节上限'**
+  String get mediaSettingsMaxResponseBytes;
+
+  /// No description provided for @mediaSettingsMaxTotalImageBytes.
+  ///
+  /// In zh, this message translates to:
+  /// **'单次图片总字节上限'**
+  String get mediaSettingsMaxTotalImageBytes;
+
+  /// No description provided for @mediaSettingsMaxVideoBytes.
+  ///
+  /// In zh, this message translates to:
+  /// **'视频原件字节上限'**
+  String get mediaSettingsMaxVideoBytes;
+
+  /// No description provided for @mediaSettingsBudget.
+  ///
+  /// In zh, this message translates to:
+  /// **'费用保护'**
+  String get mediaSettingsBudget;
+
+  /// No description provided for @mediaSettingsDailyBudget.
+  ///
+  /// In zh, this message translates to:
+  /// **'每日预算（元）'**
+  String get mediaSettingsDailyBudget;
+
+  /// No description provided for @mediaSettingsDailyBudgetHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'按上海日期重置；用完即暂停生成'**
+  String get mediaSettingsDailyBudgetHint;
+
+  /// No description provided for @mediaSettingsUnknownPriceHold.
+  ///
+  /// In zh, this message translates to:
+  /// **'无可靠价格时每次预留（元）'**
+  String get mediaSettingsUnknownPriceHold;
+
+  /// No description provided for @mediaSettingsUnknownPriceHoldHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'逐次确认的预留金额，不是供应商的收费上限'**
+  String get mediaSettingsUnknownPriceHoldHint;
+
+  /// No description provided for @mediaSettingsApiKey.
+  ///
+  /// In zh, this message translates to:
+  /// **'API Key'**
+  String get mediaSettingsApiKey;
+
+  /// No description provided for @mediaSettingsReuseKey.
+  ///
+  /// In zh, this message translates to:
+  /// **'复用密钥'**
+  String get mediaSettingsReuseKey;
+
+  /// No description provided for @mediaSettingsReuseKeyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'同一服务商的图片和视频共用一个 API Key，不用再填一次。'**
+  String get mediaSettingsReuseKeyHint;
+
+  /// No description provided for @mediaSettingsReuseKeyNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'同一服务商还没有其它服务。'**
+  String get mediaSettingsReuseKeyNone;
+
+  /// No description provided for @mediaSettingsReuseKeyShared.
+  ///
+  /// In zh, this message translates to:
+  /// **'已复用'**
+  String get mediaSettingsReuseKeyShared;
+
+  /// No description provided for @mediaSettingsModels.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型'**
+  String get mediaSettingsModels;
+
+  /// No description provided for @mediaSettingsModelsEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'目录里没有这个协议的模型'**
+  String get mediaSettingsModelsEmpty;
+
+  /// No description provided for @mediaSettingsModelKeepOne.
+  ///
+  /// In zh, this message translates to:
+  /// **'至少保留一个模型'**
+  String get mediaSettingsModelKeepOne;
+
+  /// No description provided for @mediaSettingsModelMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'目录中不存在'**
+  String get mediaSettingsModelMissing;
+
+  /// No description provided for @mediaSettingsAdvanced.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级'**
+  String get mediaSettingsAdvanced;
+
+  /// No description provided for @mediaSettingsBaseUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'API 根地址'**
+  String get mediaSettingsBaseUrl;
+
+  /// No description provided for @mediaSettingsBaseUrlInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'地址要以 https:// 开头'**
+  String get mediaSettingsBaseUrlInvalid;
+
+  /// No description provided for @mediaSettingsProvider.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务商标识'**
+  String get mediaSettingsProvider;
+
+  /// No description provided for @mediaSettingsKeyRef.
+  ///
+  /// In zh, this message translates to:
+  /// **'凭据名'**
+  String get mediaSettingsKeyRef;
+
+  /// No description provided for @mediaSettingsKeyRefInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'凭据名只能包含字母、数字和下划线'**
+  String get mediaSettingsKeyRefInvalid;
+
+  /// No description provided for @mediaSettingsResponseFormat.
+  ///
+  /// In zh, this message translates to:
+  /// **'返回格式'**
+  String get mediaSettingsResponseFormat;
+
+  /// No description provided for @mediaSettingsResponseFormatAuto.
+  ///
+  /// In zh, this message translates to:
+  /// **'按协议'**
+  String get mediaSettingsResponseFormatAuto;
+
+  /// No description provided for @mediaSettingsServiceId.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务 ID'**
+  String get mediaSettingsServiceId;
+
+  /// No description provided for @mediaSettingsServiceGone.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个服务已经不在了'**
+  String get mediaSettingsServiceGone;
+
+  /// No description provided for @mediaSettingsServiceGoneBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'它可能已在别处被删掉。返回上一页可以重新添加。'**
+  String get mediaSettingsServiceGoneBody;
+
+  /// No description provided for @mediaSettingsDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除服务'**
+  String get mediaSettingsDelete;
+
+  /// No description provided for @mediaSettingsDeleteTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除「{name}」？'**
+  String mediaSettingsDeleteTitle(String name);
+
+  /// No description provided for @mediaSettingsDeleteBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'只会从这台主机的设置里删掉这个服务，API Key 会保留；指向它的默认模型会一并清空。'**
+  String get mediaSettingsDeleteBody;
+
+  /// No description provided for @mediaSettingsNoImageModels.
+  ///
+  /// In zh, this message translates to:
+  /// **'目录里还没有图像模型'**
+  String get mediaSettingsNoImageModels;
+
+  /// No description provided for @mediaSettingsNoAvailableService.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有可用的服务（先添加并填好 Key）'**
+  String get mediaSettingsNoAvailableService;
+
+  /// No description provided for @mediaSettingsNoImageService.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有可用的图像服务（先添加并填好 Key）'**
+  String get mediaSettingsNoImageService;
+
+  /// No description provided for @mediaSettingsNoVideoService.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有可用的视频服务（先添加并填好 Key）'**
+  String get mediaSettingsNoVideoService;
+
+  /// No description provided for @mediaSettingsKeyExternal.
+  ///
+  /// In zh, this message translates to:
+  /// **'由其它设置管理，这里只引用'**
+  String get mediaSettingsKeyExternal;
+
+  /// No description provided for @mediaSettingsEnabledHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭后不再用这个服务生成'**
+  String get mediaSettingsEnabledHint;
+
   /// No description provided for @nearbyThisChat.
   ///
   /// In zh, this message translates to:

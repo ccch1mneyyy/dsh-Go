@@ -17,6 +17,11 @@ export const HARD_LIMITS = Object.freeze({
   maxTotalImageBytes: 64 * 1024 * 1024,
   maxVideoBytes: 300 * 1024 * 1024,
 });
+// Legacy general defaults stay first so old configs keep their exact meaning;
+// the image/video pairs are chosen by selectedRequest per tool kind.
+export const DEFAULT_FIELD_NAMES = Object.freeze([
+  'serviceId', 'modelId', 'imageServiceId', 'imageModelId', 'videoServiceId', 'videoModelId',
+]);
 
 function freeze(value) {
   if (value && typeof value === 'object') {
@@ -80,6 +85,8 @@ for (const model of rawCatalog.models) {
   }
   catalogIds.add(model.id);
 }
+// Presets are optional for backwards-compatible catalogues (0.2.x had none).
+if (rawCatalog.presets !== undefined) validatePresets(rawCatalog.presets);
 export const CATALOG = freeze(rawCatalog);
 
 export function catalogModel(id) {
@@ -92,6 +99,68 @@ export function modelIdsOf(service) {
   if (ids.length < 1 || ids.length > 16 || new Set(ids).size !== ids.length
     || ids.some(id => !catalogModel(id))) invalid();
   return ids;
+}
+
+function boundedText(value, maximum) {
+  return typeof value === 'string' && value.trim().length > 0
+    && Buffer.byteLength(value, 'utf8') <= maximum;
+}
+
+// Service rows and provider presets share one HTTPS/root rule: a native
+// profile only accepts its verified hosts (or documented workspace suffix),
+// and no URL may smuggle credentials, query or fragment.
+function validateBaseUrl(baseUrl, profileName) {
+  let url;
+  try { url = new URL(baseUrl); } catch { invalid(); }
+  if (url.protocol !== 'https:' || url.username || url.password
+    || url.search || url.hash) invalid();
+  const profile = rawCatalog.profiles[profileName];
+  if (profile && (url.pathname !== '/' || url.port || !(profile.hosts.includes(url.hostname)
+    || (profile.workspaceHostSuffix && /^[a-zA-Z0-9-]+$/.test(url.hostname.slice(0, -profile.workspaceHostSuffix.length))
+      && url.hostname.endsWith(profile.workspaceHostSuffix))))) invalid();
+}
+
+/**
+ * Provider presets are plugin-authored catalogue metadata, not user config.
+ * They stay optional so older catalogues keep loading, and App clients may
+ * ignore them entirely. Each preset only advertises values that the installed
+ * model catalogue already serves under the same profile and kind.
+ */
+export function validatePresets(presets) {
+  if (!Array.isArray(presets) || presets.length > 16) invalid();
+  const ids = new Set();
+  for (const preset of presets) {
+    if (!preset || typeof preset !== 'object' || Array.isArray(preset)
+      || typeof preset.id !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(preset.id)
+      || ids.has(preset.id)
+      || !boundedText(preset.label, 80)
+      || (preset.labelEn !== undefined && !boundedText(preset.labelEn, 80))
+      || typeof preset.provider !== 'string' || !preset.provider.trim()
+      || Buffer.byteLength(preset.provider, 'utf8') > 80
+      || /[\u0000-\u001f]/.test(preset.provider)
+      || !PROFILES.includes(preset.profile)
+      || !['image', 'video'].includes(preset.kind)
+      || typeof preset.keyGroup !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(preset.keyGroup)) invalid();
+    const responseFormat = preset.responseFormat ?? '';
+    if (!['', 'url', 'b64_json'].includes(responseFormat)
+      || (preset.profile !== 'openai-compatible' && responseFormat)) invalid();
+    validateBaseUrl(preset.baseUrl, preset.profile);
+    if (!Array.isArray(preset.models) || preset.models.length < 1 || preset.models.length > 16) invalid();
+    const seen = new Set();
+    const models = [];
+    for (const id of preset.models) {
+      const model = typeof id === 'string' ? rawCatalog.models.find(item => item.id === id) : undefined;
+      if (!model || seen.has(id) || model.profile !== preset.profile || model.kind !== preset.kind) invalid();
+      seen.add(id);
+      models.push(model);
+    }
+    // The same whitelist validateServices applies later: a preset must not
+    // advertise a response format its models were not verified with.
+    if (models.some(model => model.responseFormats !== undefined
+      && !model.responseFormats.includes(responseFormat))) invalid();
+    ids.add(preset.id);
+  }
+  return presets;
 }
 
 export function validateServices(services) {
@@ -108,15 +177,8 @@ export function validateServices(services) {
       || Buffer.byteLength(service.provider, 'utf8') > 80
       || /[\u0000-\u001f]/.test(service.provider)
       || !['', 'url', 'b64_json'].includes(service.responseFormat ?? '')) invalid();
-    let url;
-    try { url = new URL(service.baseUrl); } catch { invalid(); }
-    if (url.protocol !== 'https:' || url.username || url.password
-      || url.search || url.hash) invalid();
+    validateBaseUrl(service.baseUrl, service.profile);
     if (service.profile !== 'openai-compatible' && service.responseFormat) invalid();
-    const profile = rawCatalog.profiles[service.profile];
-    if (profile && (url.pathname !== '/' || url.port || !(profile.hosts.includes(url.hostname)
-      || (profile.workspaceHostSuffix && /^[a-zA-Z0-9-]+$/.test(url.hostname.slice(0, -profile.workspaceHostSuffix.length))
-        && url.hostname.endsWith(profile.workspaceHostSuffix))))) invalid();
     const models = modelIdsOf(service).map(catalogModel);
     if (models.some(model => model.profile !== service.profile)) invalid();
     // A catalog whitelist requires an explicit evidenced response format.
@@ -130,20 +192,20 @@ export function validateServices(services) {
 
 const Service = z.object({
   id: z.string().pattern(/^[a-z][a-z0-9_]{0,31}$/).required()
-    .description('服务 ID（唯一小写标识）'),
+    .description('服务 ID（唯一小写标识；图片与视频各建一个）'),
   label: z.string().max(80).default('').description('显示名称'),
   enabled: z.boolean().default(false).description('启用'),
-  provider: z.string().max(80).default('openai').description('服务商标识'),
+  provider: z.string().max(80).default('openai').description('服务商（如 ark、aliyun、openai）'),
   baseUrl: z.string().max(2048).default('https://api.openai.com/v1')
-    .description('服务地址（HTTPS API 根路径）'),
+    .description('服务地址（HTTPS API 根路径，由服务商预设带入）'),
   profile: z.union(PROFILES)
-    .default('openai-gpt-image').description('请求协议'),
+    .default('openai-gpt-image').description('请求协议（由服务商预设决定）'),
   responseFormat: z.union(['', 'url', 'b64_json']).default('')
-    .description('兼容接口返回格式（按模型目录；GPT Image 留空）'),
+    .description('兼容接口返回格式（仅 OpenAI 兼容服务需要；其他协议留空）'),
   models: z.string().max(2048).default('gpt-image-2.5-flare')
     .description('允许的模型 ID（英文逗号分隔，来自已安装目录）'),
   keyRef: z.string().pattern(/^[A-Za-z_][A-Za-z0-9_]{0,127}$/).required()
-    .description('凭据引用（必填；选择固定槽或已知引用）'),
+    .description('凭据名（任意已配置的凭据，如 DSH_MEDIA_ARK_API_KEY；旧版固定槽仍可用）'),
 });
 
 // Exact-empty validation with a fixed error avoids Schemastery's const "got"
@@ -172,14 +234,23 @@ export const Config = z.object({
   services: z.transform(z.array(Service).max(8), validateServices, true)
     .default([]).volatile()
     .extra('extra', { [CATALOG_META_KEY]: CATALOG })
-    .description('媒体服务'),
-  credentials: Credentials.volatile().description('密钥（固定目标，只写）'),
+    .description('服务（图片或视频各建一个，可共用同一凭据）'),
+  credentials: Credentials.volatile()
+    .description('旧版固定密钥槽，仅为兼容保留；新版 App 会按服务自动创建凭据，不需要在这里重复填'),
   defaults: z.object({
     serviceId: z.string().max(32).default('')
-      .description('默认服务 ID（留空使用首个已配置服务）'),
+      .description('默认服务 ID（旧版通用设置；新版按图片/视频分别设置）'),
     modelId: z.string().max(160).default('')
-      .description('默认模型 ID（留空使用所选服务首项）'),
-  }).volatile().description('默认值'),
+      .description('默认模型 ID（旧版通用设置）'),
+    imageServiceId: z.string().max(32).default('')
+      .description('图片默认服务 ID（留空使用首个可用图片服务）'),
+    imageModelId: z.string().max(160).default('')
+      .description('图片默认模型 ID（留空使用所选服务首项）'),
+    videoServiceId: z.string().max(32).default('')
+      .description('视频默认服务 ID（留空使用首个可用视频服务）'),
+    videoModelId: z.string().max(160).default('')
+      .description('视频默认模型 ID（留空使用所选服务首项）'),
+  }).volatile().description('默认值（图片与视频可分别设置）'),
   budget: z.object({
     dailyCny: z.string().default('20').description('每日本地预算（人民币，上海日期）'),
     unknownPriceHoldCny: z.string().default('20').description('无可靠价格时每次预留金额；逐次确认，非供应商收费上限'),
@@ -213,7 +284,9 @@ export function runtimeSnapshot(config) {
     if (!Number.isSafeInteger(value) || value < 1 || value > maximum) invalid();
     cleanLimits[name] = value;
   }
-  if (typeof defaults.serviceId !== 'string' || typeof defaults.modelId !== 'string') invalid();
+  for (const field of DEFAULT_FIELD_NAMES) {
+    if (defaults[field] !== undefined && typeof defaults[field] !== 'string') invalid();
+  }
   const budget = config.budget ? current(config.budget) : { dailyCny: '20', unknownPriceHoldCny: '20' };
   let dailyMicros, unknownHoldMicros;
   try { dailyMicros = cnyMicros(budget.dailyCny); unknownHoldMicros = cnyMicros(budget.unknownPriceHoldCny); } catch { invalid(); }
@@ -226,7 +299,7 @@ export function runtimeSnapshot(config) {
       ...(service.responseFormat ? { responseFormat: service.responseFormat } : {}),
       keyRef: service.keyRef, modelIds: modelIdsOf(service),
     })),
-    defaults: { serviceId: defaults.serviceId, modelId: defaults.modelId },
+    defaults: Object.fromEntries(DEFAULT_FIELD_NAMES.map(field => [field, defaults[field] ?? ''])),
     limits: cleanLimits,
   });
 }

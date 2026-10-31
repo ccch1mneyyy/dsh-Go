@@ -1,5 +1,7 @@
 # 发包准备与执行说明
 
+> 0.3.0 待发布：npm 正式发布并核验 tarball 后，把 `market/plugins/@ccch1mneyyy__dsh-media.json` 的 `version` 改为 `0.3.0`，再按 `market/VERIFICATION.md` 重建索引；在 npm 发布前不要把 market 指向 0.3.0。
+
 当前版本 `@ccch1mneyyy/dsh-media@0.2.1` 已于 2026-10-31（Asia/Singapore）通过具备直发权限的 granular token 正式发布到 npm。HTTP 202 接受后，2026-10-30 19:55:51 UTC 匿名精确版本查询与公开 tarball 下载均为 200，registry SHA512 与本地 SHA256 双重核验通过。无需人工暂存审批。包名使用用户授权的备用组织；设置 namespace / bundle entry ID 保持 `dsh-media`，现有 App 支持 `/dsh-media` 包名，不需要发 App 新版。
 
 发布包为 48,019 bytes、19 个常规文件，SHA256 为 `9829f5106dec8cb354c203c74cc0510656f0f94538c36abf0fb80226388d13c9`。与 306/306 通过的版本逐文件对比，只有 package.json 的版本从 0.2.0 变为 0.2.1，运行时代码完全一致。显式 files 清单不含测试、凭据、私有日志或开发依赖。
