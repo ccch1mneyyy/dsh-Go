@@ -93,6 +93,35 @@ abstract class SshTransport implements RemoteShell {
 
 typedef SshTransportFactory = Future<SshTransport> Function(SshConnectParams params, HostKeyCheck verifyHostKey);
 
+/// Cipher preference used for every connection.
+///
+/// AES-GCM used to come first (dartssh2's own default). PointyCastle's GCM
+/// does its GF(2^128) multiply bit by bit: `gcm.dart:_mult` runs 128 rounds of
+/// three byte-wide passes with no tables, so a single 16-byte block costs
+/// roughly 6k byte operations. On 1.0.4 that one function took 73.6% of the UI
+/// isolate while a long session was streaming, which is what starved frames.
+/// ChaCha20-Poly1305 and AES-CTR have no such multiply and cost an order of
+/// magnitude less per byte.
+///
+/// This is only a reorder: every cipher dartssh2 enables by default stays in
+/// the list, so a server offering nothing but AES-GCM still negotiates it.
+/// CBC, SHA-1 kex and `none` are never added.
+const sshCipherPreference = <SSHCipherType>[
+  SSHCipherType.chacha20poly1305,
+  SSHCipherType.aes256ctr,
+  SSHCipherType.aes128ctr,
+  SSHCipherType.aes256gcm,
+  SSHCipherType.aes128gcm,
+];
+
+/// `fast` applies [sshCipherPreference]; `legacy` keeps dartssh2's original
+/// order, so one build can compare the two with
+/// `--dart-define=DSH_SSH_CIPHER=legacy`.
+const _sshCipherProfile = String.fromEnvironment('DSH_SSH_CIPHER', defaultValue: 'fast');
+
+SSHAlgorithms sshClientAlgorithms({String profile = _sshCipherProfile}) =>
+    profile == 'legacy' ? const SSHAlgorithms() : const SSHAlgorithms(cipher: sshCipherPreference);
+
 /// dartssh2-backed transport.
 class DartSshTransport implements SshTransport {
   DartSshTransport._(this._client);
@@ -125,6 +154,7 @@ class DartSshTransport implements SshTransport {
       socket,
       username: params.username,
       identities: identities,
+      algorithms: sshClientAlgorithms(),
       onPasswordRequest: params.auth == SshAuthMethod.password ? () => params.secrets.password : null,
       // Keyboard-interactive servers ask for the same password.
       onUserInfoRequest: params.auth == SshAuthMethod.password
