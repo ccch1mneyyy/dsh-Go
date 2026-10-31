@@ -4,13 +4,16 @@
 
 import 'dart:math' as math;
 
+import 'package:dsh_client/dsh_client.dart' show SubagentMode;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
+import '../../state/agents_state.dart' show subagentParentProvider;
 import '../../state/header_schedule_state.dart';
+import '../../state/sessions_state.dart' show currentSessionProvider;
 import '../../ui_config/ui_config_icons.dart';
 import '../../ui_config/ui_config_model.dart';
 import '../../ui_config/ui_config_state.dart';
@@ -298,10 +301,22 @@ class _CustomHeaderActions extends ConsumerWidget {
         ?.whereType<UiHeaderCustomItem>()
         .toList(growable: false);
     if (actions == null || actions.isEmpty) return const SizedBox.shrink();
+    // A one-shot subagent chat renders ReadOnlyBar instead of the composer, so
+    // a send action would only insert text that can never be sent. Hide those
+    // buttons there; every other action still works.
+    final sessionId = ref.watch(currentSessionProvider);
+    final readOnly =
+        sessionId != null &&
+        ref.watch(subagentParentProvider(sessionId).select((p) => p?.address.mode == SubagentMode.oneShot));
+    final visible = <UiHeaderCustomItem>[
+      for (final item in actions)
+        if (!(readOnly && item.action is UiSendAction)) item,
+    ];
+    if (visible.isEmpty) return const SizedBox.shrink();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final item in actions)
+        for (final item in visible)
           Padding(
             padding: const EdgeInsets.only(left: 8),
             child: SizedBox.square(

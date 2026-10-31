@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../chat/render/markdown_body.dart';
 import '../../state/connection_state.dart';
 import '../../ui_config/ui_config_source.dart';
+import 'memory_paths.dart';
 
 /// Native, read-only view of the shared dsh-mesh memory.
 ///
@@ -83,22 +84,17 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       }
       final session = widget.sessionId ?? await host.recentSessionId();
       if (session == null) throw StateError('没有可用于读取记忆的会话');
-      var home = host.userHome;
-      if (home == null || home.isEmpty) {
-        final skill = await host.skillFile(session);
-        home = dshHomeFromSkillPath(skill ?? '');
-      }
-      if (home == null || home.isEmpty) throw StateError('无法确定主机 DSH_HOME');
-      final path = '${home.replaceFirst(RegExp(r'/+$'), '')}/.dsh/dsh-go/dsh-mesh.json';
-      final res = await host.read(session, path);
-      final map = jsonDecode(res.text) as Map<String, dynamic>;
+      final manifestPath = '${await _dshHome(host, session)}/dsh-go/dsh-mesh.json';
+      final map = jsonDecode(await _readAll(host, session, manifestPath)) as Map<String, dynamic>;
+      final root = '${map['root'] ?? ''}';
       final files = [
         for (final item in (map['files'] as List? ?? const []))
           if (item is Map<String, dynamic>) _MemoryFile.fromJson(item),
-      ];
+        // A manifest cannot make the page read outside the memory root.
+      ].where((file) => memoryEntryPath(root, file.path) != null).toList(growable: false);
       if (!mounted) return;
       setState(() {
-        _manifest = _MemoryManifest(root: '${map['root'] ?? ''}', device: '${map['device'] ?? ''}', files: files);
+        _manifest = _MemoryManifest(root: root, device: '${map['device'] ?? ''}', files: files);
         _loading = false;
       });
     } catch (error) {
@@ -110,31 +106,65 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     }
   }
 
+  /// The host's DSH home.
+  ///
+  /// `dshHomeFromSkillPath` already returns `…/.dsh` (from
+  /// `<home>/skills/dsh-go-ui/SKILL.md`); only `$HOME` needs `/.dsh` appended.
+  Future<String> _dshHome(DshUiRemoteHost host, String session) async {
+    final userHome = host.userHome;
+    if (userHome != null && userHome.isNotEmpty) {
+      return '${userHome.replaceFirst(RegExp(r'/+$'), '')}/.dsh';
+    }
+    final skill = await host.skillFile(session);
+    final home = dshHomeFromSkillPath(skill ?? '');
+    if (home == null || home.isEmpty) throw StateError('无法确定主机 DSH_HOME');
+    return home.replaceFirst(RegExp(r'/+$'), '');
+  }
+
+  /// Reads a whole text file: one `workspaceFiles/read` call is a page, not
+  /// the file, so keep reading until `eof` within a size budget.
+  Future<String> _readAll(
+    DshUiRemoteHost host,
+    String session,
+    String path, {
+    int maxBytes = 2 * 1024 * 1024,
+  }) async {
+    final first = await host.read(session, path);
+    if ((first.bytes ?? 0) > maxBytes) throw StateError('文件过大（超过 ${maxBytes ~/ 1024} KB）');
+    final text = StringBuffer(first.text);
+    var page = first;
+    var pages = 1;
+    while (!page.eof && page.lines > 0 && pages < 64) {
+      page = await host.read(session, path, offset: page.offset + page.lines);
+      text
+        ..write('\n')
+        ..write(page.text);
+      pages += 1;
+      if (text.length > maxBytes) throw StateError('文件过大（超过 ${maxBytes ~/ 1024} KB）');
+    }
+    return text.toString();
+  }
+
   Future<void> _open(_MemoryFile file) async {
     final conn = ref.read(activeConnectionProvider).value;
     final client = conn?.client;
     final manifest = _manifest;
     if (client == null || manifest == null) return;
+    final path = memoryEntryPath(manifest.root, file.path);
+    if (path == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('拒绝读取：路径不在记忆目录内')),
+      );
+      return;
+    }
     final host = DshUiRemoteHost(client);
     final session = widget.sessionId ?? await host.recentSessionId();
     if (session == null) return;
     try {
-      final path = '${manifest.root.replaceFirst(RegExp(r'/+$'), '')}/${file.path}';
-      var page = await host.read(session, path);
-      final text = StringBuffer(page.text);
-      var pages = 1;
-      while (!page.eof && pages < 32) {
-        page = await host.read(session, path, offset: page.offset + page.lines);
-        text
-          ..write('\n')
-          ..write(page.text);
-        pages++;
-      }
+      final text = await _readAll(host, session, path, maxBytes: 8 * 1024 * 1024);
       if (!mounted) return;
       await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => _MemoryFilePage(file: file, text: text.toString()),
-        ),
+        MaterialPageRoute<void>(builder: (_) => _MemoryFilePage(file: file, text: text)),
       );
     } catch (error) {
       if (!mounted) return;
