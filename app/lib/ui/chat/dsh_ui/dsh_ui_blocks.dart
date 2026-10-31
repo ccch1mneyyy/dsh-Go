@@ -5,6 +5,7 @@
 // v2 emptyState and gallery (docs/design/plugin-ui-v3.md §4.2).
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -15,7 +16,6 @@ import '../../../plugins/native/native_icons.dart' show nativeIcon;
 import '../../common/pressable.dart';
 import '../../theme/app_icons.dart';
 import '../../theme/theme.dart';
-import 'dsh_ui_bind.dart' show measureDshUiJson;
 import 'dsh_ui_model.dart';
 import 'dsh_ui_plugin.dart';
 import 'dsh_ui_plugin_figures.dart';
@@ -849,7 +849,7 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
             ],
           }
         : {'value': option.key};
-    if (!measureDshUiJson(args, maxBytes: DshUiControlLimits.valueBytes).ok) return;
+    if (utf8.encode(jsonEncode(args)).length > DshUiControlLimits.valueBytes) return;
     setState(() => _local = next);
     final ok = await invoke(
       option.key,
