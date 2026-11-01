@@ -1,6 +1,5 @@
 # dsh-go: retain no-clobber creation when Android shared storage rejects hard links.
 # Pinned to the published @deepseek-ai/dsh-fs-local 0.2.1-rc.2 bytes.
-# OpenHarmony also rejects hard links with EACCES; other platforms are unchanged.
 # Exclusive direct creation can expose partial content; failures retain the target.
 # Node open("wx") includes O_CREAT | O_EXCL; rename would clobber a competitor.
 --- a/node_modules/@deepseek-ai/dsh-fs-local/lib/index.js
@@ -23,7 +22,7 @@
  			await linkFile(tempPath, absolutePath);
  		} catch (error) {
 -			await throwGuardedCreateFailure(error, absolutePath, createIfAbsent.displayPath, inspectPublicationTarget);
-+			if (!(error instanceof Error && "code" in error && typeof error.code === "string" && (["EPERM", "EXDEV", "ENOTSUP", "EMLINK"].includes(error.code) || platform === "openharmony" && error.code === "EACCES"))) {
++			if (!(error instanceof Error && "code" in error && typeof error.code === "string" && ["EPERM", "EXDEV", "ENOTSUP", "EMLINK"].includes(error.code))) {
 +				await throwGuardedCreateFailure(error, absolutePath, createIfAbsent.displayPath, inspectPublicationTarget);
 +			}
 +			throwIfAborted(signal, "write");

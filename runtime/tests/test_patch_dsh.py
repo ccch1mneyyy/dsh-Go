@@ -59,6 +59,12 @@ class PatchDsh(unittest.TestCase):
             f.write(ORIGINAL)
         with open(os.path.join(self.patches, "guard.diff"), "w") as f:
             f.write(DIFF)
+        self.write_pins({"schema": 2, "patches": {},
+                         "targetSets": {"android": ["guard.diff"], "ohos": ["guard.diff"]}})
+
+    def write_pins(self, pins):
+        with open(os.path.join(self.patches, "pins.json"), "w") as out:
+            json.dump(pins, out)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -125,7 +131,8 @@ class PatchDsh(unittest.TestCase):
         final = first.replace("line 1\n", "later reviewed patch\n", 1)
         with open(os.path.join(self.patches, "zz-later.diff"), "w") as out:
             out.write(second_diff)
-        pins = {"schema": 1, "patches": {
+        pins = {"schema": 2, "targetSets": {
+            "android": ["guard.diff", "zz-later.diff"], "ohos": ["guard.diff", "zz-later.diff"]}, "patches": {
             "guard.diff": {"1.0.0": {REL: {"before": sha(ORIGINAL), "after": sha(first)}}},
             "zz-later.diff": {"1.0.0": {REL: {"before": "0" * 64 if broken else sha(first), "after": sha(final)}}},
         }}
@@ -168,7 +175,7 @@ class PatchDsh(unittest.TestCase):
         r = self.run_cli("--dsh-version", "2.0.0", "--record")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("matches 0 places", r.stdout)
-        self.assertFalse(os.path.exists(os.path.join(self.patches, "pins.json")))
+        self.assertEqual(load(os.path.join(self.patches, "pins.json"))["patches"], {})
 
     def test_shipped_patch_parses_against_pins(self):
         shipped = os.path.join(HERE, "..", "patches")
@@ -198,7 +205,8 @@ class PatchDsh(unittest.TestCase):
         with open(os.path.join(self.patches, name), "w") as out:
             out.write(read(os.path.join(shipped, name)))
         with open(os.path.join(self.patches, "pins.json"), "w") as out:
-            json.dump({"schema": 1, "patches": {name: pins["patches"][name]}}, out)
+            json.dump({"schema": 2, "targetSets": {"android": [name], "ohos": [name]},
+                       "patches": {name: pins["patches"][name]}}, out)
 
         result = self.run_cli("--dsh-version", "0.2.1-rc.2")
         self.assertEqual(result.returncode, 0, result.stdout)
@@ -213,6 +221,129 @@ class PatchDsh(unittest.TestCase):
         self.assertIn("differs from the vetted", changed.stdout)
         with open(target, "rb") as source:
             self.assertEqual(source.read(), original + b"// upstream drift\n")
+
+    def target_fixture(self, same_file=True):
+        first, second = self.chain_fixture()
+        name = "zzz-feature.diff"  # Its target is metadata, not a filename heuristic.
+        rel = REL if same_file else "node_modules/@x/other/lib/index.js"
+        before = second if same_file else "feature off\n"
+        after = before + "feature on\n"
+        import difflib
+        with open(os.path.join(self.patches, name), "w") as out:
+            out.write("".join(difflib.unified_diff(before.splitlines(True), after.splitlines(True),
+                                                  fromfile="a/" + rel, tofile="b/" + rel)))
+        if not same_file:
+            path = os.path.join(self.prefix, rel)
+            os.makedirs(os.path.dirname(path))
+            with open(path, "w") as out:
+                out.write(before)
+        pins = load(os.path.join(self.patches, "pins.json"))
+        pins["targetSets"]["ohos"].append(name)
+        pins["patches"][name] = {"1.0.0": {rel: {"before": sha(before), "after": sha(after)}}}
+        self.write_pins(pins)
+        return first, second, rel, after
+
+    def test_default_android_uses_only_declared_common_set(self):
+        _, android, rel, ohos = self.target_fixture()
+        report = os.path.join(self.tmp.name, "target.json")
+        result = self.run_cli("--dsh-version", "1.0.0", "--target-report", report)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(read(self.target), android)
+        value = load(report)
+        self.assertEqual({key: value[key] for key in ['schema', 'target', 'dshVersion', 'selected', 'excluded']},
+                         {"schema": 1, "target": "android", "dshVersion": "1.0.0",
+                          "selected": ["guard.diff", "zz-later.diff"], "excluded": ["zzz-feature.diff"]})
+        self.assertRegex(value['inputSha256'], r'^[0-9a-f]{64}$')
+        result = self.run_cli("--dsh-version", "1.0.0", "--target", "ohos")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(read(os.path.join(self.prefix, rel)), ohos)
+        again = self.run_cli("--dsh-version", "1.0.0", "--target", "ohos")
+        self.assertEqual(again.returncode, 0, again.stdout)
+        self.assertIn("already patched", again.stdout)
+
+    def test_every_known_intermediate_of_three_stage_chain_is_accepted(self):
+        first, second, _, final = self.target_fixture()
+        for initial in (ORIGINAL, first, second, final):
+            with self.subTest(initial=sha(initial)):
+                with open(self.target, "w") as out:
+                    out.write(initial)
+                result = self.run_cli("--dsh-version", "1.0.0", "--target", "ohos")
+                self.assertEqual(result.returncode, 0, result.stdout)
+                self.assertEqual(read(self.target), final)
+
+    def test_android_refuses_ohos_final_state_on_shared_file(self):
+        _, _, _, final = self.target_fixture()
+        with open(self.target, "w") as out:
+            out.write(final)
+        result = self.run_cli("--dsh-version", "1.0.0", "--target", "android")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("target android", result.stdout)
+        self.assertEqual(read(self.target), final)
+
+    def test_android_refuses_excluded_changes_before_any_selected_write(self):
+        _, _, rel, final = self.target_fixture(same_file=False)
+        with open(os.path.join(self.prefix, rel), "w") as out:
+            out.write(final)
+        result = self.run_cli("--dsh-version", "1.0.0", "--target", "android")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("excludes changes", result.stdout)
+        self.assertEqual(read(self.target), ORIGINAL)
+        self.assertEqual(read(os.path.join(self.prefix, rel)), final)
+
+    def test_unknown_diff_is_rejected_even_when_recording(self):
+        with open(os.path.join(self.patches, "new.diff"), "w") as out:
+            out.write(DIFF)
+        for flags in ([], ["--record"]):
+            result = self.run_cli("--dsh-version", "1.0.0", *flags)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unregistered=['new.diff']", result.stdout)
+            self.assertEqual(read(self.target), ORIGINAL)
+
+    def test_missing_or_duplicated_target_entries_are_rejected(self):
+        initial = load(os.path.join(self.patches, "pins.json"))
+        for name in ("missing.diff", "guard.diff"):
+            pins = json.loads(json.dumps(initial))
+            pins["targetSets"]["ohos"].append(name)
+            self.write_pins(pins)
+            result = self.run_cli("--dsh-version", "1.0.0", "--record")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(read(self.target), ORIGINAL)
+
+    def test_legacy_schema_cannot_silently_classify_new_patches_as_android(self):
+        self.write_pins({"schema": 1, "patches": {}})
+        result = self.run_cli("--dsh-version", "1.0.0", "--record")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("explicit targetSets", result.stdout)
+        self.assertEqual(read(self.target), ORIGINAL)
+
+    def test_missing_later_pin_is_rejected_before_first_patch_changes_bytes(self):
+        self.chain_fixture()
+        pins = load(os.path.join(self.patches, "pins.json"))
+        pins["patches"]["zz-later.diff"] = {}
+        self.write_pins(pins)
+        result = self.run_cli("--dsh-version", "1.0.0")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no pin for DSH 1.0.0", result.stdout)
+        self.assertEqual(read(self.target), ORIGINAL)
+
+    def test_android_input_fingerprint_excludes_unselected_patch_bytes(self):
+        self.target_fixture()
+        report = os.path.join(self.tmp.name, "fingerprint.json")
+
+        def fingerprint():
+            result = self.run_cli("--dsh-version", "1.0.0", "--target", "android", "--target-report", report)
+            self.assertEqual(result.returncode, 0, result.stdout)
+            return load(report)['inputSha256']
+
+        original = fingerprint()
+        feature = os.path.join(self.patches, "zzz-feature.diff")
+        with open(feature, "a") as out:
+            out.write("# OHOS-only patch note changes; Android input fingerprint stays stable.\n")
+        self.assertEqual(fingerprint(), original)
+        common = os.path.join(self.patches, "guard.diff")
+        with open(common, "a") as out:
+            out.write("# Common patch source change is a new Android build input.\n")
+        self.assertNotEqual(fingerprint(), original)
 
 
 if __name__ == "__main__":
