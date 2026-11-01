@@ -62,6 +62,7 @@ import io.github.ccch1mneyyy.dsh_app.phone.PhonePromptPresenter
 import io.github.ccch1mneyyy.dsh_app.phone.PhonePromptUi
 import io.github.ccch1mneyyy.dsh_app.phone.PromptPresentation
 import io.github.ccch1mneyyy.dsh_app.phone.MainThreadCall
+import io.github.ccch1mneyyy.dsh_app.phone.MotionFacts
 import io.github.ccch1mneyyy.dsh_app.pet.SafeArea
 import io.github.ccch1mneyyy.dsh_app.pet.Side
 import io.github.ccch1mneyyy.dsh_app.pet.WindowPos
@@ -828,15 +829,16 @@ internal class ControlOverlay(private val service: AccessibilityService) : UserG
      *  - not in its first [ARM_MS] (a tap already in flight when the card appeared);
      *  - not while this service is injecting a gesture (InjectGuard);
      *  - not when the touch came through another window on top (tapjacking, FLAG_WINDOW_IS_OBSCURED);
-     *  - not when it looks like an accessibility service's stroke: a virtual device (id ≤ 0) and
-     *    either FLAG_IS_ACCESSIBILITY_EVENT (0x800) or tool type UNKNOWN — unless TalkBack-style
-     *    touch exploration is on, whose double-tap takes that same path;
+     *  - not when it looks like an accessibility service's stroke: no pointing tool at all
+     *    ([MotionFacts.injectedStroke]) — unless TalkBack-style touch exploration is on, whose
+     *    double-tap takes that same path;
      *  - ACTION_CLICK from any accessibility service is refused unless touch exploration is on.
      * And the Actuator makes the overlay untouchable for every stroke it injects.
      * Measured on the API 35 emulator (debug probe): our dispatchGesture tap = flags 0x800,
-     * device -1, tool UNKNOWN; a hardware-touchscreen tap = flags 0x800 (!), device 12, tool FINGER;
-     * shell `input tap` = flags 0, device -1, tool FINGER. So 0x800 alone would lock real fingers
-     * out; the device id is what separates them.
+     * device -1, tool UNKNOWN; a hardware-touchscreen tap = flags 0x800 (!), device 12, tool FINGER.
+     * So 0x800 alone would lock real fingers out — but the device id does not separate them
+     * either: some ROMs report `deviceId <= 0` for real touches over an accessibility overlay,
+     * which silently refused every press. Tool type is the fact that holds on both.
      */
     private inner class GuardedButton(context: Context, private val armedAt: Long) : TextView(context) {
         private var rejected = false
@@ -847,7 +849,7 @@ internal class ControlOverlay(private val service: AccessibilityService) : UserG
             if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                 val why = rejectReason(event)
                 rejected = why != null
-                lastGuardVerdict = "${why ?: "accepted"} flags=0x${Integer.toHexString(event.flags)} device=${event.deviceId} source=0x${Integer.toHexString(event.source)} tool=${event.getToolType(0)}"
+                lastGuardVerdict = "${why ?: "accepted"} ${MotionFacts.describe(event)}"
                 Log.i(TAG, "guarded '$text': $lastGuardVerdict")
             }
             if (rejected) {
@@ -869,9 +871,8 @@ internal class ControlOverlay(private val service: AccessibilityService) : UserG
         private fun rejectReason(event: MotionEvent): String? = when {
             SystemClock.uptimeMillis() < armedAt -> "too-early"
             InjectGuard.active() && !debugIgnoreInjectGuard -> "injecting"
-            event.flags and MotionEvent.FLAG_WINDOW_IS_OBSCURED != 0 -> "obscured"
-            event.deviceId <= 0 && (event.flags and FLAG_IS_ACCESSIBILITY_EVENT != 0 || event.getToolType(0) == MotionEvent.TOOL_TYPE_UNKNOWN) &&
-                !a11y.isTouchExplorationEnabled -> "accessibility-injected"
+            MotionFacts.obscured(event) -> "obscured"
+            MotionFacts.injectedStroke(event) && !a11y.isTouchExplorationEnabled -> "accessibility-injected"
             else -> null
         }
     }
@@ -1419,9 +1420,5 @@ internal class ControlOverlay(private val service: AccessibilityService) : UserG
 
         /** Near-opaque: under the glyphs the page barely shows. */
         private const val HALO_ALPHA = 0xE6
-
-        /** MotionEvent.FLAG_IS_ACCESSIBILITY_EVENT (hidden, API 31+). Not decisive alone, see GuardedButton. */
-        private const val FLAG_IS_ACCESSIBILITY_EVENT = 0x800
-
     }
 }

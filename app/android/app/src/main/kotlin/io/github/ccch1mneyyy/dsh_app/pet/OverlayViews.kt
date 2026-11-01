@@ -2,6 +2,7 @@ package io.github.ccch1mneyyy.dsh_app.pet
 
 import io.github.ccch1mneyyy.dsh_app.i18n.AppStrings
 import io.github.ccch1mneyyy.dsh_app.R
+import io.github.ccch1mneyyy.dsh_app.phone.MotionFacts
 import io.github.ccch1mneyyy.dsh_app.phone.PromptInputPolicy
 import io.github.ccch1mneyyy.dsh_app.phone.a11y.InjectGuard
 import android.annotation.SuppressLint
@@ -323,8 +324,7 @@ internal class GuardedButton(context: Context, private val armedAt: Long) : Text
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             rejected = !PromptInputPolicy.allows(
                 SystemClock.uptimeMillis(), armedAt, isEnabled, InjectGuard.active(),
-                event.flags and (MotionEvent.FLAG_WINDOW_IS_OBSCURED or 0x2) != 0,
-                event.deviceId <= 0, event.flags and FLAG_IS_ACCESSIBILITY_EVENT != 0 || event.getToolType(0) == MotionEvent.TOOL_TYPE_UNKNOWN,
+                MotionFacts.obscured(event), MotionFacts.injectedStroke(event),
                 a11y.isTouchExplorationEnabled,
             )
         }
@@ -347,11 +347,6 @@ internal class GuardedButton(context: Context, private val armedAt: Long) : Text
             return false
         }
         return super.performAccessibilityAction(action, arguments)
-    }
-
-    private companion object {
-        /** MotionEvent.FLAG_IS_ACCESSIBILITY_EVENT (hidden): dispatched by an accessibility service. */
-        const val FLAG_IS_ACCESSIBILITY_EVENT = 0x800
     }
 }
 
