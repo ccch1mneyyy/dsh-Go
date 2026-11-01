@@ -6,8 +6,8 @@ import { Worker } from 'node:worker_threads';
 import { afterEach, beforeEach, test } from 'node:test';
 import { loadInternals } from './load-internals.mjs';
 
-const attachment = await loadInternals('@deepseek-ai/dsh-attachment-local', ['publishOhosExclusive', 'ohosPublications']);
-const session = await loadInternals('@deepseek-ai/dsh-session-persistence-jsonl', ['publishOhosExclusive', 'ohosPublications', 'tryLockOhos', 'ohosWriteLocks']);
+const attachment = await loadInternals('@deepseek-ai/dsh-attachment-local', ['publishOhosExclusive']);
+const session = await loadInternals('@deepseek-ai/dsh-session-persistence-jsonl', ['publishOhosExclusive', 'tryLockOhos', 'ohosWriteLocks']);
 const errno = (code) => Object.assign(new Error(code), { code });
 const denied = async () => { throw errno('EACCES'); };
 const deferred = () => { let resolve; return { promise: new Promise((r) => { resolve = r; }), resolve }; };
@@ -22,8 +22,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await Promise.allSettled(handles.map((handle) => handle.close()));
   assert.equal(session.ohosWriteLocks.size, 0, 'no lock remains after its owner closes');
-  assert.equal(session.ohosPublications.size, 0);
-  assert.equal(attachment.ohosPublications.size, 0);
+  assert.equal(globalThis[Symbol.for('dsh.go.ohos.publication')].pendingCount, 0, 'the shared publication queue has drained');
   await rm(directory, { recursive: true, force: true });
 });
 
@@ -34,7 +33,7 @@ async function handleAt(path) {
 }
 
 for (const [name, module] of [['attachment', attachment], ['session', session]]) {
-  test(`${name}: multi-chunk exclusive copy retains bytes and source`, async () => {
+  test(`${name}: multi-chunk atomic publication retains bytes and source`, async () => {
     const source = join(directory, '中文 源文件');
     const target = join(directory, '目的文件');
     const bytes = Buffer.alloc(200_000, 0xc3);
@@ -48,7 +47,7 @@ for (const [name, module] of [['attachment', attachment], ['session', session]])
   test(`${name}: EEXIST preserves a competing target without even opening source`, async () => {
     const target = join(directory, 'target');
     await writeFile(target, 'competitor');
-    await assert.rejects(module.publishOhosExclusive('absent source', target, {
+    await assert.rejects(module.publishOhosExclusive(join(directory, 'absent source'), target, {
       link: async () => { throw errno('EEXIST'); },
       open: async () => { assert.fail('link collision must propagate'); },
     }), { code: 'EEXIST' });
@@ -77,9 +76,8 @@ for (const [name, module] of [['attachment', attachment], ['session', session]])
       async open(path, ...args) {
         const handle = await open(path, ...args);
         opened.push(handle);
-        if (path === target) handle.writeFile = async () => {
+        if (args[0] === 'wx') handle.writeFile = async () => {
           await handle.write('partial');
-          await rm(target);
           await writeFile(target, 'replacement', { flag: 'wx' });
           throw errno('ENOSPC');
         };
@@ -93,7 +91,7 @@ for (const [name, module] of [['attachment', attachment], ['session', session]])
 
   test(`${name}: unrelated I/O failures never trigger a copy`, async () => {
     const failure = errno('EIO');
-    await assert.rejects(module.publishOhosExclusive('source', 'target', {
+    await assert.rejects(module.publishOhosExclusive(join(directory, 'source'), join(directory, 'target'), {
       link: async () => { throw failure; },
       open: async () => { assert.fail('no copy for EIO'); },
     }), (error) => error === failure);

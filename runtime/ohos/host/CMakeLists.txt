@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.16)
+project(dsh_ohos_node_runner LANGUAGES CXX)
+
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "OHOS")
+  message(FATAL_ERROR "Build the product runner with the OpenHarmony native SDK toolchain")
+endif()
+set(NODE_SOURCE_DIR "" CACHE PATH "Pinned Node 24.22.1 source")
+set(NODE_LIBRARY_DIR "" CACHE PATH "O7b output containing libnode.so")
+if(NOT EXISTS "${NODE_SOURCE_DIR}/src/node.h" OR NOT EXISTS "${NODE_LIBRARY_DIR}/libnode.so")
+  message(FATAL_ERROR "Provide the pinned Node source and target shared-library output")
+endif()
+
+add_library(dsh_node_runner SHARED node_runner.cpp publication_binding.cc)
+target_compile_features(dsh_node_runner PRIVATE cxx_std_20)
+target_compile_definitions(dsh_node_runner PRIVATE NAPI_VERSION=8)
+target_compile_options(dsh_node_runner PRIVATE -fvisibility=hidden)
+target_include_directories(dsh_node_runner PRIVATE
+  "${NODE_SOURCE_DIR}/src" "${NODE_SOURCE_DIR}/deps/v8/include" "${NODE_SOURCE_DIR}/deps/uv/include")
+target_link_libraries(dsh_node_runner PRIVATE "${NODE_LIBRARY_DIR}/libnode.so")
+target_link_options(dsh_node_runner PRIVATE -Wl,-z,defs)
