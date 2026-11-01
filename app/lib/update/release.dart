@@ -28,6 +28,10 @@ String apkAssetName(AppVersion version, ApkFlavor flavor) => 'dsh-go-${version.n
 
 final _apkAssetPattern = RegExp(r'^dsh-go-(.+)-(arm64|x64)\.apk$');
 
+/// What a manifest may name a file: it becomes a path in the download
+/// directory, so nothing that climbs out of it.
+final _fileName = RegExp(r'^[0-9A-Za-z][0-9A-Za-z._+-]*$');
+
 /// One downloadable APK.
 class ReleaseAsset {
   const ReleaseAsset({required this.name, required this.url, this.size, this.sha256});
@@ -166,7 +170,8 @@ ReleaseInfo parseGithubRelease(Object? json) {
 
 /// Parses an `update.json` manifest ([ReleaseInfo.toManifestJson]). Relative
 /// asset URLs resolve against [base] (the manifest's own URL); a missing URL
-/// means the GitHub release asset for the tag.
+/// means the GitHub release asset for the tag. Assets named anything but a
+/// plain file name are left out.
 ReleaseInfo parseUpdateManifest(Object? json, {Uri? base}) {
   if (json is! Map) throw const FormatException('manifest is not an object');
   final schema = json['schema'];
@@ -183,7 +188,7 @@ ReleaseInfo parseUpdateManifest(Object? json, {Uri? base}) {
       final name = value['name'] as String? ?? apkAssetName(version, flavor);
       final raw = value['url'] as String?;
       final url = raw == null ? githubReleaseAsset(tag, name) : (base?.resolve(raw) ?? Uri.tryParse(raw));
-      if (url == null || !url.hasScheme) continue;
+      if (url == null || !url.hasScheme || !_fileName.hasMatch(name)) continue;
       apks[flavor] = ReleaseAsset(
         name: name,
         url: url,
