@@ -13,7 +13,7 @@ class L10nZh extends L10n {
   String get a11yRestoreTitle => '自动恢复无障碍';
 
   @override
-  String get searchKwA11yRestore => '无障碍,恢复,重连,自动恢复,掉线,授权,ADB,Shizuku';
+  String get searchKwA11yRestore => '无障碍,恢复,重连,自动恢复,掉线,授权,ADB,Shizuku,Sui,root';
 
   @override
   String get a11yRestoreNeedsGrant => '需要授权';
@@ -28,10 +28,25 @@ class L10nZh extends L10n {
   String get a11yRestoreGrant => '授权并开启';
 
   @override
+  String get a11yRestoreGrantShizuku => '通过 Shizuku 授予';
+
+  @override
+  String get a11yRestoreGrantShizukuPermission => '先授权 Shizuku，再授予权限';
+
+  @override
+  String get a11yRestoreGrantAdb => '通过自连 ADB 授予';
+
+  @override
+  String get a11yRestoreRootNote => '以 root 执行一次 pm grant，只授予这一项权限。';
+
+  @override
   String get a11yRestoreSetup => '配置 Shizuku 或无线调试';
 
   @override
   String get a11yRestoreWaiting => '请在 Shizuku 中允许授权';
+
+  @override
+  String get a11yRestoreWaitingSui => '请在 Sui 中允许授权';
 
   @override
   String get a11yRestoreComputer => '也可以连接电脑，执行一次：';
@@ -8685,13 +8700,7 @@ class L10nZh extends L10n {
   String get phoneDndHiddenScreen => '在看不见的屏幕上操作';
 
   @override
-  String get phoneDndShizukuReady => 'Shizuku · 可以用了';
-
-  @override
   String get phoneNotReadyYet => '还没准备好';
-
-  @override
-  String get phoneDndAdbReady => '自连 ADB · 可以用了';
 
   @override
   String get phoneActionFailedLater => '没有成功，稍后再试';
@@ -8727,22 +8736,88 @@ class L10nZh extends L10n {
   String get phoneDndReactivate => '重启手机后重新激活。';
 
   @override
-  String get phoneDndKeepDebugging => '连接 Wi-Fi，并保持开发者选项和无线调试开启。';
-
-  @override
-  String get phoneDndUsingShizuku => '正在使用：Shizuku';
-
-  @override
-  String get phoneDndUsingAdb => '正在使用：自连 ADB';
+  String get phoneDndKeepDebugging => '用 Shizuku 或自连 ADB 时，连接 Wi‑Fi 并保持无线调试开启。';
 
   @override
   String get phoneReady => '可以用了';
 
   @override
-  String get phoneDndUseShizuku => '用 Shizuku';
+  String get phoneDndDirectAdb => '自连 ADB';
 
   @override
-  String get phoneDndDirectAdb => '自连 ADB';
+  String get phoneDndChannels => '通道';
+
+  @override
+  String get phoneDndShizukuFor => '装了 Shizuku App 的手机';
+
+  @override
+  String get phoneDndSuiFor => 'Magisk 或 KernelSU 装了 Sui 模块';
+
+  @override
+  String get phoneDndRootFor => '已 root 的手机';
+
+  @override
+  String get phoneDndAdbFor => '不装别的 App，用无线调试';
+
+  @override
+  String get phoneDndStateInUse => '使用中';
+
+  @override
+  String get phoneDndStateNotReady => '未就绪';
+
+  @override
+  String get phoneDndStateUsable => '可以用';
+
+  @override
+  String get phoneDndStateNeedsGrant => '待授权';
+
+  @override
+  String get phoneDndStateNotRunning => '未运行';
+
+  @override
+  String get phoneDndStateNotInstalled => '未安装';
+
+  @override
+  String get phoneDndStateNotFound => '未检测到';
+
+  @override
+  String get phoneDndStateViaSui => '由 Sui 提供';
+
+  @override
+  String get phoneDndStateWaiting => '等待授权';
+
+  @override
+  String get phoneDndStateDisconnected => '未连接';
+
+  @override
+  String get phoneDndStateNotPaired => '未配对';
+
+  @override
+  String get phoneDndShizukuViaSui => '这台手机的 Shizuku 接口由 Sui 提供，请改用 Sui。';
+
+  @override
+  String get phoneDndSuiMissing => '没有检测到 Sui。在 Magisk 或 KernelSU 里装好 Sui 模块并重启手机，再回到这里。';
+
+  @override
+  String get phoneDndSuiRunning => 'Sui 接口可用';
+
+  @override
+  String get phoneDndSuiStopped => 'Sui 接口当前不可用。确认 Sui 模块已启用，重启手机后再试。';
+
+  @override
+  String get phoneDndSuiAllSet => 'Sui 这边准备好了。';
+
+  @override
+  String get phoneDndSuiPermissionFailed => '没能请求 Sui 授权。确认 Sui 模块已启用后再试。';
+
+  @override
+  String get phoneDndRootWaiting => '正在等待 root 授权，请在 root 管理器的弹窗里选择。';
+
+  @override
+  String get phoneDndRootConnected => 'root 已连接。断开后要回到这里再选一次，DSH Go 不会自己重新申请。';
+
+  @override
+  String get phoneDndRootRetry => '重新申请 root 授权';
 
   @override
   String get phoneDndInstallShizuku => '先装 Shizuku（免费、开源）。已经在用冰箱、黑阈这类工具的话，多半已经装了。';
@@ -8784,9 +8859,6 @@ class L10nZh extends L10n {
   String get phoneDndConnected => '已连接';
 
   @override
-  String get phoneDndPairOnce => '配对一次（不用装别的 App）';
-
-  @override
   String get phoneDndDeveloperOptionsStep => '打开开发者选项：在「关于手机」里连点「版本号」7 次。小米在「我的设备 → 全部参数与信息」里点「OS 版本」，vivo 点「软件版本号」。';
 
   @override
@@ -8818,9 +8890,6 @@ class L10nZh extends L10n {
 
   @override
   String get phoneDndXiaomiUsbHint => '打开「USB 调试（安全设置）」需插入 SIM 卡并登录小米账号。';
-
-  @override
-  String get phoneDndEnable => '启用不打扰模式';
 
   @override
   String get phoneDndEnterCodeTitle => '填写配对码';
@@ -9428,18 +9497,47 @@ class L10nZh extends L10n {
   }
 
   @override
-  String phoneDndShizukuStatus(String reason) {
-    return 'Shizuku · $reason';
-  }
-
-  @override
-  String phoneDndAdbStatus(String reason) {
-    return '自连 ADB · $reason';
-  }
-
-  @override
   String phoneDndBrowserFailed(String url) {
     return '打不开浏览器。网址：$url';
+  }
+
+  @override
+  String phoneDndChannelReady(String channel) {
+    return '$channel · 可以用了';
+  }
+
+  @override
+  String phoneDndChannelStatus(String channel, String reason) {
+    return '$channel · $reason';
+  }
+
+  @override
+  String phoneDndUsing(String channel) {
+    return '正在使用：$channel';
+  }
+
+  @override
+  String phoneDndEnableWith(String mode) {
+    String _temp0 = intl.Intl.selectLogic(mode, {
+      'shizuku': '用 Shizuku 开启',
+      'sui': '用 Sui 开启',
+      'root': '用 Root 开启',
+      'adb': '用自连 ADB 开启',
+      'other': '启用不打扰模式',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String phoneDndSwitchTo(String mode) {
+    String _temp0 = intl.Intl.selectLogic(mode, {
+      'shizuku': '改用 Shizuku',
+      'sui': '改用 Sui',
+      'root': '改用 Root',
+      'adb': '改用自连 ADB',
+      'other': '改用这个通道',
+    });
+    return '$_temp0';
   }
 
   @override
@@ -9657,7 +9755,7 @@ class L10nZh extends L10n {
   }
 
   @override
-  String get phoneDndManualConnect => '手动连接';
+  String get phoneDndManualConnect => '按端口连接';
 
   @override
   String get phoneDndConnectPortLabel => '连接端口';
@@ -9714,7 +9812,7 @@ class L10nZh extends L10n {
   String get phonePrivilegedRootPrepare => '申请 root 授权';
 
   @override
-  String get phonePrivilegedRootUnchecked => '尚未检查 root';
+  String get phonePrivilegedRootUnchecked => '尚未检查';
 
   @override
   String get phonePrivilegedGrantRoot => '通过 root 授予';
@@ -9726,7 +9824,14 @@ class L10nZh extends L10n {
   String get phonePrivilegedGrantSuiPermission => '先授权 Sui，再授予权限';
 
   @override
-  String get phonePrivilegedSuggested => '建议的通道';
+  String get phonePrivilegedSuggested => '建议';
+
+  @override
+  String get phonePrivilegedRootRiskTitle => '给 DSH Go root 权限？';
+
+  @override
+  String get phonePrivilegedRootRiskBody =>
+      'root 管理器（Magisk、KernelSU 或 APatch）会弹窗问你。允许后，DSH Go 以 root 运行自己的后台服务；连接断开后不会自己重新申请。';
 
   @override
   String get phoneModeTitle => '选择确认方式';
@@ -13400,7 +13505,7 @@ class L10nZh extends L10n {
   String get searchKwAppRules => '名单,黑名单,白名单,禁止,应用';
 
   @override
-  String get searchKwDnd => '免打扰,Shizuku,ADB,后台操作';
+  String get searchKwDnd => '免打扰,Shizuku,Sui,root,ADB,后台操作';
 
   @override
   String get searchKwEngine => '引擎,运行环境,启动,停止,重启,DSH';

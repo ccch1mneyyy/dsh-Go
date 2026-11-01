@@ -140,6 +140,13 @@ root/ADB入口先准备Looper再创建ActivityThread systemContext，之后进�
 7. 页面文案区分“尚未检查”“正在等待”“已连接”“后台屏验证失败”“已授予WSS”“无障碍已连接”。这六项没有相互推出关系。
 8. 现有A11yKeeper的恢复与退避不改；本机验证有permission+总开关开时恢复、总开关关时不恢复，勿以root服务存活代替恢复验收。
 
+本机接入后的页面（`dnd_mode_page.dart`、`a11y_restore_sheet.dart`，golden 见 `test/phone/dnd_mode_golden_test.dart`）：
+
+- **不打扰模式**：有通道在用时顶部一张「正在使用：X」卡，就绪写「可以用了」，root 等待时写原生原因；其余失败在卡下用一条警示写 `effectiveReason` 原文。卡上的「关闭」在等待 root 时也可点，用来取消。下面「通道」卡按 `supportedModes` 列出 off 以外的通道，每行是名称、适用人群一行和状态词（使用中 / 未就绪 / 等待授权 / 可以用 / 待授权 / 未运行 / 未安装 / 未检测到 / 由 Sui 提供 / 尚未检查 / 未连接 / 已配对 / 未配对），`recommendedMode` 只是标题后的淡色「建议」标签。
+- **点行只展开**该通道的检查项和下一步，选择只发生在展开后的「用 X 开启 / 改用 X」按钮；root 的按钮先过一次中档风险提醒（`phone.root`），再调用 `setPrivilegedMode(root)`。在用但未就绪的通道默认展开，全部就绪时全部收起，常见情况一眼看完。provider 为 Sui 时 Shizuku 行写「由 Sui 提供」并指向 Sui，没有自己的开启按钮。
+- 旧原生（无 v1 块）只列 Shizuku 与自连 ADB，不出现 Sui / root、不出现建议。
+- **自动恢复无障碍**按 grantPath 写出路径（通过 Shizuku / Sui / root / 自连 ADB 授予，或先授权 Shizuku / Sui），root 路径附「以 root 执行一次 pm grant」；无路径时在「配置…」下另给「申请 root 授权」（`prepareRoot`，同一提醒，不看 Android 14 门槛）；root 已选但断开时只给重新申请，不换别的路径。
+
 具体页面验收：只开设置页/搜索/前后台切换无root提示；点prepare一次才产生一次启动尝试；API33仍能独立准备；API34+选择root后gate才决定后台屏；prepare不改变原mode；来源改变的旧Sui按钮不授权错误来源；按off后等待中的旧结果不复活勾选；旧原生侧不发送prepareRoot；新原生root投影旧字段off/false，但断线/超时后的任务错误保留实际原因；Sui授WSS后当前共享后台服务不被解绑。
 
 ## 9. 真机矩阵与逐步可观察验收
