@@ -109,7 +109,7 @@ const pluginNamespaceCopyZh = <String, Map<String, FieldCopy>>{
     ),
     'reviewerModel': FieldCopy(label: '审查模型'),
     'reviewerModelProvider': FieldCopy(label: '审查模型服务商'),
-    'reviewerTimeoutMs': FieldCopy(label: '审查超时（毫秒）'),
+    'reviewerTimeoutMs': FieldCopy(label: '审查超时'),
     'reviewerGuidance': FieldCopy(label: '审查指导文本'),
     'maxReviewsPerTurn': FieldCopy(label: '每轮审查次数上限'),
     'maxFailuresPerTurn': FieldCopy(label: '每轮失败次数上限'),
@@ -137,7 +137,7 @@ const pluginNamespaceCopyZh = <String, Map<String, FieldCopy>>{
       label: '窗口保留记录数',
       hint: '按记录条数计，不按对话轮数',
     ),
-    'toolCallTimeoutMs': FieldCopy(label: '工具调用超时（毫秒）'),
+    'toolCallTimeoutMs': FieldCopy(label: '工具调用超时'),
   },
   // @nanmicoder/dsh-agent-teams 0.1.27; bundle row: agent-teams.
   'agent-teams': {
@@ -164,14 +164,14 @@ const pluginNamespaceCopyZh = <String, Map<String, FieldCopy>>{
     'maxDevices': FieldCopy(label: '设备数量上限'),
     'maxSessions': FieldCopy(label: '会话数量上限'),
     'maxConnections': FieldCopy(label: '连接数量上限'),
-    'upstreamTimeoutMs': FieldCopy(label: '上游请求超时（毫秒）'),
+    'upstreamTimeoutMs': FieldCopy(label: '上游请求超时'),
   },
   // @cocofhu/anime-find 0.1.12; bundle row: anime-find.
   'anime-find': {
     'mikanHost': FieldCopy(label: 'Mikan 站点'),
     'anibtHost': FieldCopy(label: 'AniBT 站点'),
     'gardenHost': FieldCopy(label: 'AnimeGarden API'),
-    'timeoutMs': FieldCopy(label: '上游请求超时（毫秒）'),
+    'timeoutMs': FieldCopy(label: '上游请求超时'),
     'userAgent': FieldCopy(label: '请求 UA'),
     'maxResults': FieldCopy(label: '搜索结果上限'),
     'sources': FieldCopy(label: '启用的搜索源'),
@@ -195,8 +195,8 @@ const pluginNamespaceCopyZh = <String, Map<String, FieldCopy>>{
     'conversationReviewCards': FieldCopy(label: '会话审阅卡片'),
     'gatewayPort': FieldCopy(label: '协作网关端口'),
     'autoStartGateway': FieldCopy(label: '自动启动协作网关'),
-    'gatewayStartupTimeoutMs': FieldCopy(label: '网关启动超时（毫秒）'),
-    'gatewayRequestTimeoutMs': FieldCopy(label: '网关请求超时（毫秒）'),
+    'gatewayStartupTimeoutMs': FieldCopy(label: '网关启动超时'),
+    'gatewayRequestTimeoutMs': FieldCopy(label: '网关请求超时'),
     'screenshotMaxPages': FieldCopy(label: '截图页数上限'),
     'screenshotMaxPixels': FieldCopy(label: '截图像素数上限'),
     'browserExecutablePath': FieldCopy(label: '浏览器程序路径'),
@@ -214,7 +214,7 @@ const pluginNamespaceCopyZh = <String, Map<String, FieldCopy>>{
     ),
     'threads': FieldCopy(label: '识别线程数'),
     'maxAudioBytes': FieldCopy(label: '录音大小上限（字节）'),
-    'inferenceTimeoutMs': FieldCopy(label: '识别超时（毫秒）'),
+    'inferenceTimeoutMs': FieldCopy(label: '识别超时'),
   },
 };
 // l10n:keep-end

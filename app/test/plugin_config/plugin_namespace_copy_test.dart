@@ -71,6 +71,20 @@ void main() {
     });
   }
 
+  test('a title never names 毫秒 for a field typed in seconds', () {
+    // `*Ms` numbers are stored in ms but shown as durations and typed in 秒
+    // (unitFor). 「（毫秒）」 in the title would turn a typed 120000 into 33 hours.
+    final number = SchemaNode.fromJson({'type': 'number'});
+    for (final MapEntry(key: ns, value: fields) in pluginNamespaceCopyZh.entries) {
+      for (final MapEntry(key: path, value: copy) in fields.entries) {
+        final unit = unitFor(path.split('.').last, number);
+        if (unit != FieldUnit.milliseconds) continue;
+        expect(editUnitLabel(unit), '秒');
+        expect(copy.label, isNot(contains('毫秒')), reason: '$ns.$path');
+      }
+    }
+  });
+
   test(
     'English retains the pre-existing fallback and all settings behavior',
     () {
