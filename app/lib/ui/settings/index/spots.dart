@@ -774,6 +774,12 @@ abstract final class Spots {
     title: (l) => l.hubInterfaceHome,
     keywords: (l) => l.searchKwUiMode,
   );
+  static final hardwareEnterSends = SettingSpot(
+    'hardware-enter-sends',
+    page: SettingsPageId.interface,
+    title: (l) => l.hubHardwareEnterSends,
+    keywords: (l) => l.hubHardwareEnterSendsHint,
+  );
   static final tableTint = SettingSpot(
     'table-tint',
     page: SettingsPageId.interface,
@@ -1037,6 +1043,7 @@ final _rows = <SettingSpot>[
   Spots.petOutsideApp,
   Spots.petDisplayWhen,
   Spots.uiMode,
+  Spots.hardwareEnterSends,
   Spots.tableTint,
   Spots.webApp,
   Spots.openWeb,

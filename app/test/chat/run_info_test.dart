@@ -113,7 +113,7 @@ void main() {
       expect(trace.ttft, const Duration(milliseconds: 1100));
       expect(trace.usage.total, 8226 + 69888 + 1970);
       // Friday 10:00 北京时间: deepseek-flash at the peak price.
-      expect(TurnFootnote.variants(trace).first, '1 分 23 秒 · 5 步 · 约 ¥0.04 · 8 万 tokens');
+      expect(TurnFootnote.variants(trace).first, '1 分 23 秒 · 5 步 · 约 ¥0.04 · 80.1K tokens');
 
       final rows = trajectoryRows(trace);
       final labels = [

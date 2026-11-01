@@ -185,6 +185,46 @@
           "after": "7978a5b16f406b3c223de5a83c93e86125677ece1265d39d79dcba19de13cd45"
         }
       }
+    },
+    "zzzzzz-session-deletion.diff": {
+      "0.2.1-rc.4": {
+        "node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js": {
+          "before": "973dd78679b2661d6f492343bc22b124ae958aa597d3b36c698a2c650f909984",
+          "after": "bf3ac4eae2d0c7f474d71b3a1fb3bb265cb4ae287c4ab5e60fbc6aa9f8514d6a"
+        },
+        "node_modules/@deepseek-ai/dsh-session/lib/index.js": {
+          "before": "2f5dd07cb5c744a29abbb8003a8a4cefd9e582c6e2538074ca299a0ddd02a3bf",
+          "after": "f25aba4448a5fddb4b40a2938f0118616e63a3f85803f8c8871aa9b9bec284bf"
+        },
+        "node_modules/@deepseek-ai/dsh-agent-loop/lib/index.js": {
+          "before": "cf57e3ecd487ac5c2553455aaa5cef2c6fb41e6bd61be5aa455675d1d7193033",
+          "after": "83e26a1b11be4d40532fd7ce6192490f5b595de4f795459c7b27723d56eb9711"
+        },
+        "node_modules/@deepseek-ai/dsh-session-projection-cache/lib/index.js": {
+          "before": "fef2e98522a64ac5e2e19e55cd26d196b34f252005773daf5905c817eb3e077d",
+          "after": "65a891a363a289f006a24a0dd13dc42906158a0a69e73e7e5fd335cfbd97d015"
+        },
+        "node_modules/@deepseek-ai/dsh-session-query/lib/index.js": {
+          "before": "76ce2944e561c12f48b5e240d68cafe54ce6d667b1d20722e6939ed834489939",
+          "after": "9cefdbb5d7c2a3af2784918f5370f4863c4ff8cf53545c971f1f7e3896b7cd0c"
+        },
+        "node_modules/@deepseek-ai/dsh-session-query-sqlite/lib/index.js": {
+          "before": "dbecf83320e10d93d735b3d01384ab817a0b90102ccecb0a22c013c71dfe70a0",
+          "after": "8155a474260312831115094a17c31060a03942851e58cca234c0e86c610299e8"
+        },
+        "node_modules/@deepseek-ai/dsh-schedule/lib/index.js": {
+          "before": "022b9f191b6ca0f4b0f26625afc49f375933068a42712c0a75e94e439d7e6d0e",
+          "after": "5bf01f38768cd3d47b7dca7ea6da577ec96aa9505e79324016dfb96a7a4300e2"
+        },
+        "node_modules/@deepseek-ai/dsh-workspace/lib/index.js": {
+          "before": "931ca0cb10c5102066c7723690a887f0e6e8e7ab0ffdee1a782686745b0b934f",
+          "after": "a26b396baee3c353b5bd55c932e30f2653b083a136e7a8f9f596e9fe4c1222b0"
+        },
+        "node_modules/@deepseek-ai/dsh-storage-json/lib/index.js": {
+          "before": "07e123e2fbbc29a5995ceb988eb3f0e9abd1dbe5899b88e81a805b650606a8d0",
+          "after": "164a848270827b1a778aee27afc2e6513f636fae7b9d90ff4059bf445c00b99f"
+        }
+      }
     }
   },
   "schema": 1

@@ -88,6 +88,17 @@ class InterfacePage extends ConsumerWidget {
           ],
         ),
         SettingsSection(
+          title: l10n.hubSettingsChat,
+          children: [
+            SettingsSwitchTile(
+              spot: Spots.hardwareEnterSends,
+              subtitle: l10n.hubHardwareEnterSendsHint,
+              value: settings.hardwareEnterSends,
+              onChanged: (v) => unawaited(ref.read(settingsProvider.notifier).setHardwareEnterSends(v)),
+            ),
+          ],
+        ),
+        SettingsSection(
           title: l10n.hubTableTint,
           spot: Spots.tableTint,
           children: [
