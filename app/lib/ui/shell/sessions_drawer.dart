@@ -434,12 +434,13 @@ class _SessionList extends ConsumerWidget {
     // fold into one row that opens the Bot pages.
     final botReady = ref.watch(dsBotProvider.select((s) => s.ready));
     final showBots = scope.bots.isNotEmpty || (workspace == null && botReady);
-    if (scope.sessions.isEmpty && !showBots) {
+    if (scope.sessions.isEmpty && !showBots && ref.watch(drawerViewProvider).folders.isEmpty) {
       if (scope.readOnly) return _Centered(child: Text(readListStatusText(scope.status)));
       return workspace == null ? const _EmptyState() : const _WorkspaceEmptyState();
     }
     return DrawerConversationList(
       now: now,
+      onNewChat: onClose,
       readOnly: scope.readOnly,
       leading: showBots
           ? DsBotDrawerRow(

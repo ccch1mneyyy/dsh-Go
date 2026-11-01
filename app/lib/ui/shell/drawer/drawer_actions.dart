@@ -74,9 +74,14 @@ Future<void> editFolderFlow(BuildContext context, WidgetRef ref, DrawerFolder fo
   await view.updateFolder(folder.id, name: draft.name, tint: () => draft.tint, emoji: () => draft.emoji);
 }
 
-/// Long press on a folder: 编辑 or 删除文件夹 (its conversations stay; undo
-/// puts it back).
-Future<void> folderActionsFlow(BuildContext context, WidgetRef ref, DrawerFolder folder) async {
+/// Long press on a folder: start a chat, edit, or delete the folder.
+/// Deleting keeps its conversations; undo puts the folder back.
+Future<void> folderActionsFlow(
+  BuildContext context,
+  WidgetRef ref,
+  DrawerFolder folder, {
+  VoidCallback? onNewChat,
+}) async {
   final container = ProviderScope.containerOf(context, listen: false);
   final owner = container.read(activeHostProvider);
   var retired = false;
@@ -89,6 +94,11 @@ Future<void> folderActionsFlow(BuildContext context, WidgetRef ref, DrawerFolder
     final action = await showFolderActionSheet(context, folder);
     if (!context.mounted || action == null || !owned()) return;
     switch (action) {
+      case FolderAction.newChat:
+        if (ref.read(drawerViewProvider).byId(folder.id) == null) return;
+        ref.read(currentSessionProvider.notifier).select(null);
+        ref.read(pendingSessionFolderProvider.notifier).select(folder.id);
+        onNewChat?.call();
       case FolderAction.edit:
         await editFolderFlow(context, ref, folder);
       case FolderAction.delete:
