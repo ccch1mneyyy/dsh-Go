@@ -1,0 +1,99 @@
+# dsh-go OHOS: native HTTP transport with existing DNS pins and proxy policy.
+# Only openharmony or DSH_GO_OHOS_SIM=1 uses the adapter; Android stays on its original path.
+# Pinned to @deepseek-ai/dsh 0.2.1-rc.4. 未在鸿蒙真机核实。
+--- a/node_modules/@deepseek-ai/dsh-http-proxy/lib/index.js
++++ b/node_modules/@deepseek-ai/dsh-http-proxy/lib/index.js
+@@ -385,7 +385,32 @@
+ * @param policy - the policy to route by; it must proxy at least one scheme.
+ * @returns the dispatcher to install, owning every per-origin agent its factory created.
+ */
++function ohosNetwork() {
++	if (process.platform !== "openharmony" && process.env.DSH_GO_OHOS_SIM !== "1") return void 0;
++	const network = globalThis[Symbol.for("dsh.go.ohos.net")];
++	if (!network) throw Object.assign(new Error("OHOS network preload is required"), { code: "ERR_OHOS_NET_PRELOAD_MISSING" });
++	return network;
++}
+ async function createPolicyDispatcher(policy) {
++	const network = ohosNetwork();
++	if (network) {
++		const dispatchers = new Map();
++		let closed = false;
++		return {
++			dispatch(options, handler) {
++				if (closed) throw Object.assign(new Error("HTTP transport is closed"), { code: "UND_ERR_CLOSED" });
++				const proxy = proxyForUrl(policy, new URL(options.origin));
++				let dispatcher = dispatchers.get(proxy);
++				if (!dispatcher) {
++					dispatcher = network.createDispatcher({ proxyEnv: proxy === void 0 ? {} : { http_proxy: proxy, https_proxy: proxy, no_proxy: "" } });
++					dispatchers.set(proxy, dispatcher);
++				}
++				return dispatcher.dispatch(options, handler);
++			},
++			close() { closed = true; return Promise.all([...dispatchers.values()].map((dispatcher) => dispatcher.close())); },
++			destroy(error) { closed = true; return Promise.all([...dispatchers.values()].map((dispatcher) => dispatcher.destroy(error))); }
++		};
++	}
+ 	const { Agent, Pool, ProxyAgent } = await import("undici");
+ 	return new Agent({ factory(origin, options) {
+ 		const passed = options;
+@@ -413,6 +438,30 @@
+ * @returns a disposer restoring the previous dispatcher, policy, and environment, then closing the agent.
+ */
+ async function installGlobalProxy(policy) {
++	const network = ohosNetwork();
++	if (network) {
++		const { getGlobalDispatcher, setGlobalDispatcher } = await import("undici");
++		const previousDispatcher = getGlobalDispatcher();
++		const previousNetworkDispatcher = network.dispatcher;
++		const previousPolicy = active;
++		const previousInstalled = installed;
++		const restoreEnv = policy.source === "none"
++			? inheritedProxyEnv === void 0 ? void 0 : writeProxyEnv(inheritedProxyEnv)
++			: applyPolicyEnv(policy);
++		const agent = await createPolicyDispatcher(policy);
++		setGlobalDispatcher(agent);
++		network.dispatcher = agent;
++		active = policy;
++		installed = agent;
++		return async () => {
++			setGlobalDispatcher(previousDispatcher);
++			network.dispatcher = previousNetworkDispatcher;
++			active = previousPolicy;
++			installed = previousInstalled;
++			restoreEnv?.();
++			await agent.close();
++		};
++	}
+ 	const previousPolicy = active;
+ 	if (policy.source === "none") {
+ 		if (previousPolicy === void 0) {
+--- a/node_modules/@deepseek-ai/dsh-web-fetch-http/lib/index.js
++++ b/node_modules/@deepseek-ai/dsh-web-fetch-http/lib/index.js
+@@ -150,9 +150,16 @@
+ * @param signal - request and body-read cancellation signal.
+ * @returns a response plus the disposer its consumer must call.
+ */
++function ohosNetwork() {
++	if (process.platform !== "openharmony" && process.env.DSH_GO_OHOS_SIM !== "1") return void 0;
++	const network = globalThis[Symbol.for("dsh.go.ohos.net")];
++	if (!network) throw Object.assign(new Error("OHOS network preload is required"), { code: "ERR_OHOS_NET_PRELOAD_MISSING" });
++	return network;
++}
+ async function requestPinned(url, addresses, headers, signal) {
+-	const { Agent, fetch } = await import("undici");
+-	const dispatcher = new Agent({
++	const network = ohosNetwork();
++	const { Agent, fetch } = network ? { fetch: network.fetch } : await import("undici");
++	const dispatcher = network ? network.createDispatcher({ lookup: createPinnedLookup(addresses), proxyEnv: {}, autoSelectFamily: true }) : new Agent({
+ 		autoSelectFamily: true,
+ 		connect: { lookup: createPinnedLookup(addresses) }
+ 	});
+@@ -190,7 +197,7 @@
+ * @returns a response plus a disposer that releases nothing, so both paths close alike.
+ */
+ async function requestVia(dispatcher, url, headers, signal) {
+-	const { fetch } = await import("undici");
++	const { fetch } = ohosNetwork() ?? await import("undici");
+ 	return {
+ 		response: await fetch(url, {
+ 			method: "GET",

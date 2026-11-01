@@ -1,0 +1,248 @@
+// Node 24.22.1 / Undici 7.30.1 and 8.11.2 transport. Fetch owns the web semantics;
+// node:http(s) owns the parser, so this path never instantiates llhttp's WASM.
+import http from 'node:http';
+import https from 'node:https';
+import { Readable, Transform, pipeline } from 'node:stream';
+
+const transportError = (code, message) => Object.assign(new Error(message), { code });
+
+function requestHeaders(input = []) {
+  if (!Array.isArray(input)) return input;
+  const headers = Object.create(null);
+  for (let i = 0; i < input.length; i += 2) {
+    const name = String(input[i]).toLowerCase();
+    const value = String(input[i + 1]);
+    headers[name] = headers[name] === undefined ? value : [].concat(headers[name], value);
+  }
+  return headers;
+}
+
+function legacyHandler(handler) {
+  if (typeof handler.onRequestStart !== 'function') return handler;
+  let abort;
+  let resume;
+  let paused = false;
+  let aborted = false;
+  let reason = null;
+  const controller = {
+    get paused() { return paused; },
+    get aborted() { return aborted; },
+    get reason() { return reason; },
+    pause() { paused = true; },
+    resume() { if (paused) { paused = false; resume?.(); } },
+    abort(value) {
+      if (aborted) return;
+      aborted = true;
+      reason = value;
+      abort?.(value);
+    },
+  };
+  return {
+    onConnect(stop, context) { abort = stop; handler.onRequestStart(controller, context); },
+    onHeaders(status, headers, next, statusText) {
+      resume = next;
+      controller.rawHeaders = headers;
+      handler.onResponseStart?.(controller, status, requestHeaders(headers), statusText);
+      return !controller.paused;
+    },
+    onData(chunk) { handler.onResponseData?.(controller, chunk); return !controller.paused; },
+    onComplete(trailers) {
+      controller.rawTrailers = trailers;
+      handler.onResponseEnd?.(controller, requestHeaders(trailers));
+    },
+    onError(error) {
+      handler.onResponseError?.(controller, error);
+    },
+    onUpgrade(status, headers, socket) {
+      controller.rawHeaders = headers;
+      return handler.onRequestUpgrade?.(controller, status, requestHeaders(headers), socket);
+    },
+    onResponseStarted: () => handler.onResponseStarted?.(),
+    onBodySent: (chunk) => handler.onBodySent?.(chunk),
+    onRequestSent: () => handler.onRequestSent?.(),
+  };
+}
+
+export function createHttpDispatcher({
+  lookup, ca, proxyEnv, autoSelectFamily, connectTimeout = 10_000,
+  headersTimeout = 300_000, bodyTimeout = 300_000,
+} = {}) {
+  const agents = {
+    'http:': new http.Agent({ keepAlive: true, lookup, proxyEnv, autoSelectFamily }),
+    'https:': new https.Agent({ keepAlive: true, lookup, ca, proxyEnv, autoSelectFamily }),
+  };
+  const active = new Set();
+  let closed = false;
+  let closing;
+  let drained;
+
+  function maybeDrained() {
+    if (!closed || active.size) return;
+    for (const agent of Object.values(agents)) agent.destroy();
+    drained?.();
+  }
+
+  return {
+    dispatch(options, handler) {
+      handler = legacyHandler(handler);
+      if (closed) {
+        queueMicrotask(() => handler.onError(transportError('UND_ERR_CLOSED', 'HTTP transport is closed')));
+        return false;
+      }
+      let request;
+      let response;
+      let upload;
+      let done = false;
+      let connectTimer;
+      let headersTimer;
+      let bodyTimer;
+      const clearTimers = () => {
+        clearTimeout(connectTimer);
+        clearTimeout(headersTimer);
+        clearTimeout(bodyTimer);
+      };
+      const retire = () => {
+        clearTimers();
+        active.delete(fail);
+        maybeDrained();
+      };
+      function fail(error = new DOMException('The operation was aborted.', 'AbortError')) {
+        if (done) return;
+        done = true;
+        retire();
+        upload?.destroy();
+        response?.destroy();
+        request?.destroy();
+        handler.onError(error);
+      }
+      function timer(ms, code, message) {
+        return ms > 0 ? setTimeout(() => fail(transportError(code, message)), ms).unref() : undefined;
+      }
+      function armBodyTimer() {
+        clearTimeout(bodyTimer);
+        bodyTimer = timer(options.bodyTimeout ?? bodyTimeout, 'UND_ERR_BODY_TIMEOUT', 'HTTP response body timed out');
+      }
+      function resume() {
+        if (done) return;
+        armBodyTimer();
+        response.resume();
+      }
+      active.add(fail);
+      try {
+        handler.onConnect(fail, {});
+        if (done) return true;
+        const origin = new URL(options.origin);
+        const protocol = origin.protocol;
+        if (protocol !== 'http:' && protocol !== 'https:') throw new TypeError('HTTP transport requires http or https');
+        const headers = requestHeaders(options.headers);
+        const declaredLength = headers['content-length'] === undefined ? null : Number(headers['content-length']);
+        if (declaredLength !== null && (!Number.isSafeInteger(declaredLength) || declaredLength < 0)) {
+          throw new TypeError('Invalid request Content-Length');
+        }
+        if (options.upgrade) {
+          headers.connection = 'Upgrade';
+          headers.upgrade = options.upgrade;
+        }
+        request = (protocol === 'https:' ? https : http).request(origin, {
+          path: options.path,
+          method: options.method,
+          headers,
+          agent: agents[protocol],
+        });
+        request.once('error', fail);
+        connectTimer = timer(connectTimeout, 'UND_ERR_CONNECT_TIMEOUT', 'HTTP connection timed out');
+        headersTimer = timer(options.headersTimeout ?? headersTimeout, 'UND_ERR_HEADERS_TIMEOUT', 'HTTP response headers timed out');
+        request.once('socket', (socket) => {
+          const connected = () => clearTimeout(connectTimer);
+          if (!socket.connecting) connected();
+          else socket.once(protocol === 'https:' ? 'secureConnect' : 'connect', connected);
+        });
+        request.once('response', (incoming) => {
+          response = incoming;
+          clearTimeout(connectTimer);
+          clearTimeout(headersTimer);
+          if (done) { incoming.destroy(); return; }
+          incoming.once('error', fail);
+          incoming.once('close', () => {
+            if (!incoming.complete) fail(transportError('UND_ERR_SOCKET', 'HTTP response ended before completion'));
+          });
+          incoming.on('data', (chunk) => {
+            if (done) return;
+            try {
+              armBodyTimer();
+              if (handler.onData(chunk) === false) {
+                clearTimeout(bodyTimer);
+                incoming.pause();
+              }
+            } catch (error) { fail(error); }
+          });
+          incoming.once('end', () => {
+            if (done) return;
+            done = true;
+            retire();
+            if (!request.writableFinished) { upload?.destroy(); request.destroy(); }
+            handler.onComplete(incoming.rawTrailers);
+          });
+          try {
+            handler.onResponseStarted?.();
+            armBodyTimer();
+            if (handler.onHeaders(incoming.statusCode, incoming.rawHeaders, resume, incoming.statusMessage) === false) {
+              clearTimeout(bodyTimer);
+              incoming.pause();
+            }
+          } catch (error) { fail(error); }
+        });
+        request.once('upgrade', (incoming, socket, head) => {
+          if (done) { socket.destroy(); return; }
+          try {
+            if (!options.upgrade || !handler.onUpgrade) throw new TypeError('Unexpected HTTP upgrade');
+            // Bytes after the HTTP headers already belong to the upgraded stream.
+            if (head.length) socket.unshift(head);
+            if (handler.onUpgrade(incoming.statusCode, incoming.rawHeaders, socket) === false) {
+              throw new TypeError('HTTP upgrade was refused');
+            }
+            done = true;
+            retire();
+          } catch (error) { socket.destroy(); fail(error); }
+        });
+        let written = 0;
+        upload = Readable.from(options.body ?? [], { objectMode: false });
+        const lengthCheck = new Transform({
+          transform(chunk, _encoding, next) {
+            written += chunk.length;
+            if (declaredLength !== null && written > declaredLength) {
+              next(transportError('UND_ERR_REQ_CONTENT_LENGTH_MISMATCH', 'Request body exceeds Content-Length'));
+            } else {
+              try { handler.onBodySent?.(chunk); next(null, chunk); }
+              catch (error) { next(error); }
+            }
+          },
+          flush(next) {
+            next(declaredLength !== null && written !== declaredLength
+              ? transportError('UND_ERR_REQ_CONTENT_LENGTH_MISMATCH', 'Request body does not match Content-Length') : null);
+          },
+        });
+        pipeline(upload, lengthCheck, request, (error) => {
+          if (error) fail(error);
+          else {
+            try { handler.onRequestSent?.(); } catch (error) { fail(error); }
+          }
+        });
+      } catch (error) { fail(error); }
+      return true;
+    },
+    close(callback) {
+      closed = true;
+      closing ??= new Promise((resolve) => { drained = resolve; });
+      maybeDrained();
+      if (callback) { closing.then(() => callback(null), callback); return; }
+      return closing;
+    },
+    destroy(error, callback) {
+      if (typeof error === 'function') { callback = error; error = undefined; }
+      closed = true;
+      for (const abort of active) abort(error ?? transportError('UND_ERR_DESTROYED', 'HTTP transport was destroyed'));
+      return this.close(callback);
+    },
+  };
+}
