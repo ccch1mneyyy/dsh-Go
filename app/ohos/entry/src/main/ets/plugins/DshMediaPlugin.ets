@@ -47,7 +47,7 @@ export default class DshMediaPlugin implements FlutterPlugin, MethodCallHandler 
     let helper: photoAccessHelper.PhotoAccessHelper | null = null;
     let saved: string | null = null;
     try {
-      directory = await fs.mkdtemp(context.cacheDir + '/dsh-gallery-');
+      directory = await fs.mkdtemp(context.cacheDir + '/dsh-gallery-XXXXXX');
       source = directory + '/image.' + extension;
       const temporary = await fs.open(source, fs.OpenMode.CREATE | fs.OpenMode.READ_WRITE);
       try {

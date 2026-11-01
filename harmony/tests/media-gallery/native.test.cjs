@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const ts=require(process.argv[2]||'typescript');
 function harness() {
  const files=new Map(),handles=new Map(),opened=[],calls=[];let next=0,targets=['file://media/Photo/fixed-test'],dialogGate,short=false,copyFail=false;
- const io={async mkdtemp(){return '/private/cache/dsh-gallery-fixed';},rmdirSync(){},OpenMode:{CREATE:1,READ_WRITE:2,EXCL:4,READ_ONLY:8,WRITE_ONLY:16},
+ const io={async mkdtemp(prefix){assert.match(prefix,/XXXXXX$/);return '/private/cache/dsh-gallery-fixed';},rmdirSync(){},OpenMode:{CREATE:1,READ_WRITE:2,EXCL:4,READ_ONLY:8,WRITE_ONLY:16},
   async open(name,mode){opened.push(name);if(mode&1)files.set(name,new Uint8Array(0));if(!files.has(name))files.set(name,new Uint8Array(0));const fd=++next;handles.set(fd,name);return {fd};},
   async write(fd,bytes){const value=new Uint8Array(bytes);files.set(handles.get(fd),value);return short?value.length-1:value.length;},
   async close(fd){handles.delete(fd);},async copyFile(a,b){if(copyFail)throw Error('复制失败');files.set(handles.get(b),files.get(handles.get(a)).slice());},
