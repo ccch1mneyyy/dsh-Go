@@ -200,93 +200,90 @@ class SessionsDrawer extends ConsumerWidget {
       child: _SessionList(onClose: onClose, now: now),
     );
 
-    const radius = BorderRadius.only(
-      topRight: Radius.circular(AppShape.xl),
-      bottomRight: Radius.circular(AppShape.xl),
-    );
+    const radius = BorderRadius.only(topRight: Radius.circular(AppShape.xl), bottomRight: Radius.circular(AppShape.xl));
     final content = Material(
-        type: MaterialType.transparency,
-        child: SafeArea(
-          right: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (short)
-                Expanded(
-                  child: NestedScrollView(
-                    headerSliverBuilder: (context, _) => [
-                      SliverToBoxAdapter(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: top),
-                      ),
-                    ],
-                    body: list,
-                  ),
-                )
-              else ...[
-                ...top,
-                Expanded(child: list),
-              ],
-              // The action bar lies exactly over the identity bar, which
-              // keeps its size while hidden: same height at any text size.
-              _ReportHeight(
-                height: identityBarHeight,
-                child: Stack(
-                  children: [
-                    AnimatedOpacity(
-                      opacity: selecting ? 0 : 1,
-                      duration: quick,
-                      child: IgnorePointer(
-                        ignoring: selecting,
-                        child: ExcludeSemantics(
-                          excluding: selecting,
-                          child: IdentityBar(
-                            onHost: () => showHostSheet(context, onManage: () => onOpen(DrawerDestination.remote)),
-                            onFeatures: () => onOpen(DrawerDestination.features),
-                            onSettings: () => onOpen(DrawerDestination.settings),
-                            onSettingsHold: () => onOpen(DrawerDestination.settingsSearch),
-                          ),
+      type: MaterialType.transparency,
+      child: SafeArea(
+        right: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (short)
+              Expanded(
+                child: NestedScrollView(
+                  headerSliverBuilder: (context, _) => [
+                    SliverToBoxAdapter(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: top),
+                    ),
+                  ],
+                  body: list,
+                ),
+              )
+            else ...[
+              ...top,
+              Expanded(child: list),
+            ],
+            // The action bar lies exactly over the identity bar, which
+            // keeps its size while hidden: same height at any text size.
+            _ReportHeight(
+              height: identityBarHeight,
+              child: Stack(
+                children: [
+                  AnimatedOpacity(
+                    opacity: selecting ? 0 : 1,
+                    duration: quick,
+                    child: IgnorePointer(
+                      ignoring: selecting,
+                      child: ExcludeSemantics(
+                        excluding: selecting,
+                        child: IdentityBar(
+                          onHost: () => showHostSheet(context, onManage: () => onOpen(DrawerDestination.remote)),
+                          onFeatures: () => onOpen(DrawerDestination.features),
+                          onSettings: () => onOpen(DrawerDestination.settings),
+                          onSettingsHold: () => onOpen(DrawerDestination.settingsSearch),
                         ),
                       ),
                     ),
-                    Positioned.fill(
-                      child: AnimatedSwitcher(
-                        duration: quick,
-                        child: selecting
-                            ? SelectionActionBar(
-                                key: const ValueKey('selecting'),
-                                onMove: () {
-                                  if (ref.read(drawerScopeProvider)?.readOnly == false) {
-                                    moveToFolderFlow(
-                                      context,
-                                      ref,
-                                      ref.read(drawerSelectionProvider)?.toList() ?? const [],
-                                    );
-                                  }
-                                },
-                                onPin: () {
-                                  if (ref.read(drawerScopeProvider)?.readOnly == false) pinSelectionFlow(context, ref);
-                                },
-                                onArchive: () {
-                                  if (ref.read(drawerScopeProvider)?.readOnly == false) {
-                                    archiveSelectionFlow(context, ref);
-                                  }
-                                },
-                                onDelete: () {
-                                  if (ref.read(drawerScopeProvider)?.readOnly == false) {
-                                    unawaited(deleteSelectionFlow(context, ref));
-                                  }
-                                },
-                              )
-                            : const SizedBox.shrink(),
-                      ),
+                  ),
+                  Positioned.fill(
+                    child: AnimatedSwitcher(
+                      duration: quick,
+                      child: selecting
+                          ? SelectionActionBar(
+                              key: const ValueKey('selecting'),
+                              onMove: () {
+                                if (ref.read(drawerScopeProvider)?.readOnly == false) {
+                                  moveToFolderFlow(
+                                    context,
+                                    ref,
+                                    ref.read(drawerSelectionProvider)?.toList() ?? const [],
+                                  );
+                                }
+                              },
+                              onPin: () {
+                                if (ref.read(drawerScopeProvider)?.readOnly == false) pinSelectionFlow(context, ref);
+                              },
+                              onArchive: () {
+                                if (ref.read(drawerScopeProvider)?.readOnly == false) {
+                                  archiveSelectionFlow(context, ref);
+                                }
+                              },
+                              onDelete: () {
+                                if (ref.read(drawerScopeProvider)?.readOnly == false) {
+                                  unawaited(deleteSelectionFlow(context, ref));
+                                }
+                              },
+                            )
+                          : const SizedBox.shrink(),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
 
     final motion = drawerMotion;
     if (motion == null) {
@@ -299,12 +296,7 @@ class SessionsDrawer extends ConsumerWidget {
         // 滑动中的面板不做背景模糊:玻璃每帧重新采样它背后的聊天内容,中低端
         // 机上就是掉帧的主因。停稳(0 / 1)时再恢复玻璃。
         final moving = motion.value > 0.0 && motion.value < 1.0;
-        return GlassSurface(
-          tier: GlassTier.sheet,
-          borderRadius: radius,
-          blur: moving ? false : null,
-          child: child,
-        );
+        return GlassSurface(tier: GlassTier.sheet, borderRadius: radius, blur: moving ? false : null, child: child);
       },
     );
   }
@@ -865,13 +857,18 @@ class _EmptyState extends ConsumerWidget {
         actionLabel: l10n.shellStartEngine,
         onAction: () => unawaited(EngineControl.ensureStarted(ProviderScope.containerOf(context))),
       ),
-      RuntimePhase.notInstalled when status.runtimeMissing => EmptyView(
-        compact: true,
-        icon: AppIcons.thisPhone,
-        title: l10n.localEnvNotInstalled,
-        actionLabel: l10n.phoneEngineInstallRuntime,
-        onAction: () => unawaited(openLocalInstall(context)),
-      ),
+      RuntimePhase.notInstalled when status.runtimeMissing => switch (localMissingCopy(
+        l10n,
+        available: ref.watch(localRuntimeProvider.select((s) => s.available)),
+      )) {
+        final copy => EmptyView(
+          compact: true,
+          icon: AppIcons.thisPhone,
+          title: copy.title,
+          actionLabel: copy.action,
+          onAction: () => unawaited(openLocalInstall(context)),
+        ),
+      },
       _ => EmptyView(
         compact: true,
         icon: AppIcons.power,

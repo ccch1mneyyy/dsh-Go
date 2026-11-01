@@ -134,7 +134,11 @@ class EngineScreen extends ConsumerWidget {
             if (!missing)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                child: TerminalCard(title: l10n.phoneEngineLogs, lines: ref.watch(localRuntimeLogsProvider), height: logHeight),
+                child: TerminalCard(
+                  title: l10n.phoneEngineLogs,
+                  lines: ref.watch(localRuntimeLogsProvider),
+                  height: logHeight,
+                ),
               ),
             // Their home is 设置; the way in from here keeps the name.
             SettingsSection(
@@ -215,9 +219,10 @@ class EngineActions extends ConsumerWidget {
     final l10n = context.l10n;
     final container = ProviderScope.containerOf(context, listen: false);
     if (phase == RuntimePhase.notInstalled) {
+      final available = ref.watch(localRuntimeProvider.select((s) => s.available));
       return _Capsule(
-        icon: AppIcons.download,
-        label: l10n.phoneEngineInstallRuntime,
+        icon: available ? AppIcons.download : AppIcons.computer,
+        label: localMissingCopy(l10n, available: available).action,
         primary: true,
         onTap: () => unawaited(openLocalInstall(context)),
       );

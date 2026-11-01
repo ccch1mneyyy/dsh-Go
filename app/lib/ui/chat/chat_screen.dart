@@ -1302,11 +1302,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
           )
         : null;
     final idle = switch (localIdle) {
-      RuntimePhase.notInstalled => ChatIdleAction(
-        message: l10n.localEnvNotInstalled,
-        label: l10n.phoneEngineInstallRuntime,
-        onTap: () => unawaited(openLocalInstall(context)),
-      ),
+      RuntimePhase.notInstalled => switch (localMissingCopy(
+        l10n,
+        available: ref.watch(localRuntimeProvider.select((s) => s.available)),
+      )) {
+        final copy => ChatIdleAction(
+          message: copy.title,
+          label: copy.action,
+          onTap: () => unawaited(openLocalInstall(context)),
+        ),
+      },
       RuntimePhase.installed => ChatIdleAction(
         message: l10n.shellEngineNotRunning,
         label: l10n.shellStartEngine,
