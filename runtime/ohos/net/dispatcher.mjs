@@ -18,14 +18,45 @@ function isLoopbackHost(hostname) {
 }
 
 function requestHeaders(input = []) {
-  if (!Array.isArray(input)) return input;
   const headers = Object.create(null);
-  for (let i = 0; i < input.length; i += 2) {
-    const name = String(input[i]).toLowerCase();
-    const value = String(input[i + 1]);
-    headers[name] = headers[name] === undefined ? value : [].concat(headers[name], value);
+  const append = (name, value) => {
+    if (value === undefined) return;
+    const key = String(name).toLowerCase();
+    const copy = Array.isArray(value) ? value.slice() : value;
+    headers[key] = Object.hasOwn(headers, key) ? [].concat(headers[key], copy) : copy;
+  };
+  if (input == null) return headers;
+  if (Array.isArray(input)) {
+    if (input.length % 2 !== 0) throw new TypeError('Headers array must contain name/value pairs');
+    for (let i = 0; i < input.length; i += 2) append(input[i], input[i + 1]);
+  } else if (typeof input === 'object') {
+    const prototype = Object.getPrototypeOf(input);
+    const iterator = Object.hasOwn(input, Symbol.iterator) || (prototype !== null && prototype !== Object.prototype)
+      ? input[Symbol.iterator] : undefined;
+    if (iterator !== undefined) {
+      if (typeof iterator !== 'function') throw new TypeError('Headers iterator must be callable');
+      for (const pair of { [Symbol.iterator]: () => iterator.call(input) }) {
+        if (!Array.isArray(pair) || pair.length !== 2) throw new TypeError('Headers iterator must yield name/value pairs');
+        append(pair[0], pair[1]);
+      }
+    } else {
+      for (const key of Object.keys(input)) append(key, input[key]);
+    }
+  } else {
+    throw new TypeError('Headers must be an object or array');
   }
   return headers;
+}
+
+function requestContentLength(headers) {
+  const value = headers['content-length'];
+  if (value === undefined) return null;
+  if (!['string', 'number', 'bigint'].includes(typeof value) || !/^[0-9]+$/.test(String(value))) {
+    throw Object.assign(new TypeError('Invalid request Content-Length'), { code: 'UND_ERR_INVALID_ARG' });
+  }
+  const length = Number(value);
+  if (!Number.isSafeInteger(length)) throw Object.assign(new TypeError('Invalid request Content-Length'), { code: 'UND_ERR_INVALID_ARG' });
+  return length;
 }
 
 function legacyHandler(handler) {
@@ -156,10 +187,7 @@ export function createHttpDispatcher({
         const protocol = origin.protocol;
         if (protocol !== 'http:' && protocol !== 'https:') throw new TypeError('HTTP transport requires http or https');
         const headers = requestHeaders(options.headers);
-        const declaredLength = headers['content-length'] === undefined ? null : Number(headers['content-length']);
-        if (declaredLength !== null && (!Number.isSafeInteger(declaredLength) || declaredLength < 0)) {
-          throw new TypeError('Invalid request Content-Length');
-        }
+        const declaredLength = requestContentLength(headers);
         if (options.upgrade) {
           headers.connection = 'Upgrade';
           headers.upgrade = options.upgrade;

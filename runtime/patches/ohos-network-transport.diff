@@ -3,7 +3,7 @@
 # Pinned to @deepseek-ai/dsh 0.2.1-rc.4. 未在鸿蒙真机核实。
 --- a/node_modules/@deepseek-ai/dsh-http-proxy/lib/index.js
 +++ b/node_modules/@deepseek-ai/dsh-http-proxy/lib/index.js
-@@ -385,7 +385,32 @@
+@@ -385,7 +385,39 @@
  * @param policy - the policy to route by; it must proxy at least one scheme.
  * @returns the dispatcher to install, owning every per-origin agent its factory created.
  */
@@ -20,7 +20,14 @@
 +		let closed = false;
 +		return {
 +			dispatch(options, handler) {
-+				if (closed) throw Object.assign(new Error("HTTP transport is closed"), { code: "UND_ERR_CLOSED" });
++				if (closed) {
++					const error = Object.assign(new Error("HTTP transport is closed"), { code: "UND_ERR_CLOSED" });
++					queueMicrotask(() => {
++						if (typeof handler.onResponseError === "function") handler.onResponseError(null, error);
++						else handler.onError(error);
++					});
++					return false;
++				}
 +				const proxy = proxyForUrl(policy, new URL(options.origin));
 +				let dispatcher = dispatchers.get(proxy);
 +				if (!dispatcher) {
@@ -36,13 +43,14 @@
  	const { Agent, Pool, ProxyAgent } = await import("undici");
  	return new Agent({ factory(origin, options) {
  		const passed = options;
-@@ -413,6 +438,30 @@
+@@ -413,6 +445,31 @@
  * @returns a disposer restoring the previous dispatcher, policy, and environment, then closing the agent.
  */
  async function installGlobalProxy(policy) {
 +	const network = ohosNetwork();
 +	if (network) {
-+		const { getGlobalDispatcher, setGlobalDispatcher } = await import("undici");
++		if (!network.globalDispatcherApi) throw Object.assign(new Error("OHOS DSH network bootstrap is required before proxy installation"), { code: "ERR_OHOS_NET_BOOTSTRAP_REQUIRED" });
++		const { getGlobalDispatcher, setGlobalDispatcher } = network.globalDispatcherApi;
 +		const previousDispatcher = getGlobalDispatcher();
 +		const previousNetworkDispatcher = network.dispatcher;
 +		const previousPolicy = active;

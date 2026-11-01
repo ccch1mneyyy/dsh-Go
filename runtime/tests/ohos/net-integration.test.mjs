@@ -8,14 +8,14 @@ import { once } from 'node:events';
 import { createHash } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { installFetch } from '../../ohos/net/fetch.mjs';
 import { createHttpDispatcher } from '../../ohos/net/dispatcher.mjs';
+import { bootstrapDshNetwork } from '../../ohos/net/bootstrap.mjs';
 
 assert.ok(process.env.OHOS_TEST_DSH_PREFIX, 'OHOS_TEST_DSH_PREFIX must name a separately patched npm-ci tree');
 const prefix = resolve(process.env.OHOS_TEST_DSH_PREFIX);
 const fromPackage = (file) => import(pathToFileURL(join(prefix, 'node_modules', file)).href);
 const nativeFetch = globalThis.fetch;
-const network = installFetch();
+const network = bootstrapDshNetwork(join(prefix, 'node_modules/@deepseek-ai/dsh/lib/bin.js'));
 assert.ok(network, 'enable the OHOS runtime or explicitly preload sim/marker.mjs');
 const undici = await fromPackage('undici/index.js');
 const { EventSource } = await fromPackage('eventsource/dist/index.js');
