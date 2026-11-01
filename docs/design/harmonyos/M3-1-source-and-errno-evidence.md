@@ -87,7 +87,7 @@
 
 ## 重现入口
 
-先构建 M3-1 主包的固定 Linux 测试 `.node`，然后明确指定接口和核心路径：
+先构建 M3-1 主包的固定 Linux 测试 `.node`，然后明确指定接口和核心路径。两个测试默认核对作者构建的 `.node` 哈希 `2870d103…`；其他编译器产出的字节不同，用 `M3_PUBLICATION_SHA256` 传入本地构建的 SHA256：
 
 ```sh
 M3_PUBLICATION_ADDON=/path/to/final/publication.node \

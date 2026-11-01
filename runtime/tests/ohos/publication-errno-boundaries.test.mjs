@@ -14,7 +14,7 @@ const moduleFile = resolve(process.env.M3_PUBLICATION_MODULE || '');
 assert.ok(process.env.M3_PUBLICATION_ADDON && process.env.M3_PUBLICATION_MODULE, 'explicit native and core paths required');
 const sha = value => createHash('sha256').update(value).digest('hex');
 const addonSHA = sha(await fs.readFile(addon)), moduleSHA = sha(await fs.readFile(moduleFile));
-assert.equal(addonSHA, '2870d10332dd2bdb34102ac35de8d8e423592017cf4889a190ecf08ee941e823');
+assert.equal(addonSHA, process.env.M3_PUBLICATION_SHA256 || '2870d10332dd2bdb34102ac35de8d8e423592017cf4889a190ecf08ee941e823');
 const { renameNoReplace } = require(addon), { createAtomicPublisher } = await import(pathToFileURL(moduleFile));
 const info = error => ({ name: error.name, code: error.code, errno: error.errno, syscall: error.syscall, message: error.message });
 const deniedLink = async () => { throw Object.assign(new Error('fixture: hard links unavailable'), { code: 'EACCES' }); };

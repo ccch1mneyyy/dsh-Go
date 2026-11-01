@@ -27,11 +27,15 @@ DSH_TEST_PREFIX=/absolute/patched-prefix /Node24.22.1/bin/node --test --test-iso
   runtime/tests/ohos/lock-node-contract.test.mjs
 
 DSH_TEST_PREFIX=/absolute/patched-prefix \
-DSH_GO_OHOS_SIM_PLATFORM=openharmony /Node24.22.1/bin/node \
-  --jitless --import ./runtime/ohos/sim/preload.mjs --test --test-isolation=none \
+DSH_GO_OHOS_SIM_PLATFORM=openharmony \
+LD_PRELOAD=/absolute/publication-linux/libpublication-test-linked.so /Node24.22.1/bin/node \
+  --jitless --import ./runtime/ohos/sim/preload.mjs \
+  --import ./runtime/ohos/publication/preload.mjs --test --test-isolation=none \
   runtime/tests/ohos/lock-node-contract.test.mjs \
   runtime/tests/ohos/publication-locks.test.mjs \
   runtime/tests/ohos/publication-integration.test.mjs
 ```
+
+自 M3-1 起，OHOS 路径的两个 provider 通过发布服务提交，第二条命令需要 `runtime/ohos/publication/preload.mjs` 与 linked 测试库（`bash runtime/tests/ohos/build-publication-native.sh <Node24.22.1目录> <输出目录>` 生成）；缺任一项时 provider 抛 `ERR_OHOS_PUBLICATION_PRELOAD_MISSING` 或预加载报 binding 缺失。前缀须用 `--target ohos` 打补丁。
 
 依据为新基底 `zzzzzzz-ohos-session-publication.diff` 的 `tryLockOhos`、同版真实 `FileHandle` 的本地运行，以及上述原 provider 测试。结果与精确补丁哈希写在交付复核报告中。OHOS 上文件身份、原生 flock、SDK/HAP 加载和冻结行为仍需设备证据；本项不把 Linux 仿真当成这些结论。
