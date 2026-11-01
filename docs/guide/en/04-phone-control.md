@@ -37,24 +37,25 @@ Alarms, events, maps and sharing don't need the accessibility service.
 
 ## Floating bar
 
-When a task starts, a floating bar appears at the top of the screen showing what DSH is doing, with **Pause**, **Stop** and **Collapse**:
+When a task starts, a floating bar appears at the top of the screen. It takes three shapes, and a tap moves between them:
 
-- After **Pause**, the button reads **Continue**; tap it to let DSH carry on.
-- Tap the text on the bar to steer: tell DSH to try another way.
-- **Collapse** shrinks the bar to a ball at the screen edge; tap the ball to open it. Drag the ball anywhere; it snaps to the nearest edge and stays there next time.
-- After 3 seconds untouched, the bar fades; touch it to bring it back. It stays clear whenever you need to approve something.
+- Capsule (the default): one line saying what DSH is doing, like "Tap “Send”", with **Pause** and **Stop** on the right. After **Pause**, the button reads **Continue**; tap it to let DSH carry on.
+- Card: tap the line on the capsule to open it. It shows the app DSH is working in, whether approvals are off, the last few steps, and a field to steer DSH another way. Left alone for a few seconds, it goes back to the capsule.
+- Ball: tap the dot at the capsule's left end, or **Shrink to a ball** in the card, to shrink it to a ball at the screen edge. Tap the ball to open it. Drag it anywhere; it snaps to the nearest edge and stays there next time. **Hold the ball for a second to stop**: a ring closes round it first, and letting go cancels.
+
+When DSH needs your approval, the capsule says "Waiting for you below" and the approval card appears at the bottom of the screen.
 
 Adjust it under **Floating bar** on the phone control page (shown once phone control is on):
 
-- **Idle opacity**: 30% to 100%, 70% by default. At 100% the bar never fades.
-- **Collapse when idle**: off by default. When on, the bar shrinks to a ball after a few idle seconds, and opens by itself when you need to approve something.
+- **Idle opacity**: how far the ball fades after 3 seconds untouched, 30% to 100%, 70% by default. The capsule and the card never fade.
+- **Collapse when idle**: off by default. When on, the capsule shrinks to a ball after a few idle seconds, and opens by itself when you need to approve something.
 - **Back to DSH Go when done**: on by default. When the reply ends and the app is in the background, it tries to bring you back to that chat. If the system blocks background windows, use the notification; see Confirmations and return below.
 
 Whatever the settings, the bar closes when the reply ends.
 
 ## Stop
 
-- **Stop** on the floating bar.
+- **Stop** on the floating bar, or hold the ball for a second.
 - **Stop** on the "Operating your phone" card on the phone control page.
 - **Stop actions** on the engine notification. **Stop** on the same notification stops the whole engine.
 
@@ -102,7 +103,7 @@ All three are off by default, and each turns on separately:
 - **Passwords and codes**: fill in passwords, verification and payment codes. The action log shows •••• and never what was typed.
 - **DSH Go itself**: tap and type inside DSH Go.
 
-Turning one on opens a page first: what AI can then do, what could go wrong, and the disclaimer below. Press and hold **I understand the risks, turn on** for about 1.5 seconds to apply it. Turning one off takes a single tap. Nothing can be turned on while a task is running. While any is on, the Phone control page and the floating bar show **Limits lifted**; tap it to come back here. Banking and payment apps aren't here; change them in **App rules**.
+Turning one on opens a page first: what AI can then do, what could go wrong, and the disclaimer below. Press and hold **I understand the risks, turn on** for about 1.5 seconds to apply it. Turning one off takes a single tap. Nothing can be turned on while a task is running. While any is on, the Phone control page shows **Limits lifted**, the floating bar puts a small lock before its line, and **Limits lifted** in its card brings you back here. Banking and payment apps aren't here; change them in **App rules**.
 
 Disclaimer:
 
