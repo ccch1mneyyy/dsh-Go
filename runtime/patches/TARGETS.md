@@ -23,7 +23,7 @@ Android 构建只应用加入 OHOS 支持以前的 11 个公共补丁。OHOS 专
 
 上述 JSON 仅表示结构，不是实际配置。文件中的两组实际名字才是权威集合；补丁仍按文件名排序形成严格链。目标不是从文件名中是否包含 `ohos` 推断的。两个集合的并集必须等于目录中全部 `.diff`：新增未登记文件、声明了不存在的文件、集合中的重复项、缺少目标集合，均在改写前失败。`--record` 也不能自动把未知补丁归入 Android。
 
-`--target` 接受 `android` 或 `ohos`，缺省为 Android 以保留原 Android 构建调用者的方向；正式 `build-runtime.sh` 仍显式传 `--target android`。OHOS 的 `measure.sh` 显式传 `--target ohos`。新增构建/测试脚本必须同样声明目标。
+`--target` 必须显式指定为 `android` 或 `ohos`，没有默认值（M5-1）。遗漏目标、缺少目标值或填写其他值时，参数解析直接以 exit 2 结束，尚未读取 pins 或修改前缀、pins、输出报告；`--record` 也必须指定目标。正式 `build-runtime.sh` 已显式传 `--target android`，OHOS 的 `measure.sh` 已显式传 `--target ohos`，新增构建/测试脚本必须同样声明目标。历史对照工具运行的是 `afb5cdd` 的旧 patcher 时，保留旧版不支持 `--target` 的调用；这不构成当前 patcher 的默认值。
 
 schema 1 不再用于新的补丁应用或记录。迁移前先为每个现有 diff 明确登记目标；不能通过改默认目标或跳过未登记检查继续执行。新增已审 O4 / 后续 OHOS diff 时，也要同步将其名字加入 OHOS 集合，并更新对应版本 pins；本包的集成附属差分绑定具体已审基底。
 

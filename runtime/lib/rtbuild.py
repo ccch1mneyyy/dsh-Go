@@ -431,8 +431,8 @@ def cmd_patch_dsh(args):
         want = pins["patches"].get(name, {}).get(args.dsh_version)
         if want is None and not args.record:
             sys.exit("patch %s has no pin for DSH %s: review the upstream files it touches, then run\n"
-                     "  python3 -I runtime/lib/rtbuild.py patch-dsh --prefix <dsh-prefix> --dsh-version %s --record"
-                     % (name, args.dsh_version, args.dsh_version))
+                     "  python3 -I runtime/lib/rtbuild.py patch-dsh --prefix <dsh-prefix> --dsh-version %s --target %s --record"
+                     % (name, args.dsh_version, args.dsh_version, args.target))
         observed = {}
         for rel, hunks in diff:
             path = os.path.join(args.prefix, rel)
@@ -1557,8 +1557,8 @@ def main():
     p = sub.add_parser("patch-dsh")
     p.add_argument("--prefix", required=True, help="npm --prefix tree holding node_modules/@deepseek-ai/...")
     p.add_argument("--dsh-version", required=True)
-    p.add_argument("--target", choices=["android", "ohos"], default="android",
-                   help="explicit target patch set; defaults to android for existing build callers")
+    p.add_argument("--target", choices=["android", "ohos"], required=True,
+                   help="required target patch set; no default (also required with --record)")
     p.add_argument("--patches", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "patches"))
     p.add_argument("--record", action="store_true", help="write the observed hashes as this version's pins")
     p.add_argument("--out", help="write the applied patch names (JSON list) here")
