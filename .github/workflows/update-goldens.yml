@@ -27,6 +27,18 @@ jobs:
           channel: stable
           cache: true
 
+      - name: cjk fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-cjk-extra
+          sudo mkdir -p /usr/share/fonts/noto-cjk
+          for face in Regular Bold Light; do
+            src=$(find /usr/share/fonts -name "NotoSansCJK-$face.ttc" | head -1)
+            if [ -z "$src" ]; then echo "missing NotoSansCJK-$face.ttc"; exit 1; fi
+            sudo cp -f "$src" /usr/share/fonts/noto-cjk/
+          done
+          ls -l /usr/share/fonts/noto-cjk/
+
       - name: pub get
         working-directory: app
         run: flutter pub get
