@@ -19,7 +19,7 @@ During a task, text on the screen is sent to the model you chose; with a vision 
 <!-- nav: commonSettings,hubSettingsPhoneControl,a11yRestoreTitle -->
 `Settings › Phone control › Restore accessibility automatically`
 
-Open this row under **Setup**, read the explanation and tap **Authorize and enable**. A connected Shizuku or self-ADB channel can grant permission. If neither is available, follow the setup page or copy the displayed command and run it once on your computer. Restoration requires both the in-app phone-control switch and the system permission.
+Open this row under **Setup**, read the explanation and tap **Authorize and enable**. A connected Shizuku, Sui, root or self-ADB channel can grant permission (the page says which one it will use). If neither is available, follow the setup page or copy the displayed command and run it once on your computer. Restoration requires both the in-app phone-control switch and the system permission.
 
 After granting permission, turning off the accessibility service in Android settings will trigger an attempt to turn it back on. To stop phone control, turn off the switch inside DSH Go. Restoration changes only DSH Go's service entry and preserves other accessibility services.
 
@@ -119,6 +119,6 @@ Disclaimer:
 
 Under **Advanced**:
 
-- **Non-disruptive mode**: works on a hidden screen while you use your phone. Needs Android 14 or later; choose **Use Shizuku** or **Direct ADB** and follow the setup. It needs Wi-Fi with Developer options and wireless debugging on, must be reactivated after restarting your phone, and the screen must still stay on and unlocked.
+- **Non-disruptive mode**: works on a hidden screen while you use your phone. Needs Android 14 or later. Pick one under **Channel**: Shizuku if the Shizuku app is installed; Sui if Magisk or KernelSU has the Sui module; Root on a rooted phone (your root manager asks when you tap "Turn on with Root", and su never runs before that); Direct ADB otherwise. Open a channel to see its checklist, finish the setup, then tap "Turn on with …"; the page marks the suggested one but never picks it for you. Shizuku and Direct ADB need Wi-Fi with wireless debugging on; the mode must be reactivated after restarting your phone, and the screen must still stay on and unlocked.
 - **Background running**: prevents Android from turning off accessibility; opens the phone settings guide.
 - **Confirmations and return**: see confirmations and task results in time; see Confirmations and return above.

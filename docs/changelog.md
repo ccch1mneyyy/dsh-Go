@@ -2,6 +2,48 @@
 
 每个版本先中文、后英文。发版时把对应版本的正文（不含版本标题）作为 Release 正文，见 `docs/release.md`。
 
+## 1.0.8 · 2026-11-01
+
+### 中文
+
+- 不打扰模式：「Shizuku 可用」改为看接口本身，不再要求装 Shizuku App——只装了 Sui（Magisk / KernelSU 模块）的设备也能直接用，状态里写明接口来自 Sui 还是 Shizuku；两者都没有、和有 Sui 但还没授权，提示分开说。
+- 不打扰模式：新增 root 通道，给已 root（Magisk / KernelSU / APatch）但没有 Shizuku 的设备。只有你在页面上选了 root 才会第一次执行 `su`，授权走 root 管理器自己的弹窗；「自动恢复无障碍」的一键授予也能走 root。
+- 不打扰模式：通道选择改成一个面板——关闭 / Shizuku / Sui / root / 自连 ADB，各自写明适合谁、现在什么状态，并标出推荐的那个（只推荐，不替你选）；失败时显示真实原因，不会悄悄换到别的通道。Sui 和 root 两条通道还没在真机上验证过，遇到问题请开 issue 反馈。
+- 自连 ADB：修了「连接 → 启用」的检查死循环，端口可以手动填；切换通道时只断开要离开的那条，已经连好的 ADB 不再被一并断掉；一次操作被超时或停止打断后，不再复用旧连接，避免下一步收到上一步迟到的结果。
+- 会话：可以永久删除对话（长按单删、多选批量删）；可以浏览并恢复已归档的对话；可以直接在某个文件夹里新建对话。
+- 悬浮宠物：App 外的宠物和 App 内一样大；思考、子代理等动画完整显示，不再被裁掉；App 在后台时一轮结束，宠物气泡和通知照常出现；App 在后台时暂停宠物动画计时。
+- 实时活动：运行状态显示在状态栏、锁屏和厂商灵动岛（如小米焦点通知），配宠物头像。
+- 输入框上方：自动允许、插件胶囊不再各占一行；目标、待办、插件和状态条可以叠成一行卡片，点开有展开动画，叠着时左右滑动换到最前面。可以在 ui.json 里隐藏内置的插件胶囊。
+- 手机操控悬浮条：重做成圆球、胶囊、圆角卡片三级，最常用的操作信息放在最前，暂停 / 停止重新排布，次要信息收进下一层。
+- 插件设置：插件声明的字段都能显示，有中文标题优先用中文；十个常用插件补了中文字段说明；改一个字段只刷新那一行，不再卡；跳到网页版设置不再和它抢着改、也不会卡住。
+- 图像与视频：设置页按服务商整理，同一服务商的几项服务共用一把 key，预设自动填好地址和模型。
+- 对话：外接键盘可选 Enter 发送；在光标处输入 `/` 也能补全命令，不丢草稿；表格底色三档可选（带预览），表格紧贴段落也能正常显示；模型卡长名字完整显示，token 统一用 K / M；订阅渠道的上下文长度可以自己设。
+- 外观：原生界面跟随主机设定的深浅色。
+- 网页版：App 内的网页版可以上传文件。
+- 渠道：思考级别留空不再让渠道失效。
+- 性能：流式输出时复用已有的行和索引、复用已完成段落的扫描结果；侧边栏按需构造会话条目；顶栏状态文字不再重复测量。
+- 源码：1.0.5–1.0.7 的源码已补进公开仓库，保留逐个提交的历史，对应的 tag 也改指到了正确的提交。
+
+### English
+
+- Do Not Disturb: Shizuku is now judged by its interface, not by the Shizuku app — devices with only Sui (a Magisk / KernelSU module) work as is, and the status says whether the interface comes from Sui or Shizuku. "Neither installed" and "Sui present but not authorized" are told apart.
+- Do Not Disturb: a new root channel for rooted devices (Magisk / KernelSU / APatch) without Shizuku. `su` runs for the first time only after you pick root on the page, and the prompt is your root manager's own. The one-tap grant for auto-restoring accessibility can use root too.
+- Do Not Disturb: picking a channel is one panel — off / Shizuku / Sui / root / self-paired ADB, each with who it's for and its current state, the recommended one marked (marked, never picked for you). Failures show the real reason and never switch channels behind your back. The Sui and root channels have not been tried on real devices yet — please open an issue if something goes wrong.
+- Self-paired ADB: the connect → enable check no longer loops and the port can be entered by hand; switching channels closes only the one being left, so a connected ADB stays connected; after a step is interrupted by a timeout or Stop, the old connection is retired instead of reused, so the next step can't receive the previous one's late reply.
+- Sessions: delete conversations for good (long-press one, or select several); browse and restore archived conversations; start a new conversation inside a folder.
+- Floating pet: the pet outside the app is the same size as inside; thinking, subagent and other animations are drawn whole instead of clipped; a turn that ends while the app is in the background still reaches the pet's bubble and the notification; the pet's animation timer pauses while the app is in the background.
+- Live activity: run status in the status bar, on the lock screen and in vendor islands (e.g. Xiaomi focus notifications), with the pet's portrait.
+- Above the composer: auto-approve and plugin chips no longer take a row each; goal, todos, plugins and the status strip can stack into one row of cards that expands with an animation, and swiping a folded stack brings another card to the front. The built-in Plugins chip can be hidden from ui.json.
+- Phone control overlay: redesigned as ball, capsule and rounded card on one surface — the operation info that matters up front, pause / stop re-laid, the rest one level down.
+- Plugin settings: every declared field shows up, Chinese titles first; ten popular plugins get Chinese field copy; editing a field redraws only its row, so no more lag; handing over to the web settings no longer races them or freezes.
+- Images & video: the settings page is organized by provider; a provider's services share one key, and presets fill in the address and models.
+- Chat: optional Enter-to-send for hardware keyboards; `/` at the cursor completes commands without losing the draft; three table tint levels (with preview), and tables written flush against a paragraph still render; long model names show in full, token counts use K / M; the context length of subscription providers is configurable.
+- Appearance: the native app follows the host's light / dark setting.
+- Web: file uploads work in the in-app web view.
+- Providers: an empty thinking level no longer breaks a provider.
+- Performance: streaming reuses existing rows, indices and the scan of finished lines; the drawer builds session rows on demand; the top bar's status text is measured once.
+- Source: the 1.0.5–1.0.7 source is now in the public repository with its commit-by-commit history, and those tags point at the right commits.
+
 ## 1.0.7 · 2026-10-31
 
 ### 中文
