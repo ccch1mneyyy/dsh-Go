@@ -2690,6 +2690,12 @@ abstract class L10n {
   /// **'{cost}（按官方单价估算）'**
   String activityTraceEstimatedCost(String cost);
 
+  /// After the estimated cost: the default web search runs its own model call whose tokens the app never sees.
+  ///
+  /// In zh, this message translates to:
+  /// **'不含 {count} 次联网搜索'**
+  String activityTraceCostExcludesSearch(int count);
+
   /// No description provided for @activityTraceReasoningTokens.
   ///
   /// In zh, this message translates to:
@@ -13243,6 +13249,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'手机布局'**
   String get hubInterfacePhoneLayout;
+
   /// No description provided for @hubTableTint.
   ///
   /// In zh, this message translates to:
@@ -13272,6 +13279,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'隔行淡一档，长表格更好扫读'**
   String get hubTableTintFillHint;
+
   /// No description provided for @hubTableTintFollowHint.
   ///
   /// In zh, this message translates to:
@@ -23969,6 +23977,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'字号,字体,文字大小,大字,字体大小'**
   String get searchKwTextSize;
+
   /// No description provided for @searchKwTableTint.
   ///
   /// In zh, this message translates to:

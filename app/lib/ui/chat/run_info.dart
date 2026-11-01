@@ -63,13 +63,28 @@ String formatCost(double amount, String currency) {
   return appL10n.activityCostApprox(symbol, amount.toStringAsFixed(2));
 }
 
-/// 一轮的花费估算;模型单价未知时为 null。
+/// 一轮的花费估算:每次模型请求按它自己的模型和发出时刻(高峰/空闲)计价,
+/// 跨过高峰分界的一轮两边各按各的价。有一次请求的单价未知就不估(null),
+/// 免得只算一部分。
 String? turnCostLabel(TurnTrace trace) {
-  final model = trace.lastModel;
-  final pricing = pricingFor(model.provider, model.model);
-  if (pricing == null || trace.usage.isEmpty) return null;
-  return formatCost(estimateTraceCost(trace.usage, pricing), pricing.currency);
+  final fallback = trace.lastModel;
+  var total = 0.0;
+  String? currency;
+  for (final span in trace.spans) {
+    final usage = span.usage;
+    if (span.kind != TraceKind.model || usage == null) continue;
+    final pricing = pricingFor(span.provider ?? fallback.provider, span.model ?? fallback.model)?.at(span.start);
+    if (pricing == null || (currency != null && pricing.currency != currency)) return null;
+    currency = pricing.currency;
+    total += estimateTraceCost(TraceUsage.zero.add(usage), pricing);
+  }
+  return currency == null ? null : formatCost(total, currency);
 }
+
+/// 本轮的联网搜索次数(失败的也算,可能已经计费)。默认的搜索(DeepSeek
+/// Messages search)每次另发一次模型请求,用量不回到 App,所以不在估算里。
+int webSearchCount(TurnTrace trace) =>
+    trace.spans.where((s) => s.kind == TraceKind.tool && s.toolName == 'web_search').length;
 
 // -----------------------------------------------------------------------------
 // 一段轨迹叫什么

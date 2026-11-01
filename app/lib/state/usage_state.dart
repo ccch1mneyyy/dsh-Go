@@ -102,19 +102,70 @@ class TokenPricing {
     required this.inputPerMillion,
     required this.cacheHitPerMillion,
     required this.outputPerMillion,
+    this.offPeakHalf = false,
   });
 
   final String currency;
   final double inputPerMillion;
   final double cacheHitPerMillion;
   final double outputPerMillion;
+
+  /// The prices above are peak prices, halved outside [deepSeekPeak] hours.
+  final bool offPeakHalf;
+
+  /// The prices in force at [time].
+  TokenPricing at(DateTime time) => !offPeakHalf || deepSeekPeak(time)
+      ? this
+      : TokenPricing(
+          currency: currency,
+          inputPerMillion: inputPerMillion / 2,
+          cacheHitPerMillion: cacheHitPerMillion / 2,
+          outputPerMillion: outputPerMillion / 2,
+        );
 }
 
-/// Prices by `provider/model`. Deliberately empty: neither DSH's catalog nor
-/// any API the app can reach states what `deepseek-flash` / `deepseek-v4-pro`
-/// cost, and a guessed number on a bill is worse than none. The usage sheet
-/// shows a cost line only for routes listed here.
-const Map<String, TokenPricing> knownPricing = {};
+/// DeepSeek's peak hours: 北京时间 Monday to Friday, 9:00–12:00 and 14:00–18:00.
+/// Chinese public holidays are off-peak too, but are not modelled here: a
+/// holiday turn is estimated at the peak price.
+bool deepSeekPeak(DateTime time) {
+  final beijing = time.toUtc().add(const Duration(hours: 8));
+  if (beijing.weekday > DateTime.friday) return false;
+  final minute = beijing.hour * 60 + beijing.minute;
+  return (minute >= 9 * 60 && minute < 12 * 60) || (minute >= 14 * 60 && minute < 18 * 60);
+}
+
+/// List prices by `provider/model`, CNY per million tokens at peak hours, from
+/// https://api-docs.deepseek.com/zh-cn/quick_start/pricing (read 2026-11-01):
+/// `deepseek-flash` is DeepSeek-V4.1-Flash-1017, `deepseek-v4-pro` is
+/// DeepSeek-V4-Pro-0813, and the retired `deepseek-v4-flash` bills as Flash.
+/// Routes not listed here show no cost: a guessed number on a bill is worse
+/// than none.
+const Map<String, TokenPricing> knownPricing = {
+  'deepseek-official/deepseek-flash': _deepSeekFlash,
+  'deepseek-official/deepseek-v4-flash': _deepSeekFlash,
+  'deepseek-official/deepseek-v4-pro': TokenPricing(
+    currency: 'CNY',
+    inputPerMillion: 9,
+    cacheHitPerMillion: 0.3,
+    outputPerMillion: 27,
+    offPeakHalf: true,
+  ),
+};
+
+const _deepSeekFlash = TokenPricing(
+  currency: 'CNY',
+  inputPerMillion: 2,
+  cacheHitPerMillion: 0.04,
+  outputPerMillion: 8,
+  offPeakHalf: true,
+);
+
+/// Prices for a whole session's usage, which spans peak and off-peak hours:
+/// only routes whose price does not depend on the time of day.
+TokenPricing? sessionPricing(String provider, String model) {
+  final pricing = knownPricing['$provider/$model'];
+  return pricing == null || pricing.offPeakHalf ? null : pricing;
+}
 
 /// Estimated spend of [usage] at [pricing]; cache writes bill as input.
 double estimateCost(SessionUsage usage, TokenPricing pricing) =>

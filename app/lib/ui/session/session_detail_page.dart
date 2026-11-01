@@ -1240,7 +1240,7 @@ class ContextTab extends ConsumerWidget {
     final usage = ref.watch(sessionUsageProvider(sessionId));
     final model = ref.watch(chatProvider(sessionId).select((s) => s.model));
     final turns = ref.watch(chatProvider(sessionId).select((s) => s.turns));
-    final pricing = model == null ? null : knownPricing['${model.provider}/${model.model}'];
+    final pricing = model == null ? null : sessionPricing(model.provider, model.model);
     final recent = [
       for (final trace in turns.reversed)
         if (!trace.usage.isEmpty) trace,

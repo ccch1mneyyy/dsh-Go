@@ -47,10 +47,57 @@ void main() {
       expect(formatClock(const Duration(seconds: -3)), '0:00');
     });
 
-    test('cost only with a known price; never made up', () {
-      expect(knownPricingIsEmpty, isTrue);
-      final trace = runInfoState(finished: true).turns.single;
-      expect(turnCostLabel(trace), isNull);
+    test('cost at the official price of the hour each request was sent; never made up', () {
+      // 10,000 uncached + 76,000 cache hits + 2,000 out on deepseek-flash, peak:
+      // 10000 × 2 + 76000 × 0.04 + 2000 × 8 = 39,040 per million = ¥0.039.
+      final monday10 = DateTime.utc(2026, 11, 2, 2); // Monday 10:00 北京时间
+      expect(turnCostLabel(_pricedTurn(start: monday10)), '约 ¥0.04');
+      // Off-peak is half: Monday 20:00, Saturday 10:00, Monday 12:30 (lunch).
+      expect(turnCostLabel(_pricedTurn(start: DateTime.utc(2026, 11, 2, 12))), '约 ¥0.02');
+      expect(turnCostLabel(_pricedTurn(start: DateTime.utc(2026, 10, 31, 2))), '约 ¥0.02');
+      expect(turnCostLabel(_pricedTurn(start: DateTime.utc(2026, 11, 2, 4, 30))), '约 ¥0.02');
+      expect(turnCostLabel(_pricedTurn(start: monday10, model: 'deepseek-v4-pro')), '约 ¥0.17');
+      expect(turnCostLabel(_pricedTurn(start: monday10, model: 'someone-elses-model')), isNull);
+      expect(turnCostLabel(_pricedTurn(start: monday10, provider: 'openrouter')), isNull);
+      // Across 12:00: the 11:59 request at peak (¥0.039), the 12:01 one off-peak
+      // (¥0.0195); the turn's start price for both would read ¥0.08.
+      final noon = _pricedTurn(start: DateTime.utc(2026, 11, 2, 3, 59));
+      final across = TurnTrace(
+        turn: 1,
+        startSeq: 0,
+        start: noon.start,
+        end: noon.start.add(const Duration(minutes: 3)),
+        endSeq: 2,
+        spans: [
+          noon.spans.single,
+          _pricedTurn(start: DateTime.utc(2026, 11, 2, 4, 1)).spans.single,
+        ],
+      );
+      expect(turnCostLabel(across), '约 ¥0.06');
+      // Web searches run their own model call the app never sees: counted, not priced.
+      expect(webSearchCount(across), 0);
+      final searched = TurnTrace(
+        turn: 1,
+        startSeq: 0,
+        start: monday10,
+        end: monday10.add(const Duration(seconds: 30)),
+        endSeq: 3,
+        spans: [
+          noon.spans.single,
+          for (final (i, failed) in [(2, false), (3, true)])
+            TraceSpan(
+              kind: TraceKind.tool,
+              step: 1,
+              seq: i,
+              start: monday10,
+              end: monday10.add(const Duration(seconds: 5)),
+              toolName: 'web_search',
+              failed: failed,
+            ),
+        ],
+      );
+      expect(webSearchCount(searched), 2);
+      expect(turnCostLabel(searched), '约 ¥0.04');
       expect(formatCost(0.0349, 'CNY'), '约 ¥0.03');
       expect(formatCost(0.004, 'CNY'), '不到 ¥0.01');
     });
@@ -65,7 +112,8 @@ void main() {
       expect(trace.waitTime, const Duration(seconds: 48));
       expect(trace.ttft, const Duration(milliseconds: 1100));
       expect(trace.usage.total, 8226 + 69888 + 1970);
-      expect(TurnFootnote.variants(trace).first, '1 分 23 秒 · 5 步 · 8 万 tokens');
+      // Friday 10:00 北京时间: deepseek-flash at the peak price.
+      expect(TurnFootnote.variants(trace).first, '1 分 23 秒 · 5 步 · 约 ¥0.04 · 8 万 tokens');
 
       final rows = trajectoryRows(trace);
       final labels = [
@@ -190,27 +238,27 @@ void main() {
   });
 }
 
-/// `knownPricing` stays empty until DeepSeek's prices are in the repo.
-bool get knownPricingIsEmpty =>
-    turnCostLabel(
-      TurnTrace(
-        turn: 1,
-        startSeq: 0,
-        start: DateTime(2026),
-        end: DateTime(2026),
-        endSeq: 1,
-        spans: [
-          TraceSpan(
-            kind: TraceKind.model,
-            step: 1,
-            seq: 1,
-            start: DateTime(2026),
-            end: DateTime(2026),
-            provider: 'deepseek-official',
-            model: 'deepseek-flash',
-            usage: const TokenUsage(inputTokens: 1000, outputTokens: 10),
-          ),
-        ],
-      ),
-    ) ==
-    null;
+/// One finished request: 10,000 uncached + 76,000 cache hits in, 2,000 out.
+TurnTrace _pricedTurn({
+  required DateTime start,
+  String provider = 'deepseek-official',
+  String model = 'deepseek-flash',
+}) => TurnTrace(
+  turn: 1,
+  startSeq: 0,
+  start: start,
+  end: start.add(const Duration(seconds: 16)),
+  endSeq: 1,
+  spans: [
+    TraceSpan(
+      kind: TraceKind.model,
+      step: 1,
+      seq: 1,
+      start: start,
+      end: start.add(const Duration(seconds: 16)),
+      provider: provider,
+      model: model,
+      usage: const TokenUsage(inputTokens: 10000, cacheReadTokens: 76000, outputTokens: 2000),
+    ),
+  ],
+);

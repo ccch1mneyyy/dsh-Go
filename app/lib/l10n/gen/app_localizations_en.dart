@@ -1413,6 +1413,17 @@ class L10nEn extends L10n {
   }
 
   @override
+  String activityTraceCostExcludesSearch(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'excludes $count web searches',
+      one: 'excludes 1 web search',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String activityTraceReasoningTokens(String tokens) {
     return 'Reasoning: $tokens';
   }

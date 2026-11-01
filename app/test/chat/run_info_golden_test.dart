@@ -100,7 +100,8 @@ void main() {
       final harness = ChatHarness(session: 's1', states: {'s1': runInfoState(finished: true)});
       await _pumpChat(tester, harness, Brightness.light);
       expect(find.byType(TurnFootnote), findsOneWidget);
-      expect(find.text('1 分 23 秒 · 5 步 · 8 万 tokens'), findsOneWidget);
+      // deepseek-flash has a listed price: the footnote carries the turn's cost.
+      expect(find.textContaining('1 分 23 秒 · 5 步 · 约 ¥0.04'), findsOneWidget);
 
       await tester.tap(find.byType(TurnFootnote));
       await pumpFrames(tester, 8);
