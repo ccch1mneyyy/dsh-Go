@@ -280,7 +280,7 @@ class _RootGateState extends ConsumerState<RootGate> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
-    final runtime = ref.watch(localRuntimeProvider);
+    final runtime = ref.watch(localRuntimeProvider.select((s) => (status: s.status, loaded: s.loaded)));
     final prefs = ref.watch(onboardingPrefsProvider);
     // The last host comes back while the splash shows, so a phone without
     // the runtime doesn't open on 本机 for a frame before its remote host.

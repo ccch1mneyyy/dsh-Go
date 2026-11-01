@@ -115,8 +115,6 @@ class ProcessLaunchGuardTest {
         // The explicit root channel's `su -c <fixed command>` (argv from RootCommands): also a
         // Java ProcessBuilder child, which closes inherited fds like DshProcess's launches.
         "app/android/app/src/main/kotlin/io/github/ccch1mneyyy/dsh_app/phone/background/RootProcess.kt",
-        // Its JVM tests start real java / sh children on the build machine, never on a device.
-        "app/android/app/src/test/kotlin/io/github/ccch1mneyyy/dsh_app/phone/background/RootBackendTest.kt",
     )
     private val localHelper = "app/lib/remote/ssh/remote_shell.dart"
 
@@ -220,7 +218,11 @@ class ProcessLaunchGuardTest {
 
     @Test fun nativeLaunchesOnlyUseTheReviewedJavaOwner() {
         val root = repository()
-        val sourceFiles = files(File(root, "app/android")).filter { it.extension in nativeLanguages }
+        // JVM tests start host tools (java, sh, mkfifo) on the build machine; they never ship.
+        val jvmTests = File(root, "app/android/app/src/test").toPath()
+        val sourceFiles = files(File(root, "app/android")).filter {
+            it.extension in nativeLanguages && !it.toPath().startsWith(jvmTests)
+        }
         assertTrue("The Android source tree must be present", sourceFiles.isNotEmpty())
         for (allowed in allowedNative) assertTrue("The reviewed launcher must be present: $allowed", File(root, allowed).isFile)
         val violations = sourceFiles.flatMap { file ->
@@ -228,7 +230,7 @@ class ProcessLaunchGuardTest {
             val source = file.readText()
             nativeCalls(source, file.extension).filter { path !in allowedNative }.map { location(path, source, it) }
         }
-        assertEquals("New launch sites may inherit API 26 configuration fds; route through DshProcess.\n" +
+        assertEquals("New launch sites may inherit API 26 configuration fds; use a reviewed Java owner.\n" +
             violations.joinToString("\n"), emptyList<String>(), violations)
     }
 

@@ -221,18 +221,13 @@ class DshProcess(
         return DirectLaunch.Selection(reason == null, reason)
     }
 
-    /** One sync(2): the copies are on disk before any of them replaces a name. */
-    private fun syncFilesystems() {
-        val sync = ProcessBuilder("/system/bin/sync").redirectErrorStream(true).start()
-        sync.inputStream.use { it.readBytes() }
-        val code = sync.waitFor()
-        if (code != 0) throw IOException("sync exited with $code")
-    }
-
     /** Waits for cleanup and exit reporting; zero waits until completion. */
-    fun awaitExit(millis: Long = 0) {
-        // Startup can fail after spawning but before allocating the waiter.
-        (waiter ?: stopper)?.join(millis)
+    fun awaitExit(millis: Long = 0): Boolean {
+        // The waiter joins the stopper before reporting exit. Startup can fail
+        // after spawning but before allocating it, so await the stopper then.
+        val ending = waiter ?: stopper
+        ending?.join(millis)
+        return ending?.isAlive != true
     }
 
     /** Preserve a startup failure through cleanup and the service's later STOP. */
@@ -263,9 +258,11 @@ class DshProcess(
             } finally {
                 try {
                     if (p.isAlive) p.destroyForcibly()
-                    p.waitFor()
                 } finally {
+                    // Reap tracees before waiting: an OEM Process.waitFor may not
+                    // return until they exit. The waiter still retains this owner.
                     killStrays()
+                    p.waitFor()
                 }
             }
         }
@@ -435,4 +432,12 @@ class DshProcess(
             return ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { it.localPort }
         }
     }
+}
+
+/** One sync(2): finished copies and renames are on disk before anything depends on them. */
+internal fun syncFilesystems() {
+    val sync = ProcessBuilder("/system/bin/sync").redirectErrorStream(true).start()
+    sync.inputStream.use { it.readBytes() }
+    val code = sync.waitFor()
+    if (code != 0) throw IOException("sync exited with $code")
 }

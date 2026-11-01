@@ -119,6 +119,7 @@ class RuntimePlugin :
                 result.success(null)
             }
             "getLogs" -> result.success(controller.recentLogs(call.argument<Int>("lines") ?: 500))
+            "getLogSnapshot" -> result.success(controller.logSnapshot((call.argument<Int>("lines") ?: 300).coerceIn(0, 2000)))
             "reset" -> controller.reset(ResetKeep.fromWire(call.argument<List<String>>("keep").orEmpty())) { error ->
                 if (error == null) result.success(null) else result.error("reset_failed", error.message, null)
             }

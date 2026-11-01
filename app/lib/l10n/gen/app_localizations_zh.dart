@@ -16111,6 +16111,12 @@ class L10nZh extends L10n {
   String get updateInstallCancelledMessage => '安装包还在，随时可以再装。';
 
   @override
+  String get updateInstallUnconfirmed => '尚未确认安装结果';
+
+  @override
+  String get updateInstallUnconfirmedMessage => '安装包已保留。可先检查系统提示，再重试或用系统安装器打开。';
+
+  @override
   String get updateSignatureMismatch => '签名不一致，不能直接覆盖';
 
   @override

@@ -349,9 +349,9 @@ class PhoneCore(
         return Either.Right(d)
     }
 
-    private fun routeScreenId(id: String?): Either<String, PhoneScreen> {
+    private fun routeScreenId(id: String?, parameterName: String = "screen"): Either<String, PhoneScreen> {
         // l10n:keep agent tool result
-        if (id == null) return Either.Left("缺少 screen（屏幕号，如 s7）。先调用 screen 拿到屏幕号。")
+        if (id == null) return Either.Left("缺少 $parameterName（屏幕号，如 s7）。先调用 screen 拿到屏幕号。")
         return PhoneScreen.ofScreenId(id)?.let { Either.Right(it) }
             // l10n:keep agent tool result
             ?: Either.Left("屏幕号「$id」不对：主屏以 s 开头（如 s7），后台屏以 b 开头（如 b3）。先调用 screen 拿到屏幕号。")
@@ -427,8 +427,9 @@ class PhoneCore(
 
     /** tap / type / scroll / tap_xy: route, resolve, gate, perform. */
     private fun act(name: String, a: Args, scope: SerialWorker.Scope): Out {
-        val sid = (if (name == PhoneToolCatalog.TAP_XY) a.str("observation") else a.str("screen"))
-        val which = when (val r = routeScreenId(sid)) {
+        val screenParameter = if (name == PhoneToolCatalog.TAP_XY) "observation" else "screen"
+        val sid = a.str(screenParameter)
+        val which = when (val r = routeScreenId(sid, screenParameter)) {
             is Either.Left -> return Out(r.value, error = true)
             is Either.Right -> r.value
         }

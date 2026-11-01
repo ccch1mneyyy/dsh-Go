@@ -673,10 +673,9 @@ class PrivilegedDisplayCore(private val context: Context) {
         val type = Class.forName("android.hardware.input.InputManager")
         val manager = type.getDeclaredMethod("getInstance").apply { isAccessible = true }.invoke(null)
         val method = type.getMethod("injectInputEvent", InputEvent::class.java, Int::class.javaPrimitiveType)
-        // Prefer WAIT_FOR_FINISH (2) for a confirmed delivery; some ROMs and the emulator only
-        // accept ASYNC (0). Either way the action is verified by re-observing the screen, never by
-        // replaying it — so an async accept is safe here.
-        val accepted = method.invoke(manager, event, 2) == true || method.invoke(manager, event, 0) == true
+        // WAIT_FOR_FINISH can time out after the event was delivered. A false result is
+        // not proof of rejection: never replay the same event with another mode.
+        val accepted = method.invoke(manager, event, 2) == true
         if (!accepted) throw Fault("inputRejected")
     }
 
