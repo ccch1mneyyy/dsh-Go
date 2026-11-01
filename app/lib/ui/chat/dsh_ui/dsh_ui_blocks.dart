@@ -824,6 +824,20 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
   /// 点下后、插件更新 `selected` 之前的选中项。
   Set<String>? _local;
   bool _showSizeWarning = false;
+  bool? _wasInteractive;
+
+  bool get _interactive => (DshUiPluginScope.maybeOf(context)?.interactive ?? false) && widget.node.id.isNotEmpty;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final interactive = _interactive;
+    if (_wasInteractive == true && !interactive) {
+      _local = null;
+      _showSizeWarning = false;
+    }
+    _wasInteractive = interactive;
+  }
 
   @override
   void didUpdateWidget(DshUiPluginOptions old) {
@@ -901,7 +915,7 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
   @override
   Widget build(BuildContext context) {
     final node = widget.node;
-    final interactive = (DshUiPluginScope.maybeOf(context)?.interactive ?? false) && node.id.isNotEmpty;
+    final interactive = _interactive;
     final selected = _selected;
     final waiting = node.options.any((o) => busy(o.key));
     return Column(

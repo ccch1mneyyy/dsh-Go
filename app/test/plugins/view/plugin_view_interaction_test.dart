@@ -250,6 +250,39 @@ void main() {
       expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsNothing);
     });
 
+    testWidgets('read-only transition clears staged selection and size warning', (tester) async {
+      final r = _Recorder();
+      final values = [for (var i = 0; i < 5; i++) '$i${List.filled(1099, 'x').join()}'];
+      final view = {
+        'type': 'options',
+        'id': 'large-selection',
+        'multi': true,
+        'options': [
+          for (var i = 0; i < values.length; i++) {'label': 'Opção $i', 'value': values[i]},
+        ],
+        'selected': values,
+      };
+      await pumpView(tester, view, onAction: r.call);
+      await tester.tap(find.text('Opção 0'));
+      await pumpFrames(tester);
+      expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsOneWidget);
+      expect(
+        tester
+            .widget<DshUiOptionRow>(find.ancestor(of: find.text('Opção 0'), matching: find.byType(DshUiOptionRow)))
+            .selected,
+        isFalse,
+      );
+
+      await pumpView(tester, Map<String, Object>.from(view), onAction: null);
+      expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsNothing);
+      expect(
+        tester
+            .widget<DshUiOptionRow>(find.ancestor(of: find.text('Opção 0'), matching: find.byType(DshUiOptionRow)))
+            .selected,
+        isTrue,
+      );
+    });
+
     testWidgets('confirm sends confirmed: true / false', (tester) async {
       final r = _Recorder();
       await pumpView(tester, choiceView, data: const {}, onAction: r.call);
