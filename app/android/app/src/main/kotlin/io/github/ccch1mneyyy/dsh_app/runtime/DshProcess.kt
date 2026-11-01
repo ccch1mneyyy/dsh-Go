@@ -222,9 +222,12 @@ class DshProcess(
     }
 
     /** Waits for cleanup and exit reporting; zero waits until completion. */
-    fun awaitExit(millis: Long = 0) {
-        // Startup can fail after spawning but before allocating the waiter.
-        (waiter ?: stopper)?.join(millis)
+    fun awaitExit(millis: Long = 0): Boolean {
+        // The waiter joins the stopper before reporting exit. Startup can fail
+        // after spawning but before allocating it, so await the stopper then.
+        val ending = waiter ?: stopper
+        ending?.join(millis)
+        return ending?.isAlive != true
     }
 
     /** Preserve a startup failure through cleanup and the service's later STOP. */
@@ -255,9 +258,11 @@ class DshProcess(
             } finally {
                 try {
                     if (p.isAlive) p.destroyForcibly()
-                    p.waitFor()
                 } finally {
+                    // Reap tracees before waiting: an OEM Process.waitFor may not
+                    // return until they exit. The waiter still retains this owner.
                     killStrays()
+                    p.waitFor()
                 }
             }
         }

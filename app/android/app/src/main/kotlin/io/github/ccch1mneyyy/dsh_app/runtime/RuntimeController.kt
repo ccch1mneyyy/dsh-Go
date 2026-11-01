@@ -431,7 +431,7 @@ class RuntimeController private constructor(private val app: Context) : DshProce
             try {
                 process?.let { p ->
                     p.stop()
-                    p.awaitExit(15_000)
+                    check(p.awaitExit(15_000)) { "runtime stop incomplete; retry reset after cleanup" }
                 }
                 lastLaunch = null
                 try {
@@ -455,9 +455,14 @@ class RuntimeController private constructor(private val app: Context) : DshProce
                 setPhase(Phase.NOT_INSTALLED)
                 main.post { onDone(null) }
             } catch (e: Throwable) {
-                // Not left at "stopping": either the runtime is still whole or it is gone.
                 log("[dsh-app] reset failed: ${e.message}", "system")
-                setPhase(if (runCatching { installer.isCurrent() }.getOrDefault(false)) Phase.INSTALLED else Phase.NOT_INSTALLED)
+                // Still stopping while the old process hasn't exited (its exit report moves the
+                // phase on); otherwise the runtime is either still whole or gone.
+                setPhase(when {
+                    process != null -> Phase.STOPPING
+                    runCatching { installer.isCurrent() }.getOrDefault(false) -> Phase.INSTALLED
+                    else -> Phase.NOT_INSTALLED
+                })
                 main.post { onDone(e) }
             } finally {
                 resetting = false
