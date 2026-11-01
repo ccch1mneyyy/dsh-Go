@@ -17,6 +17,7 @@ const { values } = parseArgs({ options: {
   'sim-patch': { type: 'string', multiple: true, default: [] },
   import: { type: 'string', multiple: true, default: [] },
   'allow-addon': { type: 'string', multiple: true, default: [] },
+  'linked-publication-fixture': { type: 'string' },
   'expose-internals': { type: 'boolean', default: false },
 } });
 if (!values.prefix || !values.out || !['jit', 'jitless', 'sim'].includes(values.mode)) {
@@ -33,6 +34,22 @@ for (const input of values['allow-addon']) {
   }
   if (!allowedAddons.some((entry) => entry.path === path)) {
     allowedAddons.push({ path, sha256: createHash('sha256').update(await readFile(path)).digest('hex') });
+  }
+}
+let linkedPublicationFixture;
+if (values['linked-publication-fixture'] !== undefined) {
+  const input = values['linked-publication-fixture'];
+  if (process.platform !== 'linux') {
+    throw new TypeError('--linked-publication-fixture requires a Linux measurement host');
+  }
+  if (!isAbsolute(input)) throw new TypeError('--linked-publication-fixture requires an absolute .so path');
+  const path = await realpath(input);
+  if (!path.endsWith('.so') || /[\s:]/u.test(path) || !(await stat(path)).isFile()) {
+    throw new TypeError('--linked-publication-fixture requires a regular .so path without LD_PRELOAD separators');
+  }
+  if (values.mode === 'sim') {
+    linkedPublicationFixture = { path, sha256: createHash('sha256').update(await readFile(path)).digest('hex'),
+      scope: 'Linux pre-Start registration fixture; not an OHOS product library' };
   }
 }
 await mkdir(out, { recursive: false }); // A measurement never silently reuses another case's home.
@@ -87,6 +104,7 @@ const env = {
   DSH_OHOS_TEST_KEY: 'ohos-local-fixture-only', DSH_PERMISSION_MODE: 'workspace-write',
   DSH_OHOS_MEASURE_LOADER: '1',
 };
+if (linkedPublicationFixture) env.LD_PRELOAD = linkedPublicationFixture.path;
 if (values.mode === 'sim') {
   env.DSH_GO_OHOS_SIM_ADDONS = JSON.stringify(allowedAddons.map((entry) => entry.path));
   // The exact allowlist must not become a copied native binary in a tmp cache.
@@ -101,6 +119,7 @@ const report = { mode: values.mode, platformOverride: values.platform, node: pro
 report.loader = {
   configured: { exposeInternals: values['expose-internals'],
     strictAddonAllowlistApplied: values.mode === 'sim', allowedAddons,
+    linkedPublicationFixture: linkedPublicationFixture || null,
     nativeCacheDisabled: env.NARB_DISABLE_NATIVE_CACHE === '1',
     imports: values.import.map((name) => resolve(name)) },
   observedRoute: 'not-observed', observations: [],
