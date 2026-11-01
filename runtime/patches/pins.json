@@ -3,14 +3,14 @@
     "fs-create-exclusive.diff": {
       "0.2.1-rc.2": {
         "node_modules/@deepseek-ai/dsh-fs-local/lib/index.js": {
-          "after": "dc077d91a07374d64900a45bb6288c941094c531237acc6e1994b0bd88deb1d6",
-          "before": "63fbb41d2c33e07111884b798be507e68c2752acab8249c821c20ade436e894f"
+          "before": "63fbb41d2c33e07111884b798be507e68c2752acab8249c821c20ade436e894f",
+          "after": "92ac2f5400ec874d563ea8817783fd1a84f1c50185ef3955efc66cc6f183d6c7"
         }
       },
       "0.2.1-rc.4": {
         "node_modules/@deepseek-ai/dsh-fs-local/lib/index.js": {
-          "after": "dc077d91a07374d64900a45bb6288c941094c531237acc6e1994b0bd88deb1d6",
-          "before": "63fbb41d2c33e07111884b798be507e68c2752acab8249c821c20ade436e894f"
+          "before": "63fbb41d2c33e07111884b798be507e68c2752acab8249c821c20ade436e894f",
+          "after": "92ac2f5400ec874d563ea8817783fd1a84f1c50185ef3955efc66cc6f183d6c7"
         }
       }
     },
@@ -39,8 +39,8 @@
     "zz-direct-runtime.diff": {
       "0.2.1-rc.2": {
         "node_modules/@deepseek-ai/dsh-fs-local/lib/index.js": {
-          "before": "dc077d91a07374d64900a45bb6288c941094c531237acc6e1994b0bd88deb1d6",
-          "after": "b275b221acdc4a0ce217b9c552b6ad4a61922874cb9257b618cdf5a560af8dbd"
+          "before": "92ac2f5400ec874d563ea8817783fd1a84f1c50185ef3955efc66cc6f183d6c7",
+          "after": "6848888183b4f25c9a21ba59840c5ea38dfb265e152668051e7fe4873a80e058"
         },
         "node_modules/@deepseek-ai/dsh-working-directory/lib/index.js": {
           "before": "af5bb7f33c52efe018da19c39c54e07b5a3ac804fff83f8a68e341f411ecf703",
@@ -77,8 +77,8 @@
       },
       "0.2.1-rc.4": {
         "node_modules/@deepseek-ai/dsh-fs-local/lib/index.js": {
-          "before": "dc077d91a07374d64900a45bb6288c941094c531237acc6e1994b0bd88deb1d6",
-          "after": "b275b221acdc4a0ce217b9c552b6ad4a61922874cb9257b618cdf5a560af8dbd"
+          "before": "92ac2f5400ec874d563ea8817783fd1a84f1c50185ef3955efc66cc6f183d6c7",
+          "after": "6848888183b4f25c9a21ba59840c5ea38dfb265e152668051e7fe4873a80e058"
         },
         "node_modules/@deepseek-ai/dsh-working-directory/lib/index.js": {
           "before": "af5bb7f33c52efe018da19c39c54e07b5a3ac804fff83f8a68e341f411ecf703",
