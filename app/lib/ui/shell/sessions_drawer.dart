@@ -170,7 +170,7 @@ class SessionsDrawer extends ConsumerWidget {
         child: Row(
           children: [
             Expanded(child: WorkspaceSwitcher(onManage: manageWorkspaces)),
-            const _ViewOptionsKey(),
+            _ViewOptionsKey(onClose: onClose),
           ],
         ),
       ),
@@ -353,16 +353,20 @@ class NewChatButton extends StatelessWidget {
 /// 「对话列表」 options at the end of the workspace row, its circle on the 10
 /// line; only while there are conversations to organise.
 class _ViewOptionsKey extends ConsumerWidget {
-  const _ViewOptionsKey();
+  const _ViewOptionsKey({required this.onClose});
+
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scope = ref.watch(drawerScopeProvider);
     final filtered = ref.watch(drawerFilterProvider) != DrawerFilter.all;
-    if (scope == null || (scope.sessions.isEmpty && !filtered)) return const SizedBox.shrink();
+    ref.watch(sessionsProvider);
+    final hasArchived = ref.read(sessionsProvider.notifier).archivedSessions.isNotEmpty;
+    if (scope == null || (scope.sessions.isEmpty && !filtered && !hasArchived)) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(right: 10),
-      child: DrawerViewButton(onTap: () => openDrawerViewOptions(context, ref)),
+      child: DrawerViewButton(onTap: () => openDrawerViewOptions(context, ref, onClose: onClose)),
     );
   }
 }
