@@ -26,6 +26,9 @@
 #
 # Settings (environment):
 #   CF_TOKEN_FILE              Cloudflare API token (R2 writes)
+#   CF_ACCOUNT_ID              the account R2 lives in; else CF_ACCOUNT_ID_FILE (default
+#                              ~/keys/dshgo-cloudflare-account-id), else wrangler.jsonc's, which the
+#                              public tree only has as a placeholder (tooling/oss-redact.txt)
 #   BETA_TOKEN_FILE            channel token, default ~/keys/dshgo-beta-channel.token (reads R2 back)
 #   BETA_KEY_FILE              a live access key; checks /beta afterwards while DOWNLOAD_ACCESS=key
 #   CN_PROVIDER                oss (Aliyun OSS, ossutil 2.x) or cos (Tencent COS, coscli)
@@ -107,7 +110,15 @@ CN_BASE_URL=${CN_BASE_URL-$(wrangler_var CN_BASE_URL)}
 # ── Preflight: every missing setting at once ─────────────────────────────
 problems=()
 readable() { [[ -r "${2:-}" && -s "${2:-}" ]] || problems+=("$1 must name a readable, non-empty file"); }
-if [[ -z "${R2_LOCAL_PERSIST:-}" ]]; then readable CF_TOKEN_FILE "${CF_TOKEN_FILE:-}"; fi
+ACCOUNT=${CF_ACCOUNT_ID:-}
+ACCOUNT_FILE=${CF_ACCOUNT_ID_FILE:-$HOME/keys/dshgo-cloudflare-account-id}
+[[ -n "$ACCOUNT" || ! -r "$ACCOUNT_FILE" ]] || ACCOUNT=$(tr -d '[:space:]' <"$ACCOUNT_FILE")
+[[ -n "$ACCOUNT" ]] || ACCOUNT=$(sed -n 's/^ *"account_id": *"\([0-9a-f]*\)".*/\1/p' wrangler.jsonc)
+if [[ -z "${R2_LOCAL_PERSIST:-}" ]]; then
+  readable CF_TOKEN_FILE "${CF_TOKEN_FILE:-}"
+  [[ "$ACCOUNT" =~ ^[0-9a-f]{32}$ && "$ACCOUNT" != 00000000000000000000000000000000 ]] ||
+    problems+=("no Cloudflare account id: set CF_ACCOUNT_ID or write it to $ACCOUNT_FILE (wrangler.jsonc has only a placeholder in the public tree)")
+fi
 if [[ $VERIFY == 1 ]]; then
   [[ -s "$TOKEN_FILE" ]] || problems+=("no channel token at $TOKEN_FILE (BETA_TOKEN_FILE; scripts/beta-keys.sh channel-add): R2 is read back with it")
 fi
@@ -314,10 +325,8 @@ r2_put() { # KEY FILE CONTENT-TYPE
         https://api.cloudflare.com/client/v4/user/tokens/verify | jq -r '.result.id // empty')
       [[ -n "$R2_ID" ]] || die "can't derive R2 S3 credentials from the token"
     fi
-    local account
-    account=$(sed -n 's/^ *"account_id": *"\([0-9a-f]*\)".*/\1/p' wrangler.jsonc)
     RCLONE_CONFIG_R2_TYPE=s3 RCLONE_CONFIG_R2_PROVIDER=Cloudflare RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true \
-      RCLONE_CONFIG_R2_ENDPOINT="https://$account.r2.cloudflarestorage.com" \
+      RCLONE_CONFIG_R2_ENDPOINT="https://$ACCOUNT.r2.cloudflarestorage.com" \
       RCLONE_CONFIG_R2_ACCESS_KEY_ID="$R2_ID" \
       RCLONE_CONFIG_R2_SECRET_ACCESS_KEY="$(tr -d '[:space:]' <"$CF_TOKEN_FILE" | sha256sum | cut -d' ' -f1)" \
       rclone copyto "$2" "r2:$BUCKET/$1" --ignore-times --header-upload "Content-Type: $3" \
@@ -330,7 +339,7 @@ r2_put() { # KEY FILE CONTENT-TYPE
     fi
     local try
     for try in 1 2 3; do
-      CLOUDFLARE_API_TOKEN="$(cat "$CF_TOKEN_FILE")" WRANGLER_SEND_METRICS=false \
+      CLOUDFLARE_API_TOKEN="$(cat "$CF_TOKEN_FILE")" CLOUDFLARE_ACCOUNT_ID="$ACCOUNT" WRANGLER_SEND_METRICS=false \
         npx wrangler r2 object put "$BUCKET/$1" --file "$2" --content-type "$3" --remote >/dev/null && break
       [[ $try == 3 ]] && die "upload of $1 failed"
     done

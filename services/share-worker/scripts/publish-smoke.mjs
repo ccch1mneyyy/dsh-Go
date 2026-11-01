@@ -87,7 +87,7 @@ function publish(dist, args, env) {
     timeout: 300_000,
     env: {
       ...clean, FAKE_LOG: log, FAKE_KEY_ID: fake.id, FAKE_KEY_SECRET: fake.secret, WRANGLER_SEND_METRICS: 'false',
-      CF_TOKEN_FILE: files.cf, BETA_TOKEN_FILE: files.channel, BETA_KEY_FILE: files.key,
+      CF_TOKEN_FILE: files.cf, CF_ACCOUNT_ID: '0123456789abcdef0123456789abcdef', BETA_TOKEN_FILE: files.channel, BETA_KEY_FILE: files.key,
       CN_ACCESS_KEY_ID_FILE: files.id, CN_ACCESS_KEY_SECRET_FILE: files.secret, ...env,
     },
   });
@@ -131,6 +131,8 @@ function dryRuns() {
   const fromWrangler = publish(dist, ['--dry-run'], { PATH });
   check(fromWrangler.code === 0 && fromWrangler.out.includes('skipped: CN_BASE_URL is empty in wrangler.jsonc'), "CN_BASE_URL defaults to wrangler.jsonc's", fromWrangler.out);
 
+  const placeholder = publish(dist, ['--dry-run'], { PATH, CN_BASE_URL: '', CF_ACCOUNT_ID: '00000000000000000000000000000000' });
+  check(placeholder.code === 1 && placeholder.out.includes('no Cloudflare account id'), 'the placeholder account is refused before anything runs', placeholder.out);
   const missing = publish(dist, ['--dry-run'], { PATH, CN_BASE_URL: 'https://dshgo-dl.oss-cn-hongkong.aliyuncs.com/', CN_ACCESS_KEY_SECRET_FILE: join(keys, 'nope') });
   check(missing.code === 1 && ['CN_PROVIDER', 'CN_BUCKET', 'CN_REGION', 'CN_ACCESS_KEY_SECRET_FILE'].every((s) => missing.out.includes(s)), 'missing settings are all listed at once', missing.out);
   const skip = publish(dist, ['--dry-run', '--skip-verify'], { PATH, CN_BASE_URL: '' });
