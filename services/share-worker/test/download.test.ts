@@ -19,7 +19,7 @@ const apkBytes = Uint8Array.from({ length: 6000 }, (_, i) => (i * 13 + 5) & 0xff
 const SHA = 'cd'.repeat(32);
 const KEY = 'dsh-k7m3x9qp';
 const TOKEN = 'dshc_' + 'A'.repeat(43);
-const CN = 'https://dshgo-dl.oss-cn-hongkong.aliyuncs.com/';
+const CN = 'https://dshgo-cn.oss-cn-hongkong.aliyuncs.com/';
 const CN_URL = `${CN}${VERSION}/${APK}`;
 const GITHUB_URL = `https://github.com/ccch1mneyyy/dsh-go/releases/download/v${VERSION}/${APK}`;
 const DL = 'https://dl.dshtui.com/';
