@@ -6,6 +6,7 @@
   "localEnvLowStorage": "Needs about {needed} MB free",
   "localEnvRemoteDetail": "Use DSH on your computer or server",
   "localEnvUnavailable": "DSH can't run on this device yet",
+  "localEnvUnsupported": "Not supported",
   "localEnvRecommended": "Recommended",
   "localEnvInstallTitle": "Install on this phone",
   "localEnvInstallMessage": "Run DSH right on this phone",

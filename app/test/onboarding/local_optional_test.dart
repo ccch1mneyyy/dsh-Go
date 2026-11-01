@@ -2,6 +2,7 @@
 // without the runtime opens home, every 本机 entry offers to install, the
 // runtime can be uninstalled, and the auto start setting holds.
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dsh_app/remote/secret_store.dart';
@@ -626,6 +627,47 @@ void main() {
       await tester.tap(find.text('安装运行环境'));
       await _frames(tester, 8);
       expect(find.byType(LocalInstallPage), findsOneWidget);
+    });
+
+    testWidgets('a build without the runtime: no 本机 row, the drawer offers a remote host', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        HostsController.prefsKey: jsonEncode([sampleSsh.toJson()]),
+      });
+      usePhoneSurface(tester);
+      final runtime = RecordingLocalRuntime(
+        const LocalRuntimeState(loaded: true, status: missingStatus, available: false),
+      );
+      await tester.pumpWidget(
+        goldenApp(
+          home: HomeShell(chatBuilder: (_) => const SizedBox.expand(), initiallyOpen: true),
+          brightness: Brightness.light,
+          overrides: [
+            localRuntimeProvider.overrideWith(() => runtime),
+            settingsProvider.overrideWith(() => FakeSettings(const AppSettings(loaded: true))),
+            sessionsProvider.overrideWith(() => FakeSessions(const [])),
+            secretStoreProvider.overrideWithValue(MemorySecretStore()),
+            relayBackendProvider.overrideWithValue(FakeRelayBackend()),
+            networkKicksProvider.overrideWithValue(const Stream.empty()),
+            hostLinkStatusProvider.overrideWith((ref, host) => Stream.value(HostLinkStatus.idle)),
+            footprint(roomyPhone),
+          ],
+        ),
+      );
+      await _frames(tester, 6);
+      expect(find.text('这台设备暂时不能在本机运行 DSH'), findsOneWidget);
+      expect(find.text('安装运行环境'), findsNothing);
+      await tester.tap(find.text('改用远程主机'));
+      await _frames(tester, 8);
+      expect(find.byType(RemoteScreen), findsOneWidget);
+      expect(find.byType(LocalInstallPage), findsNothing);
+      expect(runtime.calls, isEmpty);
+
+      final context = tester.element(find.byType(RemoteScreen));
+      unawaited(showHostSheet(context, onManage: () {}));
+      await _frames(tester, 6);
+      expect(find.byType(HostSheet), findsOneWidget);
+      expect(find.text('这台手机上的 DSH'), findsNothing);
+      expect(find.text(sampleSsh.name), findsWidgets);
     });
 
     testWidgets('web page: install instead of 启动', (tester) async {
