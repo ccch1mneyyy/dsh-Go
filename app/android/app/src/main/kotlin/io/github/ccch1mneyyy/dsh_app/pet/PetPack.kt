@@ -91,7 +91,17 @@ class PetPack(
     val idlePool: List<PetIdleItem>,
     /** `bonus`; null when the pack has no such key (format v1: a state's extra animations). */
     val bonus: Map<String, PetBonus>?,
+    /** `hitBoxes.default`. */
+    private val defaultHitBox: PetBox? = null,
+    /** By animation: `hitBoxes.byAnim`, else `sleeping` for `sleepingAnims`, `wide` for `wideAnims`. */
+    private val hitBoxByAnim: Map<String, PetBox> = emptyMap(),
 ) {
+    /**
+     * Where [anim]'s body is (logical px), the touch target: as the chat page's hitBoxFor
+     * (`pet_pack.dart`), measured on the body, so a thought cloud, Zzz or notes are not in it.
+     */
+    fun hitBoxFor(anim: PetAnimation): PetBox = hitBoxByAnim[anim.name] ?: defaultHitBox ?: contentBox
+
     /** The animation [state] plays: the first tier reached, else the state's primary. Unknown → idle's. */
     fun primary(state: String, tier: Int): PetAnimation {
         tiers[state]?.let { list ->
@@ -137,8 +147,8 @@ class PetPack(
     /**
      * The out-of-app window at rest, on the canvas: `hitBoxes.wide` with the idle picture's cell (the
      * hit box, measured on the body, leaves out the idle art's bottom row: 鲸娘's outline, Deepy's
-     * shadow), else every state animation's box (roam aside). Held, the window adds the drag pose
-     * ([PetFrames]).
+     * shadow), else every state animation's box (roam aside). Held, the window adds the drag pose;
+     * showing an animation that reaches past it, that animation's cell ([PetFrames]).
      */
     fun windowBox(): PetBox = wideBox?.union(primary(IDLE, 0).box) ?: unionBox(usedAnimations(skipStates = setOf("roam")))
 
@@ -234,7 +244,14 @@ class PetPack(
                 val ms = num(v)?.toLong()
                 if (k is String && ms != null && ms > 0) playMs[k] = ms
             }
-            val wideBox = box((root["hitBoxes"] as? Map<*, *>)?.get("wide"))
+            val hits = root["hitBoxes"] as? Map<*, *>
+            val wideBox = box(hits?.get("wide"))
+            val sleepingBox = box(hits?.get("sleeping"))
+            // As pet_pack.dart: wideAnims, then sleepingAnims, then byAnim, each over the one before.
+            val hitBoxByAnim = LinkedHashMap<String, PetBox>()
+            if (wideBox != null) (hits?.get("wideAnims") as? List<*>).orEmpty().filterIsInstance<String>().forEach { hitBoxByAnim[it] = wideBox }
+            if (sleepingBox != null) (hits?.get("sleepingAnims") as? List<*>).orEmpty().filterIsInstance<String>().forEach { hitBoxByAnim[it] = sleepingBox }
+            (hits?.get("byAnim") as? Map<*, *>)?.forEach { (k, v) -> box(v)?.let { b -> if (k is String) hitBoxByAnim[k] = b } }
             // `idlePool: {everyMs, anims: [...]}`; a bare list is read too.
             val poolRaw = root["idlePool"].let { (it as? Map<*, *>)?.get("anims") ?: it } as? List<*>
             val idlePool = poolRaw?.map { item ->
@@ -272,6 +289,8 @@ class PetPack(
                 wideBox = wideBox,
                 idlePool = idlePool,
                 bonus = bonus,
+                defaultHitBox = box(hits?.get("default")),
+                hitBoxByAnim = hitBoxByAnim,
             )
         }
 

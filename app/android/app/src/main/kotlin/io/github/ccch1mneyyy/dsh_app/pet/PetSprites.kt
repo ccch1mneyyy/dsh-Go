@@ -42,7 +42,7 @@ internal class PetSprites(
         private val source: (String) -> InputStream?,
         private val worker: Executor,
     ) {
-        /** The window at rest and while held, in physical pixels. */
+        /** The window at rest, while held and around each animation, in physical pixels. */
         val frames = PetFrames.of(pack, window, screenScale)
 
         private val main = Handler(Looper.getMainLooper())

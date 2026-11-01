@@ -111,6 +111,25 @@ class PetPackTest {
         assertEquals(PetBox(6f, 12f, 58f, 49f), p.windowBox())
     }
 
+    /** As the chat page's hitBoxFor (pet_pack.dart): byAnim over sleepingAnims over wideAnims, else default, else the body. */
+    @Test fun hitBoxesAsTheChatPageReadsThem() {
+        val p = PetPack.parse(json.replace(
+            "\"reactions\":",
+            """"hitBoxes": {"default": {"x": 13, "y": 12, "w": 50, "h": 48}, "wide": {"x": 10, "y": 12, "w": 53, "h": 48},
+                            "sleeping": {"x": 12, "y": 12, "w": 51, "h": 49},
+                            "byAnim": {"typing": {"x": 2, "y": 12, "w": 66, "h": 54}},
+                            "wideAnims": ["typing", "music"], "sleepingAnims": ["music"]},
+               "reactions":""",
+        ))
+        fun hit(name: String) = p.hitBoxFor(p.animations.getValue(name))
+        assertEquals(PetBox(2f, 12f, 66f, 54f), hit("typing"))
+        assertEquals(PetBox(12f, 12f, 51f, 49f), hit("music"))
+        assertEquals(PetBox(13f, 12f, 50f, 48f), hit("idle"))
+        // No hitBoxes at all: the body.
+        val bare = PetPack.parse(json)
+        assertEquals(bare.contentBox, bare.hitBoxFor(bare.animations.getValue("typing")))
+    }
+
     @Test fun bonusFromTheStateListAtAThird() {
         val p = PetPack.parse(json)
         val b = p.bonusOf("attention", 0)!!
