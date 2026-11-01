@@ -121,12 +121,7 @@ class AdbStarter(private val context: Context, private val onChanged: () -> Unit
 
     private fun appProcessCommand(): String {
         val info = context.applicationInfo
-        val classpath = buildList {
-            add(info.sourceDir)
-            info.splitSourceDirs?.let { addAll(it.toList()) }
-        }.joinToString(":")
-        val main = PrivilegedDisplayMain::class.java.name
-        return "CLASSPATH=$classpath app_process /system/bin $main"
+        return PrivilegedCommands.appProcess(info.sourceDir, info.splitSourceDirs?.toList().orEmpty())
     }
 
     private fun stopMdns() {
