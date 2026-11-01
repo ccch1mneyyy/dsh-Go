@@ -764,6 +764,22 @@ class _TitleReads {
   bool retired = false;
 }
 
+/// Folder chosen for the unsent new-chat draft, scoped to the active host.
+/// This is a local drawer folder, not the engine's working directory.
+class PendingSessionFolderController extends Notifier<String?> {
+  @override
+  String? build() {
+    ref.watch(activeHostProvider);
+    return null;
+  }
+
+  void select(String? folderId) => state = folderId;
+}
+
+final pendingSessionFolderProvider = NotifierProvider<PendingSessionFolderController, String?>(
+  PendingSessionFolderController.new,
+);
+
 /// The session shown in the chat screen; null means "new chat".
 class CurrentSessionController extends Notifier<String?> {
   static const _key = 'last_session_id';
@@ -796,6 +812,7 @@ class CurrentSessionController extends Notifier<String?> {
   void select(String? sessionId) {
     _selectionRevision++;
     _touched = true;
+    ref.read(pendingSessionFolderProvider.notifier).select(null);
     state = sessionId;
     unawaited(
       SharedPreferences.getInstance()

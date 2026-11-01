@@ -26,6 +26,7 @@ import '../../state/composer_insert.dart';
 import '../../state/composer_quote.dart';
 import '../../state/connection_state.dart';
 import '../../state/draft_store.dart';
+import '../../state/drawer_view_state.dart';
 import '../../state/engine_control.dart';
 import '../../state/engine_settings_state.dart' show engineSettingsProvider;
 import '../../state/hosts_state.dart' show HostKind, activeHostProvider;
@@ -61,6 +62,7 @@ import '../session/session_detail_page.dart';
 import '../settings/media_settings_page.dart' show MediaSettingsPage, showMediaInstallSheet, showMediaUnavailableSheet;
 import '../settings/settings_widgets.dart' show SettingsTile;
 import '../shell/adaptive/adaptive_layout.dart' show WindowClass;
+import '../shell/drawer/folder_sheets.dart';
 import '../theme/app_icons.dart';
 import '../theme/theme.dart';
 import '../wallpaper/wallpaper_backdrop.dart';
@@ -73,6 +75,7 @@ import 'composer.dart';
 import 'composer_toast.dart';
 import 'dock/chat_dock.dart';
 import 'empty_state.dart';
+import 'empty_actions.dart';
 import 'media/generate_mode.dart';
 import 'media/generate_sheet.dart';
 import 'media/media_card.dart' show MediaCardActions, mediaItemBytes;
@@ -373,6 +376,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     final current = ref.read(currentSessionProvider);
     if (current != null) return current;
     if (_creating != null) return null;
+    final pendingFolder = ref.read(pendingSessionFolderProvider);
     final attempt = Object();
     bool ownsCreation() => identical(_creating, attempt) && isCurrent();
     setState(() {
@@ -392,6 +396,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
       // A completed create may outlive its page, client or new-chat draft.
       // Check before any selection, migration, deletion or model side effect.
       if (!ownsCreation() || _draftKey != 'new' || ref.read(currentSessionProvider) != null) return null;
+      if (ref.read(pendingSessionFolderProvider) != pendingFolder) return null;
+      if (pendingFolder != null) {
+        await ref
+            .read(drawerViewProvider.notifier)
+            .moveSessions(
+              [sessionId],
+              pendingFolder,
+              isCurrent: () => ownsCreation() && ref.read(pendingSessionFolderProvider) == pendingFolder,
+            );
+        if (!ownsCreation() || ref.read(pendingSessionFolderProvider) != pendingFolder) return null;
+      }
       final pendingModel = ref.read(pendingModelProvider);
       _draftKey = sessionId;
       _saveDraft();
@@ -1053,6 +1068,40 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     }
   }
 
+  Future<void> _pickNewChatFolder() async {
+    final scope = _draftScope;
+    final host = ref.read(activeHostProvider);
+    bool current() =>
+        mounted &&
+        identical(scope, _draftScope) &&
+        ref.read(activeHostProvider) == host &&
+        ref.read(currentSessionProvider) == null;
+    final view = ref.read(drawerViewProvider);
+    final selected = ref.read(pendingSessionFolderProvider);
+    final pick = await showMoveToFolderSheet(
+      context,
+      folders: view.folders,
+      counts: {for (final f in view.folders) f.id: f.sessionIds.length},
+      currentFolder: selected,
+      anyFiled: selected != null,
+      title: context.l10n.shellFolders,
+      allowCreate: false,
+    );
+    if (pick == null || !current()) return;
+    final String? folderId;
+    switch (pick) {
+      case PickFolder(:final folderId):
+        if (ref.read(drawerViewProvider).byId(folderId) == null) return;
+        ref.read(pendingSessionFolderProvider.notifier).select(folderId);
+        return;
+      case PickNoFolder():
+        folderId = null;
+      case PickNewFolder():
+        return;
+    }
+    ref.read(pendingSessionFolderProvider.notifier).select(folderId);
+  }
+
   // ---------------------------------------------------------------------------
   // 斜杠指令
 
@@ -1299,6 +1348,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
             sessionsProvider.select((async) => async.value?.where((s) => s.sessionId == sessionId).firstOrNull?.title),
           );
     final pendingModel = ref.watch(pendingModelProvider);
+    final newFolder = sessionId == null
+        ? ref.watch(drawerViewProvider).byId(ref.watch(pendingSessionFolderProvider))
+        : null;
+    final hasFolders = sessionId == null && ref.watch(drawerViewProvider).folders.isNotEmpty;
     final commands = ref.watch(slashCommandsProvider(sessionId));
     final contextFraction = sessionId == null
         ? null
@@ -1446,6 +1499,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                           ? _reconnect
                                           : null,
                                       onSuggestion: _onSuggestion,
+                                      folderPicker: hasFolders
+                                          ? QuietChip(
+                                              icon: AppIcons.folder,
+                                              label: newFolder == null
+                                                  ? context.l10n.shellFolders
+                                                  : context.l10n.shellFolderLabel(newFolder.name),
+                                              trailing: AppIcons.expand,
+                                              onTap: _pickNewChatFolder,
+                                            )
+                                          : null,
                                       workspace: workspace == null ? null : workspaceTitle(workspace),
                                       onWorkspace: () => showWorkspaceSheet(
                                         context,

@@ -283,8 +283,14 @@ class DrawerViewController extends Notifier<DrawerView> {
 
   /// Moves [ids] into [folderId] (null: out of any folder). Returns where
   /// each one was before, for [restoreAssignments].
-  Future<Map<String, String?>> moveSessions(Iterable<String> ids, String? folderId) async {
+  Future<Map<String, String?>> moveSessions(
+    Iterable<String> ids,
+    String? folderId, {
+    bool Function()? isCurrent,
+  }) async {
+    final key = _key;
     await _loading;
+    if (key != _key || (isCurrent != null && !isCurrent())) return const {};
     final moving = ids.toList();
     final before = state.folderOf;
     final previous = {for (final id in moving) id: before[id]};
@@ -306,6 +312,7 @@ class DrawerViewController extends Notifier<DrawerView> {
               _without(f, set),
         ],
       ),
+      isCurrent: isCurrent,
     );
     return previous;
   }
