@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_en.dart';
+import 'app_localizations_pt.dart';
 import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
@@ -90,7 +91,7 @@ abstract class L10n {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('zh')];
+  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('pt'), Locale('zh')];
 
   /// No description provided for @a11yRestoreTitle.
   ///
@@ -13886,6 +13887,12 @@ abstract class L10n {
   /// **'English'**
   String get localeEn;
 
+  /// No description provided for @localePt.
+  ///
+  /// In zh, this message translates to:
+  /// **'Português'**
+  String get localePt;
+
   /// No description provided for @localEnvChooseTitle.
   ///
   /// In zh, this message translates to:
@@ -18967,6 +18974,12 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'内容过多，请缩短后重试'**
   String get plugInputTooLarge;
+
+  /// No description provided for @pluginOptionSelectionTooLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择未发送：超过 4 KiB。请移除选项或选择较短的值。'**
+  String get pluginOptionSelectionTooLarge;
 
   /// No description provided for @plugInputCheckFields.
   ///
@@ -32838,7 +32851,7 @@ class _L10nDelegate extends LocalizationsDelegate<L10n> {
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['en', 'pt', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_L10nDelegate old) => false;
@@ -32849,6 +32862,8 @@ L10n lookupL10n(Locale locale) {
   switch (locale.languageCode) {
     case 'en':
       return L10nEn();
+    case 'pt':
+      return L10nPt();
     case 'zh':
       return L10nZh();
   }

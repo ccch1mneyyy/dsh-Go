@@ -8004,6 +8004,9 @@ class L10nEn extends L10n {
   String get localeEn => 'English';
 
   @override
+  String get localePt => 'Português';
+
+  @override
   String get localEnvChooseTitle => 'Where should DSH run?';
 
   @override
@@ -10806,6 +10809,10 @@ class L10nEn extends L10n {
 
   @override
   String get plugInputTooLarge => 'Too much content. Shorten it and try again';
+
+  @override
+  String get pluginOptionSelectionTooLarge =>
+      'Selection not sent: it exceeds 4 KiB. Remove options or choose shorter values.';
 
   @override
   String get plugInputCheckFields => 'Check the highlighted fields';

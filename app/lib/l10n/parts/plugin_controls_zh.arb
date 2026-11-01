@@ -35,6 +35,7 @@
   "plugInputNestedForm": "表单不能嵌套",
   "plugInputSubmitMissing": "表单缺少提交动作",
   "plugInputTooLarge": "内容过多，请缩短后重试",
+  "pluginOptionSelectionTooLarge": "选择未发送：超过 4 KiB。请移除选项或选择较短的值。",
   "plugInputCheckFields": "请检查标出的项目",
   "plugInputFailed": "未保存，请重试",
   "plugInputSubmit": "保存",

@@ -5,9 +5,11 @@
 // v2 emptyState and gallery (docs/design/plugin-ui-v3.md §4.2).
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../../../l10n/l10n.dart';
@@ -821,49 +823,99 @@ class DshUiPluginOptions extends StatefulWidget {
 class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking {
   /// 点下后、插件更新 `selected` 之前的选中项。
   Set<String>? _local;
+  bool _showSizeWarning = false;
+  bool? _wasInteractive;
+
+  bool get _interactive => (DshUiPluginScope.maybeOf(context)?.interactive ?? false) && widget.node.id.isNotEmpty;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final interactive = _interactive;
+    if (_wasInteractive == true && !interactive) {
+      _local = null;
+      _showSizeWarning = false;
+    }
+    _wasInteractive = interactive;
+  }
 
   @override
   void didUpdateWidget(DshUiPluginOptions old) {
     super.didUpdateWidget(old);
-    if (old.node != widget.node) _local = null;
+    if (!_sameOptions(old.node, widget.node)) {
+      _local = null;
+      _showSizeWarning = false;
+    }
   }
+
+  static bool _sameOptions(DshUiOptions a, DshUiOptions b) =>
+      a.id == b.id &&
+      a.path == b.path &&
+      a.multi == b.multi &&
+      a.truncation == b.truncation &&
+      listEquals(a.selected, b.selected) &&
+      a.options.length == b.options.length &&
+      List.generate(a.options.length, (i) {
+        final x = a.options[i];
+        final y = b.options[i];
+        return x.label == y.label && x.description == y.description && x.value == y.value && x.key == y.key;
+      }).every((same) => same);
 
   Set<String> get _selected => _local ?? widget.node.selected.toSet();
 
   Future<void> _tap(DshUiOption option) async {
     final node = widget.node;
     final before = _local;
+    final selectedBefore = _selected;
     final Set<String> next;
     if (node.multi) {
-      next = {..._selected};
+      next = {...selectedBefore};
       if (!next.remove(option.key)) next.add(option.key);
     } else {
       next = {option.key};
     }
-    setState(() => _local = next);
+    final args = node.multi
+        ? {
+            'values': [
+              for (final o in node.options)
+                if (next.contains(o.key)) o.key,
+            ],
+          }
+        : {'value': option.key};
+    if (utf8.encode(jsonEncode(args)).length > DshUiControlLimits.valueBytes) {
+      // Let users work down an already oversized multi-selection. These local
+      // deselections are visibly marked as unsent until the full payload fits.
+      if (node.multi && selectedBefore.contains(option.key)) {
+        setState(() {
+          _local = next;
+          _showSizeWarning = true;
+        });
+      } else {
+        setState(() => _showSizeWarning = true);
+      }
+      return;
+    }
+    final wasSizeWarningVisible = _showSizeWarning;
+    setState(() {
+      _local = next;
+      _showSizeWarning = false;
+    });
     final ok = await invoke(
       option.key,
-      PluginAction(
-        id: node.id,
-        args: node.multi
-            ? {
-                'values': [
-                  for (final o in node.options)
-                    if (next.contains(o.key)) o.key,
-                ],
-              }
-            : {'value': option.key},
-        source: PluginActionSource.option,
-        path: node.path,
-      ),
+      PluginAction(id: node.id, args: args, source: PluginActionSource.option, path: node.path),
     );
-    if (!ok && mounted) setState(() => _local = before);
+    if (!ok && mounted) {
+      setState(() {
+        _local = before;
+        _showSizeWarning = wasSizeWarningVisible;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final node = widget.node;
-    final interactive = (DshUiPluginScope.maybeOf(context)?.interactive ?? false) && node.id.isNotEmpty;
+    final interactive = _interactive;
     final selected = _selected;
     final waiting = node.options.any((o) => busy(o.key));
     return Column(
@@ -880,6 +932,13 @@ class _DshUiPluginOptionsState extends State<DshUiPluginOptions> with _Invoking 
             busy: busy(node.options[i].key),
             enabled: interactive && !waiting,
             onTap: () => _tap(node.options[i]),
+          ),
+        ],
+        if (_showSizeWarning) ...[
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.pluginOptionSelectionTooLarge,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
       ],

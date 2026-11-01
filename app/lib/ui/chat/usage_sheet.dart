@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../l10n/l10n.dart';
 import '../../state/usage_state.dart';
@@ -18,35 +19,21 @@ import 'balance_widgets.dart';
 /// million in every UI language (no 万/亿), the same units model context
 /// windows are quoted in.
 String formatTokens(int n) {
-  String trimZeros(String text) {
-    if (!text.contains('.')) return text;
-    var end = text.length;
-    while (text[end - 1] == '0') {
-      end--;
-    }
-    if (text[end - 1] == '.') end--;
-    return text.substring(0, end);
-  }
-
+  final locale = AppLocale.current.toString();
   final sign = n < 0 ? '-' : '';
   final value = n.abs();
   if (value < 1000) {
-    final digits = value.toString();
-    final buf = StringBuffer(sign);
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
-      buf.write(digits[i]);
-    }
-    return buf.toString();
+    return NumberFormat.decimalPattern(locale).format(n);
   }
   if (value < 1000000) {
     final k = value / 1000;
     // 43K and 500K stay whole; below 100 one decimal reads better (8.4K).
-    final text = trimZeros(k >= 100 ? k.toStringAsFixed(0) : k.toStringAsFixed(1));
+    final text = (NumberFormat.decimalPattern(locale)..maximumFractionDigits = k >= 100 ? 0 : 1).format(k);
     // 999,900…999,999 would round up to 1000K: show the carry as M instead.
-    if (text != '1000') return '$sign${text}K';
+    if (k.round() < 1000) return '$sign${text}K';
   }
-  return '$sign${trimZeros((value / 1000000).toStringAsFixed(2))}M';
+  final millions = NumberFormat.decimalPattern(locale)..maximumFractionDigits = 2;
+  return '$sign${millions.format(value / 1000000)}M';
 }
 
 /// `12%`;大于 0 但不到 1% 时写 `<1%`。

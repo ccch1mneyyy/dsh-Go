@@ -1,0 +1,19 @@
+{
+  "@@locale": "pt",
+  "a11yRestoreTitle": "Restaurar acessibilidade automaticamente",
+  "searchKwA11yRestore": "acessibilidade,restaurar,reconectar,recuperação automática,permissão,ADB,Shizuku,Sui,root",
+  "a11yRestoreNeedsGrant": "Autorização necessária",
+  "a11yRestoreNotice": "Depois de autorizar, a acessibilidade será reativada se for desativada nas configurações do sistema. Para interromper o controle do telefone, desative-o no DSH Go.",
+  "a11yRestoreForceStop": "Depois de forçar a parada, abra o DSH Go novamente para restaurar o serviço.",
+  "a11yRestoreGrant": "Autorizar e ativar",
+  "a11yRestoreGrantShizuku": "Conceder com Shizuku",
+  "a11yRestoreGrantShizukuPermission": "Autorize o Shizuku e depois conceda a permissão",
+  "a11yRestoreGrantAdb": "Conceder com ADB direto",
+  "a11yRestoreRootNote": "Executa pm grant uma vez como root, somente para esta permissão.",
+  "a11yRestoreSetup": "Configure o Shizuku ou a depuração sem fio",
+  "a11yRestoreWaiting": "Autorize a solicitação no Shizuku",
+  "a11yRestoreWaitingSui": "Autorize a solicitação no Sui",
+  "a11yRestoreComputer": "Ou conecte a um computador e execute uma vez:",
+  "a11yRestoreCopy": "Copiar comando",
+  "a11yRestoreCopied": "Comando copiado"
+}

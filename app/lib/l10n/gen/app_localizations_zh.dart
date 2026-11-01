@@ -7572,6 +7572,9 @@ class L10nZh extends L10n {
   String get localeEn => 'English';
 
   @override
+  String get localePt => 'Português';
+
+  @override
   String get localEnvChooseTitle => 'DSH 在哪里运行？';
 
   @override
@@ -10270,6 +10273,9 @@ class L10nZh extends L10n {
 
   @override
   String get plugInputTooLarge => '内容过多，请缩短后重试';
+
+  @override
+  String get pluginOptionSelectionTooLarge => '选择未发送：超过 4 KiB。请移除选项或选择较短的值。';
 
   @override
   String get plugInputCheckFields => '请检查标出的项目';

@@ -126,6 +126,163 @@ void main() {
       ]);
     });
 
+    for (final multi in [false, true]) {
+      testWidgets('option invoke enforces the serialized 4 KiB boundary (${multi ? 'multi' : 'single'})', (
+        tester,
+      ) async {
+        final r = _Recorder();
+        String keyFor(int length) => List.filled(length, 'x').join();
+        Map<String, Object> argsFor(String key) => multi
+            ? {
+                'values': [key],
+              }
+            : {'value': key};
+        var exact = '';
+        for (var length = 0; length <= 4096; length++) {
+          final candidate = keyFor(length);
+          if (utf8.encode(jsonEncode(argsFor(candidate))).length == 4096) {
+            exact = candidate;
+            break;
+          }
+        }
+        expect(exact, isNotEmpty);
+
+        Map<String, Object> view(String key) => {
+          'type': 'options',
+          'id': 'boundary',
+          'multi': multi,
+          'options': [
+            {'label': 'Limite', 'value': key},
+          ],
+        };
+
+        await pumpView(tester, view(exact), onAction: r.call);
+        await tester.tap(find.text('Limite'));
+        await pumpFrames(tester);
+        expect(r.calls, hasLength(1));
+        expect(utf8.encode(jsonEncode(r.calls.single.args)), hasLength(4096));
+
+        final tooLarge = '$exact x';
+        await pumpView(tester, {
+          ...view(tooLarge),
+          'options': [
+            {'label': 'Manter', 'value': 'keep'},
+            {'label': 'Limite', 'value': tooLarge},
+          ],
+          'selected': ['keep'],
+        }, onAction: r.call);
+        await tester.tap(find.text('Limite'));
+        await pumpFrames(tester);
+        expect(r.calls, hasLength(1), reason: 'oversized selection must not be dispatched');
+        final kept = tester.widget<DshUiOptionRow>(
+          find.ancestor(of: find.text('Manter'), matching: find.byType(DshUiOptionRow)),
+        );
+        final rejected = tester.widget<DshUiOptionRow>(
+          find.ancestor(of: find.text('Limite'), matching: find.byType(DshUiOptionRow)),
+        );
+        expect(kept.selected, isTrue);
+        expect(rejected.selected, isFalse);
+        expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsOneWidget);
+      });
+    }
+
+    testWidgets('option invoke uses actual JSON bytes for escaped strings', (tester) async {
+      final r = _Recorder();
+      final newlineValue = List.filled(2042, '\n').join();
+      await pumpView(tester, {
+        'type': 'options',
+        'id': 'escaped',
+        'options': [
+          {'label': 'Newlines', 'value': newlineValue},
+        ],
+      }, onAction: r.call);
+      await tester.tap(find.text('Newlines'));
+      await pumpFrames(tester);
+      expect(utf8.encode(jsonEncode(r.calls.single.args)).length, 4096);
+
+      final unpairedSurrogates = List.filled(700, String.fromCharCode(0xd800)).join();
+      await pumpView(tester, {
+        'type': 'options',
+        'id': 'escaped',
+        'options': [
+          {'label': 'Surrogates', 'value': unpairedSurrogates},
+        ],
+      }, onAction: r.call);
+      await tester.tap(find.text('Surrogates'));
+      await pumpFrames(tester);
+      expect(r.calls, hasLength(1), reason: 'JSON-escaped surrogate payload is over the byte limit');
+    });
+
+    testWidgets('oversized multi-selection can be reduced and staged deselections are marked', (tester) async {
+      final r = _Recorder();
+      final values = [for (var i = 0; i < 5; i++) '$i${List.filled(1099, 'x').join()}'];
+      final oversizedView = {
+        'type': 'options',
+        'id': 'large-selection',
+        'multi': true,
+        'options': [
+          for (var i = 0; i < values.length; i++) {'label': 'Opção $i', 'value': values[i]},
+        ],
+        'selected': values,
+      };
+      await pumpView(tester, oversizedView, onAction: r.call);
+      await tester.tap(find.text('Opção 0'));
+      await pumpFrames(tester);
+      expect(r.calls, isEmpty, reason: 'four values still exceed the payload limit');
+      expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsOneWidget);
+      final first = tester.widget<DshUiOptionRow>(
+        find.ancestor(of: find.text('Opção 0'), matching: find.byType(DshUiOptionRow)),
+      );
+      expect(first.selected, isFalse);
+
+      // An equivalent parent rebuild must keep the staged local deselection.
+      await pumpView(tester, Map<String, Object>.from(oversizedView), onAction: r.call);
+      final afterRebuild = tester.widget<DshUiOptionRow>(
+        find.ancestor(of: find.text('Opção 0'), matching: find.byType(DshUiOptionRow)),
+      );
+      expect(afterRebuild.selected, isFalse);
+      expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsOneWidget);
+
+      await tester.tap(find.text('Opção 1'));
+      await pumpFrames(tester);
+      expect(r.calls, hasLength(1));
+      expect(r.calls.single.args, {'values': values.skip(2).toList()});
+      expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsNothing);
+    });
+
+    testWidgets('read-only transition clears staged selection and size warning', (tester) async {
+      final r = _Recorder();
+      final values = [for (var i = 0; i < 5; i++) '$i${List.filled(1099, 'x').join()}'];
+      final view = {
+        'type': 'options',
+        'id': 'large-selection',
+        'multi': true,
+        'options': [
+          for (var i = 0; i < values.length; i++) {'label': 'Opção $i', 'value': values[i]},
+        ],
+        'selected': values,
+      };
+      await pumpView(tester, view, onAction: r.call);
+      await tester.tap(find.text('Opção 0'));
+      await pumpFrames(tester);
+      expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsOneWidget);
+      expect(
+        tester
+            .widget<DshUiOptionRow>(find.ancestor(of: find.text('Opção 0'), matching: find.byType(DshUiOptionRow)))
+            .selected,
+        isFalse,
+      );
+
+      await pumpView(tester, Map<String, Object>.from(view), onAction: null);
+      expect(find.text('选择未发送：超过 4 KiB。请移除选项或选择较短的值。'), findsNothing);
+      expect(
+        tester
+            .widget<DshUiOptionRow>(find.ancestor(of: find.text('Opção 0'), matching: find.byType(DshUiOptionRow)))
+            .selected,
+        isTrue,
+      );
+    });
+
     testWidgets('confirm sends confirmed: true / false', (tester) async {
       final r = _Recorder();
       await pumpView(tester, choiceView, data: const {}, onAction: r.call);

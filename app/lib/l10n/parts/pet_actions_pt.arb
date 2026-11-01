@@ -1,0 +1,12 @@
+{
+  "@@locale": "pt",
+  "petActionSending": "Enviando…",
+  "petActionTargetChanged": "O host mudou. Abra o pedido rápido novamente; seu texto foi mantido.",
+  "petActionSendFailed": "Não foi possível enviar. Seu texto foi mantido; tente novamente.",
+  "petActionBusy": "Esta conversa está ocupada. Escolha Nova conversa.",
+  "petActionVoiceMissing": "Baixe primeiro o modelo de voz offline no app.",
+  "petActionVoiceTitle": "Voz para pedido rápido",
+  "petActionVoiceReturn": "Voltar ao mascote",
+  "petActionVoiceStop": "Concluir gravação",
+  "petActionVoiceStart": "Gravar"
+}
