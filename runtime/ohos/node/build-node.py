@@ -100,8 +100,7 @@ def main():
         wrapper = wrappers / name
         wrapper.write_text('#!/bin/sh\nexec ' + shlex.join(command) + ' "$@"\n')
         wrapper.chmod(0o755)
-    environment = os.environ.copy()
-    environment.update({
+    recipe = {
         'CC': str(wrappers / 'clang'), 'CC_target': str(wrappers / 'clang'),
         'CXX': str(wrappers / 'clang++'), 'CXX_target': str(wrappers / 'clang++'),
         'LINK_target': str(wrappers / 'clang++'), 'AR': str(sdk / 'llvm/bin/llvm-ar'),
@@ -111,17 +110,14 @@ def main():
         'CFLAGS': '', 'CXXFLAGS': '', 'CPPFLAGS': '',
         'CFLAGS_host': '', 'CXXFLAGS_host': '', 'CPPFLAGS_host': '',
         'SOURCE_DATE_EPOCH': '0', 'LC_ALL': 'C', 'TZ': 'UTC',
-    })
-    configure = [sys.executable, 'configure.py', '--dest-os=openharmony', '--dest-cpu=arm64',
+    }
+    environment = {**os.environ, **recipe}
+    configure =[sys.executable, 'configure.py', '--dest-os=openharmony', '--dest-cpu=arm64',
                  '--cross-compiling', '--shared', '--use_clang', '--with-intl=small-icu',
                  '--with-icu-locales=root,en', '--v8-options=--jitless',
                  '--without-node-snapshot', '--without-node-code-cache',
                  '--without-node-options', '--without-inspector']
-    recipe = {key: environment[key] for key in ['CC', 'CC_target', 'CXX', 'CXX_target',
-              'LINK_target', 'AR', 'AR_target', 'CC_host', 'CXX_host', 'LINK_host', 'AR_host',
-              'LDFLAGS', 'LDFLAGS_host', 'CFLAGS', 'CXXFLAGS', 'CPPFLAGS',
-              'CFLAGS_host', 'CXXFLAGS_host', 'CPPFLAGS_host', 'SOURCE_DATE_EPOCH', 'LC_ALL', 'TZ']}
-    plan = {'configure': configure, 'make': ['make', f'-j{args.jobs}'], 'environment': recipe,
+    plan ={'configure': configure, 'make': ['make', f'-j{args.jobs}'], 'environment': recipe,
             'nodeSourceSha256': SOURCE_SHA256, 'patches': pins,
             'diskFreeBefore': free_bytes, 'sourceUncompressedBytes': unpacked_bytes,
             'sdkManifest': json.loads((sdk / 'oh-uni-package.json').read_text()),
