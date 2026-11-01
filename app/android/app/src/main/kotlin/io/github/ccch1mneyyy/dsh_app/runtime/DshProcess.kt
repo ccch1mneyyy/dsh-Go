@@ -221,14 +221,6 @@ class DshProcess(
         return DirectLaunch.Selection(reason == null, reason)
     }
 
-    /** One sync(2): the copies are on disk before any of them replaces a name. */
-    private fun syncFilesystems() {
-        val sync = ProcessBuilder("/system/bin/sync").redirectErrorStream(true).start()
-        sync.inputStream.use { it.readBytes() }
-        val code = sync.waitFor()
-        if (code != 0) throw IOException("sync exited with $code")
-    }
-
     /** Waits for cleanup and exit reporting; zero waits until completion. */
     fun awaitExit(millis: Long = 0) {
         // Startup can fail after spawning but before allocating the waiter.
@@ -435,4 +427,12 @@ class DshProcess(
             return ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { it.localPort }
         }
     }
+}
+
+/** One sync(2): finished copies and renames are on disk before anything depends on them. */
+internal fun syncFilesystems() {
+    val sync = ProcessBuilder("/system/bin/sync").redirectErrorStream(true).start()
+    sync.inputStream.use { it.readBytes() }
+    val code = sync.waitFor()
+    if (code != 0) throw IOException("sync exited with $code")
 }
