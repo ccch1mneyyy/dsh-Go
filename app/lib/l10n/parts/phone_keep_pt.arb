@@ -1,0 +1,14 @@
+{
+  "@@locale": "pt",
+  "phoneKeepTitle": "{mode, select, shizuku{Manter canal Shizuku} sui{Manter canal Sui} root{Manter canal root} adb{Manter canal ADB direto} other{Manter este canal}}",
+  "phoneKeepRootDescription": "Após uma desconexão, reinicialização do app ou do celular, o DSH Go solicitará novamente a autorização ao gerenciador root. A decisão continua sendo do gerenciador.",
+  "phoneKeepSharedDescription": "Após uma desconexão, reinicialização do app ou do celular, o DSH Go se reconectará com a permissão que já possui. Ele nunca solicitará permissão.",
+  "phoneKeepAdbDescription": "Após uma desconexão, reinicialização do app ou do celular, o DSH Go se reconectará pelo Wi‑Fi usando o pareamento existente. Com a permissão de “Restaurar acessibilidade automaticamente”, também tentará ativar a depuração sem fio uma vez.",
+  "phoneKeepRestoring": "Reconectando",
+  "phoneKeepWaiting": "Aguardando o canal",
+  "phoneKeepWaitingService": "Aguardando o serviço iniciar",
+  "phoneKeepWaitingPermission": "Sem autorização. A reconexão ocorrerá quando você conceder a permissão.",
+  "phoneKeepWaitingNetwork": "Aguardando o Wi‑Fi",
+  "phoneKeepNotPaired": "Não pareado. Primeiro, pareie a depuração sem fio.",
+  "phoneKeepFailed": "Não foi possível reconectar. Uma nova tentativa ocorrerá quando você abrir o app ou iniciar uma tarefa."
+}

@@ -298,5 +298,8 @@
   "chatDockSpread": "Expandir",
   "chatDockFold": "Recolher as barras de status",
   "chatDockNext": "Próximo cartão",
-  "chatDockPrevious": "Cartão anterior"
+  "chatDockPrevious": "Cartão anterior",
+  "chatFailedSubmission": "Falha ao enviar · texto mantido",
+  "chatEditFailedSubmission": "Edite e envie novamente",
+  "chatErrReasoningEffortUnsupported": "Este modelo não oferece suporte ao nível de raciocínio selecionado. Altere o nível ou escolha outro modelo."
 }

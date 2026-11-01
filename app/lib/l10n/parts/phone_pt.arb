@@ -438,5 +438,6 @@
   "phoneDndSwitchTo": "{mode, select, shizuku{Mudar para Shizuku} sui{Mudar para Sui} root{Mudar para root} adb{Mudar para ADB direto} other{Mudar para este canal}}",
   "phoneDndManualConnect": "Conectar pela porta",
   "phoneDndConnectPortLabel": "Porta de conexão",
-  "phoneDndConnectPortHint": "Na página principal das configurações de depuração sem fio, localize “Endereço IP e porta” e informe a porta após os dois-pontos. Não use a porta da tela do código de pareamento."
+  "phoneDndConnectPortHint": "Na página principal das configurações de depuração sem fio, localize “Endereço IP e porta” e informe a porta após os dois-pontos. Não use a porta da tela do código de pareamento.",
+  "phoneDndRootConnectedKept": "Root conectado. Se a conexão cair, o DSH Go solicitará novamente a autorização ao gerenciador root."
 }

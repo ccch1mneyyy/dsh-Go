@@ -3430,6 +3430,16 @@ class L10nPt extends L10n {
   String get chatUnsent => 'Não enviado';
 
   @override
+  String get chatFailedSubmission => 'Falha ao enviar · texto mantido';
+
+  @override
+  String get chatEditFailedSubmission => 'Edite e envie novamente';
+
+  @override
+  String get chatErrReasoningEffortUnsupported =>
+      'Este modelo não oferece suporte ao nível de raciocínio selecionado. Altere o nível ou escolha outro modelo.';
+
+  @override
   String get chatSteerNextStep => 'Orientar · Próxima etapa';
 
   @override
@@ -9363,6 +9373,10 @@ class L10nPt extends L10n {
       'Root conectado. Se a conexão cair, escolha esta opção novamente: o DSH Go nunca solicita root por conta própria.';
 
   @override
+  String get phoneDndRootConnectedKept =>
+      'Root conectado. Se a conexão cair, o DSH Go solicitará novamente a autorização ao gerenciador root.';
+
+  @override
   String get phoneDndRootRetry => 'Solicitar root novamente';
 
   @override
@@ -10460,6 +10474,52 @@ class L10nPt extends L10n {
   @override
   String get phonePrivilegedRootRiskBody =>
       'Seu gerenciador root (Magisk, KernelSU ou APatch) solicitará autorização. Se você permitir, o DSH Go executará seu próprio serviço em segundo plano como root e não solicitará novamente por conta própria após uma desconexão.';
+
+  @override
+  String phoneKeepTitle(String mode) {
+    String _temp0 = intl.Intl.selectLogic(mode, {
+      'shizuku': 'Manter canal Shizuku',
+      'sui': 'Manter canal Sui',
+      'root': 'Manter canal root',
+      'adb': 'Manter canal ADB direto',
+      'other': 'Manter este canal',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get phoneKeepRootDescription =>
+      'Após uma desconexão, reinicialização do app ou do celular, o DSH Go solicitará novamente a autorização ao gerenciador root. A decisão continua sendo do gerenciador.';
+
+  @override
+  String get phoneKeepSharedDescription =>
+      'Após uma desconexão, reinicialização do app ou do celular, o DSH Go se reconectará com a permissão que já possui. Ele nunca solicitará permissão.';
+
+  @override
+  String get phoneKeepAdbDescription =>
+      'Após uma desconexão, reinicialização do app ou do celular, o DSH Go se reconectará pelo Wi‑Fi usando o pareamento existente. Com a permissão de “Restaurar acessibilidade automaticamente”, também tentará ativar a depuração sem fio uma vez.';
+
+  @override
+  String get phoneKeepRestoring => 'Reconectando';
+
+  @override
+  String get phoneKeepWaiting => 'Aguardando o canal';
+
+  @override
+  String get phoneKeepWaitingService => 'Aguardando o serviço iniciar';
+
+  @override
+  String get phoneKeepWaitingPermission => 'Sem autorização. A reconexão ocorrerá quando você conceder a permissão.';
+
+  @override
+  String get phoneKeepWaitingNetwork => 'Aguardando o Wi‑Fi';
+
+  @override
+  String get phoneKeepNotPaired => 'Não pareado. Primeiro, pareie a depuração sem fio.';
+
+  @override
+  String get phoneKeepFailed =>
+      'Não foi possível reconectar. Uma nova tentativa ocorrerá quando você abrir o app ou iniciar uma tarefa.';
 
   @override
   String get phoneModeTitle => 'Como o DSH confirma as ações';
