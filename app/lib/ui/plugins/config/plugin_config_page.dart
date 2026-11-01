@@ -31,6 +31,7 @@ import '../../settings/settings_widgets.dart' show SettingsSection;
 import '../../shell/page_frame.dart';
 import '../../theme/app_icons.dart';
 import '../../theme/theme.dart';
+import '../../web/dsh_web_launcher.dart' show DshWebOpenScope;
 import '../../web/web_target.dart';
 import '../seats/seat_links.dart' show seatWebOpenerProvider;
 import 'plugin_config_entries.dart' show pluginConfigNamedByBundle, pluginConfigTitle, retryPluginList;
@@ -166,8 +167,55 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
     ].any((o) => o.package == owner.name && (o.slot != Slots.rowConfig || o.cell.endsWith('#$ns')));
   }
 
-  void _openWeb(String title, List<PluginBundle>? bundles) =>
-      ref.read(seatWebOpenerProvider)(context, ref, pluginConfigWebTarget(ns, title: title, bundles: bundles));
+  /// A save is reloading the plugin, or a live write is on its way.
+  bool _busy(PluginConfigState? state) =>
+      state != null && (state.isApplying(ns) || (state.pending[ns]?.isNotEmpty ?? false));
+
+  /// Off to DSH Web, which edits the same configuration through its own
+  /// page. Not while [_busy]: it would land on a plugin in the middle of its
+  /// reload. Held edits go first, when the person says so: kept, a later 保存
+  /// would write them over what was set there. A row of the form that names
+  /// only this entry ([target], 「在网页版编辑此项」) lands on the plugin's own
+  /// card too.
+  Future<void> _openWeb(String title, List<PluginBundle>? bundles, [DshWebTarget? target]) async {
+    final state = ref.read(pluginConfigProvider).value;
+    if (_busy(state)) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.l10n.pluginConfigSaving)));
+      return;
+    }
+    if (state != null && state.hasDraft(ns)) {
+      if (!await _confirmDiscard() || !mounted) return;
+      _controller.discard(ns);
+    }
+    final own = target == null || (target.pluginItem.length == 1 && target.pluginItem.single == ns);
+    ref.read(seatWebOpenerProvider)(
+      context,
+      ref,
+      own ? pluginConfigWebTarget(ns, title: title, bundles: bundles) : target,
+    );
+  }
+
+  /// 「放弃修改？」, as when leaving the page with held edits.
+  Future<bool> _confirmDiscard() async {
+    final l10n = context.l10n;
+    final colors = DshColors.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(l10n.botsDiscardTitle),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false), child: Text(l10n.botsKeepEditing)),
+          FilledButton(
+            key: const ValueKey('plugin-config-web-discard'),
+            style: FilledButton.styleFrom(backgroundColor: colors.danger, foregroundColor: colors.onDanger),
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(l10n.botsDiscard),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
 
   Future<void> _resetAll() async {
     final l10n = context.l10n;
@@ -269,7 +317,8 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
           title: l10n.pluginConfigOpenWeb,
           subtitle: l10n.pluginConfigOpenWebHint,
           opensExternally: true,
-          onTap: () => _openWeb(title, bundles),
+          enabled: !_busy(state),
+          onTap: () => unawaited(_openWeb(title, bundles)),
         ),
       ],
     );
@@ -378,7 +427,8 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
         isDirty: () => changes > 0 && !(job?.running ?? false),
         child: Stack(
           children: [
-            page,
+            // The form's own ways to DSH Web (「在网页版编辑此项」) go the page's way.
+            DshWebOpenScope(onOpen: (target) => unawaited(_openWeb(title, bundles, target)), child: page),
             Positioned(
               left: 0,
               right: 0,
