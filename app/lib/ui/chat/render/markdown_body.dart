@@ -57,6 +57,7 @@ class MarkdownBody extends StatefulWidget {
     this.streaming = false,
     this.selectable = true,
     this.secondary = false,
+    this.onSelectionChange,
   });
 
   final String text;
@@ -65,6 +66,12 @@ class MarkdownBody extends StatefulWidget {
 
   /// 次级排版(思考过程):小一号、次级文字色,标题也不抢眼。
   final bool secondary;
+
+  /// 选中了什么文字;选区被清空时给空字符串。
+  ///
+  /// 思考过程用它区分「点一下收起」和「点一下只是把选区清掉」:复制完文字
+  /// 随手一点不该把整段思考收走。
+  final ValueChanged<String>? onSelectionChange;
 
   /// 表格单列最宽多少;更长的单元格在列内换行,而不是把整表拉得很长。
   static const _maxColumnWidth = 260.0;
@@ -601,7 +608,12 @@ class _MarkdownBodyState extends State<MarkdownBody> {
         : withTint(TableTint.follow);
     // 表格、成块公式横向放不下时,两端淡出提示还能横滑。
     markdown = ScrollConfiguration(behavior: const EdgeFadeScrollBehavior(), child: markdown);
-    if (widget.selectable) markdown = SelectionArea(child: markdown);
+    if (widget.selectable) {
+      markdown = SelectionArea(
+        onSelectionChanged: (content) => widget.onSelectionChange?.call(content?.plainText ?? ''),
+        child: markdown,
+      );
+    }
     return markdown;
   }
 }
