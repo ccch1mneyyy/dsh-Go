@@ -28,7 +28,9 @@ fi
 result=0
 for mode in jit jitless sim; do
   options=()
-  if [[ "$mode" == sim ]]; then options+=(--platform); fi
+  if [[ "$mode" == sim ]]; then
+    options+=(--platform --import "$script_dir/../net/dsh-preload.mjs")
+  fi
   "$node_bin" "$script_dir/round.mjs" --prefix "$prefix" --out "$case_root/$mode" --mode "$mode" "${options[@]}" "$@" || result=1
 done
 exit "$result"

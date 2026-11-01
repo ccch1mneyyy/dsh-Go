@@ -1,10 +1,10 @@
 import http from 'node:http';
 import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -14,7 +14,9 @@ const { values } = parseArgs({ options: {
   prefix: { type: 'string' }, out: { type: 'string' }, mode: { type: 'string', default: 'jit' },
   platform: { type: 'boolean', default: false },
   patch: { type: 'string', multiple: true, default: [] },
+  'sim-patch': { type: 'string', multiple: true, default: [] },
   import: { type: 'string', multiple: true, default: [] },
+  'allow-addon': { type: 'string', multiple: true, default: [] },
   'expose-internals': { type: 'boolean', default: false },
 } });
 if (!values.prefix || !values.out || !['jit', 'jitless', 'sim'].includes(values.mode)) {
@@ -22,6 +24,17 @@ if (!values.prefix || !values.out || !['jit', 'jitless', 'sim'].includes(values.
 }
 const prefix = resolve(values.prefix);
 const out = resolve(values.out);
+const allowedAddons = [];
+for (const input of values['allow-addon']) {
+  if (!isAbsolute(input)) throw new TypeError('--allow-addon requires an absolute .node file path');
+  const path = await realpath(input);
+  if (!path.endsWith('.node') || !(await stat(path)).isFile()) {
+    throw new TypeError('--allow-addon requires an existing regular .node file');
+  }
+  if (!allowedAddons.some((entry) => entry.path === path)) {
+    allowedAddons.push({ path, sha256: createHash('sha256').update(await readFile(path)).digest('hex') });
+  }
+}
 await mkdir(out, { recursive: false }); // A measurement never silently reuses another case's home.
 const workspace = join(out, 'workspace');
 await mkdir(workspace);
@@ -67,16 +80,34 @@ const flags = [];
 if (values.mode !== 'jit') flags.push('--jitless');
 if (values['expose-internals']) flags.push('--expose-internals');
 if (values.mode === 'sim') flags.push('--import', fileURLToPath(new URL('./preload.mjs', import.meta.url)));
+flags.push('--import', fileURLToPath(new URL('./observe-loader.mjs', import.meta.url)));
 for (const name of values.import) flags.push('--import', resolve(name));
 const env = {
   PATH: process.env.PATH, LANG: 'C.UTF-8', DSH_HOME: join(out, 'home'),
   DSH_OHOS_TEST_KEY: 'ohos-local-fixture-only', DSH_PERMISSION_MODE: 'workspace-write',
+  DSH_OHOS_MEASURE_LOADER: '1',
 };
+if (values.mode === 'sim') {
+  env.DSH_GO_OHOS_SIM_ADDONS = JSON.stringify(allowedAddons.map((entry) => entry.path));
+  // The exact allowlist must not become a copied native binary in a tmp cache.
+  env.NARB_DISABLE_NATIVE_CACHE = '1';
+}
 if (values.platform) env.DSH_GO_OHOS_SIM_PLATFORM = 'openharmony';
 const args = [...flags, join(prefix, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), 'web'];
-for (const name of [...values.patch, overlay]) args.push('--patch', resolve(name));
+const profilePatches = [...values.patch, ...(values.mode === 'sim' ? values['sim-patch'] : [])];
+for (const name of [...profilePatches, overlay]) args.push('--patch', resolve(name));
 args.push('--host', '127.0.0.1', '--port', '0', '--no-open');
 const report = { mode: values.mode, platformOverride: values.platform, node: process.version, status: 'BLOCKED', stage: 'startup', approvals: 0, events: [], modelRequests: model.requests };
+report.loader = {
+  configured: { exposeInternals: values['expose-internals'],
+    strictAddonAllowlistApplied: values.mode === 'sim', allowedAddons,
+    nativeCacheDisabled: env.NARB_DISABLE_NATIVE_CACHE === '1',
+    imports: values.import.map((name) => resolve(name)) },
+  observedRoute: 'not-observed', observations: [],
+  host: { platform: process.platform, arch: process.arch },
+  scope: 'Host-side measurement; an overridden platform is not OpenHarmony target ABI or HAP validation',
+};
+report.profilePatches = profilePatches.map((name) => resolve(name));
 const start = performance.now();
 const engine = spawn(process.execPath, args, { env, cwd: workspace, stdio: ['ignore', 'pipe', 'pipe'] });
 const engineClosed = new Promise((resolve) => engine.once('close', resolve));
@@ -191,6 +222,16 @@ try {
   }
   await engineClosed; // Includes spawn failure and drains stdout/stderr before writing evidence.
   await model.close();
+  for (const line of engineLog.split('\n')) {
+    if (!line.startsWith('[dsh-ohos-loader] ')) continue;
+    try { report.loader.observations.push(JSON.parse(line.slice('[dsh-ohos-loader] '.length))); }
+    catch { report.loader.observations.push({ kind: 'malformed-observation' }); }
+  }
+  const nativeLoader = report.loader.observations.some((row) => row.kind === 'native-load' &&
+    row.binding?.product === 'require-builtin' && row.binding?.backend === 'napi');
+  report.loader.observedRoute = nativeLoader
+    ? (values['expose-internals'] ? 'native-addon-with-exposed-internals' : 'native-addon')
+    : (values['expose-internals'] ? 'expose-internals-configured-native-not-observed' : 'not-observed');
   if (launchToken) engineLog = engineLog.replaceAll(launchToken, '<launch-token>');
   if (cookie) engineLog = engineLog.replaceAll(cookie, '<session-cookie>');
   engineLog = engineLog.replace(/([?&]token=)[^\s\x1b]+/gu, '$1<redacted>');
