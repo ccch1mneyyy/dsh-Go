@@ -19,6 +19,7 @@ import '../../state/engine_control.dart';
 import '../../state/hosts_state.dart';
 import '../../state/drawer_view_state.dart';
 import '../../state/session_attention_state.dart';
+import '../../state/session_deletion_state.dart';
 import '../../state/sessions_state.dart';
 import '../../state/read_list_identity.dart';
 import '../../state/workspaces_state.dart';
@@ -48,6 +49,7 @@ import 'drawer/archive_notice.dart';
 import 'drawer/drawer_filter_bar.dart';
 import 'drawer/drawer_list.dart';
 import 'drawer/selection_bars.dart';
+import 'drawer/session_deletion.dart';
 import 'session_search_page.dart';
 
 export '../../state/drawer_view_state.dart' show SessionDay, sessionDayOf;
@@ -256,6 +258,11 @@ class SessionsDrawer extends ConsumerWidget {
                                 onArchive: () {
                                   if (ref.read(drawerScopeProvider)?.readOnly == false) {
                                     archiveSelectionFlow(context, ref);
+                                  }
+                                },
+                                onDelete: () {
+                                  if (ref.read(drawerScopeProvider)?.readOnly == false) {
+                                    unawaited(deleteSelectionFlow(context, ref));
                                   }
                                 },
                               )
@@ -472,6 +479,21 @@ class _SessionList extends ConsumerWidget {
   }
 
   Future<void> _showActions(BuildContext context, WidgetRef ref, SessionSummary s) async {
+    // Consent belongs to the host/generation present before the action sheet.
+    final owner = captureSessionDeletionOwner(ref);
+    try {
+      await _showOwnedActions(context, ref, s, owner);
+    } finally {
+      owner?.close();
+    }
+  }
+
+  Future<void> _showOwnedActions(
+    BuildContext context,
+    WidgetRef ref,
+    SessionSummary s,
+    SessionDeletionOwner? deletionOwner,
+  ) async {
     final title = sessionTitle(s);
     final workspaces = ref.read(workspacesProvider);
     final pinned = workspaces.pinnedSessionIds.contains(s.sessionId);
@@ -523,6 +545,13 @@ class _SessionList extends ConsumerWidget {
                       subtitle: Text(context.l10n.shellArchiveStopsTurn),
                       onTap: () => Navigator.pop(sheet, 'archive'),
                     ),
+                    SessionDeleteTile(
+                      ids: [s.sessionId],
+                      owner: deletionOwner,
+                      onTap: () {
+                        if (deletionOwner?.isCurrent(ref) == true) Navigator.pop(sheet, 'delete');
+                      },
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -557,6 +586,10 @@ class _SessionList extends ConsumerWidget {
           await ref.read(sessionsProvider.notifier).rename(s.sessionId, next);
         } catch (_) {
           messenger?.showSnackBar(SnackBar(content: Text(appL10n.shellRenameFailed)));
+        }
+      case 'delete':
+        if (deletionOwner != null && deletionOwner.isCurrent(ref)) {
+          await deleteSessionsFlow(context, ref, [s.sessionId], owner: deletionOwner);
         }
       case 'archive':
         unawaited(

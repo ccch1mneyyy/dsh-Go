@@ -346,6 +346,13 @@ class DrawerViewController extends Notifier<DrawerView> {
 
   Future<void> setSort(DrawerSort sort) => _update((view) => view.copyWith(sort: sort));
 
+  /// Drops only confirmed deleted members, including the last session in a
+  /// folder; unlike a guessed empty inventory this is authoritative.
+  Future<void> forgetSessions(Set<String> ids, {required bool Function() isCurrent}) => _update(
+    (view) => view.copyWith(folders: [for (final folder in view.folders) _without(folder, ids)]),
+    isCurrent: isCurrent,
+  );
+
   /// Drops members the host no longer has ([known]: every stored
   /// conversation, archived ones included, so an unarchive finds its folder).
   Future<void> forgetMissing(Set<String> known) async {

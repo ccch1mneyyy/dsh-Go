@@ -13339,6 +13339,81 @@ class L10nZh extends L10n {
   String get searchKwUsageStats => '统计,使用统计,匿名,隐私,数据,改进,遥测,分析';
 
   @override
+  String get shellDeletePermanently => '永久删除';
+
+  @override
+  String get shellDeleteNoUndo => '无法撤销，与归档不同';
+
+  @override
+  String get shellDeleteChecking => '正在检查此主机是否支持永久删除…';
+
+  @override
+  String get shellDeleteUnsupported => '此主机不支持安全永久删除，仍可使用归档。';
+
+  @override
+  String get shellDeleteUnavailable => '安全永久删除暂不可用，请重连或更新此主机；不会改为归档。';
+
+  @override
+  String shellDeleteChatConfirmation(String title) {
+    return '永久删除「$title」？';
+  }
+
+  @override
+  String shellDeleteChatsConfirmation(int count) {
+    return '永久删除 $count 个对话？';
+  }
+
+  @override
+  String get shellDeleteWarning =>
+      '将从此主机永久删除所选对话记录，无法撤销，与归档不同。\n\n工作目录、生成的文件、分叉对话、共享附件和已发布的云端分享都会保留。云端分享需另行删除。主机会拒绝删除仍有任务或关联工作的对话。';
+
+  @override
+  String get shellDeleteOwnerChanged => '主机或连接已变化。请取消后重新发起删除，原确认不再有效。';
+
+  @override
+  String get shellDeletingChats => '正在删除对话…';
+
+  @override
+  String shellChatsDeleted(int count) {
+    return '已永久删除 $count 个对话';
+  }
+
+  @override
+  String shellDeletePartial(int deleted, int failed) {
+    return '已删除 $deleted 个，失败 $failed 个';
+  }
+
+  @override
+  String get shellDeleteRunning => '请先停止运行中的工作；主机还会检查活动任务和定时任务。';
+
+  @override
+  String get shellDeleteRelated => '此对话有关联的子代理工作，主机为保护它们拒绝删除。';
+
+  @override
+  String get shellDeleteWriterHeld => '其他进程正在使用此对话，请先在该进程中关闭后重试。';
+
+  @override
+  String get shellDeleteNotFound => '此主机上已没有这个对话，请刷新列表。';
+
+  @override
+  String get shellDeleteConnectionLost => '连接已断开，删除结果未确认，请刷新对话列表后再操作。';
+
+  @override
+  String get shellDeleteArchivePending => '此对话正在等待归档，请先完成或撤销归档。';
+
+  @override
+  String get shellDeleteInventoryChanged => '对话列表已变化，请刷新后重新选择。';
+
+  @override
+  String get shellDeleteProtocolError => '删除结果未确认，请刷新对话列表后再操作。';
+
+  @override
+  String get shellDeleteNotAttempted => '未执行，请核对对话列表后重试。';
+
+  @override
+  String get shellDeleteFailed => '主机无法确认删除结果，请刷新后再决定是否重试。';
+
+  @override
   String get setupAppearanceTitle => '选择外观';
 
   @override
