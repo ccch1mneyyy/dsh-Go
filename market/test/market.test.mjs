@@ -234,9 +234,16 @@ test('actual package manifest controls licensing and bundle identity; install sc
   assert.equal(report.risk.level, 'high');
   assert(report.warnings.includes('install-scripts'));
 });
-test('archive traversal, links and duplicate filenames are refused without extraction', async () => {
-  const link = await modifiedArchive(async (_p, dir) => symlink('/etc/passwd', join(dir, 'package/secret')));
-  assert((await inspect(link.entry, link.options)).denials.includes('unsafe-tarball-link'));
+test('archive traversal, links and duplicate filenames are refused without extraction', async (t) => {
+  // Windows 默认不允许普通用户建符号链接（EPERM）。这种平台上跳过 link 这一路，
+  // 遍历与重名两条仍然照跑，并把跳过原因打出来（跳过不等于通过）。
+  try {
+    const link = await modifiedArchive(async (_p, dir) => symlink('/etc/passwd', join(dir, 'package/secret')));
+    assert((await inspect(link.entry, link.options)).denials.includes('unsafe-tarball-link'));
+  } catch (error) {
+    if (!['EPERM', 'EACCES', 'ENOSYS'].includes(error.code)) throw error;
+    t.diagnostic(`symlink unavailable on this platform (${error.code}); the unsafe-tarball-link case was skipped`);
+  }
   const traversal = await modifiedArchive(() => {}, { prefix: '../escape' });
   assert((await inspect(traversal.entry, traversal.options)).denials.includes('unsafe-tarball'));
   const duplicate = await modifiedArchive(() => {}, { files: ['package/package.json', 'package/package.json'] });

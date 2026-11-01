@@ -52,8 +52,17 @@ test('checker does not parse a sibling-prefix path or a symlink rejected by the 
   const sibling = join(f.root, 'plugin-outside')
   mkdirSync(sibling)
   writeFileSync(join(sibling, 'view.json'), '{"type":"not-a-component"}')
-  symlinkSync(join(sibling, 'view.json'), join(f.dir, 'link.json'))
-  for (const path of ['../plugin-outside/view.json', 'link.json']) {
+  // Windows 默认不允许普通用户建符号链接（EPERM）。这种平台上跳过 link.json 这一路，
+  // 但仍保留 ../ 逃逸用例，并把跳过原因作为诊断打出来（跳过不等于通过）。
+  const paths = ['../plugin-outside/view.json']
+  try {
+    symlinkSync(join(sibling, 'view.json'), join(f.dir, 'link.json'))
+    paths.push('link.json')
+  } catch (error) {
+    if (!['EPERM', 'EACCES', 'ENOSYS'].includes(error.code)) throw error
+    t.diagnostic(`symlink unavailable on this platform (${error.code}); the link.json case was skipped`)
+  }
+  for (const path of paths) {
     f.write(pkg([{ id: 'outside', title: 'Outside', placement: ['features'], view: path }]))
     const r = await checkPlugin(f.dir)
     assert.ok(r.manifest.issues.some(i => i.code === 'view-file'))
