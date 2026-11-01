@@ -12,7 +12,7 @@ class DnsConfigLogTest {
         val text = DnsConfigLog().line(unchanged, DnsConfigSource.START, 1700000000000L, 1234L)!!
         assertTrue(text.contains("atMs=1700000000000 elapsedMs=1234 source=start"))
         assertTrue(text.contains("result=unchanged requested=ns1=1.1.1.1,ns2=::1"))
-        assertTrue(text.contains("options=\"timeout:2 attempts:2\""))
+        assertTrue(text.contains("options=\"timeout:2 attempts:2 no-aaaa\""))
         assertFalse(text.contains("stage="))
         assertFalse(text.contains("error="))
     }
