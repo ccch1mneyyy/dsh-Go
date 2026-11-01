@@ -86,16 +86,9 @@ plan() { printf '  [dry-run] %s\n' "$*"; }
 
 [[ $VERIFY == 1 || $LATEST == 0 ]] || die "--skip-verify needs --no-latest: nothing goes live without being downloaded back"
 
+source scripts/cloudflare.sh
 # The Worker's own settings, so the script and the page agree on the China route.
-wrangler_var() {
-  python3 - "$1" <<'PY'
-import json, re, sys
-text = open("wrangler.jsonc", encoding="utf-8").read()
-text = re.sub(r'"(?:\\.|[^"\\])*"|//[^\n]*|/\*.*?\*/', lambda m: m.group(0) if m.group(0).startswith('"') else "", text, flags=re.S)
-text = re.sub(r",(\s*[}\]])", r"\1", text)
-print(json.loads(text).get("vars", {}).get(sys.argv[1], ""))
-PY
-}
+wrangler_var() { wrangler_json | jq -r --arg k "$1" '.vars[$k] // ""'; }
 
 ORIGIN=${BETA_ORIGIN:-https://go.dshtui.com}
 BUCKET=dshgo-share
@@ -110,13 +103,9 @@ CN_BASE_URL=${CN_BASE_URL-$(wrangler_var CN_BASE_URL)}
 # ── Preflight: every missing setting at once ─────────────────────────────
 problems=()
 readable() { [[ -r "${2:-}" && -s "${2:-}" ]] || problems+=("$1 must name a readable, non-empty file"); }
-ACCOUNT=${CF_ACCOUNT_ID:-}
-ACCOUNT_FILE=${CF_ACCOUNT_ID_FILE:-$HOME/keys/dshgo-cloudflare-account-id}
-[[ -n "$ACCOUNT" || ! -r "$ACCOUNT_FILE" ]] || ACCOUNT=$(tr -d '[:space:]' <"$ACCOUNT_FILE")
-[[ -n "$ACCOUNT" ]] || ACCOUNT=$(sed -n 's/^ *"account_id": *"\([0-9a-f]*\)".*/\1/p' wrangler.jsonc)
 if [[ -z "${R2_LOCAL_PERSIST:-}" ]]; then
   readable CF_TOKEN_FILE "${CF_TOKEN_FILE:-}"
-  [[ "$ACCOUNT" =~ ^[0-9a-f]{32}$ && "$ACCOUNT" != 00000000000000000000000000000000 ]] ||
+  real_id "$ACCOUNT" ||
     problems+=("no Cloudflare account id: set CF_ACCOUNT_ID or write it to $ACCOUNT_FILE (wrangler.jsonc has only a placeholder in the public tree)")
 fi
 if [[ $VERIFY == 1 ]]; then

@@ -2,9 +2,11 @@
 // BETA_SECRET and USAGE_SECRET are Worker secrets (provision.sh, beta-keys.sh
 // init, docs/release.md「统计」), and so is the optional GITHUB_TOKEN (the home
 // page's star count, src/github.ts); the API token is passed in by the scripts.
-// Forks: put your own Cloudflare account id, route and KV namespace id below (the
-// public tree carries zero placeholders); provision.sh creates the bucket and the
-// KV namespace and writes the KV id here.
+// The account id and the KV namespace id below are placeholders in the public
+// tree: the scripts take the real ones from the environment or ~/keys and run
+// wrangler with a copy of this file that has them (scripts/cloudflare.sh);
+// provision.sh apply creates the bucket and the KV namespace. Forks: your own
+// ids there, and your own route.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dshgo-share",
@@ -29,7 +31,7 @@
   },
   // Lifecycle rules on this bucket: 7d/ → 7 days, 30d/ → 30 days (provision.sh).
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "dshgo-share" }],
-  // Hourly upload counters (src/limits.ts). provision.sh fills in the id.
+  // Hourly upload counters (src/limits.ts). The id: scripts/cloudflare.sh.
   "kv_namespaces": [{ "binding": "QUOTA", "id": "00000000000000000000000000000000" }],
   // Wrong beta access keys, one object per client (src/beta-guard.ts); the
   // day's random salt for device codes, one object (src/stats.ts).
