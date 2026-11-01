@@ -4,27 +4,23 @@ import java.io.Closeable
 import java.io.IOException
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
-import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.thread
 
-/** Owns private pipes. Neither stderr contents nor arbitrary process errors escape this class. */
+/** A root child on private pipes. Only fixed reason codes leave it, never what su printed. */
 internal class RootProcess private constructor(private val process: Process) : Closeable {
     private val closed = AtomicBoolean(false)
-    private val io = Executors.newSingleThreadExecutor { task ->
-        Thread(task, "dsh-root-pipe").apply { isDaemon = true }
-    }
+    private val io = Executors.newSingleThreadExecutor { task -> Thread(task, "dsh-root-pipe").apply { isDaemon = true } }
     private var synced = false
 
     init {
-        Thread({
-            try {
-                val buffer = ByteArray(4096)
-                while (process.errorStream.read(buffer) >= 0) { /* discard, including authorization output */ }
-            } catch (_: Exception) { }
-        }, "dsh-root-stderr").apply { isDaemon = true; start() }
+        // su and the manager write here too (authorization prompts included): drain it so the
+        // pipe never fills, keep nothing.
+        thread(isDaemon = true, name = "dsh-root-stderr") {
+            runCatching { val buffer = ByteArray(4096); while (process.errorStream.read(buffer) >= 0) { } }
+        }
     }
 
     fun alive(): Boolean = !closed.get() && process.isAlive
@@ -38,13 +34,14 @@ internal class RootProcess private constructor(private val process: Process) : C
         Frames.read(process.inputStream) ?: throw IOException("rootDisconnected")
     }
 
-    /** For the fixed, short-lived pm grant command; drain stdout without retaining it. */
+    /** The fixed pm grant: stdout drained unread. */
     fun exitCode(timeoutMs: Long): Int = bounded(timeoutMs) {
         val buffer = ByteArray(4096)
         while (process.inputStream.read(buffer) >= 0) { }
         process.waitFor()
     }
 
+    // The deadline is the caller's: a pending authorization blocks the read until the person answers.
     private fun <T> bounded(timeoutMs: Long, action: () -> T): T {
         if (closed.get()) throw IOException("rootDisconnected")
         val task = io.submit(Callable { action() })
@@ -62,41 +59,18 @@ internal class RootProcess private constructor(private val process: Process) : C
     override fun close() {
         if (!closed.compareAndSet(false, true)) return
         io.shutdownNow()
-        // A blocked pipe close may wait on another reader. Cleanup is a daemon, so the
-        // caller's deadline never waits on it. Killing su does not revoke manager consent
-        // or promise to kill a daemon's descendants; stdin EOF also ends our server loop.
-        Thread({
+        // Closing a pipe another thread reads can block, so not on the caller's thread. Our
+        // server also exits on stdin EOF; killing su revokes nothing at the manager.
+        thread(isDaemon = true, name = "dsh-root-close") {
             runCatching { process.destroyForcibly() }
             runCatching { process.outputStream.close() }
             runCatching { process.inputStream.close() }
             runCatching { process.errorStream.close() }
-        }, "dsh-root-close").apply { isDaemon = true; start() }
+        }
     }
 
     companion object {
-        /** Only called by an explicit start/grant action, never a constructor or status read. */
-        fun launch(command: List<String>, timeoutMs: Long,
-                   spawn: (List<String>) -> Process = { ProcessBuilder(it).start() }): RootProcess {
-            val cancelled = AtomicBoolean(false)
-            val result = AtomicReference<RootProcess?>()
-            val task = FutureTask {
-                val channel = RootProcess(spawn(command))
-                result.set(channel)
-                if (cancelled.get()) { channel.close(); throw IOException("rootCancelled") }
-                channel
-            }
-            Thread(task, "dsh-root-launch").apply { isDaemon = true; start() }
-            try {
-                return task.get(timeoutMs.coerceAtLeast(1), TimeUnit.MILLISECONDS)
-            } catch (error: Exception) {
-                cancelled.set(true); task.cancel(true); result.get()?.close()
-                if (error is InterruptedException) Thread.currentThread().interrupt()
-                throw IOException(when (error) {
-                    is TimeoutException -> "rootTimeout"
-                    is InterruptedException -> "rootCancelled"
-                    else -> "rootStartFailed"
-                })
-            }
-        }
+        fun launch(command: List<String>, spawn: (List<String>) -> Process = { ProcessBuilder(it).start() }): RootProcess =
+            try { RootProcess(spawn(command)) } catch (_: Exception) { throw IOException("rootStartFailed") }
     }
 }

@@ -38,21 +38,16 @@ object SecureSettingsGrant {
 
     fun command(packageName: String): String = "adb shell pm grant $packageName $PERMISSION"
 
-    fun privilegedPath(
-        granted: Boolean,
-        shizuku: ShizukuStatus,
-        adb: AdbStatus,
-        rootSelected: Boolean,
-        rootConnected: Boolean,
-    ): String {
-        if (granted) return GRANTED
-        // An explicit root choice must not silently grant through another provider after death.
-        if (rootSelected) return if (rootConnected) ROOT else SETUP
-        val legacy = path(false, shizuku, adb)
-        return if (shizuku.provider == ShizukuStatus.SUI) when (legacy) {
-            SHIZUKU -> SUI
-            SHIZUKU_PERMISSION -> SUI_PERMISSION
+    /** `background.privileged.grantPath`: a chosen root never falls back to another provider. */
+    fun privilegedPath(granted: Boolean, shizuku: ShizukuStatus, adb: AdbStatus, rootSelected: Boolean, rootConnected: Boolean): String {
+        val legacy = path(granted, shizuku, adb)
+        return when {
+            granted -> GRANTED
+            rootSelected -> if (rootConnected) ROOT else SETUP
+            shizuku.provider != ShizukuStatus.SUI -> legacy
+            legacy == SHIZUKU -> SUI
+            legacy == SHIZUKU_PERMISSION -> SUI_PERMISSION
             else -> legacy
-        } else legacy
+        }
     }
 }

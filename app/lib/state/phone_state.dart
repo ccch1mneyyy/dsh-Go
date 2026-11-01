@@ -205,32 +205,25 @@ class PhoneController extends Notifier<PhoneState> {
 
   Future<PhoneResult> setBackgroundMode(PhoneBackgroundMode mode) => _thenRefresh(_channel.setBackgroundMode(mode));
 
-  Future<PhoneResult> setPrivilegedMode(PhonePrivilegedMode mode) {
-    if (!state.status.background.supportedModes.contains(mode)) {
-      return Future.value(PhoneResult(false, appL10n.phonePrivilegedUpgrade));
-    }
-    return _thenRefresh(_channel.setPrivilegedMode(mode));
-  }
+  /// Refused before any channel call when the native side doesn't offer [mode].
+  Future<PhoneResult> setPrivilegedMode(PhonePrivilegedMode mode) =>
+      _ifSupported(mode, () => _channel.setPrivilegedMode(mode));
 
-  /// Only an explicit user tap calls this; refresh/build/status events never prepare root.
-  Future<PhoneResult> prepareRoot() {
-    if (!state.status.background.supportedModes.contains(PhonePrivilegedMode.root)) {
-      return Future.value(PhoneResult(false, appL10n.phonePrivilegedUpgrade));
-    }
-    return _thenRefresh(_channel.prepareRoot());
-  }
+  /// Only an explicit tap: refresh, build and status events never prepare root.
+  Future<PhoneResult> prepareRoot() => _ifSupported(PhonePrivilegedMode.root, _channel.prepareRoot);
 
+  Future<PhoneResult> _ifSupported(PhonePrivilegedMode mode, Future<PhoneResult> Function() action) =>
+      state.status.background.supportedModes.contains(mode)
+      ? _thenRefresh(action())
+      : Future.value(PhoneResult(false, appL10n.phonePrivilegedUpgrade));
+
+  /// The old Shizuku choice asks whichever provider serves the shared API now, Sui included.
   Future<bool> requestPrivilegedPermission(PhonePrivilegedMode mode) {
+    final background = state.status.background;
     if (mode != PhonePrivilegedMode.shizuku && mode != PhonePrivilegedMode.sui) return Future.value(false);
-    if (!state.status.background.supportedModes.contains(mode)) return Future.value(false);
-    // The old Shizuku choice is an alias for the current shared API, including Sui.
-    final provider = state.status.background.shizuku.provider;
-    if (mode == PhonePrivilegedMode.shizuku && provider == null) return requestShizukuPermission();
-    return _thenRefresh(
-      _channel.requestPrivilegedPermission(
-        mode == PhonePrivilegedMode.shizuku && provider == 'sui' ? 'sui' : mode.name,
-      ),
-    );
+    if (!background.supportedModes.contains(mode)) return Future.value(false);
+    final provider = mode == PhonePrivilegedMode.sui ? 'sui' : background.shizuku.provider;
+    return provider == null ? requestShizukuPermission() : _thenRefresh(_channel.requestPrivilegedPermission(provider));
   }
 
   Future<bool> requestShizukuPermission() => _thenRefresh(_channel.requestShizukuPermission());

@@ -108,9 +108,9 @@ class PhonePrivilegedStatus {
     const grantPaths = {'granted', 'shizuku', 'shizukuPermission', 'sui', 'suiPermission', 'root', 'adb', 'setup'};
     return PhonePrivilegedStatus(
       mode: parsed ?? PhonePrivilegedMode.off,
-      ready: parsed != null && parsed != PhonePrivilegedMode.off && supported.contains(parsed) && _flag(m['ready']),
+      ready: supported.contains(parsed) && _flag(m['ready']),
       reason: _text(m['reason']),
-      supportedModes: List.unmodifiable(supported.toSet()),
+      supportedModes: supported.toSet().toList(),
       recommendedMode: supported.contains(recommended) ? recommended! : PhonePrivilegedMode.off,
       grantPath: grantPaths.contains(m['grantPath']) ? m['grantPath'] as String : 'setup',
       rootSelected: _flag(m['rootSelected']),

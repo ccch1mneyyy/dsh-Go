@@ -1,6 +1,5 @@
-// Chinese plugin copy, audited against pinned published packages.
-// Sources and scope: deliverables/B2/SOURCES.md in the wave12 review package.
-// No defaults, aliases, units, or permissions are changed by this table.
+// Chinese titles and enum labels for popular plugins, checked against the published version
+// noted on each namespace. Copy only: no defaults, aliases or units.
 import 'schema_fields.dart';
 
 // l10n:keep-begin Chinese-only data; namespace_copy excludes this table in English.

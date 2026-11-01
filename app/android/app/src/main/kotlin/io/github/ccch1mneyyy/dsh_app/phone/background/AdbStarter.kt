@@ -102,7 +102,8 @@ class AdbStarter(private val context: Context, private val onChanged: () -> Unit
                 manager.autoConnect(context, TimeUnit.SECONDS.toMillis(8))
             }
             if (!connected && !manager.isConnected) return null
-            val stream = manager.openStream("shell:" + appProcessCommand())
+            val info = context.applicationInfo
+            val stream = manager.openStream("shell:" + PrivilegedCommands.appProcess(info.sourceDir, info.splitSourceDirs?.toList().orEmpty()))
             val value = AdbChannel(stream)
             val probe = value.execute(android.os.Bundle().apply { putString(Proto.OP, Proto.OP_PROBE) })
             if (probe.getBoolean(Proto.OK) && probe.getString("revision") == Proto.REVISION) {
@@ -117,11 +118,6 @@ class AdbStarter(private val context: Context, private val onChanged: () -> Unit
         runCatching { manager.disconnect() }
         stopMdns()
         onChanged()
-    }
-
-    private fun appProcessCommand(): String {
-        val info = context.applicationInfo
-        return PrivilegedCommands.appProcess(info.sourceDir, info.splitSourceDirs?.toList().orEmpty())
     }
 
     private fun stopMdns() {

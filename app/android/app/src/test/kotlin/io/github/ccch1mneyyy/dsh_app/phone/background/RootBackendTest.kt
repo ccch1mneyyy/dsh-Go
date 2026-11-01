@@ -131,23 +131,8 @@ class RootBackendTest {
         }
     }
     @Test fun missingExecutableBecomesFixedReasonOnly() {
-        try { RootProcess.launch(listOf("/synthetic/does-not-exist"), 1000); fail() }
+        try { RootProcess.launch(listOf("/synthetic/does-not-exist")); fail() }
         catch (error: IOException) { assertEquals("rootStartFailed", error.message); assertNull(error.cause) }
-    }
-    @Test fun startupDeadlineClosesLateSpawnedProcess() {
-        val captured = AtomicReference<Process>()
-        try {
-            RootProcess.launch(childCommand("hang"), 30) { command ->
-                // Model a native spawn that completes despite cancellation, using a real JVM child.
-                val until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(150)
-                while (System.nanoTime() < until) { try { Thread.sleep(10) } catch (_: InterruptedException) { } }
-                ProcessBuilder(command).start().also { captured.set(it) }
-            }
-            fail()
-        } catch (error: IOException) { assertEquals("rootTimeout", error.message) }
-        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)
-        while (captured.get() == null && System.nanoTime() < deadline) Thread.sleep(10)
-        assertNotNull(captured.get()); awaitExit(captured.get())
     }
     @Test fun explicitCloseUnblocksPendingReadWithoutWaitingForDeadline() {
         val captured = AtomicReference<Process>(); val channel = launch("hang", captured)
@@ -168,7 +153,7 @@ class RootBackendTest {
         awaitExit(captured.get())
     }
     private fun launch(mode: String, captured: AtomicReference<Process> = AtomicReference()): RootProcess =
-        RootProcess.launch(childCommand(mode), 3000) { ProcessBuilder(it).start().also(captured::set) }
+        RootProcess.launch(childCommand(mode)) { ProcessBuilder(it).start().also(captured::set) }
     private fun childCommand(mode: String): List<String> = listOf(
         File(System.getProperty("java.home"), "bin/java").path, "-cp", System.getProperty("java.class.path"),
         RootProcessChild::class.java.name, mode,

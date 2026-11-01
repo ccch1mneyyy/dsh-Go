@@ -6,9 +6,11 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Process
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 
-/** Call start/grant only from an explicit user action on the existing IO worker. */
+/**
+ * su runs only from [start] and [grantSecureSettings], both behind an explicit user action on the
+ * plugin's IO worker. Tasks only [connect] to what an earlier start left alive.
+ */
 class RootStarter(private val context: Context, private val onChanged: () -> Unit) {
     private val guard = Any()
     private val startLock = Any()
@@ -16,91 +18,68 @@ class RootStarter(private val context: Context, private val onChanged: () -> Uni
     private var channel: RootChannel? = null
     private var pending: RootProcess? = null
 
-    /** No probing, execution, authorization or reconnection. */
     fun status(): RootStatus = synchronized(guard) {
         discardDead()
         state.status()
     }
 
-    /** Tasks may reuse a previously prepared channel, but can never initiate su. */
     fun connect(): PrivilegedChannel? = synchronized(guard) {
         discardDead()
         channel
     }
 
-    /** The only long-lived root launch entry. A lost connection needs another user action. */
-    fun start(mayStart: () -> Boolean = { true }): PrivilegedChannel? = synchronized(startLock) start@ {
-        // The caller's gate can be invalidated on the UI thread. Acceptance and ticket
-        // creation must happen under the same guard used by disconnect, after any queue wait.
-        // mayStart must be a quick state read, never a blocking authorization operation.
+    /**
+     * [mayStart] (a quick read of the caller's UI ticket) is checked under the guard [disconnect]
+     * takes, so a cancel either comes first and nothing starts, or ends this start's ticket.
+     */
+    fun start(mayStart: () -> Boolean = { true }): PrivilegedChannel? = synchronized(startLock) start@{
         val ticket = synchronized(guard) {
             discardDead()
             channel?.let { return@start if (mayStart()) it else null }
             state.beginIfAllowed(mayStart) ?: return@start null
         }
         onChanged()
-        val stillAccepted = synchronized(guard) {
-            if (state.current(ticket) && mayStart()) true
-            else { if (state.current(ticket)) state.disconnect(); false }
+        val info = context.applicationInfo
+        val process = try {
+            RootProcess.launch(RootCommands.appProcess(info.sourceDir, info.splitSourceDirs?.toList().orEmpty()))
+        } catch (error: Exception) {
+            synchronized(guard) { state.finish(ticket, reason(error)) }
+            onChanged()
+            return@start null
         }
-        if (!stillAccepted) return@start null
-        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(START_TIMEOUT_MS)
-        var process: RootProcess? = null
-        var failure: String? = null
-        try {
-            val info = context.applicationInfo
-            process = RootProcess.launch(
-                RootCommands.appProcess(info.sourceDir, info.splitSourceDirs?.toList().orEmpty()),
-                remaining(deadline),
-            )
-            val accepted = synchronized(guard) {
-                if (!state.current(ticket) || !mayStart()) false else { pending = process; true }
-            }
-            if (!accepted) {
-                process.close()
-                synchronized(guard) { if (state.current(ticket)) state.disconnect() }
-                return@start null
-            }
+        // Registered, disconnect() closes it mid-authorization; already cancelled, it closes now.
+        synchronized(guard) { if (state.current(ticket)) pending = process else process.close() }
+        val failure = try {
             val probe = Bundles.unmarshal(process.exchange(Bundles.marshal(Bundle().apply {
                 putString(Proto.OP, Proto.OP_PROBE)
-            }), remaining(deadline)))
-            failure = when {
+            }), START_TIMEOUT_MS))
+            when {
                 !probe.getBoolean(Proto.OK) -> "rootStartFailed"
                 !RootProbe.accepted(true, probe.getInt(Proto.UID, -1), probe.getString("revision"), Proto.REVISION) -> "rootIdentityMismatch"
                 else -> null
             }
         } catch (error: Exception) {
-            failure = reason(error)
+            reason(error)
         }
         val result = synchronized(guard) {
-            if (pending === process) pending = null
-            if (!mayStart()) {
-                if (state.current(ticket)) state.disconnect()
-                null
-            } else if (state.finish(ticket, failure)) {
-                if (failure == null && process != null) {
-                    RootChannel(process) { failed -> channelFailed(process, failed) }.also { channel = it }
-                } else null
+            pending = null
+            if (state.finish(ticket, failure) && failure == null) {
+                RootChannel(process) { channelFailed(process, it) }.also { channel = it }
             } else null
         }
-        if (result == null) process?.close()
+        if (result == null) process.close()
         onChanged()
         result
     }
 
-    /** Fixed pm grant only. Requires an already prepared root connection; never calls start. */
+    /** A second, short-lived su for the fixed pm grant; only once [start] succeeded. */
     fun grantSecureSettings(): Boolean {
         if (connect() == null) return false
-        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(GRANT_TIMEOUT_MS)
-        var grant: RootProcess? = null
-        val ok = try {
-            grant = RootProcess.launch(RootCommands.grantSecureSettings(Process.myUid() / 100000), remaining(deadline))
-            grant.exitCode(remaining(deadline)) == 0
-        } catch (_: Exception) { false }
-        finally { grant?.close() }
+        val ok = runCatching {
+            RootProcess.launch(RootCommands.grantSecureSettings(Process.myUid() / 100000)).use { it.exitCode(GRANT_TIMEOUT_MS) == 0 }
+        }.getOrDefault(false)
         if (!ok) synchronized(guard) { state.note("rootGrantFailed") }
         onChanged()
-        // The caller also checks the App's actual WRITE_SECURE_SETTINGS permission.
         return ok
     }
 
@@ -131,16 +110,11 @@ class RootStarter(private val context: Context, private val onChanged: () -> Uni
     }
 
     companion object {
-        /** App policy deadlines, not an upstream manager authorization-time guarantee. */
+        // App policy, not the managers' own authorization timeouts.
         const val START_TIMEOUT_MS = 30_000L
         const val GRANT_TIMEOUT_MS = 10_000L
-        private fun remaining(deadline: Long): Long =
-            TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime()).coerceAtLeast(1)
-        private fun reason(error: Exception): String = when {
-            error is IOException && error.message == "rootTimeout" -> "rootTimeout"
-            error is IOException && error.message == "rootCancelled" -> "rootCancelled"
-            else -> "rootStartFailed"
-        }
+        private fun reason(error: Exception): String =
+            error.message.takeIf { error is IOException && it in setOf("rootTimeout", "rootCancelled") } ?: "rootStartFailed"
     }
 }
 

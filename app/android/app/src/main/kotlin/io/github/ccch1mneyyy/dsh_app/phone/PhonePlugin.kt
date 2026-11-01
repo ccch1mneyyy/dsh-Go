@@ -46,7 +46,6 @@ class PhonePlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         attached = false
-        privilegedActions.select()
         control.background.cancelRootSelection()
         control.prompts.detachOwner(promptOwner)
         activity?.removeOnNewIntentListener(this)
@@ -106,15 +105,14 @@ class PhonePlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "status" -> async(result) { control.status() }
+            // A newer choice drops a queued grant: it must not run through whatever is chosen then.
             "grantSecureSettings" -> {
-                val ticket = privilegedActions.snapshot()
+                val live = stillWanted(privilegedActions.snapshot())
                 async(result) {
-                    if (!attached || !privilegedActions.current(ticket)) cancelledSelection()
-                    else {
-                        val response = if (control.background.rootGrantSelected()) control.background.grantRootSecureSettings()
-                            else control.grantSecureSettings()
-                        control.emitStatus()
-                        response
+                    when {
+                        !live() -> cancelledSelection()
+                        control.background.rootGrantSelected() -> control.background.grantRootSecureSettings()
+                        else -> control.grantSecureSettings()
                     }
                 }
             }
@@ -135,26 +133,18 @@ class PhonePlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
             "testScreen" -> async(result) { control.testScreen() }
             "setBackgroundMode" -> {
                 val mode = call.argument<String>("mode") ?: "off"
-                val ticket = privilegedActions.select()
+                val live = stillWanted(privilegedActions.select())
                 if (mode != "root") control.background.cancelRootSelection()
-                async(result) {
-                    if (!attached || !privilegedActions.current(ticket)) cancelledSelection()
-                    else control.background.setBackgroundMode(mode) { attached && privilegedActions.current(ticket) }
-                }
+                async(result) { if (live()) control.background.setBackgroundMode(mode, live) else cancelledSelection() }
             }
             "requestShizukuPermission" -> {
-                val ticket = privilegedActions.snapshot()
+                val live = stillWanted(privilegedActions.snapshot())
                 val provider = call.argument<String>("provider")
-                async(result) {
-                    attached && privilegedActions.current(ticket) && control.background.requestShizukuPermission(provider)
-                }
+                async(result) { live() && control.background.requestShizukuPermission(provider) }
             }
             "prepareRoot" -> {
-                val ticket = privilegedActions.select()
-                async(result) {
-                    if (!attached || !privilegedActions.current(ticket)) cancelledSelection()
-                    else control.background.prepareRoot { attached && privilegedActions.current(ticket) }
-                }
+                val live = stillWanted(privilegedActions.select())
+                async(result) { if (live()) control.background.prepareRoot(live) else cancelledSelection() }
             }
             "adbStartPairing" -> async(result) { control.background.adbStartPairing() }
             "adbPair" -> async(result) {
@@ -193,6 +183,9 @@ class PhonePlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
 
     private fun cancelledSelection(): Map<String, Any?> =
         mapOf("ok" to false, "reason" to AppStrings.get(appContext, R.string.background_selection_cancelled))
+
+    /** Whether the UI action that took [ticket] still counts when the worker reaches it. */
+    private fun stillWanted(ticket: Long): () -> Boolean = { attached && privilegedActions.current(ticket) }
 
     /**
      * `finishTask {taskId, sessionId?, host?, reopen}`: the linked turn ended. Closes the

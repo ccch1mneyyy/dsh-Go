@@ -13,8 +13,8 @@ object PrivilegedPathPolicy {
     /** Keep the old three-mode Dart enum and its exhaustive UI switches valid. */
     fun legacyMode(mode: String): String = when (mode) {
         "sui" -> "shizuku"
-        "root" -> "off"
-        else -> mode.takeIf { it in listOf("off", "shizuku", "adb") } ?: "off"
+        "shizuku", "adb" -> mode
+        else -> "off"
     }
 
     fun legacyReady(mode: String, ready: Boolean): Boolean = legacyMode(mode) != "off" && ready
@@ -23,12 +23,7 @@ object PrivilegedPathPolicy {
     fun legacyReason(mode: String, actualReason: String?, rootCompatibilityReason: String): String? =
         if (mode == "root" && actualReason == null) rootCompatibilityReason else actualReason
 
-    /**
-     * Whether a screen-off interrupt, after releasing the task's display, closes [starter]'s
-     * connection: only one a later task reopens by itself (the Shizuku/Sui UserService rebinds,
-     * self-ADB reconnects). Root reopens only on another explicit choice, since a task never
-     * runs su, so its idle process stays for the next task.
-     */
+    /** A screen-off keeps root's idle process: tasks never run su, Shizuku/Sui and ADB reopen by themselves. */
     fun closesOnInterrupt(starter: String): Boolean = starter != "root"
 
     /** Sui and the legacy Shizuku grant name share one UserService connection. */
@@ -51,7 +46,7 @@ object PrivilegedPathPolicy {
         wirelessDebugging: Boolean?,
     ): String {
         if (!androidOk) return "off"
-        if (ready && mode in modes && mode != "off") return mode
+        if (ready && mode != "off") return mode
         val shared = if (provider == "sui") "sui" else "shizuku"
         return when {
             sharedRunning && sharedGranted -> shared

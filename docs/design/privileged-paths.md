@@ -75,7 +75,7 @@ root 的首次执行入口只有明确用户动作：`setBackgroundMode(root)`�
 
 root 命令固定为三个 argv：su、-c、一个完整 command 字符串。共享 `PrivilegedCommands` 仅使用 OS ApplicationInfo 提供的 APK 路径构造安全引用的 classpath，Main 类与可执行程序固定；授予命令的包名和权限固定，userId来自 App UID。没有用户/网络任意命令入口。
 
-PhonePlugin 在主线程收到关闭总开关、选择off/别的通道、engine detach时，递增 `PrivilegedActionGate` 代际并取消root连接。IO队列在执行前检查attached与ticket；`RootStarter.start(mayStart)` 又在与disconnect共用的短guard内检查门禁并建立ticket，填补“调用者检查通过、UI取消、之后才begin”的窗口。等待启动锁后仍会重新检查；旧动作不能借已有连接返回过期成功。阻塞启动/读写不占该guard，不让UI等30秒才取消。
+PhonePlugin 在主线程收到关闭总开关、选择off/别的通道时，递增 `PrivilegedActionGate` 代际并取消root连接；engine detach 由 `attached=false` 让排队动作失效，同样取消root连接。IO队列在执行前检查attached与ticket；`RootStarter.start(mayStart)` 又在与disconnect共用的短guard内检查门禁并建立启动代际，填补“调用者检查通过、UI取消、之后才begin”的窗口。等待启动锁后仍会重新检查；旧动作不能借已有连接返回过期成功。接纳之后只看启动代际：取消一律经 disconnect，使代际失效并关闭待定进程，不再逐步重查门禁。阻塞启动/读写不占该guard，不让UI等30秒才取消。
 
 此处的“接纳”是锁内确认动作仍有效、分配启动代际的线性化时点。未接纳的旧动作不得首次su；已经接纳并开始执行的操作按现有关闭管道/销毁直接子进程语义处理。**不承诺撤回manager已收到的授权请求，也不承诺撤销已经完成的pm grant。** 多次轮询不能被解释成再次授权。
 

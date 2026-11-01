@@ -38,25 +38,14 @@ class ShizukuStarter(private val context: Context, private val onChanged: () -> 
     private fun appInstalled(): Boolean =
         runCatching { context.packageManager.getApplicationInfo(PACKAGE, 0); true }.getOrDefault(false)
 
-    // The existing ShizukuProvider 13.1.5 initializes Sui once, before the Activity.
-    // Reading these facts must never request permission or bind a UserService.
-    private fun isSui(): Boolean = runCatching { Sui.isSui() }.getOrDefault(false)
-
-    fun installed(): Boolean = appInstalled() || isSui() || running()
-
     fun running(): Boolean = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
 
     fun granted(): Boolean = runCatching {
         running() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
     }.getOrDefault(false)
 
-    fun status(): ShizukuStatus {
-        val running = running()
-        val granted = running && runCatching {
-            Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
-        }.getOrDefault(false)
-        return ShizukuStatus.fromFacts(appInstalled(), isSui(), running, granted)
-    }
+    // ShizukuProvider has already run Sui.init() before the Activity; isSui() only reads its result.
+    fun status(): ShizukuStatus = ShizukuStatus.fromFacts(appInstalled(), Sui.isSui(), running(), granted())
 
     fun uid(): Int = runCatching { Shizuku.getUid() }.getOrDefault(-1)
 

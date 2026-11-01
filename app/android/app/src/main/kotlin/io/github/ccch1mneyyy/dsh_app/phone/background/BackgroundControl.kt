@@ -117,25 +117,14 @@ class BackgroundControl private constructor(context: Context) {
     // ---- actions -----------------------------------------------------------
 
     fun setBackgroundMode(newMode: String, mayStart: () -> Boolean = { true }): Map<String, Any?> {
-        if (!mayStart()) return cancelledSelection()
         val provider = shizuku.status().provider
         val selected = PrivilegedPathPolicy.canonicalMode(newMode, provider)
             ?: return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_unknown_mode))
         if (selected == "sui" && provider != ShizukuStatus.SUI) {
             return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_sui_not_provider))
         }
-        if (selected == "off") {
-            endTask()
-            disconnectAll()
-            mode = "off"
-            rootSelected = false
-            trustedDisplayOk = null
-            injectOk = null
-            notifyChanged()
-            return mapOf("ok" to true)
-        }
-        if (!androidOk()) return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_requires_android))
-        if (selected != mode) {
+        if (selected != "off" && !androidOk()) return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_requires_android))
+        if (selected != mode || selected == "off") {
             endTask()
             disconnectAll()
             trustedDisplayOk = null
@@ -143,42 +132,29 @@ class BackgroundControl private constructor(context: Context) {
         }
         mode = selected
         rootSelected = selected == "root"
-        if (selected == "shizuku" || selected == "sui") shizuku.ensureListeners()
-        if (selected == "root") {
-            // This method is an explicit UI action and runs on PhonePlugin's worker.
-            // The task path only calls root.connect(), which never starts su.
-            channel = root.start(mayStart)
-            trustedDisplayOk = null
-            injectOk = null
+        when (selected) {
+            "off" -> { notifyChanged(); return mapOf("ok" to true) }
+            "shizuku", "sui" -> shizuku.ensureListeners()
+            // 不打扰模式's only su; tasks just connect() to what it leaves.
+            "root" -> root.start(mayStart)
         }
-        if (!mayStart()) return cancelledSelection()
         notifyChanged()
         // Probe eagerly so the UI can hide an unsupported switch rather than fail later.
         val probe = runGateProbe()
         return mapOf("ok" to (probe == null), "reason" to probe)
     }
 
-    fun requestShizukuPermission(provider: String? = null): Boolean {
-        if (provider != null && provider != shizuku.status().provider) return false
-        return shizuku.requestPermission()
-    }
+    fun requestShizukuPermission(provider: String? = null): Boolean =
+        (provider == null || provider == shizuku.status().provider) && shizuku.requestPermission()
 
-    /** Explicit UI selection for permission setup, without enabling a virtual display. */
-    fun prepareRoot(mayStart: () -> Boolean = { true }): Map<String, Any?> {
-        if (!mayStart()) return cancelledSelection()
+    /** Root for the WSS grant only: 不打扰模式's mode and display stay as they are. */
+    fun prepareRoot(mayStart: () -> Boolean): Map<String, Any?> {
         rootSelected = true
-        val connected = root.start(mayStart) != null
-        if (!mayStart()) return cancelledSelection()
-        notifyChanged()
-        return mapOf("ok" to connected, "reason" to if (connected) null else rootReason())
+        return if (root.start(mayStart) != null) mapOf("ok" to true) else mapOf("ok" to false, "reason" to rootReason())
     }
-
-    private fun cancelledSelection(): Map<String, Any?> =
-        mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_selection_cancelled))
 
     fun rootGrantSelected(): Boolean = rootSelected
 
-    /** Fast cancellation at UI receipt time; RootStarter closes pipes off-thread. */
     fun cancelRootSelection() {
         rootSelected = false
         root.disconnect()
@@ -187,18 +163,12 @@ class BackgroundControl private constructor(context: Context) {
     private fun secureSettingsGranted(): Boolean =
         app.checkSelfPermission(SecureSettingsGrant.PERMISSION) == PackageManager.PERMISSION_GRANTED
 
-    /** Called only by the existing explicit grant button; verify the actual Android permission. */
+    /** pm's exit code isn't the answer: the permission itself is. Without a root connection no su runs. */
     fun grantRootSecureSettings(): Map<String, Any?> {
         if (secureSettingsGranted()) return mapOf("ok" to true)
-        if (!rootSelected) return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_root_not_selected))
-        val ready = rootReason()
-        if (ready != null) return mapOf("ok" to false, "reason" to ready)
-        val reported = root.grantSecureSettings()
-        val granted = secureSettingsGranted()
-        notifyChanged()
-        return mapOf("ok" to granted, "reason" to if (granted) null else
-            if (!reported) rootReason() ?: AppStrings.get(app, R.string.background_root_grant_failed)
-            else AppStrings.get(app, R.string.background_root_grant_failed))
+        val ran = root.grantSecureSettings()
+        if (secureSettingsGranted()) return mapOf("ok" to true)
+        return mapOf("ok" to false, "reason" to ((if (ran) null else rootReason()) ?: AppStrings.get(app, R.string.background_root_grant_failed)))
     }
 
     fun adbStartPairing(): Map<String, Any?> {
@@ -227,7 +197,6 @@ class BackgroundControl private constructor(context: Context) {
      */
     fun grantSecureSettings(via: String): Boolean {
         val sharedApi = via == SecureSettingsGrant.SHIZUKU || via == SecureSettingsGrant.SUI
-        if (!sharedApi && via != SecureSettingsGrant.ADB) return false
         val shared = PrivilegedPathPolicy.sharesGrantChannel(mode, via)
         val ch = when {
             shared -> activeChannel()
