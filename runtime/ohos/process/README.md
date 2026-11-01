@@ -2,6 +2,8 @@
 
 **本项是 O4 的可复核子集，不代表 O4 全部完成。未在真机核实。** 固定基底 `afb5cdd`、DSH `0.2.1-rc.4`、Node `24.22.1`。**v3 完整替代 v1/v2，不叠加应用。** 当前支持批量 `bash` / `sh -c` 和部分 `rg` 模板；`node` 脚本、`git` 子命令、交互字节通道、实时 shell 输出尚未启用。它们必须保持不可用，不能在 O6 中报为可用。
 
+M4-1 v2 在此基线上恢复 DSH JSON grep 的正向 `include` 和 Unicode 常用字符类/词边界，具体构建链、差分与边界见 [M4-1.md](M4-1.md)。本组合版本已包含 [M4-2](M4-2.md) 的搜索与执行双队列；M4-4 文件系统后继尚未合入。
+
 ## 接入与行为
 
 Cordis 的 `subprocess` 提供者改为本目录的 `index.mjs`，`sandbox` 提供者改为 `sandbox.mjs`；**保留原 `@deepseek-ai/dsh-bash-sandbox`、`dsh-sandbox-policy`、`dsh-user-approval` 和 `tool-bash`**。后两者继续负责逐会话策略与单次审批。不要直接把 shell 换成没有 `sandboxMode` 的 `LocalBashExecutor`。DSH overlay 的 `name` 是匹配断言，不能用同 id 加新 name 来换实现：应禁用旧条目，再插入 `ohos-subprocess` / `ohos-sandbox` 新 id；服务注入名仍为 `subprocess` / `sandbox`。该差异已在主代理的真实 App 启动中定位并验证。
@@ -38,21 +40,21 @@ Cordis 的 `subprocess` 提供者改为本目录的 `index.mjs`，`sandbox` 提�
 
 ## rg 范围与真实差分
 
-`dsh-tool-fs-search` 原模板在解析命令、超时、输出上限、错误分类与 NDJSON 消费上保持原路。仅 OHOS/显式仿真下把 `resolveRgPath()` 改为 Promise 包装的 `/dsh-go/ohos/bin/rg`。原 `--no-config` 在 JS 后端表示不读取外部 rg 配置。
+`dsh-tool-fs-search` 的命令模板、超时、输出上限、错误分类与 NDJSON 消费保持原路。仅 OHOS/显式进程内仿真标记下把 resolver 指向虚拟 rg；JSON 只交付 DSH 实际消费的 `match` 记录，不提供 ripgrep 的统计、summary 或上下文格式。
 
-just-bash 3.6.0 不能直接视为原生 ripgrep：其默认 smart-case、`--` 分隔符、`--sort=modified`、UTF-8 JSON 偏移、无换行末行、glob 与忽略规则优先级均有差异。本适配器固定大小写默认值、保留字面路径、按 mtime 排序、通过锁内 RE2JS 的公开 UTF-8 matcher 生成匹配记录，保留字节坐标、真实换行和空行。整个入口把路径 I/O / 解析异常映射为 exit 2，不能让 DSH 将错误当作 exit 1 的零结果。JSON 仅交付 DSH 实际消费的 `match` 记录，不提供 ripgrep 的统计、summary 或上下文格式。
+M4-1 已恢复该 JSON 路径的正向 include：`*`、`?`、`**`、花括号选择与字符类，并实现有序正负 override、目录剪枝、隐藏条目及本地 ignore 优先级。glob 按固定 rg 的 UTF-8 字节语义工作：`?` 是一个字节，`???` 可匹配一个三字节汉字；类内反斜杠是字面成员，不能解释成文本正则的 shorthand。模式与路径仅在匹配时经可逆的 byte→Latin1 标量映射，实际 FS 路径不改变。显式文件始终越过这些过滤，显式目录作为遍历根；没有文件被隐式根搜索到时返回 2，已有文件但无匹配返回 1。祖先规则只通过受限 `ctx.fs` 读取；授权根以外的 ignore 不可见，不能因此放宽文件系统边界。
 
-已测可用范围：默认目录文本搜索、中文与 Unicode 属性匹配、常规分组/选择、单个开头 `(?i)` / `(?-i)`、`^` / `$` / 空模式及可产生空匹配的选择与重复、明确路径、固定字符串、负向简单 glob；`--files --no-ignore --hidden --sort=modified` 配合简单正向 glob 与 DSH 的 VCS 排除项。相同 mtime 的文件采用路径稳定排序；不承诺与原生未定义的同时间顺序一致。
+JSON 正则通过仅供 OHOS rg 使用的 re2js 1.3.3 私有源码构建，支持 Unicode 16 的 `\w/\d/\s/\b` 及反类、类内组合、分组/选择与量词。词边界在匹配引擎的零宽上下文中判断，不能用匹配后过滤冒充任意模式语义。UTF-8 字节偏移、CRLF、无换行末行、空模式、BOM、固定字符串和大小写样本均有原生差分。仅跳过文件最前的一枚 UTF-8 BOM；后续 BOM 按原字节保留。
 
-以下目前明确报错，返回 2，并提示连接电脑执行：grep 的正向 include glob；含 `**` 或花括号的正向 glob；RE2 与 Rust 默认 Unicode 语义不同的 `\w/\d/\s/\b` 及其反类；局部/组合内联标志；未列入解析器的其他参数；含换行符的显式搜索路径。默认显式二进制搜索也报错，可以明确传 `--text`。无效 UTF-8 的 JSON 文本搜索拒绝输出替换字符结果。这些是尚未完成的能力，不计入完整兼容。
+默认大小写、明确路径、负向 glob、常规 Unicode 属性、单个开头 `(?i)` / `(?-i)` 保留；`--files --no-ignore --hidden --sort=modified` 沿既有有限模板，相同 mtime 用路径稳定排序。非 JSON 的新增常用字符类/词边界和正向 include、`--files` 的 `**`/花括号正向 glob、局部/组合正则标志、未知参数和含换行符的显式路径仍报 exit 2。默认显式二进制搜索要求 `--text`；JSON 无效 UTF-8 拒绝，尚不实现 UTF-16/其他编码。`.git` 文件式 gitdir 在 JSON 目录遍历中明确报错；外部全局 gitignore 与 `core.excludesFile` 不读取，全部 gitignore 极端语义没有等价保证；原始非法 UTF-8 文件名未计入兼容范围。
 
-DSH 随包的 `@vscode/ripgrep 1.18.0` 实际二进制为 ripgrep `15.0.0`（rev `3a612f88b8`）；与虚拟后端在同一真实目录上做 33 项差分：修复后 27 项比较相同，6 项因上述未实现范围而明确拒绝。六项分别为 Unicode word、默认显式二进制、四种正向 include glob。v1 的 21 项另以宿主 ripgrep `15.2.0` 复测，分类相同；v2/v3 新增的 12 项以 DSH 实际 15.0.0 为准。对照还确认：非空匹配紧邻的空匹配不重复报告，无 LF 末行的 EOF 空匹配保留 match 行但不列出该 submatch，不能只比较匹配行数。早期测量夹具误把原生 stdin 设为 pipe，导致无 path 的 rg 搜索空 stdin；第二版已改为与 DSH 相同的 `ignore` 并消除 mtime 并列，第一版不作实现缺陷证据。
+固定原生参照是 DSH 随包 ripgrep 15.0.0（rev `3a612f88b8`），二进制 SHA256 `193906679498de4d939345b937fa24e0e69a03c244bd70c859f5e41232713f21`。M4-1 v2 的 93 项差分在 JIT / 严格 O0 各 93/93；原 33 项为 32 相同和 1 项明确拒绝的默认显式二进制。完整标量检查含 1,112,063 个有效非 LF 标量及 LF 单独验证；单点穷举不代替多码点、嵌套零宽位置矩阵，二者分开保存。前版 include/词边界拒绝、错误 stdin 夹具以及 BOM 新失败记录均保留。M4-1 v1 `5fdebda8…` 被独审判 BLOCKED：字节 glob 的四项真实 DSH 用例失败；v2 修复该问题，保留原报告，详见 M4-1 证据。
 
-默认遍历与全部 Rust regex / gitignore 边缘语义仍没有穷尽验证。真实 DSH `include` 参数的功能恢复是后续 O4 子项；不能用这份有限范围报告宣布 TASK O4 完成。
+几十 MB 单行的 `Array.from(line)` 分配和显式二进制预检重复读取仍待 M4-3 处理；本项不以 64 MiB FS 文件上限充当总内存上限，也不宣称完整 ripgrep 兼容。
 
 ## 安装与复跑
 
-manifest 中直接声明的运行时依赖保持题面已批准的固定版本：`just-bash 3.6.0`（Apache-2.0）、`isomorphic-git 1.44.9`（MIT）。后者已锁定供后续 O4 使用，本项不导入、不启用 git。v2 另直接使用它们现有依赖闭包中的 `re2js 1.3.3`（MIT，来自 just-bash）公开 API，原因是 just-bash 的 JSON 空匹配循环越界。它已在原 `package-lock.json` 锁定，未引入新 npm 包或改 manifest/锁文件；但直接 import 增加了对其公共 UTF-8 matcher API 和 npm 安装布局的耦合。安装与升级时必须保留该精确版本，若改为 manifest 直接依赖须先由本机决定。依赖完整性由 `package-lock.json` 固定。安装跳过 lifecycle scripts 和可选原生依赖；Python/SQLite 等传递依赖不会在当前命令注册表中加载。
+manifest 中直接声明的运行时依赖保持题面已批准的 `just-bash 3.6.0`（Apache-2.0）与 `isomorphic-git 1.44.9`（MIT）。本项还直接依赖原锁闭包中的 `re2js 1.3.3`（MIT）来生成仅供 rg 使用的私有构建，修改其非生成源码；不改原 npm 包、原 Unicode 表或其他消费者，也没有安装新的 ignore/glob 依赖。它不再只是调用未修改 re2js 的公开 matcher：构建耦合包括固定 sourcemap 与其中 24 个源码的身份。追加6已要求把 re2js 记录为 manifest 直接依赖，由主线 M4-6 独立落实；本包不抢改该锁文件。生成脚本复用已批准的 esbuild 0.27.3；`build/` 产物不提交，完整 MIT 归属保留在产物头部。
 
 从 `afb5cdd` 根目录应用独立补丁后，使用官方 Node 24.22.1：
 
@@ -61,6 +63,8 @@ git apply O4a-virtual-process-v3.patch
 export PATH="/Node-24.22.1/bin:$PATH"
 npm ci --prefix runtime/ohos/process --ignore-scripts --omit=optional
 node runtime/ohos/process/link-dsh.mjs /已装DSH的独立prefix
+# 应用 M3-3 标记迁移与本 M4-1 差分后：
+node runtime/ohos/process/build-rg-regex.mjs /已有esbuild0.27.3的prefix
 ```
 
 DSH 厂商包补丁为 `runtime/patches/ohos-virtual-process.diff`，`pins.json` 只登记 `0.2.1-rc.4` 两个文件的 before/after SHA256。完整 OHOS 前缀用 `runtime/lib/rtbuild.py patch-dsh --prefix ... --dsh-version 0.2.1-rc.4 --target ohos`。阶段验证只要本 diff 时，把它拷到临时补丁目录，旁边放一份 schema 2 的 pins：`targetSets` 为 `{"android": [], "ohos": ["ohos-virtual-process.diff"]}`，`patches` 只含本项条目；再传 `--patches <临时目录> --target ohos`。不要对指向共享 npm-ci 包的符号链接树运行全部厂商补丁。
@@ -70,10 +74,11 @@ NODE=/Node-24.22.1/bin/node \
 OHOS_TEST_PROCESS_PREFIX=/仅应用O4厂商补丁的独立prefix \
 OHOS_TEST_BASE_PREFIX=/未修改DSH的prefix \
 OHOS_SIM_PRELOAD=/已复核O0/runtime/ohos/sim/preload.mjs \
+OHOS_ESBUILD_PREFIX=/已有esbuild0.27.3的prefix \
 bash runtime/ohos/process/test.sh
 ```
 
-`process.test.mjs` 24 项、`process-integration.test.mjs` 11 项、`process-policy.test.mjs` 8 项：普通 Node 与 O0 严格仿真各 43/43，0 skip、0 TODO。Android 条件对照 3/3：两个 OHOS 服务不能误挂载、rg 原 resolver 与 Promise 契约不变、实际注册的工具 description/schema 逐字相同。审批测试走真实 ToolRuntime、Session、SandboxPolicy、ApprovalService；用户答复是测试事件通道中的显式 allowed-once/rejected，未以绕过审批的 stub 替代执行路径。
+`process.test.mjs` 24 项、`process-integration.test.mjs` 17 项、`process-policy.test.mjs` 8 项：普通 Node 与 O0 严格仿真各 49/49，0 skip、0 TODO。Android 条件对照 3/3：两个 OHOS 服务不能误挂载、rg 原 resolver 与 Promise 契约不变、实际注册的工具 description/schema 逐字相同。审批测试走真实 ToolRuntime、Session、SandboxPolicy、ApprovalService；用户答复是测试事件通道中的显式 allowed-once/rejected，未以绕过审批的 stub 替代执行路径。
 
 O0 环境同时启用 `--jitless`、删除 WebAssembly、禁用所有 `child_process` 入口、限制 dlopen、link 模拟 EACCES。测试证明的是这个 Linux 宿主仿真范围，尚不证明 OpenHarmony 真机性能、SDK/宿主 worker 支持、文件系统竞态或后台冻结行为。
 
@@ -83,7 +88,7 @@ v1 的独立审查 `cb25400e…` 为 BLOCKED：缺失路径和合法零宽正则
 
 主代理另外实际复现：直接 spawn 拒绝 NUL 命令，prepare 后却可执行。v2 已增加真实 tool-bash / sandbox.confine / 直接 spawn 三路径回归，非法命令在分配 worker 和票据前被拒绝。v2 独立复核还发现一个既有缺陷：显式给出 `.gitignore` 忽略的文件时，借用 just-bash `--files` 会过滤该文件，真实 DSH 相对与绝对路径均误报零结果。v3 只把显式文件从目录遍历中分开：已指定文件按受限 FS 读取，目录仍沿原规则；没有全局关闭 ignore。新增真实 DSH 的 ignored/hidden/负向 glob 回归，审查方默认遍历的负对照也必须保留。
 
-冻结前并行负载曾令一个普通 shell 成功测试超过夹具原 2 秒预算。仅将普通成功用例共用的 fixture 默认预算改为 15 秒，显式 timeout 回归仍是 120 毫秒，生产代码的预算与分类未变；旧失败日志保留。正式结论以绑定本补丁 SHA256 的独立复核报告为准；这些结果不覆盖未实现的 include、node、git 或实时输出。
+冻结前并行负载曾令一个普通 shell 成功测试超过夹具原 2 秒预算。仅将普通成功用例共用的 fixture 默认预算改为 15 秒，显式 timeout 回归仍是 120 毫秒，生产代码的预算与分类未变；旧失败日志保留。正式结论以绑定本补丁 SHA256 的独立复核报告为准；该 v3 历史结果不覆盖当时未实现的 include；M4-1 的 include 结果单列。node、git 与实时输出仍不在本包范围。
 
 ## 可核对的源材料
 
@@ -94,7 +99,7 @@ v1 的独立审查 `cb25400e…` 为 BLOCKED：缺失路径和合法零宽正则
 - [Node 24.22.1 worker_threads 文档](https://nodejs.org/download/release/v24.22.1/docs/api/worker_threads.html)。
 - [isomorphic-git 官方文档](https://isomorphic-git.org/docs/en/quickstart)：后续 git 适配还需处理 DSH 工作区快照的独立 index/object 环境，不能把常用八个子命令当作完整 DSH 覆盖。
 
-- [RE2JS 官方项目](https://github.com/le0pard/re2js) 及锁定包 1.3.3 的 matcher(number[]) / find / start / end 公开 API；字节坐标以原生差分为证据。
+- [RE2JS 官方项目](https://github.com/le0pard/re2js) 及锁定包 1.3.3 的 matcher(number[]) / find / start / end 公开 API；字节坐标以原生差分为证据；M4-1 的私有源码改动与生成流程另见该文。
 - [ripgrep 官方指南](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md)；本文具体行为数据由随 DSH 分发的 15.0.0 实测，而非以最新版文档代替已锁版本。
 
 ## M3-3 进程内标记迁移
