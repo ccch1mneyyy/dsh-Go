@@ -455,7 +455,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
       if (slash != null) {
         final (command, line, picked) = slash;
         if (picked) {
-          _pick(command);
+          _pick(command, atCaret: false);
         } else {
           await _runSlash(command, line);
         }
@@ -1081,12 +1081,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
 
   /// A row picked in the palette: app commands and commands without input run
   /// now; commands that take input go into the composer for the arguments.
-  void _pick(SlashCommand command) {
-    if ((command.kind == SlashCommandKind.host && command.takesInput) || command.kind == SlashCommandKind.skill) {
-      final text = '/${command.name} ';
+  void _pick(SlashCommand command, {bool atCaret = true}) {
+    final value = _input.value;
+    final caret = atCaret && value.selection.isValid ? value.selection.end : value.text.length;
+    final leading = value.text.length - value.text.trimLeft().length;
+    final full = parseSlashInput(value.text);
+    // Completing inside an already known command replaces its whole name.
+    // Otherwise preserve the draft to the right of the cursor (e.g. /|hello).
+    final end = full != null && resolveSlashCommand(_commands, full.token) != null
+        ? leading + 1 + full.token.length
+        : caret;
+    final suffix = value.text.substring(end);
+    if ((command.kind == SlashCommandKind.host && command.takesInput) ||
+        command.kind == SlashCommandKind.skill ||
+        suffix.isNotEmpty) {
+      final prefix = '${value.text.substring(0, leading)}/${command.name}';
+      final separator = suffix.isEmpty || !RegExp(r'^\s').hasMatch(suffix) ? ' ' : '';
+      final text = '$prefix$separator$suffix';
       _input.value = TextEditingValue(
         text: text,
-        selection: TextSelection.collapsed(offset: text.length),
+        selection: TextSelection.collapsed(offset: (prefix.length + 1).clamp(0, text.length)),
       );
       _focus.requestFocus();
       return;
@@ -1520,7 +1534,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                             // The `@` word at the caret wins over a "/" line.
                             final live = connected && !readOnly;
                             final mention = live && _mentions.isOpen;
-                            final content = live && !mention ? PaletteContent.of(commands, _input.text) : null;
+                            final content = live && !mention
+                                ? PaletteContent.of(
+                                    commands,
+                                    _input.text,
+                                    caret: _input.selection.isCollapsed ? _input.selection.extentOffset : -1,
+                                  )
+                                : null;
                             // The pet steps aside while a panel is up.
                             return PetCover(
                               active: mention || content != null,
