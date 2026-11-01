@@ -33,6 +33,7 @@ class DiagnosticsPage extends ConsumerWidget {
     required LocalRuntimeState runtime,
     required AppSettings settings,
     required String connection,
+    required int logLines,
   }) {
     final s = runtime.status;
     return {
@@ -47,7 +48,7 @@ class DiagnosticsPage extends ConsumerWidget {
         'baseUrl': s.baseUrl,
         'token': s.token == null ? null : '<redacted>',
         'error': s.error,
-        'logLines': runtime.logs.length,
+        'logLines': logLines,
         ...s.launchDiagnostics,
       },
       'connection': connection,
@@ -73,8 +74,16 @@ class DiagnosticsPage extends ConsumerWidget {
       _ => l10n.pluginsConnecting,
     };
     Future<void> copyReport() async {
-      final json = const JsonEncoder.withIndent('  ')
-          .convert(redactJson(report(runtime: runtime, settings: settings, connection: connection)));
+      final json = const JsonEncoder.withIndent('  ').convert(
+        redactJson(
+          report(
+            runtime: runtime,
+            settings: settings,
+            connection: connection,
+            logLines: ref.read(localRuntimeLogsProvider).length,
+          ),
+        ),
+      );
       await Clipboard.setData(ClipboardData(text: json));
       if (context.mounted) {
         showBriefNotice(context, l10n.pluginsDiagnosticsCopied);

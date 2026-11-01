@@ -50,6 +50,7 @@ MethodChannel `dsh/runtime`：
 | `start` | `{env: Map<String,String>}`（如 `DEEPSEEK_API_KEY`） | `null`；启动前台服务与进程 |
 | `stop` | — | `null` |
 | `getLogs` | `{lines: int}` | `List<String>` |
+| `getLogSnapshot` | `{lines: int}`（默认 300，最多 2000） | `{entries: [LogEntry], throughSeq: int}`：内存里最后几行，`throughSeq` 是同一时刻已接收的最大序号 |
 | `reset` | — | `null`；删除已解压运行时（保留 `/root` 用户数据需另行确认） |
 
 `RuntimeStatus`：
@@ -68,7 +69,7 @@ MethodChannel `dsh/runtime`：
 EventChannel `dsh/runtime/events`，事件 map：
 - `{type: "progress", step: "extract"|"verify"|"configure", done: int, total: int}`
 - `{type: "status", status: RuntimeStatus}`
-- `{type: "log", line: String, stream: "stdout"|"stderr"}`
+- `{type: "logs", entries: [LogEntry]}`：日志约每 100 ms 一批；`LogEntry` 为 `{seq: int, line: String, stream: "stdout"|"stderr"|"system"}`，`line` 已脱敏，`seq` 在进程内递增、重启引擎或重置都不归零。App 先订阅再取快照，只接 `seq > throughSeq` 的批次，批次与快照不重叠也不漏行。
 
 ## 打包
 
