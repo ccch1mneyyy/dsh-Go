@@ -319,7 +319,7 @@ void main() {
       await pumpFrames(tester, 8);
       expect(find.text('用量'), findsOneWidget);
       expect(find.text('6%'), findsNWidgets(2)); // the ring and the sheet
-      expect(find.text('7.1 万'), findsOneWidget); // input incl. cache
+      expect(find.text('71K'), findsOneWidget); // input incl. cache
       expect(find.text('74%'), findsOneWidget); // cache hit rate
       expect(find.text('¥110.00'), findsOneWidget);
       expect(harness.balanceRequests, [testKey], reason: 'throttled');
