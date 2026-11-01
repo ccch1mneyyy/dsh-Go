@@ -84,6 +84,8 @@ $RuntimeAssets = 'D:/资产/dsh-rc4'
 python harmony/plugins/dsh_runtime_ohos/package-runtime.py --source $RuntimeAssets --output "$OutputRoot/dsh-runtime.zip"
 ```
 
+网页18项恢复也沿用上面的唯一packager与平台清单映射；重打前可运行[网页恢复契约测试](../docs/web-ui-restoration.md)。不从旧runtime-installed复制覆盖清单，也不为网页界面生成第二份手工ZIP。
+
 | 产物 | 生成来源 |
 | --- | --- |
 | libnode.so | Node固定源码、补丁、Linux LLVM构建 |

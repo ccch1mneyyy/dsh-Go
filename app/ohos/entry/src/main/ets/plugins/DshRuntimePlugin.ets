@@ -130,7 +130,7 @@ export default class DshRuntimePlugin implements FlutterPlugin, MethodCallHandle
     try {
       const script = this.engineRoot() + '/transport/run-loopback-smoke.mjs';
       if (!fs.accessSync(script)) return true;
-      return !fs.readTextSync(script).includes('scriptver-130');
+      return !fs.readTextSync(script).includes('scriptver-141');
     } catch (error) {
       return true;
     }

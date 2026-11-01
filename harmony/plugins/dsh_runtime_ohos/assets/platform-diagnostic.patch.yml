@@ -51,17 +51,17 @@
 - id: ui-agent-preset
   disabled: true
 - id: ui-approval
-  disabled: true
+  disabled: false
 - id: ui-attachment
   disabled: true
 - id: ui-brand-official
-  disabled: true
+  disabled: false
 - id: ui-chat
-  disabled: true
+  disabled: false
 - id: ui-commands
-  disabled: true
+  disabled: false
 - id: ui-conversation
-  disabled: true
+  disabled: false
 - id: ui-cordis
   disabled: true
 - id: ui-deepseek-model-label-1017
@@ -71,19 +71,19 @@
 - id: ui-goal
   disabled: true
 - id: ui-input-trigger
-  disabled: true
+  disabled: false
 - id: ui-jobs
   disabled: true
 - id: ui-layout
-  disabled: true
+  disabled: false
 - id: ui-message-feedback
   disabled: true
 - id: ui-model-selection
-  disabled: true
+  disabled: false
 - id: ui-open-in-app
   disabled: true
 - id: ui-permission
-  disabled: true
+  disabled: false
 - id: ui-plan
   disabled: true
 - id: ui-plugin-manager
@@ -91,17 +91,17 @@
 - id: ui-reference
   disabled: true
 - id: ui-renderer
-  disabled: true
+  disabled: false
 - id: ui-schedule
   disabled: true
 - id: ui-secret-mask
   disabled: true
 - id: ui-session
-  disabled: true
+  disabled: false
 - id: ui-settings
-  disabled: true
+  disabled: false
 - id: ui-settings-account
-  disabled: true
+  disabled: false
 - id: ui-settings-agent-loop
   disabled: true
 - id: ui-settings-general
@@ -123,7 +123,7 @@
 - id: ui-shortcuts
   disabled: true
 - id: ui-sidebar
-  disabled: true
+  disabled: false
 - id: ui-sidebar-browser
   disabled: true
 - id: ui-sidebar-documentpreview
@@ -131,7 +131,7 @@
 - id: ui-sidebar-files
   disabled: true
 - id: ui-sidebar-right
-  disabled: true
+  disabled: false
 - id: ui-sidebar-terminal
   disabled: true
 - id: ui-skill
@@ -139,16 +139,19 @@
 - id: ui-subagent
   disabled: true
 - id: ui-theme
-  disabled: true
+  disabled: false
 - id: ui-tool
   disabled: true
 - id: ui-trajectory
   disabled: true
 - id: ui-user-questions
-  disabled: true
+  disabled: false
 - id: ui-workflow-run
   disabled: true
 - id: ui-workspace
+  disabled: false
+# 原菜单依赖被禁用的 pluginNavigation，不得阻断网页完整激活审计。
+- id: entry-customization
   disabled: true
 - id: web
   disabled: false

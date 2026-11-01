@@ -1,4 +1,4 @@
-// scriptver-130：鸿蒙本机引擎启动器；认证地址仅交给宿主，不暴露原始日志。
+// scriptver-141：鸿蒙本机引擎启动器；认证地址仅交给宿主，不暴露原始日志。
 import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { verifyRuntimeManifest } from './runtime-manifest.mjs';
