@@ -20,7 +20,7 @@ const _groupMargin = EdgeInsets.fromLTRB(SheetTitleBar.inset, 0, SheetTitleBar.i
 
 // ── 对话列表 ─────────────────────────────────────────────────────────────────
 
-enum DrawerViewAction { newFolder, manageFolders, select }
+enum DrawerViewAction { newFolder, manageFolders, select, archived }
 
 /// Sort (applies at once), then 新建文件夹 / 管理文件夹 / 多选.
 Future<DrawerViewAction?> showDrawerViewSheet(BuildContext context) =>
@@ -71,6 +71,11 @@ class DrawerViewSheet extends ConsumerWidget {
                   title: l10n.shellManageFolders,
                   onTap: () => Navigator.of(context).pop(DrawerViewAction.manageFolders),
                 ),
+              ListPageRow(
+                icon: AppIcons.archive,
+                title: l10n.shellArchived,
+                onTap: () => Navigator.of(context).pop(DrawerViewAction.archived),
+              ),
               ListPageRow(
                 icon: AppIcons.multiSelect,
                 title: l10n.shellMultiSelect,

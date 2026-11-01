@@ -19,6 +19,7 @@ import '../../../state/read_list_identity.dart';
 import '../../../state/sessions_state.dart';
 import '../../../state/workspaces_state.dart';
 import 'folder_sheets.dart';
+import '../session_search_page.dart' show showSessionSearch;
 import 'archive_notice.dart';
 import '../../common/brief_notice.dart';
 
@@ -35,10 +36,15 @@ void _toast(ScaffoldMessengerState? messenger, String text, {String? undoLabel, 
 }
 
 /// 「对话列表」: the sheet, then what was picked in it.
-Future<void> openDrawerViewOptions(BuildContext context, WidgetRef ref) async {
+Future<void> openDrawerViewOptions(BuildContext context, WidgetRef ref, {VoidCallback? onClose}) async {
   final action = await showDrawerViewSheet(context);
   if (!context.mounted || action == null) return;
   switch (action) {
+    case DrawerViewAction.archived:
+      final sessionId = await showSessionSearch(context, archivedOnly: true);
+      if (sessionId == null || !context.mounted) return;
+      ref.read(currentSessionProvider.notifier).select(sessionId);
+      onClose?.call();
     case DrawerViewAction.newFolder:
       await createFolderFlow(context, ref);
     case DrawerViewAction.manageFolders:
