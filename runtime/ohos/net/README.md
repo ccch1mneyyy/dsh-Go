@@ -12,7 +12,7 @@
 
 默认连接预算 10 秒、响应头预算 300 秒、响应正文无进展预算 300 秒；调用方的 AbortSignal 仍由原生 Fetch 处理。正文被消费端背压暂停时不计算正文无进展期限，resume 后重新计时。超时会销毁请求，不能只发 timeout 事件。`close()` 等待已有 HTTP 请求结束再关池，`destroy()` 立即中断它们；已经交给 WebSocket 调用方的升级连接由该调用方关闭。
 
-本模块没有 URL、请求头或正文日志。调用方显式传入的 dispatcher 原样保留，因为它可能持有 DNS 地址固定或代理策略；不以默认连接替换之。默认 preload 的 dispatcher 使用当时的 `process.env` 配置 Node 原生代理，`ohos-network-transport.diff` 在既有 DSH 策略服务安装/恢复时同时更新该默认 dispatcher，并沿用 DSH 的 proxyForUrl 判定；直连显式传空 proxyEnv，避免混入其他环境路由。
+本模块没有 URL、请求头或正文日志。调用方显式传入的 dispatcher 原样保留，因为它可能持有 DNS 地址固定或代理策略；不以默认连接替换之。M3-4 后，默认 preload 只有在 `NODE_USE_ENV_PROXY === '1'` 时向 Node Agent 传递环境代理；未设置或为 `0` 时显式传空配置。工厂调用方明确传入的 `proxyEnv` 仍然有效。所有本工厂的回环目标使用空代理配置的独立直连池，保留原 lookup、CA 与双栈选项；`close()` / `destroy()` 同时关闭普通池与直连池。`ohos-network-transport.diff` 继续由既有 DSH 策略服务更新默认 dispatcher，并沿用 DSH 的 proxyForUrl 判定。完整规则与真实路由测试见 `M3-4.md`。
 
 ## 使用与验证
 
