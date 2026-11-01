@@ -13,7 +13,7 @@ export function installFetch() {
   if (globalThis[key]) return globalThis[key];
   const network = {
     createDispatcher: createHttpDispatcher,
-    dispatcher: createHttpDispatcher({ proxyEnv: process.env }),
+    dispatcher: createHttpDispatcher({ proxyEnv: process.env.NODE_USE_ENV_PROXY === '1' ? process.env : {} }),
     fetch: (input, init) => nodeFetch(input, { ...init, dispatcher: init?.dispatcher ?? network.dispatcher }),
   };
   globalThis[key] = network;

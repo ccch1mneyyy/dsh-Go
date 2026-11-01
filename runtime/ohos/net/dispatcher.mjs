@@ -2,9 +2,20 @@
 // node:http(s) owns the parser, so this path never instantiates llhttp's WASM.
 import http from 'node:http';
 import https from 'node:https';
+import { BlockList, isIP } from 'node:net';
 import { Readable, Transform, pipeline } from 'node:stream';
 
 const transportError = (code, message) => Object.assign(new Error(message), { code });
+const loopback = new BlockList();
+loopback.addSubnet('127.0.0.0', 8, 'ipv4');
+loopback.addAddress('::1', 'ipv6');
+
+function isLoopbackHost(hostname) {
+  const host = hostname.replace(/^\[|\]$/g, '').replace(/\.$/, '').toLowerCase();
+  if (host === 'localhost' || host.endsWith('.localhost') || host === '0.0.0.0' || host === '::') return true;
+  const family = isIP(host);
+  return family !== 0 && loopback.check(host, family === 4 ? 'ipv4' : 'ipv6');
+}
 
 function requestHeaders(input = []) {
   if (!Array.isArray(input)) return input;
@@ -67,10 +78,20 @@ export function createHttpDispatcher({
   lookup, ca, proxyEnv, autoSelectFamily, connectTimeout = 10_000,
   headersTimeout = 300_000, bodyTimeout = 300_000,
 } = {}) {
-  const agents = {
-    'http:': new http.Agent({ keepAlive: true, lookup, proxyEnv, autoSelectFamily }),
-    'https:': new https.Agent({ keepAlive: true, lookup, ca, proxyEnv, autoSelectFamily }),
-  };
+  // Preserve the original factory-time proxy configuration snapshot.
+  const agents = new Map([
+    ['http:/other', new http.Agent({ keepAlive: true, lookup, proxyEnv, autoSelectFamily })],
+    ['https:/other', new https.Agent({ keepAlive: true, lookup, ca, proxyEnv, autoSelectFamily })],
+  ]);
+  function agentFor(origin) {
+    const direct = isLoopbackHost(origin.hostname);
+    const key = `${origin.protocol}/${direct ? 'loopback' : 'other'}`;
+    if (!agents.has(key)) {
+      const Agent = origin.protocol === 'https:' ? https.Agent : http.Agent;
+      agents.set(key, new Agent({ keepAlive: true, lookup, ca, proxyEnv: direct ? {} : proxyEnv, autoSelectFamily }));
+    }
+    return agents.get(key);
+  }
   const active = new Set();
   let closed = false;
   let closing;
@@ -78,7 +99,7 @@ export function createHttpDispatcher({
 
   function maybeDrained() {
     if (!closed || active.size) return;
-    for (const agent of Object.values(agents)) agent.destroy();
+    for (const agent of agents.values()) agent.destroy();
     drained?.();
   }
 
@@ -147,7 +168,7 @@ export function createHttpDispatcher({
           path: options.path,
           method: options.method,
           headers,
-          agent: agents[protocol],
+          agent: agentFor(origin),
         });
         request.once('error', fail);
         connectTimer = timer(connectTimeout, 'UND_ERR_CONNECT_TIMEOUT', 'HTTP connection timed out');
