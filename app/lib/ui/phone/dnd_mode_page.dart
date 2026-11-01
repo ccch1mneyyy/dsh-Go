@@ -174,10 +174,10 @@ class _PhoneDndPageState extends ConsumerState<PhoneDndPage> {
     final s = bg.shizuku;
     final sdk = ref.watch(phoneProvider.select((p) => p.status.device.sdkInt));
     final android17 = (sdk ?? 0) >= 37;
-    final allSet = s.installed && s.running && s.granted;
+    final allSet = s.running && s.granted;
     final inUse = bg.mode == PhoneBackgroundMode.shizuku;
     final Widget next;
-    if (!s.installed) {
+    if (!s.running && !s.installed) {
       next = _Next(
         text: context.l10n.phoneDndInstallShizuku,
         button: OutlinedButton.icon(
@@ -201,7 +201,7 @@ class _PhoneDndPageState extends ConsumerState<PhoneDndPage> {
         margin: _groupMargin,
         title: 'Shizuku',
         children: [
-          CheckRow(label: context.l10n.phoneDndShizukuInstalled, done: s.installed),
+          if (s.installed || !s.running) CheckRow(label: context.l10n.phoneDndShizukuInstalled, done: s.installed),
           CheckRow(label: context.l10n.phoneDndShizukuRunning, done: s.running),
           CheckRow(label: context.l10n.phoneDndShizukuGranted, done: s.granted),
           next,

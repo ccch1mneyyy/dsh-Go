@@ -142,6 +142,39 @@ void main() {
       expect(find.text('正在使用：Shizuku'), findsNothing);
     });
 
+    testWidgets('Sui can grant and enable without the Shizuku manager', (tester) async {
+      final h = await pumpPhone(
+        tester,
+        const PhoneDndPage(),
+        native: FakePhoneNative(status: phoneStatus(shizukuRunning: true)),
+      );
+      expect(find.text('打开 Shizuku 官网'), findsNothing);
+      expect(button(tester, '启用不打扰模式').onPressed, isNull);
+      await tester.tap(find.text('授权给 DSH Go'));
+      await tester.pump();
+      expect(h.native!.callsOf('requestShizukuPermission'), hasLength(1));
+
+      h.native!.push(phoneStatus(shizukuRunning: true, shizukuGranted: true));
+      await settlePhone(tester);
+      expect(find.text('Shizuku 这边准备好了。'), findsOneWidget);
+      await tester.tap(find.text('启用不打扰模式'));
+      await tester.pumpAndSettle();
+      expect(h.native!.callsOf('setBackgroundMode').single.arguments, {'mode': 'shizuku'});
+    });
+
+    testWidgets('Sui binder death disables enabling despite a stale grant', (tester) async {
+      final h = await pumpPhone(
+        tester,
+        const PhoneDndPage(),
+        native: FakePhoneNative(status: phoneStatus(shizukuRunning: true, shizukuGranted: true)),
+      );
+      expect(button(tester, '启用不打扰模式').onPressed, isNotNull);
+      h.native!.push(phoneStatus(shizukuGranted: true));
+      await settlePhone(tester);
+      expect(button(tester, '启用不打扰模式').onPressed, isNull);
+      expect(find.text('打开 Shizuku 官网'), findsOneWidget);
+    });
+
     testWidgets('a refused mode shows the native reason', (tester) async {
       final native = FakePhoneNative(
         status: phoneStatus(shizukuInstalled: true, shizukuRunning: true, shizukuGranted: true),
