@@ -376,9 +376,34 @@ void main() {
         'id': 'x',
         'reasoningEfforts': {'none': 'none'},
       })!;
-      expect(unknownOnly.toJson()['reasoningEfforts'], <String, Object?>{});
+      expect(unknownOnly.toJson()['reasoningEfforts'], false);
       expect(unknownOnly.thinkingLevels, isEmpty);
       expect(unknownOnly.thinks, isFalse);
+    });
+
+    test('empty and off-only imported declarations disable thinking without inheriting catalog levels', () {
+      for (final raw in [
+        <String, Object?>{},
+        {'off': null},
+        {'none': 'none', 'off': 'none'},
+      ]) {
+        final imported = ProviderModelSpec.fromJson({'id': 'catalog-model', 'reasoningEfforts': raw})!;
+        expect(imported.toJson()['reasoningEfforts'], false, reason: '$raw');
+        expect(imported.thinks, isFalse);
+        expect(jsonRoundTrip(imported).toJson(), imported.toJson(), reason: 'repeated editing stays valid');
+      }
+    });
+
+    test('selecting only off or unknown levels never writes a map the adapter rejects', () {
+      for (final selected in [
+        ['off'],
+        ['off', 'none'],
+        ['none'],
+      ]) {
+        final edited = plain.withReasoningEfforts(selected);
+        expect(edited.toJson()['reasoningEfforts'], false, reason: '$selected');
+        expect(edited.thinks, isFalse);
+      }
     });
 
     test('only off is not thinking; an unreadable dict reads as none and still rides along', () {

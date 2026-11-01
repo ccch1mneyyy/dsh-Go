@@ -109,13 +109,17 @@ class ProviderModelSpec {
   /// this adapter does not know (a gateway answering `none`, say); keeping it
   /// would fail the plugin's config validation on the next start, so the whole
   /// adapter would not activate and every custom route would go missing.
+  /// With no remaining thinking level, explicitly disable reasoning: an empty
+  /// or off-only map is invalid, while omitting the field could inherit levels
+  /// from the installed catalog that this imported model does not support.
   /// Anything but a map is left alone, keeping the round trip lossless.
   static Object? _knownReasoningEfforts(Object? raw) {
     if (raw is! Map) return raw;
-    return <String, Object?>{
+    final known = <String, Object?>{
       for (final MapEntry(:key, :value) in raw.entries)
         if (key is String && piAiThinkingLevels.contains(key)) key: value,
     };
+    return known.keys.any((level) => level != 'off') ? known : false;
   }
 
   final String id;
@@ -171,7 +175,8 @@ class ProviderModelSpec {
   /// A level kept from before keeps its configured value; a new one sends
   /// its own name, `off` nothing. Empty or null declares no levels: the
   /// field is dropped (a hand-declared model then does not think) unless it
-  /// was an explicit `false`, which stays.
+  /// was an explicit `false`, which stays. Selecting only `off` or unknown
+  /// levels explicitly disables reasoning instead of writing an invalid map.
   ProviderModelSpec withReasoningEfforts(Iterable<String>? levels) {
     final before = reasoningEfforts ?? const <String, String?>{};
     final wanted = {...?levels};
@@ -179,13 +184,13 @@ class ProviderModelSpec {
     if (wanted.isEmpty) {
       if (next['reasoningEfforts'] != false) next.remove('reasoningEfforts');
     } else {
-      next['reasoningEfforts'] = <String, String?>{
+      next['reasoningEfforts'] = _knownReasoningEfforts(<String, String?>{
         for (final level in piAiThinkingLevels)
           if (wanted.contains(level))
             level: before.containsKey(level) && (before[level] != null || level == 'off')
                 ? before[level]
                 : (level == 'off' ? null : level),
-      };
+      });
     }
     return ProviderModelSpec(
       id: id,
