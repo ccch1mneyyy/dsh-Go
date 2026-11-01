@@ -30,6 +30,13 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+# Windows 的控制台默认不是 UTF-8（cp1252 / cp936）。本脚本会打印 ✓ / ✗ 和中文，
+# stdout 编码不是 UTF-8 时 print 会抛 UnicodeEncodeError（连 --help 都会崩），报错信息也会被转义成 \uXXXX。
+# 把两个流切到 UTF-8，并让无法编码的字符降级。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        _stream.reconfigure(encoding='utf-8', errors='replace')
+
 SKILL = 'dsh-go-guide'
 LOCALES = ('zh', 'en')
 NAV = re.compile(r'^<!-- nav: ([A-Za-z][A-Za-z0-9_]*(?:,[A-Za-z][A-Za-z0-9_]*)*) -->$')
