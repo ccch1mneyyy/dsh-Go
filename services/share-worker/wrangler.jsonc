@@ -59,9 +59,11 @@
     // "key": /beta asks for an access key (the private beta). "public": anyone
     // downloads at /download, and /beta redirects there (docs/release.md「公测」).
     "DOWNLOAD_ACCESS": "public",
-    // Public /download redirects here for now: APK downloads go through GitHub Releases.
-    // In-app updates keep reading /download/<version>/<file> and /beta from R2. Empty: show the page.
-    "DOWNLOAD_REDIRECT": "https://github.com/ccch1mneyyy/dsh-go/releases/latest",
+    // The public download bucket dshgo-dl (releases only), files at
+    // <base>download/<version>/<file>, the latest manifest at <base>update.json.
+    // The Global button points there once a release's `routes` has dl (else at
+    // /download/<version>/<file>). publish-release.sh reads it too; empty: off.
+    "DL_BASE_URL": "https://dl.dshtui.com/",
     // The China route: public base URL of the Hong Kong bucket, files at
     // <base><version>/<file>. Empty: not offered. publish-release.sh reads it too.
     "CN_BASE_URL": ""

@@ -270,19 +270,15 @@ jq --slurpfile n "$TMP/notes.json" --arg page "https://github.com/$REPO/releases
   | .notes = $n[0].all
   | .notesByLocale = {zh: $n[0].zh, en: $n[0].en}' "$MANIFEST" >"$TMP/github/update.json"
 
-# Which page is live: /download answers once DOWNLOAD_ACCESS=public, and with
-# DOWNLOAD_REDIRECT it sends people to GitHub instead.
+# Which page is live: /download answers once DOWNLOAD_ACCESS=public.
 MODE=unknown
-REDIRECT=
 if [[ $DRY == 0 && $VERIFY == 1 && $LATEST == 1 ]]; then
-  read -r code REDIRECT < <(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' "$ORIGIN/download" || echo 000)
-  case "$code" in
+  case "$(curl -sS -o /dev/null -w '%{http_code}' "$ORIGIN/download" || echo 000)" in
     200) MODE=public ;;
-    302) MODE=redirect ;;
     404) MODE=key ;;
     *) die "can't tell whether $ORIGIN/download is up" ;;
   esac
-  echo "page: $(case $MODE in public) echo "$ORIGIN/download (public)" ;; redirect) echo "$ORIGIN/download → $REDIRECT" ;; *) echo "$ORIGIN/beta (access key)" ;; esac)"
+  echo "page: $([[ $MODE == public ]] && echo "$ORIGIN/download (public)" || echo "$ORIGIN/beta (access key)")"
   [[ $MODE != key || -s "${BETA_KEY_FILE:-}" ]] || die "the page wants a key: set BETA_KEY_FILE to a file holding a live access key"
 fi
 
@@ -524,11 +520,7 @@ echo "ok - /beta/update.json (channel token) is $FULL"
 CN_URL="$CN_BASE_URL$VERSION/$ARM64"
 GH_URL="https://github.com/$REPO/releases/download/$TAG/$ARM64"
 # The Worker remembers the latest manifest for 30 s per isolate.
-if [[ $MODE == redirect ]]; then
-  # No page to check; the x86_64 link in the GitHub notes points here.
-  echo "ok - $ORIGIN/download sends people to $REDIRECT"
-  [[ -z "$X64" ]] || check 'public link' "$X64" "$ORIGIN/download/$VERSION/$X64"
-elif [[ $MODE == public ]]; then
+if [[ $MODE == public ]]; then
   for attempt in 1 2 3 4 5 6 7 8; do
     curl -fsS "$ORIGIN/download?lang=zh" >"$TMP/page.html" || true
     grep -qF "${SHA[$ARM64]}" "$TMP/page.html" && break
