@@ -1369,6 +1369,11 @@ class L10nZh extends L10n {
   }
 
   @override
+  String activityTraceCostExcludesSearch(int count) {
+    return '不含 $count 次联网搜索';
+  }
+
+  @override
   String activityTraceReasoningTokens(String tokens) {
     return '其中推理 $tokens';
   }

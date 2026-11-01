@@ -167,7 +167,8 @@ void main() {
         find.descendant(of: find.byType(MediaMetaLine), matching: find.text('AI 生成 · Seedream 5.0 · 1:1')),
         findsOneWidget,
       );
-      expect(find.textContaining('¥'), findsNothing);
+      // The turn's footnote may carry the chat model's cost; the media line never does.
+      expect(find.descendant(of: find.byType(MediaMetaLine), matching: find.textContaining('¥')), findsNothing);
     });
 
     for (final width in [320.0, 390.0]) {

@@ -157,7 +157,9 @@ void main() {
     test('cache hit rate and cost need real numbers', () {
       const usage = SessionUsage(uncachedInput: 2000, cacheRead: 6000, output: 500);
       expect(usage.cacheHitRate, 0.75);
-      expect(knownPricing, isEmpty, reason: 'no prices are made up');
+      // A session spans peak and off-peak hours: no single DeepSeek price fits it.
+      expect(sessionPricing('deepseek-official', 'deepseek-flash'), isNull);
+      expect(sessionPricing('someone', 'unlisted'), isNull);
       const pricing = TokenPricing(currency: 'CNY', inputPerMillion: 2, cacheHitPerMillion: 0.5, outputPerMillion: 8);
       expect(estimateCost(usage, pricing), closeTo(0.011, 1e-9));
     });

@@ -956,6 +956,7 @@ class TraceUsageFooter extends StatelessWidget {
     final hit = usage.cacheHitRate;
     final ttft = trace.ttft;
     final cost = turnCostLabel(trace);
+    final searches = cost == null ? 0 : webSearchCount(trace);
     final stats = [
       (l10n.activityInput, usage.isEmpty ? '—' : formatTokens(usage.input)),
       (l10n.activityCacheHit, hit == null ? '—' : formatPercent(hit)),
@@ -1005,6 +1006,7 @@ class TraceUsageFooter extends StatelessWidget {
           child: Text(
             [
               if (cost != null) l10n.activityTraceEstimatedCost(cost),
+              if (searches > 0) l10n.activityTraceCostExcludesSearch(searches),
               if (usage.reasoning > 0) l10n.activityTraceReasoningTokens(formatTokens(usage.reasoning)),
               l10n.activityUsageInputIncludesCache,
             ].join(' · '),

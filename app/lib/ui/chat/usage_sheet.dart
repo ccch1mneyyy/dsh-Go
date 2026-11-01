@@ -173,7 +173,7 @@ class UsageSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final usage = ref.watch(sessionUsageProvider(sessionId));
-    final pricing = model == null ? null : knownPricing['${model!.provider}/${model!.model}'];
+    final pricing = model == null ? null : sessionPricing(model!.provider, model!.model);
     return SafeArea(
       top: false,
       child: SingleChildScrollView(

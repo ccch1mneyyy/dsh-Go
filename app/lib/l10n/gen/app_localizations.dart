@@ -2690,6 +2690,12 @@ abstract class L10n {
   /// **'{cost}（按官方单价估算）'**
   String activityTraceEstimatedCost(String cost);
 
+  /// After the estimated cost: the default web search runs its own model call whose tokens the app never sees.
+  ///
+  /// In zh, this message translates to:
+  /// **'不含 {count} 次联网搜索'**
+  String activityTraceCostExcludesSearch(int count);
+
   /// No description provided for @activityTraceReasoningTokens.
   ///
   /// In zh, this message translates to:

@@ -353,6 +353,7 @@
   "activityTraceSpanSemantics": "{title} {detail}, duration {duration}",
   "activityTraceGroupSemantics": "{label}, duration {duration}",
   "activityTraceEstimatedCost": "{cost} (estimated at official rates)",
+  "activityTraceCostExcludesSearch": "{count, plural, =1{excludes 1 web search} other{excludes {count} web searches}}",
   "activityTraceReasoningTokens": "Reasoning: {tokens}",
   "activityStepPosition": "Turn {turn} · Step {step}",
   "activityStepTokenSpeed": "{speed} tokens/sec",

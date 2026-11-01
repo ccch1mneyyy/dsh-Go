@@ -661,6 +661,15 @@
       }
     }
   },
+  "activityTraceCostExcludesSearch": "不含 {count} 次联网搜索",
+  "@activityTraceCostExcludesSearch": {
+    "description": "After the estimated cost: the default web search runs its own model call whose tokens the app never sees.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "activityTraceReasoningTokens": "其中推理 {tokens}",
   "@activityTraceReasoningTokens": {
     "placeholders": {
