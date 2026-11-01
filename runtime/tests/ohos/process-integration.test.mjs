@@ -1,0 +1,132 @@
+import test, { before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import OhSubprocessRuntime from '../../ohos/process/index.mjs';
+
+assert.ok(process.env.OHOS_TEST_PROCESS_PREFIX, '需指定单独打过 ohos-virtual-process.diff 的前缀');
+const require = createRequire(join(resolve(process.env.OHOS_TEST_PROCESS_PREFIX), 'package.json'));
+const load = name => import(pathToFileURL(require.resolve(name)));
+const { Context } = await load('@deepseek-ai/cordis');
+const { LocalBashExecutor } = await load('@deepseek-ai/dsh-bash-local');
+const search = await load('@deepseek-ai/dsh-tool-fs-search');
+let root, work, temp, ctx;
+before(async () => {
+  root = await mkdtemp(join(tmpdir(), 'ohos-service-test-'));
+  work = join(root, '工作区'); temp = join(root, 'temp');
+  await Promise.all([mkdir(work), mkdir(temp)]);
+  ctx = new Context();
+  await ctx.plugin(OhSubprocessRuntime, { workspaceRoots: [work], temporaryRoot: temp });
+  await ctx.plugin(LocalBashExecutor, { cwd: work, timeoutMs: 15000, maxTimeoutMs: 30000, maxOutputBytes: 65536, maxSpillBytes: 1048576, graceMs: 200 });
+});
+after(async () => {
+  await ctx?.fiber.dispose();
+  await rm(root, { recursive: true, force: true });
+});
+
+test('真实Cordis注册ctx.subprocess，原LocalBashExecutor执行并保留状态与输出', async () => {
+  assert.equal(ctx.subprocess.capabilities.kind, 'virtual');
+  const execution = await ctx.shell.execute(ctx.shell.resolve({ command: 'echo hello > 文件.txt; cat 文件.txt; exit 4' }));
+  const result = await execution.result();
+  assert.equal(result.exitCode, 4);
+  assert.equal(result.stdout.text, 'hello\n');
+  assert.equal(result.aborted, false);
+  assert.equal(result.timedOut, false);
+  assert.equal(execution.status, 'completed');
+  assert.equal(await readFile(join(work, '文件.txt'), 'utf8'), 'hello\n');
+});
+
+test('原bash deadline负责超时分类，返回时worker已退出', async () => {
+  const execution = await ctx.shell.execute(ctx.shell.resolve({ command: 'sleep 30; echo late > forbidden', timeoutMs: 120 }));
+  const result = await execution.result();
+  assert.equal(result.timedOut, true);
+  assert.equal(result.aborted, false);
+  assert.equal(result.exitCode, null);
+  assert.equal(execution.status, 'killed');
+  assert.equal(ctx.subprocess.backend.live.size, 0);
+});
+
+test('原bash caller取消与timeout分类不同', async () => {
+  const controller = new AbortController();
+  const execution = await ctx.shell.execute(ctx.shell.resolve({ command: 'sleep 30', signal: controller.signal }));
+  controller.abort(new Error('cancel fixture'));
+  const result = await execution.result();
+  assert.equal(result.timedOut, false);
+  assert.equal(result.aborted, true);
+  assert.equal(result.exitCode, null);
+});
+
+test('锁定DSH真实buildGrepCommand/runRipgrep/parseGrepMatches通过虚拟rg', async () => {
+  await writeFile(join(work, '搜索.txt'), 'ABC\nabc\n中文abc\n');
+  const exec = { agent: {}, signal: new AbortController().signal };
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => work } };
+  const result = await search.runRipgrep(context, exec, 'grep', search.buildGrepCommand({ pattern: 'abc', path: '搜索.txt' }), 10000, 200, 1000);
+  assert.deepEqual(search.parseGrepMatches(result.stdout), [
+    { path: '搜索.txt', lineNumber: 2, line: 'abc' },
+    { path: '搜索.txt', lineNumber: 3, line: '中文abc' },
+  ]);
+  assert.equal(result.noMatches, false);
+});
+
+test('锁定DSH真实glob模板保留以短横开头的字面路径', async () => {
+  await mkdir(join(work, '-leading'));
+  await writeFile(join(work, '-leading', 'a.txt'), 'text');
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => work } };
+  const result = await search.runRipgrep(context, { agent: {}, signal: new AbortController().signal }, 'glob', search.buildGlobCommand({ pattern: '*.txt', path: '-leading' }), 10000, 200, 1000);
+  assert.equal(result.noMatches, false);
+  const paths = result.stdout.trim().split('\n').map(path => search.toWorkdirRelative(path, work));
+  assert.deepEqual(paths, ['-leading/a.txt']);
+});
+
+test('无效regex经DSH原错误分类成为SEARCH_INVALID_PATTERN', async () => {
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => work } };
+  await assert.rejects(search.runRipgrep(context, { agent: {}, signal: new AbortController().signal }, 'grep', search.buildGrepCommand({ pattern: '[' }), 10000, 200, 1000), { code: 'SEARCH_INVALID_PATTERN' });
+});
+
+test('真实DSH把缺失搜索路径作为SEARCH_FAILED，不能伪装noMatches', async () => {
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => work } };
+  for (const path of ['missing.txt', 'missing/']) {
+    await assert.rejects(search.runRipgrep(context, { agent: {}, signal: new AbortController().signal }, 'grep', search.buildGrepCommand({ pattern: 'abc', path }), 10000, 200, 1000), { code: 'SEARCH_FAILED' });
+  }
+});
+
+test('真实DSH的合法零宽正则保留非空行与空行', async () => {
+  await writeFile(join(work, 'zero-width.txt'), '😀中abc\n\nabc');
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => work } };
+  for (const pattern of ['^', '$', '']) {
+    const result = await search.runRipgrep(context, { agent: {}, signal: new AbortController().signal }, 'grep', search.buildGrepCommand({ pattern, path: 'zero-width.txt' }), 10000, 200, 1000);
+    assert.equal(result.noMatches, false);
+    assert.deepEqual(search.parseGrepMatches(result.stdout).map(match => [match.lineNumber, match.line]), [[1, '😀中abc'], [2, ''], [3, 'abc']]);
+  }
+});
+
+test('真实DSH显式搜索文件不被gitignore、隐藏或负向glob伪装成零匹配', async () => {
+  const directory = join(work, 'explicit-ignored');
+  await mkdir(join(directory, '.git'), { recursive: true });
+  await writeFile(join(directory, '.gitignore'), '*.txt\n');
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => directory } };
+  for (const path of ['ignored.txt', '.hidden.txt']) {
+    await writeFile(join(directory, path), 'abc\n');
+    for (const include of [undefined, '!*.txt']) {
+      const result = await search.runRipgrep(context, { agent: {}, signal: new AbortController().signal }, 'grep', search.buildGrepCommand({ pattern: 'abc', path, include }), 10000, 200, 1000);
+      assert.equal(result.noMatches, false);
+      assert.deepEqual(search.parseGrepMatches(result.stdout), [{ path, lineNumber: 1, line: 'abc' }]);
+    }
+  }
+});
+
+test('DSH原rawOutputMaxBytes上限不解析截断的半条JSON', async () => {
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => work } };
+  await assert.rejects(search.runRipgrep(context, { agent: {}, signal: new AbortController().signal }, 'grep', search.buildGrepCommand({ pattern: 'abc' }), 32, 200, 1000), { code: 'SEARCH_RAW_OUTPUT_OVERFLOW' });
+});
+
+test('PTY明确不可用，未实现git不能被工作区快照当成可执行系统git', async () => {
+  await assert.rejects(ctx.subprocess.spawnTerminal({}), { code: 'ERR_OHOS_PTY_UNAVAILABLE' });
+  await assert.rejects(ctx.subprocess.resolveExecutable('git'), { name: 'SubprocessExecutableNotFoundError' });
+  assert.equal(await ctx.subprocess.resolveExecutable('bash'), '/dsh-go/ohos/bin/bash');
+  assert.equal(ctx.subprocess.temporaryRoot, temp);
+  assert.throws(() => { ctx.subprocess.temporaryRoot = '/tmp'; }, TypeError);
+});
