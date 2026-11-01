@@ -360,6 +360,52 @@ void main() {
       }, reason: 'the false was replaced by the dict, so turning thinking off again drops the field');
     });
 
+    test('a level the adapter does not know is dropped on read, so an imported route still validates', () {
+      final imported = ProviderModelSpec.fromJson(const {
+        'id': 'glm-5.3-flash',
+        'reasoningEfforts': {'none': 'none', 'minimal': 'minimal', 'max': 'max'},
+      })!;
+      expect(imported.toJson()['reasoningEfforts'], {
+        'minimal': 'minimal',
+        'max': 'max',
+      }, reason: 'none is not a level dsh-llm-pi-ai accepts');
+      expect(imported.thinkingLevels, ['minimal', 'max']);
+      expect(imported.thinks, isTrue);
+
+      final unknownOnly = ProviderModelSpec.fromJson(const {
+        'id': 'x',
+        'reasoningEfforts': {'none': 'none'},
+      })!;
+      expect(unknownOnly.toJson()['reasoningEfforts'], false);
+      expect(unknownOnly.thinkingLevels, isEmpty);
+      expect(unknownOnly.thinks, isFalse);
+    });
+
+    test('empty and off-only imported declarations disable thinking without inheriting catalog levels', () {
+      for (final raw in [
+        <String, Object?>{},
+        {'off': null},
+        {'none': 'none', 'off': 'none'},
+      ]) {
+        final imported = ProviderModelSpec.fromJson({'id': 'catalog-model', 'reasoningEfforts': raw})!;
+        expect(imported.toJson()['reasoningEfforts'], false, reason: '$raw');
+        expect(imported.thinks, isFalse);
+        expect(jsonRoundTrip(imported).toJson(), imported.toJson(), reason: 'repeated editing stays valid');
+      }
+    });
+
+    test('selecting only off or unknown levels never writes a map the adapter rejects', () {
+      for (final selected in [
+        ['off'],
+        ['off', 'none'],
+        ['none'],
+      ]) {
+        final edited = plain.withReasoningEfforts(selected);
+        expect(edited.toJson()['reasoningEfforts'], false, reason: '$selected');
+        expect(edited.thinks, isFalse);
+      }
+    });
+
     test('only off is not thinking; an unreadable dict reads as none and still rides along', () {
       expect(plain.withReasoningEfforts(['off']).thinks, isFalse);
       const odd = ProviderModelSpec(
