@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync, existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { test } from 'node:test'
-import { prepare, main } from '../bin/preview.mjs'
+import { flutterSpawn, prepare, main } from '../bin/preview.mjs'
 
 function files(t, value = { type: 'text', text: 'Preview' }) {
   const dir = mkdtempSync(join(tmpdir(), 'dsh-native-preview-'))
@@ -15,6 +15,24 @@ function files(t, value = { type: 'text', text: 'Preview' }) {
   writeFileSync(data, '{"count":42}')
   return { dir, view, data, out }
 }
+test('flutter launch keeps POSIX as-is and goes through cmd.exe on Windows', () => {
+  const posix = flutterSpawn('flutter', ['test', '--no-pub'], 'linux')
+  assert.equal(posix.command, 'flutter')
+  assert.deepEqual(posix.args, ['test', '--no-pub'])
+  assert.deepEqual(posix.extra, {})
+
+  const win = flutterSpawn('flutter', ['test', '--no-pub'], 'win32', 'cmd.exe')
+  assert.equal(win.command, 'cmd.exe')
+  assert.deepEqual(win.args, ['/d', '/s', '/c', '"flutter test --no-pub"'])
+  assert.equal(win.extra.windowsVerbatimArguments, true)
+
+  const spaced = flutterSpawn('C:\\Program Files\\flutter\\bin\\flutter.bat', ['test'], 'win32', 'cmd.exe')
+  assert.equal(spaced.args.at(-1), '""C:\\Program Files\\flutter\\bin\\flutter.bat" test"')
+
+  // cmd 元字符必须进引号，否则会被当成第二条命令
+  const metachar = flutterSpawn('flutter&calc.exe', ['test'], 'win32', 'cmd.exe')
+  assert.equal(metachar.args.at(-1), '""flutter&calc.exe" test"')
+})
 
 test('panel diagnostics and snapshot use the supplied data, width and text scale', t => {
   const f = files(t, { type: 'metric', label: 'Count', value: { $: 'data.count' } })
