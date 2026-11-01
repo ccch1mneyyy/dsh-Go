@@ -84,7 +84,7 @@ class PatchDsh(unittest.TestCase):
         self.assertEqual(new2, "line 40\n-- a removed-looking added line\n")
 
     def test_record_then_apply_pinned(self):
-        r = self.run_cli("--dsh-version", "1.0.0", "--record")
+        r = self.run_cli("--target", "android", "--dsh-version", "1.0.0", "--record")
         self.assertEqual(r.returncode, 0, r.stdout)
         pins = load(os.path.join(self.patches, "pins.json"))
         pin = pins["patches"]["guard.diff"]["1.0.0"][REL]
@@ -93,7 +93,7 @@ class PatchDsh(unittest.TestCase):
         self.assertEqual(pin["after"], sha(patched))
         self.assertIn("guard(req, res)", patched)
         # idempotent on an already patched tree
-        r = self.run_cli("--dsh-version", "1.0.0")
+        r = self.run_cli("--target", "android", "--dsh-version", "1.0.0")
         self.assertEqual(r.returncode, 0, r.stdout)
         self.assertIn("already patched", r.stdout)
         # a fresh original applies to exactly the pinned result, by replacing the file (hard links survive)
@@ -102,26 +102,26 @@ class PatchDsh(unittest.TestCase):
         os.replace(self.target + ".orig", self.target)
         link = self.target + ".link"
         os.link(self.target, link)
-        r = self.run_cli("--dsh-version", "1.0.0", "--out", os.path.join(self.tmp.name, "applied.json"))
+        r = self.run_cli("--target", "android", "--dsh-version", "1.0.0", "--out", os.path.join(self.tmp.name, "applied.json"))
         self.assertEqual(r.returncode, 0, r.stdout)
         self.assertEqual(sha(read(self.target)), pin["after"])
         self.assertEqual(read(link), ORIGINAL)
         self.assertEqual(load(os.path.join(self.tmp.name, "applied.json")), ["guard.diff"])
 
     def test_unpinned_version_fails(self):
-        self.run_cli("--dsh-version", "1.0.0", "--record")
+        self.run_cli("--target", "android", "--dsh-version", "1.0.0", "--record")
         with open(self.target, "w") as f:
             f.write(ORIGINAL)
-        r = self.run_cli("--dsh-version", "1.0.1")
+        r = self.run_cli("--target", "android", "--dsh-version", "1.0.1")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("no pin for DSH 1.0.1", r.stdout)
         self.assertEqual(read(self.target), ORIGINAL)
 
     def test_drifted_original_fails(self):
-        self.run_cli("--dsh-version", "1.0.0", "--record")
+        self.run_cli("--target", "android", "--dsh-version", "1.0.0", "--record")
         with open(self.target, "w") as f:
             f.write(ORIGINAL + "// upstream change\n")
-        r = self.run_cli("--dsh-version", "1.0.0")
+        r = self.run_cli("--target", "android", "--dsh-version", "1.0.0")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("differs from the vetted", r.stdout)
 
@@ -145,13 +145,13 @@ class PatchDsh(unittest.TestCase):
         for starting in (ORIGINAL, first, final):
             with open(self.target, "w") as out:
                 out.write(starting)
-            result = self.run_cli("--dsh-version", "1.0.0")
+            result = self.run_cli("--target", "android", "--dsh-version", "1.0.0")
             self.assertEqual(result.returncode, 0, result.stdout)
             self.assertEqual(read(self.target), final)
 
     def test_broken_hash_chain_fails_before_writing_any_file(self):
         self.chain_fixture(broken=True)
-        result = self.run_cli("--dsh-version", "1.0.0")
+        result = self.run_cli("--target", "android", "--dsh-version", "1.0.0")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("broken patch hash chain", result.stdout)
         self.assertEqual(read(self.target), ORIGINAL)
@@ -160,19 +160,19 @@ class PatchDsh(unittest.TestCase):
         _, final = self.chain_fixture()
         with open(self.target, "w") as out:
             out.write(final + "unexpected modification\n")
-        result = self.run_cli("--dsh-version", "1.0.0")
+        result = self.run_cli("--target", "android", "--dsh-version", "1.0.0")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("differs from the vetted", result.stdout)
 
     def test_record_refuses_ambiguous_or_missing_context(self):
         with open(self.target, "w") as f:
             f.write(ORIGINAL + ORIGINAL)          # every hunk matches twice
-        r = self.run_cli("--dsh-version", "2.0.0", "--record")
+        r = self.run_cli("--target", "android", "--dsh-version", "2.0.0", "--record")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("matches 2 places", r.stdout)
         with open(self.target, "w") as f:
             f.write(ORIGINAL.replace("await route.handler", "await route.run"))
-        r = self.run_cli("--dsh-version", "2.0.0", "--record")
+        r = self.run_cli("--target", "android", "--dsh-version", "2.0.0", "--record")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("matches 0 places", r.stdout)
         self.assertEqual(load(os.path.join(self.patches, "pins.json"))["patches"], {})
@@ -208,15 +208,15 @@ class PatchDsh(unittest.TestCase):
             json.dump({"schema": 2, "targetSets": {"android": [name], "ohos": [name]},
                        "patches": {name: pins["patches"][name]}}, out)
 
-        result = self.run_cli("--dsh-version", "0.2.1-rc.2")
+        result = self.run_cli("--target", "android", "--dsh-version", "0.2.1-rc.2")
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(sha(read(target)), pin["after"])
-        again = self.run_cli("--dsh-version", "0.2.1-rc.2")
+        again = self.run_cli("--target", "android", "--dsh-version", "0.2.1-rc.2")
         self.assertEqual(again.returncode, 0, again.stdout)
         self.assertIn("already patched", again.stdout)
         with open(target, "wb") as out:
             out.write(original + b"// upstream drift\n")
-        changed = self.run_cli("--dsh-version", "0.2.1-rc.2")
+        changed = self.run_cli("--target", "android", "--dsh-version", "0.2.1-rc.2")
         self.assertNotEqual(changed.returncode, 0)
         self.assertIn("differs from the vetted", changed.stdout)
         with open(target, "rb") as source:
@@ -243,10 +243,59 @@ class PatchDsh(unittest.TestCase):
         self.write_pins(pins)
         return first, second, rel, after
 
-    def test_default_android_uses_only_declared_common_set(self):
+    def fixture_state(self):
+        """Capture payload, pins, reports, and any accidental temporary-file writes."""
+        state = {}
+        for parent, dirs, files in os.walk(self.tmp.name):
+            for name in [".", *sorted(dirs), *sorted(files)]:
+                path = os.path.normpath(os.path.join(parent, name))
+                stat = os.lstat(path)
+                item = [stat.st_mode, stat.st_dev, stat.st_ino, stat.st_mtime_ns]
+                if os.path.isfile(path):
+                    with open(path, "rb") as source:
+                        item.append(hashlib.sha256(source.read()).hexdigest())
+                state[os.path.relpath(path, self.tmp.name)] = item
+        return state
+
+    def test_missing_target_rejects_pinned_apply_before_any_write(self):
+        self.target_fixture()
+        out = os.path.join(self.tmp.name, "applied.json")
+        report = os.path.join(self.tmp.name, "target.json")
+        for path in (out, report):
+            with open(path, "w") as stream:
+                stream.write("existing report must not be replaced\n")
+        before = self.fixture_state()
+        result = self.run_cli("--dsh-version", "1.0.0", "--out", out, "--target-report", report)
+        after = self.fixture_state()
+        self.assertEqual(result.returncode, 2, result.stdout + "\nfixture changed: " + str(after != before))
+        self.assertIn("required: --target", result.stdout)
+        self.assertEqual(after, before)
+
+    def test_missing_target_rejects_record_before_creating_outputs(self):
+        # A valid, explicitly registered but not yet pinned set would otherwise be recorded.
+        before = self.fixture_state()
+        result = self.run_cli("--dsh-version", "1.0.0", "--record",
+                              "--out", os.path.join(self.tmp.name, "new-applied.json"),
+                              "--target-report", os.path.join(self.tmp.name, "new-target.json"))
+        after = self.fixture_state()
+        self.assertEqual(result.returncode, 2, result.stdout + "\nfixture changed: " + str(after != before))
+        self.assertIn("required: --target", result.stdout)
+        self.assertEqual(after, before)
+
+    def test_invalid_or_valueless_target_rejects_before_any_write(self):
+        self.target_fixture()
+        before = self.fixture_state()
+        for flags in (["--target", "linux"], ["--target"]):
+            with self.subTest(flags=flags):
+                result = self.run_cli("--dsh-version", "1.0.0", *flags)
+                self.assertEqual(result.returncode, 2, result.stdout)
+                self.assertIn("--target", result.stdout)
+                self.assertEqual(self.fixture_state(), before)
+
+    def test_explicit_android_uses_only_declared_common_set(self):
         _, android, rel, ohos = self.target_fixture()
         report = os.path.join(self.tmp.name, "target.json")
-        result = self.run_cli("--dsh-version", "1.0.0", "--target-report", report)
+        result = self.run_cli("--target", "android", "--dsh-version", "1.0.0", "--target-report", report)
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(read(self.target), android)
         value = load(report)
@@ -294,7 +343,7 @@ class PatchDsh(unittest.TestCase):
         with open(os.path.join(self.patches, "new.diff"), "w") as out:
             out.write(DIFF)
         for flags in ([], ["--record"]):
-            result = self.run_cli("--dsh-version", "1.0.0", *flags)
+            result = self.run_cli("--target", "android", "--dsh-version", "1.0.0", *flags)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("unregistered=['new.diff']", result.stdout)
             self.assertEqual(read(self.target), ORIGINAL)
@@ -305,13 +354,13 @@ class PatchDsh(unittest.TestCase):
             pins = json.loads(json.dumps(initial))
             pins["targetSets"]["ohos"].append(name)
             self.write_pins(pins)
-            result = self.run_cli("--dsh-version", "1.0.0", "--record")
+            result = self.run_cli("--target", "android", "--dsh-version", "1.0.0", "--record")
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(read(self.target), ORIGINAL)
 
     def test_legacy_schema_cannot_silently_classify_new_patches_as_android(self):
         self.write_pins({"schema": 1, "patches": {}})
-        result = self.run_cli("--dsh-version", "1.0.0", "--record")
+        result = self.run_cli("--target", "android", "--dsh-version", "1.0.0", "--record")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("explicit targetSets", result.stdout)
         self.assertEqual(read(self.target), ORIGINAL)
@@ -321,7 +370,7 @@ class PatchDsh(unittest.TestCase):
         pins = load(os.path.join(self.patches, "pins.json"))
         pins["patches"]["zz-later.diff"] = {}
         self.write_pins(pins)
-        result = self.run_cli("--dsh-version", "1.0.0")
+        result = self.run_cli("--target", "android", "--dsh-version", "1.0.0")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no pin for DSH 1.0.0", result.stdout)
         self.assertEqual(read(self.target), ORIGINAL)
