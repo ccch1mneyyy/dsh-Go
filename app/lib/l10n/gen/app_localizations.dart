@@ -13243,6 +13243,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'手机布局'**
   String get hubInterfacePhoneLayout;
+
   /// No description provided for @hubTableTint.
   ///
   /// In zh, this message translates to:
@@ -13272,6 +13273,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'隔行淡一档，长表格更好扫读'**
   String get hubTableTintFillHint;
+
   /// No description provided for @hubTableTintFollowHint.
   ///
   /// In zh, this message translates to:
@@ -23969,6 +23971,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'字号,字体,文字大小,大字,字体大小'**
   String get searchKwTextSize;
+
   /// No description provided for @searchKwTableTint.
   ///
   /// In zh, this message translates to:
@@ -24370,6 +24373,138 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'统计,使用统计,匿名,隐私,数据,改进,遥测,分析'**
   String get searchKwUsageStats;
+
+  /// No description provided for @shellDeletePermanently.
+  ///
+  /// In zh, this message translates to:
+  /// **'永久删除'**
+  String get shellDeletePermanently;
+
+  /// No description provided for @shellDeleteNoUndo.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法撤销，与归档不同'**
+  String get shellDeleteNoUndo;
+
+  /// No description provided for @shellDeleteChecking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在检查此主机是否支持永久删除…'**
+  String get shellDeleteChecking;
+
+  /// No description provided for @shellDeleteUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'此主机不支持安全永久删除，仍可使用归档。'**
+  String get shellDeleteUnsupported;
+
+  /// No description provided for @shellDeleteUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'安全永久删除暂不可用，请重连或更新此主机；不会改为归档。'**
+  String get shellDeleteUnavailable;
+
+  /// No description provided for @shellDeleteChatConfirmation.
+  ///
+  /// In zh, this message translates to:
+  /// **'永久删除「{title}」？'**
+  String shellDeleteChatConfirmation(String title);
+
+  /// No description provided for @shellDeleteChatsConfirmation.
+  ///
+  /// In zh, this message translates to:
+  /// **'永久删除 {count} 个对话？'**
+  String shellDeleteChatsConfirmation(int count);
+
+  /// No description provided for @shellDeleteWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'将从此主机永久删除所选对话记录，无法撤销，与归档不同。\n\n工作目录、生成的文件、分叉对话、共享附件和已发布的云端分享都会保留。云端分享需另行删除。主机会拒绝删除仍有任务或关联工作的对话。'**
+  String get shellDeleteWarning;
+
+  /// No description provided for @shellDeleteOwnerChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'主机或连接已变化。请取消后重新发起删除，原确认不再有效。'**
+  String get shellDeleteOwnerChanged;
+
+  /// No description provided for @shellDeletingChats.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在删除对话…'**
+  String get shellDeletingChats;
+
+  /// No description provided for @shellChatsDeleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已永久删除 {count} 个对话'**
+  String shellChatsDeleted(int count);
+
+  /// No description provided for @shellDeletePartial.
+  ///
+  /// In zh, this message translates to:
+  /// **'已删除 {deleted} 个，失败 {failed} 个'**
+  String shellDeletePartial(int deleted, int failed);
+
+  /// No description provided for @shellDeleteRunning.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先停止运行中的工作；主机还会检查活动任务和定时任务。'**
+  String get shellDeleteRunning;
+
+  /// No description provided for @shellDeleteRelated.
+  ///
+  /// In zh, this message translates to:
+  /// **'此对话有关联的子代理工作，主机为保护它们拒绝删除。'**
+  String get shellDeleteRelated;
+
+  /// No description provided for @shellDeleteWriterHeld.
+  ///
+  /// In zh, this message translates to:
+  /// **'其他进程正在使用此对话，请先在该进程中关闭后重试。'**
+  String get shellDeleteWriterHeld;
+
+  /// No description provided for @shellDeleteNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'此主机上已没有这个对话，请刷新列表。'**
+  String get shellDeleteNotFound;
+
+  /// No description provided for @shellDeleteConnectionLost.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接已断开，删除结果未确认，请刷新对话列表后再操作。'**
+  String get shellDeleteConnectionLost;
+
+  /// No description provided for @shellDeleteArchivePending.
+  ///
+  /// In zh, this message translates to:
+  /// **'此对话正在等待归档，请先完成或撤销归档。'**
+  String get shellDeleteArchivePending;
+
+  /// No description provided for @shellDeleteInventoryChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'对话列表已变化，请刷新后重新选择。'**
+  String get shellDeleteInventoryChanged;
+
+  /// No description provided for @shellDeleteProtocolError.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除结果未确认，请刷新对话列表后再操作。'**
+  String get shellDeleteProtocolError;
+
+  /// No description provided for @shellDeleteNotAttempted.
+  ///
+  /// In zh, this message translates to:
+  /// **'未执行，请核对对话列表后重试。'**
+  String get shellDeleteNotAttempted;
+
+  /// No description provided for @shellDeleteFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'主机无法确认删除结果，请刷新后再决定是否重试。'**
+  String get shellDeleteFailed;
 
   /// No description provided for @setupAppearanceTitle.
   ///

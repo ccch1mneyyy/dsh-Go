@@ -2,8 +2,8 @@
 // the flows behind the sheets, bulk 归档 / 置顶 / 移到文件夹, and the undo
 // toasts. Archiving follows the single-row archive in sessions_drawer.dart
 // (hide at once; stop running work and archive when the undo window ends).
-// DSH never deletes a conversation (archive is its delete), so there is no
-// bulk 删除; a folder can be deleted, with undo.
+// Permanent session deletion lives in session_deletion.dart and has no undo;
+// deleting a folder here keeps its conversations and can be undone.
 
 import 'dart:async';
 

@@ -13984,6 +13984,106 @@ class L10nEn extends L10n {
   String get searchKwUsageStats => 'statistics,stats,usage data,analytics,telemetry,anonymous,privacy,data';
 
   @override
+  String get shellDeletePermanently => 'Delete permanently';
+
+  @override
+  String get shellDeleteNoUndo => 'Cannot be undone; this is not archive';
+
+  @override
+  String get shellDeleteChecking => 'Checking whether this host supports permanent deletion…';
+
+  @override
+  String get shellDeleteUnsupported =>
+      'This host does not support safe permanent deletion. Archive is still available.';
+
+  @override
+  String get shellDeleteUnavailable =>
+      'Safe permanent deletion is unavailable. Reconnect or update this host; nothing was archived instead.';
+
+  @override
+  String shellDeleteChatConfirmation(String title) {
+    return 'Permanently delete “$title”?';
+  }
+
+  @override
+  String shellDeleteChatsConfirmation(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Permanently delete $count chats?',
+      one: 'Permanently delete 1 chat?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shellDeleteWarning =>
+      'The selected chat history will be permanently deleted from this host. This cannot be undone and is not archive.\n\nWorking directories, generated files, forks, shared attachments and published cloud shares are kept. Cloud shares must be removed separately. Active or related chats may be refused by the host.';
+
+  @override
+  String get shellDeleteOwnerChanged =>
+      'The host or connection changed. Cancel and start deletion again; the old confirmation is no longer valid.';
+
+  @override
+  String get shellDeletingChats => 'Deleting chats…';
+
+  @override
+  String shellChatsDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Permanently deleted $count chats',
+      one: 'Permanently deleted 1 chat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shellDeletePartial(int deleted, int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      deleted,
+      locale: localeName,
+      other: 'Deleted $deleted chats',
+      one: 'Deleted 1 chat',
+    );
+    String _temp1 = intl.Intl.pluralLogic(failed, locale: localeName, other: '$failed failed', one: '1 failed');
+    return '$_temp0; $_temp1';
+  }
+
+  @override
+  String get shellDeleteRunning =>
+      'Stop running work before deleting. The host also checks active tasks and schedules.';
+
+  @override
+  String get shellDeleteRelated => 'This chat has related subagent work. The host refused deletion to protect it.';
+
+  @override
+  String get shellDeleteWriterHeld => 'Another process is using this chat. Close it there and try again.';
+
+  @override
+  String get shellDeleteNotFound => 'The chat no longer exists on this host. Refresh the list.';
+
+  @override
+  String get shellDeleteConnectionLost =>
+      'The connection was lost and the deletion result is unconfirmed. Refresh the chat list before taking further action.';
+
+  @override
+  String get shellDeleteArchivePending => 'An archive operation is pending. Finish or undo it before deleting.';
+
+  @override
+  String get shellDeleteInventoryChanged => 'The chat list changed. Refresh and select the chats again.';
+
+  @override
+  String get shellDeleteProtocolError =>
+      'The deletion result is unconfirmed. Refresh the chat list before taking further action.';
+
+  @override
+  String get shellDeleteNotAttempted => 'Not attempted. Check the chat list before trying again.';
+
+  @override
+  String get shellDeleteFailed => 'The host could not confirm deletion. Refresh before retrying.';
+
+  @override
   String get setupAppearanceTitle => 'Choose a look';
 
   @override
