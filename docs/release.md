@@ -108,6 +108,7 @@ versionCode = (年 - 2026) × 10^8 + MMDDhhmm      时钟固定按 UTC+8
 | `~/keys/dshgo-beta-secret` | Worker secret `BETA_SECRET`：密钥哈希的盐、下载链接的签名钥 | `beta-keys.sh` |
 | `~/keys/dshgo-beta-channel.token` | 通道令牌（`dshc_…`） | `build-apk.sh --beta` 才编进内测包（公测包不带）；`publish-release.sh` 实测 |
 | Cloudflare API token | 部署、写 R2 / KV | 各脚本的 `CF_TOKEN_FILE` |
+| `~/keys/dshgo-cloudflare-account-id` | Cloudflare 账号 id（32 位十六进制）。公开仓库的 `wrangler.jsonc` 只有占位符（`tooling/oss-redact.txt`），R2 的地址靠它 | `publish-release.sh`、`stats.sh`；也可以用 `CF_ACCOUNT_ID` 直接给 |
 
 **一次性开通**（每台发版机器一次）：
 
@@ -263,6 +264,7 @@ scripts/publish-release.sh ../../dist --github
 | `CN_PROVIDER` `CN_BUCKET` `CN_REGION` | 香港桶：`oss`/`cos`、桶名、地域 |
 | `CN_ACCESS_KEY_ID_FILE` `CN_ACCESS_KEY_SECRET_FILE` | 只写这个桶的 AccessKey，各一个文件 |
 | `CN_BASE_URL` | 默认读 `wrangler.jsonc`，脚本和页面用同一个值 |
+| `CF_ACCOUNT_ID` `CF_ACCOUNT_ID_FILE` | R2 所在的账号；不设时读 `~/keys/dshgo-cloudflare-account-id`，再不行才读 `wrangler.jsonc`。读到的是占位符就在第一步之前报错 |
 | `GH_TOKEN_FILE` | 可选；不设就用 `gh auth login` 的登录（要有仓库写权限） |
 | `BETA_TOKEN_FILE` `BETA_KEY_FILE` | 通道令牌（读回 R2）；密钥模式下还要一把有效密钥（核对 `/beta`） |
 
