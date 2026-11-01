@@ -3,6 +3,7 @@ package io.github.ccch1mneyyy.dsh_app.phone.background
 import io.github.ccch1mneyyy.dsh_app.i18n.AppStrings
 import io.github.ccch1mneyyy.dsh_app.R
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
@@ -12,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * The 不打扰模式 surface the core's `PhonePlugin` calls into: the `background` block of `status`,
  * and the actions behind `setBackgroundMode`, `requestShizukuPermission`, `adbStartPairing`,
- * `adbPair`, `adbConnect`. It owns the two starters (Shizuku / self-ADB — both user-selectable),
+ * `adbPair`, `adbConnect`. It owns the shared Shizuku/Sui, self-ADB and explicit root starters,
  * probes whether a trusted virtual display and input injection work here, and registers
  * [BackgroundDisplay] in [PhoneRegistry] only while a task runs. Method names match the
  * `dsh/phone` channel.
@@ -24,8 +25,10 @@ class BackgroundControl private constructor(context: Context) {
 
     private val shizuku = ShizukuStarter(app) { notifyChanged() }
     private val adb = AdbStarter(app) { notifyChanged() }
+    private val root = RootStarter(app) { notifyChanged() }
 
-    @Volatile private var mode: String = "off"          // off | shizuku | adb
+    @Volatile private var mode: String = "off"          // off | shizuku | sui | root | adb
+    @Volatile private var rootSelected = false
     @Volatile private var channel: PrivilegedChannel? = null
     @Volatile private var driver: BackgroundDisplay? = null
     @Volatile private var driverTaskId: Long? = null
@@ -44,15 +47,37 @@ class BackgroundControl private constructor(context: Context) {
     /** The `background` sub-map of the `dsh/phone` `status` method. */
     fun status(): Map<String, Any?> {
         val reason = readiness()
+        val shizukuStatus = shizuku.status()
+        val adbStatus = adb.status()
+        val rootStatus = root.status()
         return mapOf(
-            "mode" to mode,
-            "ready" to (reason == null),
-            "reason" to reason,
+            "mode" to PrivilegedPathPolicy.legacyMode(mode),
+            "ready" to PrivilegedPathPolicy.legacyReady(mode, reason == null),
+            "reason" to PrivilegedPathPolicy.legacyReason(
+                mode, reason, AppStrings.get(app, R.string.background_root_legacy_client),
+            ),
             "androidOk" to androidOk(),
             "trustedDisplay" to trustedDisplayOk,
             "inject" to injectOk,
-            "shizuku" to shizuku.status().map(),
-            "adb" to adb.status().map(),
+            "shizuku" to shizukuStatus.map(),
+            "adb" to adbStatus.map(),
+            "root" to rootStatus.map(),
+            "privileged" to mapOf(
+                "v" to 1,
+                "mode" to mode,
+                "ready" to (reason == null),
+                "reason" to reason,
+                "supportedModes" to PrivilegedPathPolicy.modes,
+                "recommendedMode" to PrivilegedPathPolicy.recommended(
+                    mode, reason == null, androidOk(), shizukuStatus.provider,
+                    shizukuStatus.running, shizukuStatus.granted, rootSelected,
+                    rootStatus.connected, adbStatus.paired, adbStatus.wirelessDebugging,
+                ),
+                "grantPath" to SecureSettingsGrant.privilegedPath(
+                    secureSettingsGranted(), shizukuStatus, adbStatus, rootSelected, rootStatus.connected,
+                ),
+                "rootSelected" to rootSelected,
+            ),
         )
     }
 
@@ -61,32 +86,120 @@ class BackgroundControl private constructor(context: Context) {
     private fun readiness(): String? = when {
         mode == "off" -> AppStrings.get(app, R.string.background_off)
         !androidOk() -> AppStrings.get(app, R.string.background_requires_android)
-        mode == "shizuku" -> shizuku.reason() ?: if (trustedDisplayOk == false) UNSUPPORTED else null
-        mode == "adb" -> adb.reason() ?: if (trustedDisplayOk == false) UNSUPPORTED else null
+        mode == "shizuku" || mode == "sui" -> shizuku.reason() ?: gateReason()
+        mode == "root" -> rootReason() ?: gateReason()
+        mode == "adb" -> adb.reason() ?: gateReason()
         else -> AppStrings.get(app, R.string.background_unknown_mode)
+    }
+
+    private fun gateReason(): String? = when {
+        trustedDisplayOk == false -> UNSUPPORTED
+        injectOk == false -> AppStrings.get(app, R.string.background_injection_denied)
+        else -> null
+    }
+
+    private fun rootReason(): String? {
+        val status = root.status()
+        if (status.connected) return null
+        val resource = when {
+            status.starting -> R.string.background_root_starting
+            !status.checked -> R.string.background_root_not_selected
+            status.reasonCode == "rootTimeout" -> R.string.background_root_timeout
+            status.reasonCode == "rootCancelled" -> R.string.background_root_cancelled
+            status.reasonCode == "rootIdentityMismatch" -> R.string.background_root_identity
+            status.reasonCode == "rootDisconnected" -> R.string.background_root_disconnected
+            status.reasonCode == "rootGrantFailed" -> R.string.background_root_grant_failed
+            else -> R.string.background_root_failed
+        }
+        return AppStrings.get(app, resource)
     }
 
     // ---- actions -----------------------------------------------------------
 
-    fun setBackgroundMode(newMode: String): Map<String, Any?> {
-        if (newMode !in setOf("off", "shizuku", "adb")) return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_unknown_mode))
-        if (newMode == "off") {
+    fun setBackgroundMode(newMode: String, mayStart: () -> Boolean = { true }): Map<String, Any?> {
+        if (!mayStart()) return cancelledSelection()
+        val provider = shizuku.status().provider
+        val selected = PrivilegedPathPolicy.canonicalMode(newMode, provider)
+            ?: return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_unknown_mode))
+        if (selected == "sui" && provider != ShizukuStatus.SUI) {
+            return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_sui_not_provider))
+        }
+        if (selected == "off") {
             endTask()
             disconnectAll()
             mode = "off"
+            rootSelected = false
+            trustedDisplayOk = null
+            injectOk = null
             notifyChanged()
             return mapOf("ok" to true)
         }
         if (!androidOk()) return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_requires_android))
-        mode = newMode
-        if (newMode == "shizuku") shizuku.ensureListeners()
+        if (selected != mode) {
+            endTask()
+            disconnectAll()
+            trustedDisplayOk = null
+            injectOk = null
+        }
+        mode = selected
+        rootSelected = selected == "root"
+        if (selected == "shizuku" || selected == "sui") shizuku.ensureListeners()
+        if (selected == "root") {
+            // This method is an explicit UI action and runs on PhonePlugin's worker.
+            // The task path only calls root.connect(), which never starts su.
+            channel = root.start(mayStart)
+            trustedDisplayOk = null
+            injectOk = null
+        }
+        if (!mayStart()) return cancelledSelection()
         notifyChanged()
         // Probe eagerly so the UI can hide an unsupported switch rather than fail later.
         val probe = runGateProbe()
         return mapOf("ok" to (probe == null), "reason" to probe)
     }
 
-    fun requestShizukuPermission(): Boolean = shizuku.requestPermission()
+    fun requestShizukuPermission(provider: String? = null): Boolean {
+        if (provider != null && provider != shizuku.status().provider) return false
+        return shizuku.requestPermission()
+    }
+
+    /** Explicit UI selection for permission setup, without enabling a virtual display. */
+    fun prepareRoot(mayStart: () -> Boolean = { true }): Map<String, Any?> {
+        if (!mayStart()) return cancelledSelection()
+        rootSelected = true
+        val connected = root.start(mayStart) != null
+        if (!mayStart()) return cancelledSelection()
+        notifyChanged()
+        return mapOf("ok" to connected, "reason" to if (connected) null else rootReason())
+    }
+
+    private fun cancelledSelection(): Map<String, Any?> =
+        mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_selection_cancelled))
+
+    fun rootGrantSelected(): Boolean = rootSelected
+
+    /** Fast cancellation at UI receipt time; RootStarter closes pipes off-thread. */
+    fun cancelRootSelection() {
+        rootSelected = false
+        root.disconnect()
+    }
+
+    private fun secureSettingsGranted(): Boolean =
+        app.checkSelfPermission(SecureSettingsGrant.PERMISSION) == PackageManager.PERMISSION_GRANTED
+
+    /** Called only by the existing explicit grant button; verify the actual Android permission. */
+    fun grantRootSecureSettings(): Map<String, Any?> {
+        if (secureSettingsGranted()) return mapOf("ok" to true)
+        if (!rootSelected) return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_root_not_selected))
+        val ready = rootReason()
+        if (ready != null) return mapOf("ok" to false, "reason" to ready)
+        val reported = root.grantSecureSettings()
+        val granted = secureSettingsGranted()
+        notifyChanged()
+        return mapOf("ok" to granted, "reason" to if (granted) null else
+            if (!reported) rootReason() ?: AppStrings.get(app, R.string.background_root_grant_failed)
+            else AppStrings.get(app, R.string.background_root_grant_failed))
+    }
 
     fun adbStartPairing(): Map<String, Any?> {
         if (!androidOk()) return mapOf("ok" to false, "reason" to AppStrings.get(app, R.string.background_requires_android))
@@ -113,10 +226,12 @@ class BackgroundControl private constructor(context: Context) {
      * take seconds); true when the engine says it granted.
      */
     fun grantSecureSettings(via: String): Boolean {
-        val shared = mode == via
+        val sharedApi = via == SecureSettingsGrant.SHIZUKU || via == SecureSettingsGrant.SUI
+        if (!sharedApi && via != SecureSettingsGrant.ADB) return false
+        val shared = PrivilegedPathPolicy.sharesGrantChannel(mode, via)
         val ch = when {
             shared -> activeChannel()
-            via == SecureSettingsGrant.SHIZUKU -> shizuku.connect()
+            sharedApi -> shizuku.connect()
             else -> adb.connect()
         }
         val request = Bundle().apply {
@@ -124,7 +239,7 @@ class BackgroundControl private constructor(context: Context) {
             putInt(Proto.USER, Process.myUid() / PER_USER_RANGE)
         }
         val ok = ch != null && runCatching { ch.execute(request).getBoolean(Proto.OK) }.getOrDefault(false)
-        if (!shared) if (via == SecureSettingsGrant.SHIZUKU) shizuku.disconnect() else adb.disconnect()
+        if (!shared) if (sharedApi) shizuku.disconnect() else adb.disconnect()
         return ok
     }
 
@@ -192,7 +307,8 @@ class BackgroundControl private constructor(context: Context) {
     private fun activeChannel(): PrivilegedChannel? {
         channel?.takeIf { it.alive() }?.let { return it }
         channel = when (mode) {
-            "shizuku" -> shizuku.connect()
+            "shizuku", "sui" -> shizuku.connect()
+            "root" -> root.connect()
             "adb" -> adb.connect()
             else -> null
         }
@@ -203,11 +319,13 @@ class BackgroundControl private constructor(context: Context) {
         channel = null
         shizuku.disconnect()
         adb.disconnect()
+        root.disconnect()
     }
 
     private fun runGateProbe(): String? {
         val starterReason = when (mode) {
-            "shizuku" -> shizuku.reason()
+            "shizuku", "sui" -> shizuku.reason()
+            "root" -> rootReason()
             "adb" -> adb.reason()
             else -> AppStrings.get(app, R.string.background_off)
         }

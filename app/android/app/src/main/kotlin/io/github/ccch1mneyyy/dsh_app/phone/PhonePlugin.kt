@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import io.github.ccch1mneyyy.dsh_app.phone.a11y.OverlayPrefs
+import io.github.ccch1mneyyy.dsh_app.phone.background.PrivilegedActionGate
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -32,6 +33,7 @@ class PhonePlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "dsh-phone-plugin").apply { isDaemon = true } }
     @Volatile private var promptOwner = Any()
     @Volatile private var attached = false
+    private val privilegedActions = PrivilegedActionGate()
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         appContext = binding.applicationContext
@@ -44,6 +46,8 @@ class PhonePlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         attached = false
+        privilegedActions.select()
+        control.background.cancelRootSelection()
         control.prompts.detachOwner(promptOwner)
         activity?.removeOnNewIntentListener(this)
         activity = null
@@ -102,13 +106,56 @@ class PhonePlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "status" -> async(result) { control.status() }
-            "grantSecureSettings" -> async(result) { control.grantSecureSettings() }
-            "setEnabled" -> async(result) { control.setEnabled(call.argument<Boolean>("enabled") == true) }
+            "grantSecureSettings" -> {
+                val ticket = privilegedActions.snapshot()
+                async(result) {
+                    if (!attached || !privilegedActions.current(ticket)) cancelledSelection()
+                    else {
+                        val response = if (control.background.rootGrantSelected()) control.background.grantRootSecureSettings()
+                            else control.grantSecureSettings()
+                        control.emitStatus()
+                        response
+                    }
+                }
+            }
+            "setEnabled" -> {
+                val enabled = call.argument<Boolean>("enabled") == true
+                if (!enabled) {
+                    privilegedActions.select()
+                    control.background.cancelRootSelection()
+                }
+                async(result) {
+                    val ok = control.setEnabled(enabled)
+                    if (ok && !enabled) control.background.setBackgroundMode("off")
+                    ok
+                }
+            }
             "openAccessibilitySettings" -> result.success(startActivity(control.accessibilitySettingsIntent()))
             "openAppDetails" -> result.success(startActivity(control.appDetailsIntent()))
             "testScreen" -> async(result) { control.testScreen() }
-            "setBackgroundMode" -> async(result) { control.background.setBackgroundMode(call.argument<String>("mode") ?: "off") }
-            "requestShizukuPermission" -> async(result) { control.background.requestShizukuPermission() }
+            "setBackgroundMode" -> {
+                val mode = call.argument<String>("mode") ?: "off"
+                val ticket = privilegedActions.select()
+                if (mode != "root") control.background.cancelRootSelection()
+                async(result) {
+                    if (!attached || !privilegedActions.current(ticket)) cancelledSelection()
+                    else control.background.setBackgroundMode(mode) { attached && privilegedActions.current(ticket) }
+                }
+            }
+            "requestShizukuPermission" -> {
+                val ticket = privilegedActions.snapshot()
+                val provider = call.argument<String>("provider")
+                async(result) {
+                    attached && privilegedActions.current(ticket) && control.background.requestShizukuPermission(provider)
+                }
+            }
+            "prepareRoot" -> {
+                val ticket = privilegedActions.select()
+                async(result) {
+                    if (!attached || !privilegedActions.current(ticket)) cancelledSelection()
+                    else control.background.prepareRoot { attached && privilegedActions.current(ticket) }
+                }
+            }
             "adbStartPairing" -> async(result) { control.background.adbStartPairing() }
             "adbPair" -> async(result) {
                 val code = call.argument<String>("code")?.trim().orEmpty()
@@ -143,6 +190,9 @@ class PhonePlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
             control.emitStatus()
         }
     }
+
+    private fun cancelledSelection(): Map<String, Any?> =
+        mapOf("ok" to false, "reason" to AppStrings.get(appContext, R.string.background_selection_cancelled))
 
     /**
      * `finishTask {taskId, sessionId?, host?, reopen}`: the linked turn ended. Closes the

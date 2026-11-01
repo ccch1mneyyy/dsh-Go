@@ -10167,6 +10167,42 @@ class L10nEn extends L10n {
   String get phoneBackgroundNotificationBlocked => 'Allow pop-up alerts for phone-control notifications';
 
   @override
+  String get phonePrivilegedUpgrade =>
+      'This app build does not support that privileged channel. Update DSH Go to use it.';
+
+  @override
+  String get phonePrivilegedSui => 'Sui';
+
+  @override
+  String get phonePrivilegedRoot => 'Root';
+
+  @override
+  String get phonePrivilegedSuiDescription =>
+      'Use the Sui module interface. Authorization is requested only when you tap.';
+
+  @override
+  String get phonePrivilegedRootDescription =>
+      'For Magisk, KernelSU or APatch. The first root command runs only after you choose this channel.';
+
+  @override
+  String get phonePrivilegedRootPrepare => 'Authorize root';
+
+  @override
+  String get phonePrivilegedRootUnchecked => 'Root has not been checked';
+
+  @override
+  String get phonePrivilegedGrantRoot => 'Grant with root';
+
+  @override
+  String get phonePrivilegedGrantSui => 'Grant with Sui';
+
+  @override
+  String get phonePrivilegedGrantSuiPermission => 'Authorize Sui, then grant';
+
+  @override
+  String get phonePrivilegedSuggested => 'Suggested channel';
+
+  @override
   String get phoneModeTitle => 'How DSH confirms';
 
   @override

@@ -17828,6 +17828,72 @@ abstract class L10n {
   /// **'请允许手机操控通知的弹出提醒'**
   String get phoneBackgroundNotificationBlocked;
 
+  /// No description provided for @phonePrivilegedUpgrade.
+  ///
+  /// In zh, this message translates to:
+  /// **'此版本尚不支持该特权通道，请更新 DSH Go 后使用。'**
+  String get phonePrivilegedUpgrade;
+
+  /// No description provided for @phonePrivilegedSui.
+  ///
+  /// In zh, this message translates to:
+  /// **'Sui'**
+  String get phonePrivilegedSui;
+
+  /// No description provided for @phonePrivilegedRoot.
+  ///
+  /// In zh, this message translates to:
+  /// **'Root'**
+  String get phonePrivilegedRoot;
+
+  /// No description provided for @phonePrivilegedSuiDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用 Sui 模块提供的接口，仅在主动点击时申请授权。'**
+  String get phonePrivilegedSuiDescription;
+
+  /// No description provided for @phonePrivilegedRootDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'适用于 Magisk、KernelSU 或 APatch；只有主动选择后才首次执行 root 命令。'**
+  String get phonePrivilegedRootDescription;
+
+  /// No description provided for @phonePrivilegedRootPrepare.
+  ///
+  /// In zh, this message translates to:
+  /// **'申请 root 授权'**
+  String get phonePrivilegedRootPrepare;
+
+  /// No description provided for @phonePrivilegedRootUnchecked.
+  ///
+  /// In zh, this message translates to:
+  /// **'尚未检查 root'**
+  String get phonePrivilegedRootUnchecked;
+
+  /// No description provided for @phonePrivilegedGrantRoot.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过 root 授予'**
+  String get phonePrivilegedGrantRoot;
+
+  /// No description provided for @phonePrivilegedGrantSui.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过 Sui 授予'**
+  String get phonePrivilegedGrantSui;
+
+  /// No description provided for @phonePrivilegedGrantSuiPermission.
+  ///
+  /// In zh, this message translates to:
+  /// **'先授权 Sui，再授予权限'**
+  String get phonePrivilegedGrantSuiPermission;
+
+  /// No description provided for @phonePrivilegedSuggested.
+  ///
+  /// In zh, this message translates to:
+  /// **'建议的通道'**
+  String get phonePrivilegedSuggested;
+
   /// No description provided for @phoneModeTitle.
   ///
   /// In zh, this message translates to:

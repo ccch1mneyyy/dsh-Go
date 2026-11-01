@@ -280,4 +280,15 @@
     <string name="tile_new_chat_label">New chat</string>
     <string name="a11y_keeper_grant_failed">Authorization failed. You can use the computer command instead.</string>
     <string name="a11y_keeper_needs_setup">Set up Shizuku or wireless debugging first.</string>
+    <string name="background_root_legacy_client">Root was selected. Use an updated interface to manage it, or turn phone control off.</string>
+    <string name="background_root_starting">Waiting for root authorization</string>
+    <string name="background_root_not_selected">Choose root to request authorization</string>
+    <string name="background_root_timeout">Root authorization or communication timed out. Select root again to retry.</string>
+    <string name="background_root_cancelled">Root startup was cancelled</string>
+    <string name="background_root_identity">The root process identity or protocol did not match</string>
+    <string name="background_root_disconnected">Root disconnected. Select root again to reconnect.</string>
+    <string name="background_root_grant_failed">WRITE_SECURE_SETTINGS was not granted. Check root access and try again.</string>
+    <string name="background_root_failed">Could not start root. Check the root manager and authorization.</string>
+    <string name="background_sui_not_provider">The current interface is not provided by Sui. Check Sui and restart the app.</string>
+    <string name="background_selection_cancelled">The channel selection was cancelled</string>
 </resources>

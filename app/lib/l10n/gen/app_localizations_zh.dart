@@ -9657,6 +9657,39 @@ class L10nZh extends L10n {
   String get phoneBackgroundNotificationBlocked => '请允许手机操控通知的弹出提醒';
 
   @override
+  String get phonePrivilegedUpgrade => '此版本尚不支持该特权通道，请更新 DSH Go 后使用。';
+
+  @override
+  String get phonePrivilegedSui => 'Sui';
+
+  @override
+  String get phonePrivilegedRoot => 'Root';
+
+  @override
+  String get phonePrivilegedSuiDescription => '使用 Sui 模块提供的接口，仅在主动点击时申请授权。';
+
+  @override
+  String get phonePrivilegedRootDescription => '适用于 Magisk、KernelSU 或 APatch；只有主动选择后才首次执行 root 命令。';
+
+  @override
+  String get phonePrivilegedRootPrepare => '申请 root 授权';
+
+  @override
+  String get phonePrivilegedRootUnchecked => '尚未检查 root';
+
+  @override
+  String get phonePrivilegedGrantRoot => '通过 root 授予';
+
+  @override
+  String get phonePrivilegedGrantSui => '通过 Sui 授予';
+
+  @override
+  String get phonePrivilegedGrantSuiPermission => '先授权 Sui，再授予权限';
+
+  @override
+  String get phonePrivilegedSuggested => '建议的通道';
+
+  @override
   String get phoneModeTitle => '选择确认方式';
 
   @override

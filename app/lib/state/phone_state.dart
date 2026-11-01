@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../phone/phone_channel.dart';
+import '../l10n/l10n.dart';
 import '../runtime/runtime_bridge.dart';
 import '../runtime/runtime_state.dart';
 import 'connection_state.dart';
@@ -203,6 +204,34 @@ class PhoneController extends Notifier<PhoneState> {
   }
 
   Future<PhoneResult> setBackgroundMode(PhoneBackgroundMode mode) => _thenRefresh(_channel.setBackgroundMode(mode));
+
+  Future<PhoneResult> setPrivilegedMode(PhonePrivilegedMode mode) {
+    if (!state.status.background.supportedModes.contains(mode)) {
+      return Future.value(PhoneResult(false, appL10n.phonePrivilegedUpgrade));
+    }
+    return _thenRefresh(_channel.setPrivilegedMode(mode));
+  }
+
+  /// Only an explicit user tap calls this; refresh/build/status events never prepare root.
+  Future<PhoneResult> prepareRoot() {
+    if (!state.status.background.supportedModes.contains(PhonePrivilegedMode.root)) {
+      return Future.value(PhoneResult(false, appL10n.phonePrivilegedUpgrade));
+    }
+    return _thenRefresh(_channel.prepareRoot());
+  }
+
+  Future<bool> requestPrivilegedPermission(PhonePrivilegedMode mode) {
+    if (mode != PhonePrivilegedMode.shizuku && mode != PhonePrivilegedMode.sui) return Future.value(false);
+    if (!state.status.background.supportedModes.contains(mode)) return Future.value(false);
+    // The old Shizuku choice is an alias for the current shared API, including Sui.
+    final provider = state.status.background.shizuku.provider;
+    if (mode == PhonePrivilegedMode.shizuku && provider == null) return requestShizukuPermission();
+    return _thenRefresh(
+      _channel.requestPrivilegedPermission(
+        mode == PhonePrivilegedMode.shizuku && provider == 'sui' ? 'sui' : mode.name,
+      ),
+    );
+  }
 
   Future<bool> requestShizukuPermission() => _thenRefresh(_channel.requestShizukuPermission());
 
