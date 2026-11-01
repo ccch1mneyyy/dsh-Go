@@ -11,7 +11,7 @@ dsh-go 的原生界面可以显示 DSH 插件的内容：工具结果画成卡�
 | 工具结果显示成原生卡片 | 工具的 `presentationMeta` 里加一个视图，5 分钟 | [快速开始](quickstart.md) |
 | 先看看什么已经是原生的 | 命令、技能、设置表单、dsh-ui 卡——都不用写 App 代码 | [不写 App 代码就原生显示的东西](native-for-free.md) |
 | 胶囊、消息菜单、状态条、面板 | `package.json` 的 `dshGo` 清单 + `ctx.dshGo` | [插槽参考](slots.md) |
-| 视图里能放什么 | 16 个组件、绑定、上限 | [组件目录](components.md) |
+| 视图里能放什么 | 16 个组件（根节点写 `v: 2` 时另有 26 个）、绑定、上限 | [组件目录](components.md) |
 | 原生输入与表单 | v2 输入、结构组件、双向绑定、有界公式 | [输入与表单](inputs.md) |
 | 点了之后能做什么 | 8 种效果，3 秒窗口 | [动作与效果](actions.md) |
 | 朗读、开口即停、高频字幕、悬浮字幕 | `capabilities` + `media` / `micro` / `overlays`（v1.2，可选） | [声音与字幕](voice.md) |
