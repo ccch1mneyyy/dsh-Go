@@ -224,6 +224,22 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) app.startForegroundService(intent) else app.startService(intent)
     }
 
+    /**
+     * Writes the app's diagnostics snapshot where the engine's agent can read it
+     * (`$DSH_HOME/dsh-app/diagnostics.md`). A few KB on the platform thread, after the
+     * engine came up or when the person asks from 设置 → 诊断. Null when the runtime is
+     * not installed or the write failed.
+     */
+    fun publishDiagnostics(markdown: String): Map<String, Any?>? = try {
+        if (!installer.isCurrent()) null
+        else {
+            val file = GuestSetup.writeDiagnostics(installer.rootfs, markdown)
+            mapOf("path" to file.absolutePath, "bytes" to file.length())
+        }
+    } catch (_: Exception) {
+        null
+    }
+
     fun stop() {
         managedSkillGate.stop(runGen)
         val intent = Intent(app, DshService::class.java).setAction(DshService.ACTION_STOP)

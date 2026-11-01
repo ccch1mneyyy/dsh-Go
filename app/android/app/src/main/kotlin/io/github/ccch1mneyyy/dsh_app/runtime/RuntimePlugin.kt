@@ -72,6 +72,10 @@ class RuntimePlugin :
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "getStatus" -> result.success(controller.status())
+            "publishDiagnostics" -> {
+                val markdown = call.argument<String>("markdown")
+                result.success(if (markdown == null || markdown.length > 256 * 1024) null else controller.publishDiagnostics(markdown))
+            }
             "installManagedSkill" -> {
                 val owner = managedSkillOwner
                 if (owner == null) result.success(mapOf("result" to null, "current" to false, "reason" to "stale"))

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
+import '../../diagnostics/diagnostics_publish.dart';
 import '../../diagnostics/redact.dart';
 import '../../runtime/runtime_state.dart';
 import '../../runtime/runtime_bridge.dart';
@@ -80,6 +81,15 @@ class DiagnosticsPage extends ConsumerWidget {
       }
     }
 
+    Future<void> publishForAi() async {
+      final published = await ref.read(diagnosticsPublisherProvider).publish();
+      if (!context.mounted) return;
+      showBriefNotice(
+        context,
+        published == null ? l10n.diagnosticsForAiFailed : l10n.diagnosticsForAiDone,
+      );
+    }
+
     return AppPage.list(
       title: l10n.pluginsDiagnostics,
       subtitle: Text(l10n.pluginsDiagnosticsDescription),
@@ -117,6 +127,12 @@ class DiagnosticsPage extends ConsumerWidget {
               title: l10n.pluginsCopyDiagnostics,
               subtitle: l10n.pluginsDiagnosticsContents,
               onTap: copyReport,
+            ),
+            ListPageRow(
+              icon: AppIcons.bot,
+              title: l10n.diagnosticsForAi,
+              subtitle: l10n.diagnosticsForAiHint,
+              onTap: publishForAi,
             ),
           ],
         ),

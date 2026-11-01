@@ -504,3 +504,31 @@ test('registered video tool routes around an image default without applying the 
   for (const request of captured) { assert.equal(request.service.id, 'video'); assert.equal(request.model.id, 'doubao-seedance-2-5-260628'); }
   await assert.rejects(() => tool.execute({ prompt: '猫', serviceId: 'office' }, f.exec()));
 });
+
+test('registered video tool follows the per-kind video default over the legacy image default', async t => {
+  const captured = [];
+  const f = await fixture(t, {
+    raw: { services: [
+      service({ models: 'gpt-image-2' }),
+      service({ id: 'video', provider: 'ark', profile: 'ark-video', baseUrl: 'https://ark.cn-beijing.volces.com', models: 'doubao-seedance-2-5-260628' }),
+    ], defaults: {
+      serviceId: 'office', modelId: 'gpt-image-2',
+      videoServiceId: 'video', videoModelId: 'doubao-seedance-2-5-260628',
+    } },
+    configured: [CREDENTIAL_SLOTS[0]],
+    generate: async request => { captured.push(request); return mockResult(request); },
+  });
+  const hooks = [];
+  f.ctx.jobs = {
+    start(spec) { const id = 'media-unit-' + hooks.length; hooks.push(spec.run({ id, updateProgress() {}, append() {} })); return id; },
+    get() { return {}; },
+  };
+  await f.installed.ready;
+  const tool = f.registered.get('generate_video');
+  assert.ok(tool);
+  await tool.execute({ prompt: '猫' }, f.exec());
+  await Promise.all(hooks.map(hook => hook.done));
+  assert.equal(captured.length, 1);
+  assert.equal(captured[0].service.id, 'video');
+  assert.equal(captured[0].model.id, 'doubao-seedance-2-5-260628');
+});

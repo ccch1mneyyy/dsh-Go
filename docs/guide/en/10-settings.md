@@ -30,7 +30,7 @@ Shows your DeepSeek account or API key and balance; tap it to open your account.
 - **Phone control**: see [Phone control](04-phone-control.md).
 - **Web search**: the current host's web search: fill in an API key, or switch to the **New search API**.
 - **Plugins**: see [Plugins](08-plugins.md). Some plugins add their own rows below.
-- **Images and video**: the current host's generation services, API keys and default models, from the image and video plugin; without the plugin you can **Install on this host**. How to use it: see [Chat](01-chat.md).
+- **Images and video**: the current host's generation services, API keys and default models, from the image and video plugin. Pick a provider to add a service, then enter its API key once; a provider's image and video services share that key. Without the plugin you can **Install on this host**. How to use it: see [Chat](01-chat.md).
 
 ## Appearance
 
@@ -42,7 +42,7 @@ Shows your DeepSeek account or API key and balance; tap it to open your account.
 - **Language**: **System**, **简体中文** or **English**.
 - **Notifications**: turn on **Allow notifications**, then choose **Turn complete**, **Error or stopped**, **Needs approval** and **Questions for you**. Alerts from remote hosts need the app running and the connection online. Sound, banners and the lock screen are set in system settings.
 - **Voice input**: which recognition turns speech into text.
-- **Performance**: **Auto**, **Full** or **Light**, plus glass blur and interface motion.
+- **Performance**: **Auto**, **Full** or **Light**, plus glass blur, interface motion and **Refresh rate** (Auto / Max / System).
 - **Background running**: see [FAQ](11-faq.md). Until it's set up, the row says so on the right.
 - **Privacy and sharing**:
   - **My shared links**: see [Sharing and replay](07-sharing.md).

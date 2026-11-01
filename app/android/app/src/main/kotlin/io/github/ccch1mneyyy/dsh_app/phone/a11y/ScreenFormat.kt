@@ -35,6 +35,8 @@ class ScreenInput(
     val previousKeys: Set<String>? = null,
     /** Extra lines under the header (protected page, secure window …). */
     val notes: List<String> = emptyList(),
+    /** The front window gave us no content at all (probably filtered): not the same as a poor tree. */
+    val unreadable: Boolean = false,
     val charBudget: Int = 3000,
 )
 
@@ -110,7 +112,7 @@ object ScreenFormat {
     private const val NEW_RATIO_LIMIT = 0.6
 
     // l10n:keep model screen format
-    const val POOR_TREE_NOTE = "提示：本页文字信息不足（游戏、自绘界面、部分小程序常见）。能看图的模型可以 screen 加 image 看标号截图；否则请用户协助。"
+    const val POOR_TREE_NOTE = "提示：本页文字很少（游戏、自绘界面常见）。能看图的模型可以 screen 加 image；否则请用户协助。"
 
     fun format(input: ScreenInput): FormattedScreen {
         val textNodes = input.windows.sumOf { w -> w.root?.let(::countText) ?: 0 }
@@ -131,7 +133,9 @@ object ScreenFormat {
         val header = StringBuilder()
         val notes = input.notes.toMutableList()
         val poor = textNodes < POOR_TREE && windows.isNotEmpty()
-        if (poor) notes += POOR_TREE_NOTE
+        // 读不到内容(大概率被敏感视图策略挡了)不能说成"游戏、自绘界面",那会把模型带到
+        // 另一个方向;这时 publish() 已经给了一条更准确的说明。
+        if (poor && !input.unreadable) notes += POOR_TREE_NOTE
 
         // Page budget: keep the 底部 zone (navigation) and cut the middle with a hint.
         val headerLen = 40 + (input.appLabel?.length ?: 0) + notes.sumOf { it.length + 1 }

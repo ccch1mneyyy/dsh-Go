@@ -324,12 +324,12 @@ class PhoneCore(
             A11yState.ENABLED_NOT_CONNECTED -> {
                 env.notifyFix("a11y")
                 // l10n:keep agent tool result
-                "DSH 的无障碍服务被系统关掉了或还没连上，现在看不了屏幕。已发通知提醒用户到系统设置里重新打开。在那之前只能用 apps、open、intent、notify、clipboard。"
+                "无障碍服务没连上（被系统关了或还在启动）：已通知用户到系统设置重新打开。现在只能用 apps / open / intent / notify / clipboard。"
             }
             else -> {
                 env.notifyFix("a11y")
                 // l10n:keep agent tool result
-                "看屏幕和操作界面需要无障碍权限，用户还没开。已发通知提醒用户到 DSH 设置 → 手机操控 里开启。在那之前只能用 apps、open、intent、notify、clipboard。"
+                "无障碍没开，看不了屏幕：已通知用户到 DSH 设置 → 手机操控 开启。现在只能用 apps / open / intent / notify / clipboard。"
             }
         }
     }

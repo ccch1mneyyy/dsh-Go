@@ -206,11 +206,9 @@ class _ChatListState extends ConsumerState<ChatList> {
   String? _regeneratingId;
 
   // 一轮在眼前结束时怎么收起过程(开着「收起过程」时):贴底看着的,先按原样
-  // 画一帧再平滑收起;往上翻着看、或这一轮里点过列表的,先不收,等下一次
-  // 发消息再收。冷打开、重新加载时已结束的轮照旧直接收着。
+  // 画一帧再平滑收起;往上翻着看的,下一次派生里直接收掉,不保留展开。
+  // 冷打开、重新加载时已结束的轮照旧直接收着。
   Set<int> _runningTurns = const {};
-  Set<int> _keepOpen = const {};
-  bool _touched = false;
 
   /// 要播收起动画的过程行;第一次建出来就拿掉(同 [_fresh])。
   final Set<String> _settling = {};
@@ -363,22 +361,15 @@ class _ChatListState extends ConsumerState<ChatList> {
 
   void _deriveRows(ChatState s, {required bool foldTurns, List<TurnArtifacts> artifacts = const []}) {
     if (s.loading || !foldTurns) {
-      _keepOpen = const {};
       _settling.clear();
     } else {
       for (final turn in s.turns) {
         if (turn.running || !_runningTurns.contains(turn.startSeq) || !(turn.endReason?.isCompleted ?? false)) {
           continue;
         }
-        if (!_pinned || _touched) {
-          _keepOpen = {..._keepOpen, turn.startSeq};
-        } else {
-          _settling.add('tp${turn.startSeq}');
-        }
-      }
-      if (s.pending.length > _lastPendingCount && _keepOpen.isNotEmpty) {
-        _settling.addAll([for (final seq in _keepOpen) 'tp$seq']);
-        _keepOpen = const {};
+        // 贴底看着的一轮:先按原样画一帧,再平滑收成摘要。往上翻着看的
+        // 不播动画,直接收 —— 过程一律收起来,不再有"读过就不收"。
+        if (_pinned) _settling.add('tp${turn.startSeq}');
       }
     }
     _runningTurns = {
@@ -386,10 +377,8 @@ class _ChatListState extends ConsumerState<ChatList> {
         for (final turn in s.turns)
           if (turn.running) turn.startSeq,
     };
-    if (_runningTurns.isEmpty) _touched = false;
     final inputs = (
       foldTurns,
-      _keepOpen,
       artifacts,
       s.items,
       s.approvals,
@@ -409,7 +398,6 @@ class _ChatListState extends ConsumerState<ChatList> {
     _rows = _rowCache.update(
       s,
       foldTurns: foldTurns,
-      openTurns: _keepOpen,
       artifacts: artifacts,
     );
     _index = _rowCache.index;
@@ -564,10 +552,7 @@ class _ChatListState extends ConsumerState<ChatList> {
           return Stack(
             children: [
               Listener(
-                onPointerDown: (_) {
-                  _held = true;
-                  if (_running) _touched = true;
-                },
+                onPointerDown: (_) => _held = true,
                 child: NotificationListener<ScrollMetricsNotification>(
                   onNotification: _onMetrics,
                   child: NotificationListener<ScrollNotification>(
@@ -1024,6 +1009,8 @@ class _JumpToBottom extends StatelessWidget {
     final pill = GlassSurface(
       key: const ValueKey('waiting'),
       tier: GlassTier.chrome,
+      // 悬在滚动 / 流式内容上:每帧重采样背景太贵,这两颗悬浮胶囊直接不模糊。
+      blur: false,
       stadium: true,
       onTap: onTap,
       child: SizedBox(
@@ -1053,6 +1040,7 @@ class _JumpToBottom extends StatelessWidget {
           Positioned.fill(
             child: GlassSurface(
               tier: GlassTier.chrome,
+              blur: false,
               circle: true,
               onTap: onTap,
               child: Center(child: Icon(AppIcons.scrollToBottom, size: 22, color: colors.onSurface)),

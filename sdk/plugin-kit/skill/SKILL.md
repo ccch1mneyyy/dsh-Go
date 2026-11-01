@@ -1,13 +1,28 @@
 ---
 # dsh-go:managed — the dsh-go app keeps this skill up to date; delete this line to keep your own edits.
 name: dsh-go-plugin
-description: 给 dsh-go 手机 App 写一个本地小插件，在原生界面里出现：输入框上方的胶囊、回复长按菜单里的操作、状态条、原生面板、工具结果卡片，还能朗读、开口即停、显示字幕；写完用自带的检查器检查，装进当前主机的 DSH。用户要给 App 加需要逻辑或数据的东西时先加载它，比如「输入框上面加个按钮，把剪贴板译成英文」「长按消息加个『存到笔记』」「输入框上方显示今天用了多少」「做个面板看我的待办」「这个工具的结果画成卡片」「加个按钮把回复读出来」。Write a small local DSH plugin that shows up natively in the dsh-go app, check it with the bundled checker and install it.
-whenToUse: The user wants to add something of their own to the dsh-go app (手机 App / 原生界面) that needs logic or data. For fixed buttons, layout, theme or hiding things use the dsh-go-ui skill (ui.json) instead.
+description: 给 dsh-go 手机 App 写一个本地小插件，在**手机原生界面**里出现：输入框上方的胶囊、回复长按菜单里的操作、状态条、原生面板、工具结果卡片，还能朗读、开口即停、显示字幕；写完用自带的检查器检查，装进当前主机。用户要给 dsh-go App 加需要逻辑或数据的东西时先加载它，比如「输入框上面加个按钮，把剪贴板译成英文」「长按消息加个『存到笔记』」「输入框上方显示今天用了多少」「做个面板看我的待办」「这个工具的结果画成卡片」「加个按钮把回复读出来」。只用于 dsh-go 手机原生界面；用户要做 Cordis 插件、改 Harness 网页版 / 桌面端，或明确说的是网页插件时，用官方 cordis-plugin-development 技能，不要用本技能的目录和安装方式。Write a small local DSH plugin that shows up natively in the dsh-go phone app; for Cordis / Harness Web UI plugins use the official skill instead.
+whenToUse: The user wants to add something of their own to the dsh-go phone app (手机 App / 原生界面) that needs logic or data. For fixed buttons, layout, theme or hiding things use the dsh-go-ui skill (ui.json) instead. For Cordis plugins or the Harness Web UI / desktop, use the official cordis-plugin-development skill — different directory and install entry.
 ---
 
 # 给 dsh-go 写一个本地小插件
 
 插件是一个放在主机上的 npm 包目录：`package.json` 里的 `dshGo` 清单声明 App 里出现什么，`lib/index.js` 在引擎里处理点按、推数据。App 只画声明和 JSON 视图，不执行插件代码。
+
+## 和官方技能的分工（先判断界面载体）
+
+这个技能只负责 **dsh-go 手机 App 的原生界面**。创造模式里还会加载官方的 `cordis-plugin-development`，它负责 **Harness Web UI / 桌面端**的插件，两套的目录、清单和安装入口都不同。**先确定界面载体，再选技能**；不要按加载顺序、也不要混着用：
+
+| 用户要的 | 用哪个 | 目录 / 安装 |
+|---|---|---|
+| 手机 App 里加胶囊、菜单项、状态条、原生面板、工具结果卡片、朗读 / 字幕 | 本技能 | `$DSH_HOME/dsh-go/plugins/<name>/`，`dsh plugin --profile web add <目录>` |
+| 改 dsh-go App 自己的样子（顶栏按钮、主题、隐藏元素） | `dsh-go-ui`（ui.json） | `$DSH_HOME/dsh-go/ui.json` |
+| Cordis / Harness Web UI 插件、装饰、槽位、MCP、页面 | 官方 `cordis-plugin-development` | 工作区建包 + `plugin_manager` → `install_bundle` |
+| Agent 预设、Cordis 组合 | 官方组合类技能 | 官方流程 |
+
+- 用户没点名界面载体时：在本 App 里默认目标是 dsh-go 手机原生界面（`AGENTS.md` 也这么写）；但如果用户明确要网页版 / 桌面端，就按官方技能走。
+- 官方技能里的「不要在工作区外建包、不要在 `$DSH_HOME` 下建包、不要手写 profile 的 package.json / cordis.patch.yml」针对的是 **Cordis bundle**。dsh-go 原生插件不是 Cordis bundle：它就是放在 `$DSH_HOME/dsh-go/plugins/` 下的 npm 包，用 `dsh plugin --profile web add` 装。两条规则各管各的，不冲突，也不能互换目录和安装方式。
+- 同一个「加个按钮」两边都能做时：在 dsh-go 里先做原生版本；用户还要网页版，再让官方技能另做一份。
 
 ## 先判断用哪个
 

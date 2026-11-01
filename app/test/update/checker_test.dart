@@ -1,5 +1,6 @@
 import 'package:dsh_app/update/checker.dart';
 import 'package:dsh_app/update/update_config.dart';
+import 'package:dsh_app/update/version.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support.dart';
@@ -95,6 +96,41 @@ void main() {
       ).check(preferred: 'manifest:m2');
       expect(http.urls, [_m2]);
       expect((result as CheckFound).endpoint.id, 'manifest:m2');
+    });
+
+    test('a source stuck on an older release does not hide a newer one', () async {
+      // The beta channel still says 1.0.4 while GitHub has 1.2.0 (the shape of
+      // the 1.0.4 "you are up to date" reports).
+      const stale = '{"schema":1,"version":"1.0.4+10310405","tag":"v1.0.4",'
+          '"assets":{"arm64":{"name":"dsh-go-1.0.4-arm64.apk","size":14,'
+          '"sha256":"3a8498bcf7d895bac5c9f2f02829c9ec7064cd8bc7ef9f1792f28277d44839f2"}}}';
+      final http = FakeHttp({
+        _m1: (_, _) => textResponse(stale),
+        _api: (_, _) => textResponse(fixture('github_release.json')),
+      });
+      final result = await UpdateChecker(http: http, sources: const UpdateSources(mirrors: _mirrors)).check(
+        preferred: 'manifest:m1',
+        installed: AppVersion.tryParse('1.0.4+10310405'),
+      );
+      expect(result, isA<CheckFound>());
+      expect((result as CheckFound).release.version.toString(), startsWith('1.2.0'));
+      expect(http.urls.first, _m1, reason: 'the preferred source is still asked first');
+      expect(http.urls, contains(_api));
+    });
+
+    test('nothing newer anywhere: the newest answer is returned, not a failure', () async {
+      const stale = '{"schema":1,"version":"1.0.4+10310405","tag":"v1.0.4",'
+          '"assets":{"arm64":{"name":"dsh-go-1.0.4-arm64.apk","size":14,'
+          '"sha256":"3a8498bcf7d895bac5c9f2f02829c9ec7064cd8bc7ef9f1792f28277d44839f2"}}}';
+      final http = FakeHttp({
+        _api: (_, _) => textResponse(stale),
+        _manifest: (_, _) => textResponse(stale),
+      });
+      final result = await UpdateChecker(http: http, sources: const UpdateSources()).check(
+        installed: AppVersion.tryParse('1.0.4+10310405'),
+      );
+      expect(result, isA<CheckFound>());
+      expect((result as CheckFound).release.version.toString(), '1.0.4+10310405');
     });
 
     test('a mirror answering 200 with an HTML page is skipped', () async {

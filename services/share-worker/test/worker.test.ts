@@ -337,8 +337,16 @@ describe('home page', () => {
     expect(page).not.toMatch(/<script(?![^>]*\ssrc=)[^>]*>/i);
     expect(page).not.toMatch(/\son[a-z]+\s*=/i);
     expect(page).not.toMatch(/<style[\s>]/i);
-    const refs = [...page.matchAll(/\s(?:src|href)="([^"#][^"]*)"/g)].map((m) => m[1]!).filter((u) => u !== 'https://go.dshtui.com/');
+    // Every resource the page pulls in stays on this origin. Plain <a href>
+    // links may point anywhere: they are navigations, not loads, and the CSP
+    // does not govern where a click goes. The footer's friend links live there.
+    const refs = [
+      ...[...page.matchAll(/<(?:script|img)\b[^>]*\ssrc="([^"#][^"]*)"/gi)].map((m) => m[1]!),
+      ...[...page.matchAll(/<link\b[^>]*\srel="(?:stylesheet|icon|apple-touch-icon)"[^>]*\shref="([^"#][^"]*)"/gi)].map((m) => m[1]!),
+    ];
     expect(refs.filter((u) => /^[a-z]+:|^\/\//i.test(u))).toEqual([]);
+    expect(page).toContain('href="https://dshtui.com/"');
+    expect(page).toContain('href="https://github.com/ccch1mneyyy/dsh-TUI"');
     const images = [...site('site-config.js').matchAll(/(?:avatar|qrImage):\s*"([^"]+)"/g)].map((m) => m[1]!);
     expect(images).toEqual(['assets/dsh-go.svg', 'assets/author/download-qr.png']);
     const ctx = makeEnv();

@@ -14,15 +14,7 @@ import android.os.Looper
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import rikka.shizuku.Shizuku
-
-/** installed / running / granted plus a readiness verdict for the status Map. */
-data class ShizukuStatus(
-    val installed: Boolean,
-    val running: Boolean,
-    val granted: Boolean,
-) {
-    fun map(): Map<String, Any?> = mapOf("installed" to installed, "running" to running, "granted" to granted)
-}
+import rikka.sui.Sui
 
 class ShizukuStarter(private val context: Context, private val onChanged: () -> Unit) {
     companion object {
@@ -43,7 +35,7 @@ class ShizukuStarter(private val context: Context, private val onChanged: () -> 
         get() = Shizuku.UserServiceArgs(ComponentName(context, PrivilegedDisplayService::class.java))
             .tag("dsh.vdisplay").processNameSuffix("vdisplay").version(1).daemon(false)
 
-    fun installed(): Boolean =
+    private fun appInstalled(): Boolean =
         runCatching { context.packageManager.getApplicationInfo(PACKAGE, 0); true }.getOrDefault(false)
 
     fun running(): Boolean = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
@@ -52,19 +44,21 @@ class ShizukuStarter(private val context: Context, private val onChanged: () -> 
         running() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
     }.getOrDefault(false)
 
-    fun status(): ShizukuStatus = ShizukuStatus(installed(), running(), granted())
+    // ShizukuProvider has already run Sui.init() before the Activity; isSui() only reads its result.
+    fun status(): ShizukuStatus = ShizukuStatus.fromFacts(appInstalled(), Sui.isSui(), running(), granted())
 
     fun uid(): Int = runCatching { Shizuku.getUid() }.getOrDefault(-1)
 
     /** A one-line reason when not ready, else null. */
     fun reason(): String? {
         val status = status()
+        val sui = status.provider == ShizukuStatus.SUI
         return when {
-            // Sui supplies the same Binder API without a Shizuku manager APK.
-            // Installation is guidance only while no service is available.
-            !status.running -> AppStrings.get(context, if (status.installed)
-                R.string.background_shizuku_stopped else R.string.background_shizuku_missing)
-            !status.granted -> AppStrings.get(context, R.string.background_shizuku_permission)
+            !status.installed -> AppStrings.get(context, R.string.background_shizuku_missing)
+            !status.running -> AppStrings.get(context,
+                if (sui) R.string.background_sui_stopped else R.string.background_shizuku_stopped)
+            !status.granted -> AppStrings.get(context,
+                if (sui) R.string.background_sui_permission else R.string.background_shizuku_permission)
             else -> null
         }
     }

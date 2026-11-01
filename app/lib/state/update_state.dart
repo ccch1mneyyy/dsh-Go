@@ -347,7 +347,7 @@ class AppUpdateController extends Notifier<AppUpdateState> {
     final prefs = _prefs;
     final now = _now();
     final checker = UpdateChecker(http: _http, sources: ref.read(updateSourcesProvider), userAgent: _userAgent);
-    final result = await checker.check(preferred: prefs?.getString(_endpointKey));
+    final result = await checker.check(preferred: prefs?.getString(_endpointKey), installed: state.current);
     if (!ref.mounted) return UpdateCheckPhase.idle;
     unawaited(prefs?.setInt(_attemptKey, now.millisecondsSinceEpoch));
     switch (result) {
