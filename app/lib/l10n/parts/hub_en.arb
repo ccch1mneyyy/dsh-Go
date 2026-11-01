@@ -170,5 +170,7 @@
   "hubEngineStartup": "Startup",
   "hubThemeLightDark": "Light and dark",
   "hubPermissionPhone": "Phone",
-  "hubPermissionPhoneConfirm": "Phone control confirmation"
+  "hubPermissionPhoneConfirm": "Phone control confirmation",
+  "hubHardwareEnterSends": "Send with hardware Enter",
+  "hubHardwareEnterSendsHint": "When on, Shift+Enter inserts a new line. The on-screen keyboard keeps newlines; Ctrl/⌘+Enter always sends."
 }
