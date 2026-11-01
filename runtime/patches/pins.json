@@ -225,6 +225,22 @@
           "after": "6321a31f51f28ba948a01064fafd1ec473440a5feb4390041c64141098c0be04"
         }
       }
+    },
+    "ohos-attachment-publication.diff": {
+      "0.2.1-rc.4": {
+        "node_modules/@deepseek-ai/dsh-attachment-local/lib/index.js": {
+          "before": "cd39685581b4573a453c6126f8ce73da0bf1257c378827ebb431d6d4064f7662",
+          "after": "5276f7f9be71a5e460175cb84edbf0d7d5348e5278119053daed33c6f6da93c2"
+        }
+      }
+    },
+    "zzzzzzz-ohos-session-publication.diff": {
+      "0.2.1-rc.4": {
+        "node_modules/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js": {
+          "before": "bf3ac4eae2d0c7f474d71b3a1fb3bb265cb4ae287c4ab5e60fbc6aa9f8514d6a",
+          "after": "e6206e7650dff66a63277546bb8291201a43b059f09a4774ffd0cb339512143b"
+        }
+      }
     }
   },
   "schema": 1
