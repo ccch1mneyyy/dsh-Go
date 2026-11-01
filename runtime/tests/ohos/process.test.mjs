@@ -243,10 +243,10 @@ test('rg零宽UTF-8匹配覆盖每个字节坐标、CRLF及无LF末行', async (
   }
 });
 
-test('rg尚未等价实现的include/Unicode词类/复杂glob明确拒绝而不静默漏项', async () => {
+test('rg非JSON新语义和未实现的files复杂glob仍明确拒绝', async () => {
   for (const args of [
-    ['--json', '--regexp=abc', '--glob=*.txt'],
-    ['--json', '--regexp=\\w+', '--', 'case.txt'],
+    ['--regexp=abc', '--glob=*.txt'],
+    ['--regexp=\\w+', '--', 'case.txt'],
     ['--files', '--glob=**/*.txt', '--no-ignore', '--hidden'],
     ['--json', '--regexp=(?i:abc)', '--', 'case.txt'],
   ]) {

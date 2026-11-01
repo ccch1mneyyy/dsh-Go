@@ -1,3 +1,4 @@
+import { selectRgFiles, validateRgGlobs } from './rg-select.mjs';
 const unsupported = detail => ({ stdout: '', stderr: `rg: 鸿蒙本机尚不支持${detail}，可以连接电脑执行\n`, exitCode: 2 });
 const flags = new Set(['--files', '--json', '--no-ignore', '--hidden', '--case-sensitive', '--ignore-case', '-i', '-s', '-n', '--line-number', '-F', '--fixed-strings', '--text', '-a']);
 
@@ -16,8 +17,7 @@ async function executeRgBody(args, ctx) {
   const pattern = value => {
     rawPatterns.push(value);
     if (fixed) return value;
-    // RE2 的这些 ASCII 字符类与 Rust regex 的 Unicode 默认值不同。
-    if (/(^|[^\\])(?:\\\\)*\\[wWdDsSbB]/.test(value)) throw new Error('这类 Unicode 正则字符类或词边界');
+    if (!json && /(^|[^\\])(?:\\\\)*\\[wWdDsSbB]/.test(value)) throw new Error('非 JSON 输出的 Unicode 正则字符类或词边界');
     const mode = value.match(/^\(\?(-?i)\)/);
     if (mode) {
       normalized.push(mode[1] === 'i' ? '--ignore-case' : '--case-sensitive');
@@ -50,8 +50,8 @@ async function executeRgBody(args, ctx) {
     }
   } catch (error) { return unsupported(error.message); }
   if (modified && !files) return unsupported('在 --files 以外按修改时间排序');
-  if (!files && globs.some(value => !value.startsWith('!'))) return unsupported('grep 的正向 include glob（忽略规则优先级尚未等价实现）');
-  if (globs.some(value => !value.startsWith('!') && (value.includes('**') || /[{}]/.test(value)))) return unsupported('包含 ** 或花括号的正向 glob');
+  if (!files && !json && globs.some(value => !value.startsWith('!'))) return unsupported('非 JSON 输出的正向 include glob');
+  if (files && globs.some(value => !value.startsWith('!') && (value.includes('**') || /[{}]/.test(value)))) return unsupported('包含 ** 或花括号的正向 glob');
   normalized.push(...globs.map(value => `--glob=${value}`));
   for (const path of paths) {
     if (path.includes('\n')) return unsupported('含换行符的搜索路径');
@@ -76,8 +76,8 @@ async function executeRgBody(args, ctx) {
   }
   return result;
 }
-// just-bash 3.6.0 已锁定的 MIT 传递依赖；使用公开 UTF-8 matcher，不改其 bundle。
-import { RE2JS } from 're2js';
+// 仅本 OHOS rg 使用的私有源码构建；不改原 npm 包或其他使用者，见 M4-1.md。
+import { RE2JS } from './build/re2js-unicode.mjs';
 
 
 async function searchJson({ ctx, options, rawPatterns, fixed, globs, paths }) {
@@ -92,19 +92,23 @@ async function searchJson({ ctx, options, rawPatterns, fixed, globs, paths }) {
     const patterns = rawPatterns.map(value => fixed ? value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : value);
     regex = RE2JS.compile(patterns.length === 1 ? patterns[0] : patterns.map(value => `(?:${value})`).join('|'), ignoreCase ? RE2JS.CASE_INSENSITIVE : 0);
   } catch (error) { return { stdout: '', stderr: `rg: regex parse error: ${error.message}\n`, exitCode: 2 }; }
-  // 显式文件不受 glob / 隐藏 / ignore 过滤；只有目录遍历复用原文件选择。
+  validateRgGlobs(globs);
+  // 显式文件不受 glob / 隐藏 / ignore 过滤；目录采用有序 override 与 ignore 优先级。
   const explicit = [], directories = [];
   for (const path of paths) {
     if ((await ctx.fs.stat(ctx.fs.resolvePath(ctx.cwd, path))).isFile) explicit.push(path);
     else directories.push(path);
   }
   const selected = paths.length && !directories.length ? { stdout: '', stderr: '', exitCode: 0 }
-    : await ctx.origCommand(['--files', '--null', ...options.filter(value => value === '--hidden' || value === '--no-ignore'), ...globs.map(value => `--glob=${value}`), ...directories.map(path => path.startsWith('-') ? ctx.fs.resolvePath(ctx.cwd, path) : path)]);
+    : await selectRgFiles(ctx, options, globs, directories.map(path => path.startsWith('-') ? ctx.fs.resolvePath(ctx.cwd, path) : path));
+  if (selected.exitCode === 1 && !paths.length) return { stdout: '', stderr: 'rg: 过滤后没有可搜索文件；请检查 include 与忽略规则\n', exitCode: 2 };
   if (selected.exitCode > 1 || (selected.exitCode === 1 && !explicit.length)) return selected;
   const records = [];
   let outputBytes = 0;
   for (const path of [...explicit, ...selected.stdout.split('\0').filter(Boolean)]) {
-    const bytes = Buffer.from(await ctx.fs.readFileBuffer(ctx.fs.resolvePath(ctx.cwd, path)));
+    let bytes = Buffer.from(await ctx.fs.readFileBuffer(ctx.fs.resolvePath(ctx.cwd, path)));
+    // rg 的 UTF-8 BOM 探测仅移除文件最前的一枚 BOM；JSON 坐标以解码后字节计。
+    if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) bytes = bytes.subarray(3);
     if (!options.includes('--text') && !options.includes('-a') && bytes.includes(0)) continue;
     try { new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
     catch { return unsupported('非 UTF-8 文件的 JSON 文本搜索'); }
@@ -123,7 +127,7 @@ async function searchJson({ ctx, options, rawPatterns, fixed, globs, paths }) {
         // Rust regex 不报告紧邻非空匹配后的空匹配；rg JSON 也不列出 EOF 空子匹配。
         if (from === to && (from === nonemptyEnd || (newline < 0 && from === line.length))) continue;
         if (submatches.length >= ctx.limits.maxArrayElements) throw new Error('rg: 单行匹配数超过解释器上限');
-        submatches.push({ match: { text: matcher.group() }, start: from, end: to });
+        submatches.push({ match: { text: line.subarray(from, to).toString('utf8') }, start: from, end: to });
         if (from !== to) nonemptyEnd = to;
       }
       if (matched) {

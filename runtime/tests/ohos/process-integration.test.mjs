@@ -130,3 +130,40 @@ test('PTY明确不可用，未实现git不能被工作区快照当成可执行�
   assert.equal(ctx.subprocess.temporaryRoot, temp);
   assert.throws(() => { ctx.subprocess.temporaryRoot = '/tmp'; }, TypeError);
 });
+
+test('M4-1真实DSH include覆盖忽略文件和隐藏文件，保留被剪枝目录', async () => {
+  const directory = join(work, 'm4-include');
+  await mkdir(join(directory, '.git'), { recursive: true });
+  await mkdir(join(directory, 'sub')); await mkdir(join(directory, 'ignored'));
+  await writeFile(join(directory, '.gitignore'), '*.txt\nignored/\n');
+  for (const path of ['a.txt', '.hidden.txt', 'sub/b.txt', 'ignored/c.txt', 'other.js']) await writeFile(join(directory, path), '中文 foo\n');
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => directory } };
+  const result = await search.runRipgrep(context, { agent: {}, signal: new AbortController().signal }, 'grep', search.buildGrepCommand({ pattern: '\\b(?:中文|foo)\\b', include: '**/*.txt' }), 10000, 200, 1000);
+  assert.equal(result.noMatches, false);
+  assert.deepEqual(search.parseGrepMatches(result.stdout).map(match => match.path).sort(), ['.hidden.txt', 'a.txt', 'sub/b.txt']);
+});
+
+test('M4-1真实DSH显式文件优先于include，过滤后无文件不能伪装零匹配', async () => {
+  const directory = join(work, 'm4-explicit'); await mkdir(directory);
+  await writeFile(join(directory, 'a.txt'), '中文 ١٢\n');
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => directory } };
+  const exec = { agent: {}, signal: new AbortController().signal };
+  const result = await search.runRipgrep(context, exec, 'grep', search.buildGrepCommand({ pattern: '\\w+\\s\\d+', path: 'a.txt', include: '*.js' }), 10000, 200, 1000);
+  assert.deepEqual(search.parseGrepMatches(result.stdout), [{ path: 'a.txt', lineNumber: 1, line: '中文 ١٢' }]);
+  await assert.rejects(search.runRipgrep(context, exec, 'grep', search.buildGrepCommand({ pattern: 'x', include: '*.absent' }), 10000, 200, 1000), { code: 'SEARCH_FAILED' });
+});
+
+for (const [index, include, expected] of [
+  [0, 'dir/?.txt', ['dir/a.txt', 'dir/z.txt']],
+  [1, 'dir/???.txt', ['dir/abc.txt', 'dir/中.txt']],
+  [2, 'dir/????.txt', ['dir/abcd.txt', 'dir/😀.txt']],
+  [3, 'dir/[!a].txt', ['dir/z.txt']],
+]) test(`M4-1真实DSH include按UTF-8字节匹配 ${include}`, async () => {
+  const directory = join(work, 'm4-byte-' + index); await mkdir(join(directory, 'dir'), { recursive: true });
+  for (const name of ['a', 'z', 'abc', 'abcd', '中', '😀']) await writeFile(join(directory, 'dir', name + '.txt'), 'needle\n');
+  const context = { subprocess: ctx.subprocess, workingDirectory: { ensure: async () => directory } };
+  const args = search.parseGrepArgs({ pattern: 'needle', include });
+  const result = await search.runRipgrep(context, { agent: {}, signal: new AbortController().signal }, 'grep', search.buildGrepCommand(args), 65536, 100, 10000);
+  assert.equal(result.noMatches, false);
+  assert.deepEqual(search.parseGrepMatches(result.stdout).map(match => match.path).sort(), expected);
+});
