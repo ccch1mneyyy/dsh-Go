@@ -6380,6 +6380,36 @@ abstract class L10n {
   /// **'展开清单'**
   String get chatExpandTodos;
 
+  /// No description provided for @chatDockFolded.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 条状态已叠起'**
+  String chatDockFolded(int count);
+
+  /// No description provided for @chatDockSpread.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开'**
+  String get chatDockSpread;
+
+  /// No description provided for @chatDockFold.
+  ///
+  /// In zh, this message translates to:
+  /// **'收起状态条'**
+  String get chatDockFold;
+
+  /// No description provided for @chatDockNext.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一张'**
+  String get chatDockNext;
+
+  /// No description provided for @chatDockPrevious.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一张'**
+  String get chatDockPrevious;
+
   /// No description provided for @chatTodoNotStarted.
   ///
   /// In zh, this message translates to:

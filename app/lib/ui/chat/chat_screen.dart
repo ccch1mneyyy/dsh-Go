@@ -53,6 +53,7 @@ import '../features/session_export_page.dart';
 import '../onboarding/local_install.dart';
 import '../pets/pet_perch.dart';
 import '../pets/pet_stage.dart';
+import '../plugins/native/composer_strip.dart' show ComposerStripSlot;
 import '../plugins/native/native_composer_bar.dart';
 import '../plugins/native/native_taps.dart' show NativeComposerHost, NativeComposerScope;
 import '../safe_mode/engine_failure_card.dart';
@@ -72,6 +73,7 @@ import 'chat_list.dart';
 import 'composer.dart';
 import 'composer_toast.dart';
 import 'dock/chat_dock.dart';
+import 'dock/dock_stack.dart';
 import 'empty_state.dart';
 import 'media/generate_mode.dart';
 import 'media/generate_sheet.dart';
@@ -1387,6 +1389,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     // messages stay in sight above the composer.
     final typing =
         MediaQuery.sizeOf(context).height < WindowClass.compactHeight && MediaQuery.viewInsetsOf(context).bottom > 0;
+    // 「自动允许中」/「完全权限」 ride on the bar right above the composer, not a
+    // row of their own: beside the activity strip while a reply generates, at
+    // the start of the capsule row otherwise. Their own row only where neither
+    // shows (read only; a phone on its side typing folds both away).
+    final running = chat?.running ?? false;
+    final pillsBesideStrip = sessionId != null && running && !typing;
+    final pillsInCapsules = !readOnly && !running && !typing;
+    final composerPills = _composerPills(
+      sessionId,
+      autoApprove: chat?.autoApprove ?? false,
+      generate: readOnly ? null : generate,
+      risk: !pillsBesideStrip,
+    );
     final headerHeight = typing ? MediaQuery.paddingOf(context).top + AppSpace.sm : ChatHeader.heightOf(context);
 
     Widget backdrop(Widget child) => widget.backdrop ? WallpaperBackdrop(child: child) : child;
@@ -1641,11 +1656,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                   duration: AppMotion.of(context, AppMotion.standard),
                                   curve: AppMotion.std,
                                   alignment: Alignment.bottomLeft,
-                                  child: switch (_composerPill(
-                                    sessionId,
-                                    autoApprove: chat?.autoApprove ?? false,
-                                    generate: readOnly ? null : generate,
-                                  )) {
+                                  child: switch (pillsInCapsules ? null : composerPills) {
                                     final pill? => Padding(
                                       padding: const EdgeInsets.only(bottom: 8),
                                       child: Align(
@@ -1656,34 +1667,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                     null => const SizedBox(width: double.infinity),
                                   },
                                 ),
-                                // Todo and goal bars (official input dock),
-                                // above the strip; zero high when empty. They
-                                // fold away while a phone on its side types.
-                                if (sessionId != null)
-                                  _DockAside(
-                                    aside: typing,
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                      children: [
-                                        ChatDock(sessionId: sessionId),
-                                        ActivityStripSlot(
-                                          sessionId: sessionId,
-                                          onTap: () => _openRunningTrajectory(sessionId),
-                                          // The todo bar above already shows it.
-                                          todoProgress: false,
-                                        ),
+                                // The status bars as one deck: the todo and
+                                // goal bars (official input dock), the
+                                // activity strip, a plugin's status line;
+                                // each zero high when empty. Folded, they take
+                                // one row (dock_stack.dart). They fold away
+                                // while a phone on its side types.
+                                _DockAside(
+                                  aside: typing,
+                                  child: BackdropGroup(
+                                    child: DockStack(
+                                      cards: [
+                                        if (sessionId != null) ...[
+                                          TodoDockSlot(sessionId: sessionId),
+                                          GoalDockSlot(sessionId: sessionId),
+                                          ActivityStripSlot(
+                                            sessionId: sessionId,
+                                            onTap: () => _openRunningTrajectory(sessionId),
+                                            // The todo bar shows it, unless it is folded behind the strip.
+                                            todoProgress: ref.watch(dockFoldedProvider),
+                                          ),
+                                        ],
+                                        // It gives the activity strip its place while a reply generates.
+                                        if (!readOnly) ComposerStripSlot(sessionId: sessionId, visible: !running),
                                       ],
+                                      accessory: pillsBesideStrip
+                                          ? _stripRisk(sessionId, autoApprove: chat?.autoApprove ?? false)
+                                          : null,
                                     ),
                                   ),
-                                // Plugins' status line, then the capsules
-                                // (ui.json's and plugins'): they give the
-                                // activity strip its place while a reply
-                                // generates; nothing at all without any.
+                                ),
+                                // The capsules (ui.json's and plugins'), led
+                                // by the chat's pills; they step aside while a
+                                // reply generates; nothing at all without any.
                                 if (!readOnly)
                                   _DockAside(
                                     aside: typing,
-                                    child: NativeComposerBar(sessionId: sessionId, visible: !(chat?.running ?? false)),
+                                    child: NativeComposerBar(
+                                      sessionId: sessionId,
+                                      visible: !running,
+                                      leading: pillsInCapsules ? composerPills : null,
+                                      strip: false,
+                                    ),
                                   ),
                                 if (readOnly)
                                   const ReadOnlyBar()
@@ -1766,13 +1791,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
 
   /// What sits on the composer's top-left edge: 「自动允许中 ×」 while this
   /// client allows everything, else 「⚠ 完全权限 ›」 for a conversation looser
-  /// than 工作区内修改; nothing otherwise.
-  Widget? _composerPill(String? sessionId, {required bool autoApprove, GenerateParams? generate}) {
+  /// than 工作区内修改 (unless [risk] is false: they are beside the activity
+  /// strip), then the generation mode's capsule; nothing otherwise.
+  Widget? _composerPills(String? sessionId, {required bool autoApprove, GenerateParams? generate, bool risk = true}) {
     final capsule = generate == null
         ? null
         : GenerateCapsule(params: generate, onTap: () => _openGenerateSheet(generate), onExit: _exitGenerate);
     Widget? pill;
-    if (sessionId != null && autoApprove) {
+    if (!risk) {
+      // Beside the activity strip ([_stripRisk]).
+    } else if (sessionId != null && autoApprove) {
       pill = AutoApprovePill(onDisable: () => ref.read(chatProvider(sessionId).notifier).setAutoApprove(false));
     } else if (sessionId != null) {
       final risky = ref.watch(sessionModesProvider(sessionId).select((m) => m.risky ? m.preset : null));
@@ -1794,6 +1822,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         const SizedBox(width: GenerateCapsuleMetrics.gap),
         Flexible(child: capsule),
       ],
+    );
+  }
+
+  /// 「自动允许中」/「完全权限」 beside the activity strip while a reply generates.
+  Widget? _stripRisk(String sessionId, {required bool autoApprove}) {
+    if (autoApprove) {
+      return StripRiskChip.autoApprove(
+        context,
+        onDisable: () => ref.read(chatProvider(sessionId).notifier).setAutoApprove(false),
+      );
+    }
+    final risky = ref.watch(sessionModesProvider(sessionId).select((m) => m.risky ? m.preset : null));
+    if (risky == null) return null;
+    return StripRiskChip.permission(
+      context,
+      preset: risky,
+      onTap: () => unawaited(showPermissionSheet(context, sessionId)),
     );
   }
 

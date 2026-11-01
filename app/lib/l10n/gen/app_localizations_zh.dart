@@ -3452,6 +3452,23 @@ class L10nZh extends L10n {
   String get chatExpandTodos => '展开清单';
 
   @override
+  String chatDockFolded(int count) {
+    return '$count 条状态已叠起';
+  }
+
+  @override
+  String get chatDockSpread => '展开';
+
+  @override
+  String get chatDockFold => '收起状态条';
+
+  @override
+  String get chatDockNext => '下一张';
+
+  @override
+  String get chatDockPrevious => '上一张';
+
+  @override
   String get chatTodoNotStarted => '未开始';
 
   @override

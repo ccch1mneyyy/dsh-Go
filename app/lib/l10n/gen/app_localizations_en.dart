@@ -3635,6 +3635,29 @@ class L10nEn extends L10n {
   String get chatExpandTodos => 'Expand list';
 
   @override
+  String chatDockFolded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count status bars stacked',
+      one: '1 status bar stacked',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatDockSpread => 'Expand';
+
+  @override
+  String get chatDockFold => 'Fold the status bars';
+
+  @override
+  String get chatDockNext => 'Next card';
+
+  @override
+  String get chatDockPrevious => 'Previous card';
+
+  @override
   String get chatTodoNotStarted => 'Not started';
 
   @override
