@@ -2,7 +2,9 @@
 <!-- 原生界面文字（通知、悬浮窗、前台服务、Toast），经 i18n/AppStrings.kt 跟随 App 语言。 -->
 <resources>
     <!-- background -->
-    <string name="background_shizuku_missing">未安装 Shizuku</string>
+    <string name="background_shizuku_missing">未检测到可用的 Shizuku / Sui 接口</string>
+    <string name="background_sui_stopped">Sui 接口当前不可用</string>
+    <string name="background_sui_permission">未授权 Sui</string>
     <string name="background_shizuku_stopped">Shizuku 未运行</string>
     <string name="background_shizuku_permission">未授权 Shizuku</string>
     <string name="background_adb_not_paired">尚未完成无线调试配对</string>

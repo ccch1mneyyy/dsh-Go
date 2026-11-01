@@ -3,7 +3,9 @@
      i18n/AppStrings.kt so it follows the app language. English here, Chinese in values-zh/. -->
 <resources>
     <!-- background -->
-    <string name="background_shizuku_missing">Shizuku isn’t installed</string>
+    <string name="background_shizuku_missing">No available Shizuku / Sui interface detected</string>
+    <string name="background_sui_stopped">The Sui interface is currently unavailable</string>
+    <string name="background_sui_permission">Sui permission not granted</string>
     <string name="background_shizuku_stopped">Shizuku isn’t running</string>
     <string name="background_shizuku_permission">Shizuku permission not granted</string>
     <string name="background_adb_not_paired">Wireless debugging isn’t paired</string>
