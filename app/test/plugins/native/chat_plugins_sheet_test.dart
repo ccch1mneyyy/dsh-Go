@@ -20,6 +20,7 @@ import 'package:dsh_app/ui/plugins/native/native_composer_bar.dart';
 import 'package:dsh_app/ui/plugins/seats/seat_links.dart' show seatWebOpenerProvider;
 import 'package:dsh_app/ui/plugins/view/plugin_view.dart';
 import 'package:dsh_app/ui/web/web_target.dart';
+import 'package:dsh_app/ui_config/ui_config.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -243,6 +244,38 @@ void main() {
   });
 
   group('entry', () {
+    for (final nativePanels in [false, true]) {
+      testWidgets('hide.pluginCapsule hides only the built-in entry and can be restored: native=$nativePanels', (
+        tester,
+      ) async {
+        usePhoneView(tester);
+        var hidden = false;
+        await tester.pumpWidget(
+          _bar([
+            ..._overrides(_bridge(panels: nativePanels, capsules: 1), web: _web),
+            uiHiddenProvider(UiHideItem.pluginCapsule).overrideWith((ref) => hidden),
+          ]),
+        );
+        await pumpFrames(tester);
+        expect(_capsules(tester), ['按钮0', '插件']);
+        final c = ProviderScope.containerOf(tester.element(find.byType(NativeComposerBar)));
+        hidden = true;
+        c.invalidate(uiHiddenProvider(UiHideItem.pluginCapsule));
+        await pumpFrames(tester, 12);
+        expect(_capsules(tester), ['按钮0']);
+        expect(
+          c.read(chatPluginsHaveContentProvider('s1')),
+          isTrue,
+          reason: 'hiding an entry does not disable plugins',
+        );
+        expect(c.read(chatWebPluginsProvider('s1')).packages, isNotEmpty);
+        hidden = false;
+        c.invalidate(uiHiddenProvider(UiHideItem.pluginCapsule));
+        await pumpFrames(tester);
+        expect(_capsules(tester), ['按钮0', '插件']);
+      });
+    }
+
     testWidgets('the last capsule, outside the eight; not without content; away while a reply generates', (
       tester,
     ) async {

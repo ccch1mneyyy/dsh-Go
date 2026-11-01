@@ -25,6 +25,7 @@ class DrawerConversationList extends ConsumerWidget {
     super.key,
     required this.onOpen,
     required this.onLongPress,
+    this.onNewChat,
     this.leading,
     this.now,
     this.readOnly = false,
@@ -32,6 +33,9 @@ class DrawerConversationList extends ConsumerWidget {
 
   /// Opens a conversation (and closes the drawer).
   final ValueChanged<String> onOpen;
+
+  /// Closes the drawer after choosing a folder for a new conversation.
+  final VoidCallback? onNewChat;
 
   /// A conversation's actions.
   final void Function(SessionSummary session) onLongPress;
@@ -134,7 +138,7 @@ class DrawerConversationList extends ConsumerWidget {
               count: items.length,
               onTap: () => ref.read(drawerViewProvider.notifier).toggleCollapsed(folder.id),
               onLongPress: () {
-                if (!readOnly) folderActionsFlow(context, ref, folder);
+                if (!readOnly) folderActionsFlow(context, ref, folder, onNewChat: onNewChat);
               },
             ),
           );
