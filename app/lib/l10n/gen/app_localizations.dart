@@ -13243,6 +13243,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'手机布局'**
   String get hubInterfacePhoneLayout;
+
   /// No description provided for @hubTableTint.
   ///
   /// In zh, this message translates to:
@@ -13272,6 +13273,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'隔行淡一档，长表格更好扫读'**
   String get hubTableTintFillHint;
+
   /// No description provided for @hubTableTintFollowHint.
   ///
   /// In zh, this message translates to:
@@ -17213,6 +17215,24 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'退出码 {code}'**
   String phoneLaunchExited(String code);
+
+  /// No description provided for @phoneDndManualConnect.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动连接'**
+  String get phoneDndManualConnect;
+
+  /// No description provided for @phoneDndConnectPortLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接端口'**
+  String get phoneDndConnectPortLabel;
+
+  /// No description provided for @phoneDndConnectPortHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在系统「无线调试」首页查看「IP 地址和端口」，填写冒号后的端口。请不要使用配对码页面的端口。'**
+  String get phoneDndConnectPortHint;
 
   /// No description provided for @phoneTaskResultReady.
   ///
@@ -23969,6 +23989,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'字号,字体,文字大小,大字,字体大小'**
   String get searchKwTextSize;
+
   /// No description provided for @searchKwTableTint.
   ///
   /// In zh, this message translates to:
