@@ -17234,6 +17234,24 @@ abstract class L10n {
   /// **'退出码 {code}'**
   String phoneLaunchExited(String code);
 
+  /// No description provided for @phoneDndManualConnect.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动连接'**
+  String get phoneDndManualConnect;
+
+  /// No description provided for @phoneDndConnectPortLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接端口'**
+  String get phoneDndConnectPortLabel;
+
+  /// No description provided for @phoneDndConnectPortHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在系统「无线调试」首页查看「IP 地址和端口」，填写冒号后的端口。请不要使用配对码页面的端口。'**
+  String get phoneDndConnectPortHint;
+
   /// No description provided for @phoneTaskResultReady.
   ///
   /// In zh, this message translates to:

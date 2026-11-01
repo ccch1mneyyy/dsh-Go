@@ -223,12 +223,38 @@ void main() {
       await tester.tap(find.text('连接'));
       await tester.pumpAndSettle();
       expect(h.native!.callsOf('adbConnect'), hasLength(1));
+      expect(h.native!.callsOf('setBackgroundMode'), isEmpty);
 
       h.native!.push(phoneStatus(wirelessDebugging: true, paired: true, adbConnected: true));
       await settlePhone(tester);
       await tester.tap(find.text('启用不打扰模式'));
       await tester.pumpAndSettle();
       expect(h.native!.callsOf('setBackgroundMode').single.arguments, {'mode': 'adb'});
+    });
+
+    testWidgets('manual ADB connection validates the connect port and keeps mode off', (tester) async {
+      final h = await pumpPhone(
+        tester,
+        const PhoneDndPage(),
+        native: FakePhoneNative(status: phoneStatus(paired: true)),
+      );
+      await tester.tap(find.text('自连 ADB'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('手动连接'));
+      await tester.pumpAndSettle();
+      final connect = find.descendant(of: find.byType(AlertDialog), matching: find.widgetWithText(FilledButton, '连接'));
+      expect(tester.widget<FilledButton>(connect).onPressed, isNull);
+      for (final invalid in ['0', '65536']) {
+        await tester.enterText(find.byKey(const ValueKey('adb-connect-port')), invalid);
+        await tester.pump();
+        expect(tester.widget<FilledButton>(connect).onPressed, isNull);
+      }
+      await tester.enterText(find.byKey(const ValueKey('adb-connect-port')), '45269');
+      await tester.pump();
+      await tester.tap(connect);
+      await tester.pumpAndSettle();
+      expect(h.native!.callsOf('adbConnect').single.arguments, {'port': 45269});
+      expect(h.native!.callsOf('setBackgroundMode'), isEmpty);
     });
 
     test('summary line for the main page', () {
