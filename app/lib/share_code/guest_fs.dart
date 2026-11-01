@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'share_models.dart';
@@ -29,10 +30,18 @@ class LocalSkill {
 }
 
 class GuestFs {
-  GuestFs(this.root);
+  GuestFs(this.root) : _harmony = false;
 
-  /// The rootfs directory (guest `/`).
+  /// 鸿蒙持久目录，不是 Linux rootfs；只映射已约定的三个用户目录。
+  GuestFs.harmony(this.root) : _harmony = true;
+
+  final bool _harmony;
+
+  /// Android 为 rootfs，鸿蒙为 engine-data；消费者应通过 file/dir 解析路径。
   final Directory root;
+
+  /// 仅 Android 具有 rootfs；受管安装和 SenseVoice 不能把鸿蒙数据根当作它。
+  Directory? get rootfs => _harmony ? null : root;
 
   /// Guest DSH home.
   static const dshHome = '/root/.dsh';
@@ -48,8 +57,16 @@ class GuestFs {
   static const importedAgentsMd = '$agentsHome/AGENTS.md';
 
   /// The on-device rootfs; null when the runtime isn't installed.
-  static Future<GuestFs?> local() async {
+  static Future<GuestFs?> local({String? operatingSystem}) async {
     try {
+      if ((operatingSystem ?? Platform.operatingSystem) == 'ohos') {
+        final layout = await const MethodChannel('dsh/runtime')
+            .invokeMapMethod<String, Object?>('getStorageLayout');
+        final path = layout?['dataRoot'];
+        if (layout?['version'] != 1 || path is! String) return null;
+        final dir = Directory(path);
+        return dir.isAbsolute && dir.existsSync() ? GuestFs.harmony(dir) : null;
+      }
       final dir = Directory('${(await getApplicationSupportDirectory()).path}/runtime/rootfs');
       return dir.existsSync() ? GuestFs(dir) : null;
     } catch (_) {
@@ -57,9 +74,24 @@ class GuestFs {
     }
   }
 
-  File file(String guestPath) => File('${root.path}/${guestPath.replaceFirst(RegExp(r'^/+'), '')}');
+  String _resolve(String guestPath) {
+    if (!_harmony) return '${root.path}/${guestPath.replaceFirst(RegExp(r'^/+'), '')}';
+    final segments = guestPath.split('/');
+    if (!guestPath.startsWith('/') || guestPath.contains('\\') || guestPath.contains('\u0000') ||
+        segments.skip(1).any((part) => part.isEmpty || part == '.' || part == '..')) {
+      throw ArgumentError.value(guestPath, 'guestPath', '无效鸿蒙用户路径');
+    }
+    for (final entry in const {'/root/.dsh': 'dsh-home', '/root/.agents': 'agents', '/root': 'home'}.entries) {
+      if (guestPath == entry.key || guestPath.startsWith('${entry.key}/')) {
+        return '${root.path}/${entry.value}${guestPath.substring(entry.key.length)}';
+      }
+    }
+    throw ArgumentError.value(guestPath, 'guestPath', '鸿蒙没有此 guest 目录映射');
+  }
 
-  Directory dir(String guestPath) => Directory('${root.path}/${guestPath.replaceFirst(RegExp(r'^/+'), '')}');
+  File file(String guestPath) => File(_resolve(guestPath));
+
+  Directory dir(String guestPath) => Directory(_resolve(guestPath));
 
   /// The person's own AGENTS.md text: DSH home's unless the app manages it,
   /// else the shared agents root's. Null when there is none.
@@ -136,7 +168,8 @@ class GuestFs {
     final prefix = folder.path.endsWith('/') ? folder.path : '${folder.path}/';
     for (final entity in folder.listSync(recursive: true, followLinks: false)) {
       if (entity is! File) continue;
-      final rel = entity.path.substring(prefix.length);
+      final raw = entity.path.substring(prefix.length);
+      final rel = Platform.isWindows ? raw.replaceAll('\\', '/') : raw;
       if (!SharedSkill.isSafePath(rel)) {
         if (rel.split('/').any((s) => s.startsWith('.'))) continue;
         return null;
@@ -209,6 +242,5 @@ class GuestFs {
   }
 }
 
-/// The on-device rootfs (null before the runtime is installed). Tests
-/// override it with a temp directory.
+/// 本机文件布局；持久目录未创建时为 null，测试使用独立临时目录。
 final guestFsProvider = FutureProvider<GuestFs?>((ref) => GuestFs.local());

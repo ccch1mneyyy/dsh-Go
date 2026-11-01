@@ -86,22 +86,28 @@ abstract interface class UiConfigStatusSink {
 
 // ── On-device engine ────────────────────────────────────────────────────────
 
-/// `<rootfs>/root/.dsh/dsh-go/ui.json`, followed with a directory watch
+/// 明确解析的本机 ui.json（兼容 Android rootfs），通过父目录监听更新。
+/// Followed with a directory watch
 /// (inotify) and re-read on every [kicks] event (app resumes, runtime state
 /// changes); bursts settle for [debounce] first.
 class LocalUiConfigSource implements UiConfigSource, UiConfigStatusSink {
   LocalUiConfigSource({
-    required this.rootfs,
+    Future<Directory?> Function()? rootfs,
+    Future<File?> Function()? configFile,
     this.kicks = const Stream.empty(),
     this.debounce = const Duration(milliseconds: 300),
     bool Function()? mayWrite,
-  }) : mayWrite = mayWrite ?? _always;
+  }) : assert((rootfs == null) != (configFile == null)),
+       configFile = configFile ?? (() async {
+         final root = await rootfs!();
+         return root == null ? null : File('${root.path}$guestDshHome/dsh-go/ui.json');
+       }),
+       mayWrite = mayWrite ?? _always;
 
   static bool _always() => true;
 
-  /// The rootfs directory (guest `/`), or null before the runtime is
-  /// installed. Asked again on every kick.
-  final Future<Directory?> Function() rootfs;
+  /// 解析实际 UI 文件；每次恢复前台或运行环境变化时重新查询。
+  final Future<File?> Function() configFile;
   final Stream<void> kicks;
   final Duration debounce;
 
@@ -168,20 +174,20 @@ class LocalUiConfigSource implements UiConfigSource, UiConfigStatusSink {
   /// Finds the directory and (re)starts the watch; creates `dsh-go/` once
   /// DSH home exists.
   Future<void> _arm() async {
-    Directory? root;
+    File? config;
     try {
-      root = await rootfs();
+      config = await configFile();
     } catch (_) {
-      root = null;
+      config = null;
     }
     if (_out == null) return;
-    if (root == null) {
+    if (config == null) {
       await _disarm();
       _dir = null;
       return;
     }
-    final home = Directory('${root.path}$guestDshHome');
-    final dir = Directory('${home.path}/dsh-go');
+    final dir = config.parent;
+    final home = dir.parent;
     if (_watch != null && _dir?.path == dir.path) return;
     await _disarm();
     _dir = dir;
@@ -196,7 +202,13 @@ class LocalUiConfigSource implements UiConfigSource, UiConfigStatusSink {
     try {
       _watch = dir.watch().listen(
         (event) {
-          if (_touchesConfig(event)) _schedule();
+          if (_touchesConfig(event)) {
+            if (dir.existsSync()) {
+              _schedule();
+            } else {
+              unawaited(_lost());
+            }
+          }
         },
         onError: (Object _) => unawaited(_lost()),
         onDone: () => unawaited(_lost()),
@@ -207,7 +219,7 @@ class LocalUiConfigSource implements UiConfigSource, UiConfigStatusSink {
   }
 
   Future<void> _lost() async {
-    _watch = null;
+    await _disarm();
     _schedule();
   }
 
@@ -217,7 +229,8 @@ class LocalUiConfigSource implements UiConfigSource, UiConfigStatusSink {
     await watch?.cancel();
   }
 
-  static bool _isConfig(String path) => path == 'ui.json' || path.endsWith('/ui.json');
+  static bool _isConfig(String path) =>
+      path == 'ui.json' || path.endsWith('${Platform.pathSeparator}ui.json') || path.endsWith('/ui.json');
 
   static bool _touchesConfig(FileSystemEvent event) =>
       _isConfig(event.path) || (event is FileSystemMoveEvent && _isConfig(event.destination ?? ''));

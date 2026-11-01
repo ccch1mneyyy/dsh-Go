@@ -1,5 +1,6 @@
 {
   "string": [
+    { "name": "microphone_reason", "value": "用于你主动开启的语音输入，停止或离开应用后结束录音" },
     {
       "name": "module_desc",
       "value": "DSH Go 鸿蒙应用"

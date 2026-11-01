@@ -273,7 +273,7 @@ void main() {
       overrides: [
         activeHostProvider.overrideWith(() => TestActiveHost(HostRef.local)),
         uiConfigKicksProvider.overrideWithValue(const Stream.empty()),
-        uiRootfsResolverProvider.overrideWithValue(() async => root),
+        uiConfigFileResolverProvider.overrideWithValue(() async => File('${root.path}/root/.dsh/dsh-go/ui.json')),
         localRuntimeProvider.overrideWith(() => TestRuntime(RuntimePhase.running)),
       ],
     );

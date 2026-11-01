@@ -171,7 +171,7 @@ const _byOffset = {
   600: 'Australia/Sydney',
 };
 
-/// The phone's IANA zone: `TZ`, then Android's default time zone, then
+/// The phone's IANA zone: `TZ`, then the native default time zone, then
 /// the Linux zone files, then a zone with the current offset, then `UTC`.
 Future<String> detectDeviceTimeZone() async {
   ensureTimeZones();
@@ -179,8 +179,8 @@ Future<String> detectDeviceTimeZone() async {
   final env = Platform.environment['TZ']?.replaceFirst(RegExp(r'^:'), '');
   if (usable(env)) return env!;
   try {
-    if (Platform.isAndroid) {
-      return await detectAndroidTimeZone();
+    if (Platform.isAndroid || Platform.operatingSystem == 'ohos') {
+      return await detectSystemTimeZone();
     } else if (Platform.isLinux || Platform.isMacOS) {
       final file = File('/etc/timezone');
       if (file.existsSync()) {
@@ -203,9 +203,10 @@ Future<String> detectDeviceTimeZone() async {
   return _zoneForOffset(DateTime.now().timeZoneOffset);
 }
 
-/// Android's system zone without starting a child process. The optional offset
+/// 系统原生时区，不启动子进程；缺通道时继续使用偏移回退。
+/// The optional offset
 /// makes the existing fallback deterministic in channel tests.
-Future<String> detectAndroidTimeZone({Duration? fallbackOffset}) async {
+Future<String> detectSystemTimeZone({Duration? fallbackOffset}) async {
   try {
     final name = (await const MethodChannel('dsh/app').invokeMethod<String>('getTimeZoneId'))?.trim();
     if (name != null && name.isNotEmpty && isKnownZone(name)) return name;

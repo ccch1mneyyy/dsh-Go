@@ -8,6 +8,7 @@ import { Want } from '@kit.AbilityKit';
 import type { ChildProcessOptions } from '@ohos.app.ability.ChildProcessOptions';
 import { util } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { connection } from '@kit.NetworkKit';
 import {
   FlutterPlugin, FlutterPluginBinding, MethodCall, MethodCallHandler, MethodChannel, MethodResult,
   EventChannel, EventSink, StreamHandler
@@ -20,7 +21,7 @@ import {
  * libnode + bootstrap.mjs）→ getStatus 返回 running 与 baseUrl/token → stop。
  *
  * 尚未实现（变更操作明确拒绝，只读能力查询返回不可用）：安全模式、LKG 恢复、managed skills、
- * 手机存储挂载、后台/网络诊断。这些在 Android 侧依赖 Linux rootfs，鸿蒙侧要另行适配。
+ * 手机存储挂载、后台诊断。这些在 Android 侧依赖 Linux rootfs，鸿蒙侧要另行适配。
  */
 const TAG = 'DshRuntime';
 const DOMAIN = 0x0001;
@@ -423,6 +424,13 @@ export default class DshRuntimePlugin implements FlutterPlugin, MethodCallHandle
         result.success(this.statusMap());
         return;
       }
+      if (name === 'getStorageLayout') {
+        const map: Map<string, Object> = new Map();
+        map.set('version', 1);
+        map.set('dataRoot', this.dataRoot());
+        result.success(map);
+        return;
+      }
       if (name === 'install') {
         this.installRuntime().then(() => result.success(null)).catch((error: BusinessError) => {
           hilog.error(DOMAIN, TAG, `install rejected: ${error.code} ${error.message}`);
@@ -464,8 +472,12 @@ export default class DshRuntimePlugin implements FlutterPlugin, MethodCallHandle
         result.success(map);
         return;
       }
-      if (name === 'networkMetered' || name === 'batteryExempt') {
-        result.success(false);
+      if (name === 'networkMetered') {
+        this.networkMetered().then((metered: boolean | null) => result.success(metered));
+        return;
+      }
+      if (name === 'batteryExempt') {
+        result.success(null);
         return;
       }
       if (name === 'installManagedSkill') {
@@ -480,6 +492,16 @@ export default class DshRuntimePlugin implements FlutterPlugin, MethodCallHandle
       const failure = error as BusinessError;
       hilog.error(DOMAIN, TAG, `failed ${name}: ${failure.code} ${failure.message}`);
       result.error('RUNTIME_FAILED', failure.message, null);
+    }
+  }
+
+  private async networkMetered(): Promise<boolean | null> {
+    try {
+      // 没有默认网络时，系统的 false 不能证明存在非计费连接。
+      if (!await connection.hasDefaultNet()) return null;
+      return await connection.isDefaultNetMetered();
+    } catch (_) {
+      return null;
     }
   }
 }

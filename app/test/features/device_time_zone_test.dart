@@ -18,40 +18,40 @@ void main() {
   setUp(calls.clear);
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
-  test('Android channel returns the system zone rather than the offset preference', () async {
+  test('系统 channel returns the system zone rather than the offset preference', () async {
     respond((_) async => ' America/Phoenix ');
-    expect(await detectAndroidTimeZone(fallbackOffset: const Duration(hours: 8)), 'America/Phoenix');
+    expect(await detectSystemTimeZone(fallbackOffset: const Duration(hours: 8)), 'America/Phoenix');
     expect(calls.single.method, 'getTimeZoneId');
     expect(calls.single.arguments, isNull);
   });
 
-  test('empty Android zone falls back to the existing preferred offset zone', () async {
+  test('empty 系统 zone falls back to the existing preferred offset zone', () async {
     respond((_) async => '  ');
-    expect(await detectAndroidTimeZone(fallbackOffset: const Duration(hours: 8)), 'Asia/Shanghai');
+    expect(await detectSystemTimeZone(fallbackOffset: const Duration(hours: 8)), 'Asia/Shanghai');
     expect(calls, hasLength(1));
   });
 
-  test('unknown Android zone falls back to the existing preferred offset zone', () async {
+  test('unknown 系统 zone falls back to the existing preferred offset zone', () async {
     respond((_) async => 'Unknown/Zone');
-    expect(await detectAndroidTimeZone(fallbackOffset: const Duration(hours: 5, minutes: 30)), 'Asia/Kolkata');
+    expect(await detectSystemTimeZone(fallbackOffset: const Duration(hours: 5, minutes: 30)), 'Asia/Kolkata');
   });
 
-  test('Android platform failure falls back without throwing', () async {
+  test('系统 platform failure falls back without throwing', () async {
     respond((_) async => throw PlatformException(code: 'unavailable'));
-    expect(await detectAndroidTimeZone(fallbackOffset: const Duration(hours: 9)), 'Asia/Tokyo');
+    expect(await detectSystemTimeZone(fallbackOffset: const Duration(hours: 9)), 'Asia/Tokyo');
   });
 
   test('null result and unmatched offset reach UTC', () async {
     respond((_) async => null);
-    expect(await detectAndroidTimeZone(fallbackOffset: const Duration(hours: 25)), 'UTC');
+    expect(await detectSystemTimeZone(fallbackOffset: const Duration(hours: 25)), 'UTC');
   });
 
   test('missing activity channel uses the offset fallback', () async {
-    expect(await detectAndroidTimeZone(fallbackOffset: const Duration(hours: 7)), 'Asia/Bangkok');
+    expect(await detectSystemTimeZone(fallbackOffset: const Duration(hours: 7)), 'Asia/Bangkok');
   });
 
   test('a known zero-offset zone is accepted without replacing it with London', () async {
     respond((_) async => 'UTC');
-    expect(await detectAndroidTimeZone(fallbackOffset: Duration.zero), 'UTC');
+    expect(await detectSystemTimeZone(fallbackOffset: Duration.zero), 'UTC');
   });
 }

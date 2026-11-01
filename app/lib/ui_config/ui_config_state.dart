@@ -49,7 +49,14 @@ typedef UiRootfsResolver = Future<Directory?> Function();
 
 final uiRootfsResolverProvider = Provider<UiRootfsResolver>(
   (ref) =>
-      () async => (await GuestFs.local())?.root,
+      () async => (await ref.read(guestFsProvider.future))?.rootfs,
+);
+
+/// UI 设置按实际布局解析到文件，鸿蒙数据根不经过 rootfs 拼接。
+typedef UiConfigFileResolver = Future<File?> Function();
+
+final uiConfigFileResolverProvider = Provider<UiConfigFileResolver>(
+  (ref) => () async => (await ref.read(guestFsProvider.future))?.file('${GuestFs.dshHome}/dsh-go/ui.json'),
 );
 
 /// Makes the source for [host], using the caller's [ref] (so the config
@@ -68,7 +75,7 @@ UiConfigSource? defaultUiConfigSource(Ref ref, HostRef host) {
     final resumes = ref.watch(uiLocalKicksProvider).listen(kicks.add);
     ref.onDispose(resumes.cancel);
     return LocalUiConfigSource(
-      rootfs: ref.read(uiRootfsResolverProvider),
+      configFile: ref.read(uiConfigFileResolverProvider),
       kicks: kicks.stream,
       mayWrite: () => ref.read(localRuntimeProvider).status.phase != RuntimePhase.installing,
     );

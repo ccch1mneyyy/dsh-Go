@@ -155,12 +155,16 @@ abstract class VoiceModelPlatform {
 }
 
 class DeviceVoiceModelPlatform implements VoiceModelPlatform {
+  DeviceVoiceModelPlatform({Future<GuestFs?> Function()? guestFs}) : _guestFs = guestFs ?? GuestFs.local;
+
+  final Future<GuestFs?> Function() _guestFs;
   static const _runtime = MethodChannel('dsh/runtime');
 
   @override
   Future<VoiceModelFiles?> files() async {
-    final fs = await GuestFs.local();
-    return fs == null ? null : VoiceModelFiles(fs.root);
+    final fs = await _guestFs();
+    final rootfs = fs?.rootfs;
+    return rootfs == null ? null : VoiceModelFiles(rootfs);
   }
 
   @override

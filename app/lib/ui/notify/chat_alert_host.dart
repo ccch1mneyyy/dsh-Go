@@ -4,6 +4,7 @@
 // screen and routes notification taps.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,9 @@ import '../bots/bot_alerts.dart';
 import '../common/discard_guard.dart';
 import '../theme/app_icons.dart';
 import '../theme/theme.dart';
+
+/// 鸿蒙的 Flutter 前台提醒可独立使用；其他平台保留原生通知门槛。
+final inAppAlertsWithoutNativeProvider = Provider<bool>((ref) => Platform.operatingSystem == 'ohos');
 
 /// Put it once inside the home route (the home shell does). It keeps the
 /// alert controller alive, feeds it the app lifecycle and whether the chat is
@@ -73,10 +77,9 @@ class _ChatAlertHostState extends ConsumerState<ChatAlertHost> {
     super.dispose();
   }
 
-  /// Native side confirmed: route taps and give the banner its overlay slot.
-  void _activate() {
-    if (_taps != null) return;
-    _taps = ref.read(notifyChannelProvider).taps.listen(_onTap);
+  /// 前台横幅不依赖系统通知；原生通知存在时才监听其点击。
+  void _activate(bool native) {
+    if (native && _taps == null) _taps = ref.read(notifyChannelProvider).taps.listen(_onTap);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _entry != null) return;
       _entry = OverlayEntry(builder: (_) => AlertBannerLayer(onOpened: () => widget.onReveal?.call(true)));
@@ -95,13 +98,11 @@ class _ChatAlertHostState extends ConsumerState<ChatAlertHost> {
 
   @override
   Widget build(BuildContext context) {
-    // Without the native module (widget tests, desktop) nothing starts: no
-    // host subscriptions, no tap stream, no banner.
+    // 原生通道仅决定系统通知点击，Flutter 横幅继续跟随原消息控制器。
     final native = ref.watch(notifySystemStatusProvider.select((s) => s.value?.native ?? false));
-    if (native) {
-      // Keeps the controller (and its host subscriptions) alive with the shell.
+    if (native || ref.watch(inAppAlertsWithoutNativeProvider)) {
       ref.watch(chatAlertsProvider.select((_) => null));
-      _activate();
+      _activate(native);
     }
     return widget.child ?? const SizedBox.shrink();
   }

@@ -687,7 +687,7 @@ class ChatAlertsController extends Notifier<ChatAlert?> {
       case AlertDelivery.banner:
         _banner = alert;
       case AlertDelivery.system:
-        unawaited(_channel.show(postFor(alert)));
+        unawaited(_channel.tryShow(postFor(alert)));
     }
   }
 

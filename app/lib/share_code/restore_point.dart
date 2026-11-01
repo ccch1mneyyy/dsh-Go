@@ -25,13 +25,18 @@ class RestorePoint {
   final GuestFs fs;
 
   /// `filesDir/runtime/lkg/lkg.json` (the rootfs is `filesDir/runtime/rootfs`).
-  File get lkgFile => File('${fs.root.parent.path}/lkg/lkg.json');
+  File get lkgFile {
+    final rootfs = fs.rootfs;
+    if (rootfs == null) throw UnsupportedError('鸿蒙尚不支持 Android LKG 恢复点');
+    return File('${rootfs.parent.path}/lkg/lkg.json');
+  }
 
   Directory get _profile => fs.dir('${GuestFs.dshHome}/profiles/web');
 
   /// Records the main profile as the last good one. False when there is no
   /// profile yet (nothing to come back to) or it can't be read.
   Future<bool> pinCurrentProfile({DateTime? now}) async {
+    if (fs.rootfs == null) return false;
     try {
       final pkg = File('${_profile.path}/package.json');
       if (!pkg.existsSync()) return false;

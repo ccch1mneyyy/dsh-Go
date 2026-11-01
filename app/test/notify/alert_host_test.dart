@@ -64,6 +64,7 @@ void main() {
     NotifySystemStatus? system,
     Widget? page,
     bool drawer = false,
+    bool harmony = false,
   }) async {
     if (system != null) channel.system = system;
     final conn = fakeHostConnection();
@@ -95,6 +96,7 @@ void main() {
           workspacesProvider.overrideWith(_Workspaces.new),
           dsBotApiFactoryProvider.overrideWithValue((_) => null),
           notifyChannelProvider.overrideWithValue(channel),
+          inAppAlertsWithoutNativeProvider.overrideWithValue(harmony),
           alertSourceFactoryProvider.overrideWithValue((_) => source),
           alertTimingProvider.overrideWithValue((announce: Duration.zero, reconcile: const Duration(seconds: 1))),
           localConnectionProvider.overrideWith(() => _Local(conn)),
@@ -318,10 +320,43 @@ void main() {
     expect(find.text('已完成 · 好了'), findsNothing);
   });
 
-  testWidgets('without the native module nothing starts', (tester) async {
-    await pumpHome(tester, system: const NotifySystemStatus.unavailable());
+  testWidgets('无原生通知时仍显示前台横幅并可打开对话', (tester) async {
+    await pumpHome(tester, system: const NotifySystemStatus.unavailable(), harmony: true);
+    await openPage(tester);
     source.emit(approval('e1', 's1'));
     await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.text('修复登录按钮'), findsOneWidget);
+    expect(source.listCalls, greaterThan(0));
+    expect(channel.shown, isEmpty);
+    expect(channel.tapController.hasListener, isFalse);
+    expect(channel.actionController.hasListener, isFalse);
+    await tester.tap(find.text('修复登录按钮'));
+    await tester.pumpAndSettle();
+    expect(find.text('设置页'), findsNothing);
+  });
+
+  testWidgets('无原生通知时后台不伪报系统投递且移除页面后不再订阅事件', (tester) async {
+    final container = await pumpHome(tester, system: const NotifySystemStatus.unavailable(), harmony: true);
+    container.read(appForegroundProvider.notifier).set(false);
+    source.outcomes['s2'] = outcome(9, 'completed', reply: '好了');
+    source.emit(const SessionStatusEvent('s2', true));
+    source.emit(const SessionStatusEvent('s2', false));
+    await tester.pumpAndSettle();
+    expect(find.text('已完成 · 好了'), findsNothing);
+    expect(channel.shown, isEmpty);
+    final before = source.lastTurnCalls.length;
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    source.emit(const SessionStatusEvent('s2', true));
+    source.emit(const SessionStatusEvent('s2', false));
+    await tester.pump();
+    expect(source.lastTurnCalls, hasLength(before));
+  });
+
+  testWidgets('非鸿蒙且没有原生通知时保持原行为，不启动主机订阅', (tester) async {
+    await pumpHome(tester, system: const NotifySystemStatus.unavailable());
+    source.emit(approval('e1', 's1'));
     await tester.pumpAndSettle();
     expect(find.text('修复登录按钮'), findsNothing);
     expect(source.listCalls, 0);
