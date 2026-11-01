@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { install, createBootCache, PASS } from '../boot/boot-cache.mjs';
 
 const MODULE = fileURLToPath(new URL('../boot/boot-cache.mjs', import.meta.url));
@@ -214,14 +214,16 @@ test('as a preload: active for `web` only, inert for other commands', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'boot-cache-preload-'));
   const file = path.join(dir, 'probe.mjs');
   fs.writeFileSync(file, script('patched'));
-  const run = (...args) => spawnSync(process.execPath, ['--import', MODULE, file, ...args], { encoding: 'utf8' });
+  // --import 要的是模块说明符：Windows 上传绝对路径 D:\… 会被当成协议（ERR_UNSUPPORTED_ESM_URL_SCHEME），
+  // 统一换成 file:// URL。
+  const run = (...args) => spawnSync(process.execPath, ['--import', pathToFileURL(MODULE).href, file, ...args], { encoding: 'utf8' });
   const web = run('web', '--port', '1');
   assert.equal(web.status, 0, web.stderr);
   assert.match(web.stdout, /^patched true$/m);
   assert.match(web.stdout, /^after false$/m);
   const other = run('plugin', 'add', 'x');
   assert.match(other.stdout, /^patched false$/m);
-  const off = spawnSync(process.execPath, ['--import', MODULE, file, 'web'], {
+  const off = spawnSync(process.execPath, ['--import', pathToFileURL(MODULE).href, file, 'web'], {
     encoding: 'utf8',
     env: { ...process.env, DSH_GO_BOOT_CACHE: '0' },
   });

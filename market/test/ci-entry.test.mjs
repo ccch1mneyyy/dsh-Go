@@ -135,6 +135,7 @@ test('moving refs and malformed JSON are not accepted as immutable submissions',
 });
 
 import { readFile } from 'node:fs/promises';
+import * as url from 'node:url';
 import { fileURLToPath } from 'node:url';
 const workflow = await readFile(new URL('../.github/workflows/check.yml', import.meta.url), 'utf8');
 const entryStep = workflow.split('        id: entry\n')[1].split('\n      - run:')[0];
@@ -150,7 +151,10 @@ async function runStep(f, { head = HEAD, baseFile = null } = {}) {
   };
   await new AsyncFunction('github', 'context', 'core', 'require', 'process', entryScript)(
     f.github, { repo: input.repository }, { setOutput: (key, value) => { outputs[key] = value; } },
-    (name) => { assert.equal(name, 'node:fs/promises'); return fs; },
+    (name) => {
+      assert.ok(['node:fs/promises', 'node:url'].includes(name), 'unexpected require: ' + name);
+      return name === 'node:url' ? url : fs;
+    },
     { cwd: () => fileURLToPath(new URL('../', import.meta.url)), env: { PR_NUMBER: '1', CHECKED_HEAD: HEAD, CHECKED_BASE: BASE } },
   );
   return { writes, statuses, outputs };

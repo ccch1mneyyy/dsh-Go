@@ -56,7 +56,10 @@ jobs:
             const {data:pr}=await github.rest.pulls.get({...context.repo,pull_number:Number(process.env.PR_NUMBER)});
             if(pr.head.sha!==process.env.CHECKED_HEAD) throw new Error('PR changed');
             await github.rest.repos.createCommitStatus({...context.repo, sha: pr.head.sha, state:'pending', context:'market/catalog', description:'Checking exact npm tarball'});
-            const {submission}=await import(process.cwd()+'/scripts/ci-entry.mjs');
+            const {pathToFileURL}=require('node:url');
+            // Windows 上 process.cwd() 是 D:\…，ESM 会把它当成协议（ERR_UNSUPPORTED_ESM_URL_SCHEME）；
+            // 统一转成 file:// URL 再 import。
+            const {submission}=await import(pathToFileURL(process.cwd()+'/scripts/ci-entry.mjs').href);
             const entry=await submission(github,{
               repository:context.repo,
               headRepository:{owner:pr.head.repo.owner.login,repo:pr.head.repo.name},
