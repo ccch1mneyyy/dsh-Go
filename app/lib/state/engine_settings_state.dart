@@ -73,10 +73,22 @@ enum FieldLayer {
   locked,
 }
 
+/// What a value at [node] is once it is there: the one member of an optional
+/// value (`union([X, const(undefined)])`, schemastery's "X or nothing", as
+/// `fallback: union([object({provider, model}), const(undefined)])` in
+/// @nanmicoder/dsh-agent-teams 0.1.27), else [node] with wrappers resolved.
+/// A single constant stays a union: "this value or nothing" is a choice.
+SchemaNode schemaValueOf(SchemaNode node) {
+  final n = node.effective;
+  if (!n.nullable) return n;
+  final members = n.members;
+  return members.length == 1 && members.single.type != 'const' ? members.single : n;
+}
+
 /// The schema node at [path] under [root] (object fields, array items by
 /// index, dict values by key); null when the schema has no such field.
 Map<String, SchemaNode>? schemaObjectFields(SchemaNode root, [Set<SchemaNode>? ancestors]) {
-  final node = root.effective;
+  final node = schemaValueOf(root);
   final seen = ancestors ?? <SchemaNode>{};
   if (seen.contains(node)) return null;
   if (node.type == 'object') return node.dict;
@@ -93,7 +105,7 @@ Map<String, SchemaNode>? schemaObjectFields(SchemaNode root, [Set<SchemaNode>? a
 SchemaNode? schemaAt(SchemaNode root, List<String> path) {
   SchemaNode? node = root;
   for (final key in path) {
-    final current = node?.effective;
+    final current = node == null ? null : schemaValueOf(node);
     if (current == null) return null;
     final fields = schemaObjectFields(current);
     if (fields != null) {
@@ -113,9 +125,9 @@ SchemaNode? schemaAt(SchemaNode root, List<String> path) {
 /// A disabled object locks its descendants as well as its own row.
 bool schemaPathDisabled(SchemaNode root, List<String> path) {
   bool? walk(SchemaNode source, List<String> remaining, bool inherited, Set<SchemaNode> ancestors) {
-    final node = source.effective;
+    final node = schemaValueOf(source);
     if (ancestors.contains(node)) return null;
-    final disabled = inherited || source.meta.disabled || node.meta.disabled;
+    final disabled = inherited || source.meta.disabled || source.effective.meta.disabled || node.meta.disabled;
     if (remaining.isEmpty) return disabled;
     final next = {...ancestors, node};
     if (node.type == 'intersect') {

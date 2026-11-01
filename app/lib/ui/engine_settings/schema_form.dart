@@ -165,7 +165,9 @@ class SchemaFieldView extends ConsumerWidget {
     final modified = layer == FieldLayer.user;
     final value = settings.valueOf(field);
     final inherited = settings.inheritedOf(field, fallback: copy.fallback);
-    final meta = textInputNodeOf(node).meta;
+    // Bounds and patterns of what the control edits (an optional value's member).
+    final edited = valueNodeOf(node);
+    final meta = edited.meta;
 
     Future<void> set(Object? next) async {
       controller.clearError(field);
@@ -216,7 +218,7 @@ class SchemaFieldView extends ConsumerWidget {
           subtitle: subtitle,
           subtitleColor: subtitleColor,
           badge: badge,
-          value: valueLabel(current, copy),
+          value: valueLabel(current, copy, node: node),
           enabled: enabled,
           onTap: () => unawaited(
             showChoiceSheet(
@@ -295,13 +297,13 @@ class SchemaFieldView extends ConsumerWidget {
           subtitle: subtitle,
           subtitleColor: subtitleColor,
           badge: badge,
-          value: bitsetSummary(node.effective.bits, selected),
+          value: bitsetSummary(edited.bits, selected),
           enabled: enabled,
           onTap: () => unawaited(
             showBitsetFieldSheet(
               context,
               title: title,
-              bits: node.effective.bits,
+              bits: edited.bits,
               current: selected,
               modified: modified,
               onSubmit: (next) async {
@@ -347,7 +349,7 @@ class SchemaFieldView extends ConsumerWidget {
 
       case FieldKind.list:
         final items = value is List ? value : const [];
-        final item = node.effective.inner!;
+        final item = edited.inner!;
         return EngineFieldRow(
           icon: spec.icon,
           title: title,
@@ -388,7 +390,7 @@ class SchemaFieldView extends ConsumerWidget {
             showObjectListSheet(
               context,
               title: title,
-              item: node.effective.inner!,
+              item: edited.inner!,
               read: (ref) => switch (source.watch(ref)?.valueOf(field)) {
                 final List<Object?> list => list,
                 _ => const [],
@@ -412,7 +414,7 @@ class SchemaFieldView extends ConsumerWidget {
             showDictSheet(
               context,
               title: title,
-              value: node.effective.inner!,
+              value: edited.inner!,
               read: (ref) => asJsonMap(source.watch(ref)?.valueOf(field)),
               onChange: (next) => controller.set(field, next, fallback: copy.fallback),
             ),
@@ -582,8 +584,9 @@ List<SchemaFormSection> schemaSections(
   }
 
   void walk(SchemaNode source, List<String> prefix, String? heading, Set<SchemaNode> ancestors) {
-    final node = source.effective;
-    if (source.meta.hidden || node.meta.hidden || hiddenPath(prefix)) return;
+    // An optional object (`union([object, const(undefined)])`) is its fields.
+    final node = schemaValueOf(source);
+    if (source.meta.hidden || source.effective.meta.hidden || node.meta.hidden || hiddenPath(prefix)) return;
     if (ancestors.contains(node) || ancestors.length >= 32) {
       fallback(source, prefix, heading);
       return;
@@ -611,7 +614,8 @@ List<SchemaFormSection> schemaSections(
       final path = [...prefix, key];
       final dotted = path.join('.');
       if (value.meta.hidden || value.effective.meta.hidden || hiddenPath(path)) continue;
-      if (value.effective.type == 'object' || value.effective.type == 'intersect') {
+      final held = schemaValueOf(value).type;
+      if (held == 'object' || held == 'intersect') {
         groups.add((key, value, labelFor(key, value, copy[dotted] ?? const FieldCopy())));
       } else if (kindOf(value) != FieldKind.hidden) {
         leaves.add(SchemaFieldSpec(view.ns, path, copy: copy[dotted] ?? const FieldCopy()));
