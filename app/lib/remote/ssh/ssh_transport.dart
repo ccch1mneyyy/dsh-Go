@@ -100,18 +100,27 @@ typedef SshTransportFactory = Future<SshTransport> Function(SshConnectParams par
 /// three byte-wide passes with no tables, so a single 16-byte block costs
 /// roughly 6k byte operations. On 1.0.4 that one function took 73.6% of the UI
 /// isolate while a long session was streaming, which is what starved frames.
-/// ChaCha20-Poly1305 and AES-CTR have no such multiply and cost an order of
-/// magnitude less per byte.
+/// AES-CTR has no such multiply: in the AOT microbenchmark it decrypts 3.1
+/// MiB/s where GCM manages 0.5, so it leads the list.
+///
+/// ChaCha20-Poly1305 is deliberately last. It is the one cipher whose Terrapin
+/// (CVE-2023-48795) prefix truncation works on *every* connection that did not
+/// negotiate strict KEX, and dartssh2 enables strict KEX only when the server
+/// offers it. Putting it after both AES-GCM entries means it is picked only
+/// when the server offers nothing else - i.e. only in the cases where
+/// dartssh2's default order (GCM first) would have picked it too. AES-CTR is
+/// not a practical Terrapin target: that needs a CBC cipher, and CBC is never
+/// offered here (oss-security advisory, 2023-12-18).
 ///
 /// This is only a reorder: every cipher dartssh2 enables by default stays in
 /// the list, so a server offering nothing but AES-GCM still negotiates it.
 /// CBC, SHA-1 kex and `none` are never added.
 const sshCipherPreference = <SSHCipherType>[
-  SSHCipherType.chacha20poly1305,
   SSHCipherType.aes256ctr,
   SSHCipherType.aes128ctr,
   SSHCipherType.aes256gcm,
   SSHCipherType.aes128gcm,
+  SSHCipherType.chacha20poly1305,
 ];
 
 /// `fast` applies [sshCipherPreference]; `legacy` keeps dartssh2's original
@@ -135,8 +144,11 @@ const _traceNegotiation = !kReleaseMode && _sshTrace == 'cipher';
 
 /// Keeps only what a perf A/B needs to read; passing null otherwise keeps
 /// dartssh2's per-packet debug callbacks from costing anything. The library
-/// prints the kex line as `_kexType`, the others as `...CipherType` / `...MacType`.
-const _traceKeys = <String>['_kexType', 'CipherType', 'MacType'];
+/// prints the kex line as `_kexType`, the strict-KEX verdict as `_strictKex`,
+/// and the negotiated algorithms as `...CipherType` / `...MacType`. The last
+/// two lines are what the A/B run reads; `_strictKex` says whether the
+/// Terrapin countermeasure negotiated.
+const _traceKeys = <String>['_kexType', '_strictKex', 'CipherType', 'MacType'];
 
 void _printNegotiation(String? line) {
   if (line == null) return;

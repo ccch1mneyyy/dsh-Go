@@ -5,13 +5,35 @@ import 'package:flutter_test/flutter_test.dart';
 const _defaults = SSHAlgorithms();
 
 void main() {
-  test('the default preference leads with ciphers that have no GHASH multiply', () {
+  test('the fast profile leads with AES-CTR instead of a per-block GHASH', () {
     final cipher = sshClientAlgorithms(profile: 'fast').cipher;
-    expect(cipher.first, SSHCipherType.chacha20poly1305);
+    expect(cipher.first, SSHCipherType.aes256ctr);
     expect(
       cipher.indexOf(SSHCipherType.aes256gcm),
       greaterThan(cipher.indexOf(SSHCipherType.aes128ctr)),
       reason: 'AES-GCM costs a bit-serial GF(2^128) multiply per block',
+    );
+  });
+
+  test('ChaCha20 is never preferred over a cipher Terrapin cannot exploit', () {
+    final cipher = sshClientAlgorithms(profile: 'fast').cipher;
+    final chacha = cipher.indexOf(SSHCipherType.chacha20poly1305);
+    for (final safe in <SSHCipherType>[
+      SSHCipherType.aes256ctr,
+      SSHCipherType.aes128ctr,
+      SSHCipherType.aes256gcm,
+      SSHCipherType.aes128gcm,
+    ]) {
+      expect(
+        chacha,
+        greaterThan(cipher.indexOf(safe)),
+        reason: 'without strict KEX, prefix truncation works only on ChaCha20-Poly1305',
+      );
+    }
+    expect(
+      chacha,
+      cipher.length - 1,
+      reason: 'only a server offering nothing else should land on it',
     );
   });
 
