@@ -26,7 +26,7 @@
 DSH_TEST_PREFIX=/absolute/patched-prefix /Node24.22.1/bin/node --test --test-isolation=none \
   runtime/tests/ohos/lock-node-contract.test.mjs
 
-DSH_TEST_PREFIX=/absolute/patched-prefix DSH_GO_OHOS_SIM=1 \
+DSH_TEST_PREFIX=/absolute/patched-prefix \
 DSH_GO_OHOS_SIM_PLATFORM=openharmony /Node24.22.1/bin/node \
   --jitless --import ./runtime/ohos/sim/preload.mjs --test --test-isolation=none \
   runtime/tests/ohos/lock-node-contract.test.mjs \

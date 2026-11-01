@@ -63,7 +63,7 @@ npm ci --prefix runtime/ohos/process --ignore-scripts --omit=optional
 node runtime/ohos/process/link-dsh.mjs /已装DSH的独立prefix
 ```
 
-DSH 厂商包补丁为 `runtime/patches/ohos-virtual-process.diff`，`pins.json` 只登记 `0.2.1-rc.4` 两个文件的 before/after SHA256。使用原 `runtime/lib/rtbuild.py patch-dsh --prefix ... --dsh-version 0.2.1-rc.4`；阶段验证时把本 diff 和仅含该项的 pins 拷到临时补丁目录并传 `--patches`。不要对指向共享 npm-ci 包的符号链接树运行全部厂商补丁。
+DSH 厂商包补丁为 `runtime/patches/ohos-virtual-process.diff`，`pins.json` 只登记 `0.2.1-rc.4` 两个文件的 before/after SHA256。完整 OHOS 前缀用 `runtime/lib/rtbuild.py patch-dsh --prefix ... --dsh-version 0.2.1-rc.4 --target ohos`。阶段验证只要本 diff 时，把它拷到临时补丁目录，旁边放一份 schema 2 的 pins：`targetSets` 为 `{"android": [], "ohos": ["ohos-virtual-process.diff"]}`，`patches` 只含本项条目；再传 `--patches <临时目录> --target ohos`。不要对指向共享 npm-ci 包的符号链接树运行全部厂商补丁。
 
 ```bash
 NODE=/Node-24.22.1/bin/node \
