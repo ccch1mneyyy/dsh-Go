@@ -42,7 +42,8 @@ node sdk/plugin-kit/bin/check.mjs 插件目录 --load   # 再加载宿主半侧�
 
 | | 项 | |
 |---|---|---|
-| ⬜ | 只用 16 个组件；不认识的组件 App 画成占位 | ⚙️ |
+| ⬜ | 只用文档里的组件：v1 的 16 个，根节点写 `v: 2` 时另有 `emptyState` / `gallery` 与 `progress.shape`、`metric.trend`；不认识的组件 App 画成占位 | ⚙️ |
+| ⬜ | 用了 v2 的组件或属性时，根节点写了 `v: 2`，并用 `adaptView` 给旧 App 回退 | ⚙️ |
 | ⬜ | 工具卡 ≤ 8 KiB、≤ 40 个组件、≤ 6 层；面板 ≤ 32 KiB、≤ 120 个、≤ 8 层 | ⚙️ |
 | ⬜ | 工具卡不用绑定（没有数据模型），不放按钮（第 0 期不能点） | ⚙️ |
 | ⬜ | `presentationMeta` 用 `toolCard()` 包住：不抛错、不返回 `undefined` / `NaN` | |

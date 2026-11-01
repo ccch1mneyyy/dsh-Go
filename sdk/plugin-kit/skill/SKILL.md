@@ -163,6 +163,18 @@ ctx.dshGo.on('translate', (scope) => ({
 
 `action` 写动作 id 字符串，或 `{ "id": "open", "args": { … } }`（args ≤ 1 KiB）。上限：面板 32 KiB / 120 个组件 / 8 层；工具卡 8 KiB / 40 个 / 6 层，第 0 期不能点。
 
+## 视图 v2（可选）
+
+上面的组件表是 v1。在视图根节点写 `v: 2` 才启用 v2——不写或写 `v: 1` 保持原来的渲染；`dshGo.v` 是协议大版本，始终是 `1`，别混。
+
+v2 在 v1 之上增加：
+
+- **26 个组件**：输入类（`textField` `number` `select` `slider` `toggle` `segmented` `chips` `rating` `stepper` `date` `time` …）、结构类（`form` `grid` `tabs` `accordion` `collapsible` `carousel` `timeline` `divider` `spacer` `badge` `avatar` `codeBlock` `tag` …），以及 `emptyState`、`gallery`。清单、绑定与提交形状见仓库 `docs/plugins/inputs.md`。
+- **样式**：`text` / `metric` / `callout` 的 `style`（字号、字重、斜体、下划线、对齐、行数、颜色）、`spans` 行内分段、`accent`、容器样式（`card` `padding` `gap`）。见 `docs/plugins/styles.md`。
+- **两个属性**：`progress.shape`（`bar` 或 `ring`）、`metric.trend`（2–30 个点，可含 `null` 断点）。
+
+旧 App 不认识新组件（画成灰色占位），也忽略新属性与样式——所以 v2 视图要套 `adaptView(view, caps)` 给旧 App 回退，别把新组件当根节点。
+
 工具卡：
 
 ```js
