@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const ts = require(process.argv[2] || 'typescript');
 const root = path.resolve(__dirname, '../../..');
 
-function load(name, connection = {}, i18n = {}) {
+function load(name, connection = {}, i18n = {}, uiContext = null) {
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(root,
     `app/ohos/entry/src/main/ets/plugins/${name}.ets`), 'utf8'), {
@@ -13,6 +13,7 @@ function load(name, connection = {}, i18n = {}) {
   }).outputText;
   vm.runInNewContext(code, {
     exports,
+    AppStorage: { get: () => uiContext },
     require: name => name === '@kit.NetworkKit' ? { connection }
       : name === '@kit.LocalizationKit' ? { i18n }
       : { hilog: { info() {}, error() {} } },
@@ -54,5 +55,9 @@ function load(name, connection = {}, i18n = {}) {
   assert.equal(await load('DshAppPlugin', {}, { getTimeZone: () => ({ getID: () => 'America/Phoenix' }) })('getTimeZoneId'), 'America/Phoenix');
   assert.equal((await load('DshAppPlugin', {}, { getTimeZone: () => { throw new Error('失败'); } })('getTimeZoneId')).error, 'UNAVAILABLE');
   assert.equal((await load('DshAppPlugin')('bringToFront')).missing, true);
+  let settingsWant;
+  const context = { abilityInfo: { bundleName: 'fixture.changed.settings' }, startAbility: async want => { settingsWant = want; } };
+  assert.equal(await load('DshRuntimePlugin', {}, {}, context)('openAppSettings'), true);
+  assert.equal(settingsWant.parameters.bundleName, 'fixture.changed.settings');
   console.log('系统网络/时区原源码替身测试通过：计费、非计费、离线、异常、未知电池与时区失败。');
 })().catch(error => { console.error(error); process.exitCode = 1; });

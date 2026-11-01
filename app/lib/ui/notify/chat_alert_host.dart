@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +20,7 @@ import '../theme/app_icons.dart';
 import '../theme/theme.dart';
 
 /// 鸿蒙的 Flutter 前台提醒可独立使用；其他平台保留原生通知门槛。
-final inAppAlertsWithoutNativeProvider = Provider<bool>((ref) => Platform.operatingSystem == 'ohos');
+final inAppAlertsWithoutNativeProvider = Provider<bool>((ref) => !kIsWeb && Platform.operatingSystem == 'ohos');
 
 /// Put it once inside the home route (the home shell does). It keeps the
 /// alert controller alive, feeds it the app lifecycle and whether the chat is

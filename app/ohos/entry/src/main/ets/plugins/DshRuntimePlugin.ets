@@ -286,7 +286,7 @@ export default class DshRuntimePlugin implements FlutterPlugin, MethodCallHandle
       throw new Error('UIAbilityContext unavailable');
     }
     const want: Want = {
-      bundleName: 'io.github.xunguangzlj.dshgo.native',
+      bundleName: uiContext.abilityInfo.bundleName,
       abilityName: 'EngineAbility',
       parameters: {
         installedRoot: this.engineRoot(),
@@ -357,7 +357,7 @@ export default class DshRuntimePlugin implements FlutterPlugin, MethodCallHandle
     const endpoint = this.endpointFile();
     if (fs.accessSync(endpoint)) fs.unlinkSync(endpoint);
     await uiContext.startAbility({
-      bundleName: 'io.github.xunguangzlj.dshgo.native', abilityName: 'EngineAbility',
+      bundleName: uiContext.abilityInfo.bundleName, abilityName: 'EngineAbility',
       parameters: { action: 'stop', installedRoot: this.engineRoot(), endpointFile: endpoint, dataRoot: this.dataRoot() }
     } as Want);
     // 覆盖宿主等待spawn 10秒、broker回收15秒、主进程退出10秒，并留调度余量。
@@ -410,7 +410,7 @@ export default class DshRuntimePlugin implements FlutterPlugin, MethodCallHandle
         uiContext.startAbility({
           bundleName: 'com.huawei.hmos.settings',
           abilityName: 'com.huawei.hmos.settings.MainAbility',
-          parameters: { 'settingsParam': 'application_info', 'bundleName': 'io.github.xunguangzlj.dshgo.native' }
+          parameters: { 'settingsParam': 'application_info', 'bundleName': uiContext.abilityInfo.bundleName }
         } as Want).then(() => {
           result.success(true);
         }).catch((error: Error) => {
