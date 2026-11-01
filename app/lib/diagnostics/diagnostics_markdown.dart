@@ -154,7 +154,7 @@ String _android(Map<String, Object?> device) {
 
 String _mb(Object? value, String label) {
   if (value is! num) return '';
-  return '$label ${(value / 1024).round()} MB';
+  return '$label ${value.round()} MB';
 }
 
 String _short(String? version) => version == null ? '—' : (version.length > 22 ? version.substring(0, 22) : version);

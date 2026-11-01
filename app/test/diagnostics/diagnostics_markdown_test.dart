@@ -59,11 +59,25 @@ void main() {
     expect(text, contains('vivo'));
     expect(text, contains('V2405A'));
     expect(text, contains('Android 16 (SDK 36)'));
+    expect(text, contains('设备资源：内存 12288 MB · 剩余存储 4096 MB'));
     expect(text, contains('0.2.1-rc.4'));
     expect(text, contains('## 设置'));
     expect(text, contains('API Key：已设置'));
     expect(text, contains('## 连接'));
     expect(text, contains('## 性能'));
+  });
+
+  test('resource sizes preserve native MB, including small and missing values', () {
+    final cases = <(Map<String, Object?>, String)>[
+      ({'memoryMb': 11323, 'freeStorageMb': 64512}, '- 设备资源：内存 11323 MB · 剩余存储 64512 MB'),
+      ({'memoryMb': 0, 'freeStorageMb': 1}, '- 设备资源：内存 0 MB · 剩余存储 1 MB'),
+      ({'memoryMb': 2048}, '- 设备资源：内存 2048 MB'),
+      ({}, '- 设备资源：'),
+    ];
+    for (final (device, expected) in cases) {
+      final report = diagnosticsMarkdown(snapshot(device: device));
+      expect(report.split('\n').singleWhere((line) => line.startsWith('- 设备资源：')), expected);
+    }
   });
 
   test('secrets never survive, even inside log lines and errors', () {
