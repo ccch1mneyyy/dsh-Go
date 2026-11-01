@@ -163,11 +163,20 @@ void main() {
     });
 
     test('token and percent formatting', () {
+      // K/M in every language: no 万/亿, whatever the UI language is.
       expect(formatTokens(0), '0');
-      expect(formatTokens(8421), '8,421');
-      expect(formatTokens(15000), '1.5 万');
-      expect(formatTokens(1000000), '100 万');
-      expect(formatTokens(150000000), '1.5 亿');
+      expect(formatTokens(999), '999');
+      expect(formatTokens(1000), '1K');
+      expect(formatTokens(8421), '8.4K');
+      expect(formatTokens(15000), '15K');
+      expect(formatTokens(43000), '43K');
+      expect(formatTokens(500000), '500K');
+      expect(formatTokens(999999), '1M'); // never 1000K
+      expect(formatTokens(1000000), '1M');
+      expect(formatTokens(1048576), '1.05M');
+      expect(formatTokens(1050000), '1.05M');
+      expect(formatTokens(100000000), '100M');
+      expect(formatTokens(150000000), '150M');
       expect(formatPercent(0.004), '<1%');
       expect(formatPercent(0), '0%');
       expect(formatPercent(0.876), '88%');

@@ -5481,6 +5481,9 @@ class L10nZh extends L10n {
   String get engineModelContextLength => '上下文长度';
 
   @override
+  String get engineModelContextOverrideHint => '留空使用渠道目录里的值；改大后引擎按新值计算上下文占用与压缩。';
+
+  @override
   String get engineModelMaxOutput => '最大输出';
 
   @override

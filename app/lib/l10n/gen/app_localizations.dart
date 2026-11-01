@@ -10070,6 +10070,12 @@ abstract class L10n {
   /// **'上下文长度'**
   String get engineModelContextLength;
 
+  /// No description provided for @engineModelContextOverrideHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'留空使用渠道目录里的值；改大后引擎按新值计算上下文占用与压缩。'**
+  String get engineModelContextOverrideHint;
+
   /// No description provided for @engineModelMaxOutput.
   ///
   /// In zh, this message translates to:
