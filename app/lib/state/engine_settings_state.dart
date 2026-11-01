@@ -155,6 +155,9 @@ bool schemaPathDisabled(SchemaNode root, List<String> path) {
   return walk(root, path, false, <SchemaNode>{}) ?? false;
 }
 
+/// [EngineSettings.isLocked] by snapshot (snapshots never change).
+final _lockedOf = Expando<Map<String, bool>>('EngineSettings.isLocked');
+
 /// The active engine's settings as the pages read them: the namespaces (with
 /// optimistic edits applied), credential states and what is saving or failed.
 @immutable
@@ -233,8 +236,11 @@ class EngineSettings {
   }
 
   /// Whole namespace decided above the profile: refused once, or its values
-  /// differ from what its layers give.
-  bool isLocked(String ns) {
+  /// differ from what its layers give. Every row of a form asks (twice) and
+  /// the answer walks the whole namespace: worked out once per snapshot.
+  bool isLocked(String ns) => (_lockedOf[this] ??= <String, bool>{})[ns] ??= _isLocked(ns);
+
+  bool _isLocked(String ns) {
     if (locked.contains(ns)) return true;
     final view = namespaces[ns];
     if (view == null) return false;

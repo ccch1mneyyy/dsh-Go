@@ -8,6 +8,7 @@
 import 'dart:async';
 
 import 'package:dsh_client/dsh_client.dart' show PluginBundle;
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,7 +23,7 @@ import '../../engine_settings/field_row.dart';
 import '../../engine_settings/namespace_copy.dart';
 import '../../engine_settings/schema_collapsed_groups.dart';
 import '../../engine_settings/schema_documentation.dart';
-import '../../engine_settings/schema_fields.dart' show humanizeKey;
+import '../../engine_settings/schema_fields.dart' show FieldKind, humanizeKey, kindOf;
 import '../../engine_settings/schema_form.dart';
 import '../../features/feature_widgets.dart';
 import '../../settings/index/spot_anchor.dart' show anchorSpot;
@@ -46,6 +47,10 @@ class PluginConfigSource extends SchemaFormSource {
 
   @override
   EngineSettings? watch(WidgetRef ref) => ref.watch(pluginConfigProvider).value?.settingsFor(ns);
+
+  @override
+  T select<T>(WidgetRef ref, T Function(EngineSettings? settings) selector) =>
+      ref.watch(pluginConfigProvider.select((async) => selector(async.value?.settingsFor(ns))));
 
   @override
   SettingsEditor editor(WidgetRef ref, EngineSettings snapshot) =>
@@ -82,6 +87,73 @@ DshWebTarget pluginConfigWebTarget(String ns, {required String title, List<Plugi
   return DshWebTarget(pluginItem: [...?bundle.meta?.title?.all, bundle.name]);
 }
 
+/// Which choice rows of [layout] draw as capsules now (an unset optional
+/// choice is a picker row instead), as the cards' shared capsule layout
+/// reads them.
+String _capsules(PluginConfigLayout layout, EngineSettings settings) {
+  final choices = _choicesOf[layout] ??= [
+    for (final section in layout.sections)
+      for (final f in section.fields)
+        if (f.fallbackNode == null)
+          if (settings.nodeOf(f.ref) case final node? when kindOf(node) == FieldKind.choice) f,
+  ];
+  return [
+    for (final f in choices)
+      if (settings.nodeOf(f.ref) case final node?) segmentOf(f, node, settings) == null ? '0' : '1',
+  ].join();
+}
+
+/// The choice fields of a layout (it is one schema's).
+final _choicesOf = Expando<List<SchemaFieldSpec>>('pluginConfigChoices');
+
+/// Held edits that leaving drops: the back gesture asks first.
+bool _dirtyOf(PluginConfigState? state, String ns) =>
+    (state?.hasDraft(ns) ?? false) && !(state?.isApplying(ns) ?? false);
+
+/// What the page draws besides its rows and the save bar, compared to decide
+/// whether it draws again: the form and its entry, the plugin list's answer,
+/// whether the form can be written, which choices are capsules. A value, a
+/// held edit or a live write in flight is redrawn by its own row
+/// ([SchemaFieldTile]) and the save bar.
+@immutable
+class _PageFrame {
+  _PageFrame(this.async, String ns, {required String query}) : _key = _keyOf(async, ns, query);
+
+  final AsyncValue<PluginConfigState?> async;
+  final List<Object?> _key;
+
+  static List<Object?> _keyOf(AsyncValue<PluginConfigState?> async, String ns, String query) {
+    final state = async.value;
+    if (state == null) return [async.isLoading, async.hasError, async.error];
+    final form = state[ns];
+    final settings = form == null ? null : state.settingsFor(ns);
+    return [
+      state.forms,
+      state.entries,
+      state.scope,
+      state.loadErrors,
+      state.lazy,
+      state.writable,
+      state.local,
+      state.hostLabel,
+      // 「在网页版设置」 is shut while a save or a live write is on its way.
+      state.isApplying(ns),
+      state.pending[ns]?.isNotEmpty ?? false,
+      if (form != null && settings != null) ...[
+        settings.canWrite(ns),
+        settings.isLocked(ns),
+        _capsules(cachedPluginConfigLayout(form, copy: namespaceCopy[ns] ?? const {}, query: query), settings),
+      ],
+    ];
+  }
+
+  @override
+  bool operator ==(Object other) => other is _PageFrame && listEquals(_key, other._key);
+
+  @override
+  int get hashCode => Object.hashAll(_key);
+}
+
 class PluginConfigPage extends ConsumerStatefulWidget {
   const PluginConfigPage({super.key, required this.ns, this.title});
 
@@ -95,8 +167,19 @@ class PluginConfigPage extends ConsumerStatefulWidget {
 
 class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
   final _search = TextEditingController();
+  final _dirty = ValueNotifier(false);
+  late final _guarded = Listenable.merge([_search, _dirty]);
   late final PluginConfigController _controller;
   String _query = '';
+
+  /// The form's cards and what they were built from: kept while that stays
+  /// the same, so the page drawing again leaves the rows alone.
+  List<Object?>? _groupsKey;
+  List<Widget> _groups = const [];
+
+  /// The page opened before its form was there; the form has been drawn.
+  bool _formLate = false;
+  bool _formShown = false;
 
   String get ns => widget.ns;
 
@@ -112,6 +195,11 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
         unawaited(_controller.load(ns));
       }
     }, fireImmediately: true);
+    ref.listenManual(
+      pluginConfigProvider.select((async) => _dirtyOf(async.value, ns)),
+      (_, dirty) => _dirty.value = dirty,
+      fireImmediately: true,
+    );
   }
 
   @override
@@ -121,6 +209,7 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
     final ns = this.ns;
     scheduleMicrotask(() => controller.discardIfIdle(ns));
     _search.dispose();
+    _dirty.dispose();
     super.dispose();
   }
 
@@ -237,16 +326,59 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
     if (ok == true) await _controller.resetAll(ns);
   }
 
+  /// The form's cards: built again only when [layout], the folding, the
+  /// schema, the lock or the capsule rows change.
+  List<Widget> _groupsOf(PluginConfigLayout layout, EngineSettings settings, {required bool fold}) {
+    final key = [ns, layout, fold, settings[ns]?.schema, settings.isLocked(ns), _capsules(layout, settings)];
+    if (_groupsKey case final previous? when listEquals(previous, key)) return _groups;
+    _groupsKey = key;
+
+    List<Widget> rows(SchemaFormSection section) => [
+      for (final f in section.fields)
+        anchorSpot(SettingsIndex.forField(f.ns, f.path), SchemaFieldTile(f, key: ValueKey(f.ref.key))),
+    ];
+
+    return _groups = [
+      if (fold)
+        for (final section in layout.sections)
+          if (section.title == null)
+            ...schemaFormGroups([section], settings: settings)
+          else
+            SchemaCollapsedGroup(
+              key: PageStorageKey('plugin-config:$ns:${section.title}'),
+              title: section.title!,
+              count: section.fields.length,
+              children: rows(section),
+            )
+      else
+        ...schemaFormGroups(layout.sections, settings: settings),
+      if (layout.advanced.isNotEmpty)
+        SchemaCollapsedGroup(
+          key: PageStorageKey('plugin-config:$ns:advanced'),
+          title: advancedGroupTitle,
+          count: layout.advancedCount,
+          children: [
+            for (final section in layout.advanced) ...[
+              if (section.title case final heading?) SchemaGroupLabel(heading),
+              ...rows(section),
+            ],
+          ],
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final async = ref.watch(pluginConfigProvider);
+    final query = _query;
+    final async = ref.watch(pluginConfigProvider.select((async) => _PageFrame(async, ns, query: query))).async;
     final state = async.value;
     final bundles = ref.watch(installedPluginsProvider.select((s) => s.value));
     final title = _title(bundles, state);
     final form = state?[ns];
 
     if (state == null || form == null) {
+      _formLate = true;
       return AppPage.list(
         title: title,
         children: [
@@ -299,14 +431,23 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
       );
     }
 
+    // A form read after the page opened (a Host that serves forms one at a
+    // time) is drawn once the page has slid in, not in the middle of it.
+    if (!_formShown) {
+      if (_formLate) {
+        return AppPage.list(
+          title: title,
+          children: [_AfterEntrance(onEntered: () => setState(() => _formShown = true))],
+        );
+      }
+      _formShown = true;
+    }
+
     final settings = state.settingsFor(ns);
-    final job = state.jobOf(ns);
-    final changes = state.draftOf(ns).length;
     final copy = namespaceCopy[ns] ?? const <String, FieldCopy>{};
-    final layout = pluginConfigLayout(form, copy: copy, query: _query);
+    final layout = cachedPluginConfigLayout(form, copy: copy, query: _query);
     final searching = _query.trim().isNotEmpty;
     final web = _hasWebPage(form, bundles);
-    final bar = PluginConfigSaveBar.shows(changes, job);
     // What the Host keeps as the person's own (held edits are 放弃's).
     final userSet = form.view.user?.isNotEmpty ?? false;
 
@@ -323,42 +464,11 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
       ],
     );
 
-    List<Widget> rows(SchemaFormSection section) => [
-      for (final f in section.fields)
-        anchorSpot(SettingsIndex.forField(f.ns, f.path), SchemaFieldTile(f, key: ValueKey(f.ref.key))),
-    ];
-
     // A long form folds its titled groups (the untitled top stays open),
     // unless its schema folds groups of its own.
     final titled = layout.sections.where((s) => s.title != null).length;
     final foldGroups = !searching && !layout.authored && layout.fieldCount >= pluginConfigFoldFrom && titled >= 2;
-    final groups = <Widget>[
-      if (foldGroups)
-        for (final section in layout.sections)
-          if (section.title == null)
-            ...schemaFormGroups([section], settings: settings)
-          else
-            SchemaCollapsedGroup(
-              key: PageStorageKey('plugin-config:$ns:${section.title}'),
-              title: section.title!,
-              count: section.fields.length,
-              children: rows(section),
-            )
-      else
-        ...schemaFormGroups(layout.sections, settings: settings),
-      if (layout.advanced.isNotEmpty)
-        SchemaCollapsedGroup(
-          key: PageStorageKey('plugin-config:$ns:advanced'),
-          title: advancedGroupTitle,
-          count: layout.advancedCount,
-          children: [
-            for (final section in layout.advanced) ...[
-              if (section.title case final heading?) SchemaGroupLabel(heading),
-              ...rows(section),
-            ],
-          ],
-        ),
-    ];
+    final groups = _groupsOf(layout, settings, fold: foldGroups);
 
     final page = AppPage.list(
       title: title,
@@ -416,50 +526,141 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
               ),
             ],
           ),
-        if (bar) const SizedBox(height: PluginConfigSaveBar.reserve),
+        _SaveBarRoom(ns: ns),
       ],
     );
 
     return SchemaFormScope(
       source: PluginConfigSource(ns),
       child: DiscardGuard(
-        listenable: _search,
-        isDirty: () => changes > 0 && !(job?.running ?? false),
+        listenable: _guarded,
+        isDirty: () => _dirty.value,
         child: Stack(
           children: [
             // The form's own ways to DSH Web (「在网页版编辑此项」) go the page's way.
             DshWebOpenScope(onOpen: (target) => unawaited(_openWeb(title, bundles, target)), child: page),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: MediaQuery.viewInsetsOf(context).bottom,
-              child: AnimatedSwitcher(
-                duration: AppMotion.of(context, AppMotion.standard),
-                switchInCurve: AppMotion.enter,
-                switchOutCurve: AppMotion.exit,
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween(begin: const Offset(0, 0.25), end: Offset.zero).animate(animation),
-                    child: child,
-                  ),
-                ),
-                child: bar
-                    ? PluginConfigSaveBar(
-                        key: const ValueKey('plugin-config-bar'),
-                        changes: changes,
-                        job: job,
-                        onSave: () => unawaited(_controller.save(ns)),
-                        onDiscard: () => _controller.discard(ns),
-                        onRetry: () => unawaited(_controller.retry(ns)),
-                        onRestore: () => unawaited(_controller.rollback(ns)),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ),
+            _SaveBarSlot(ns: ns, controller: _controller),
           ],
         ),
       ),
     );
   }
+}
+
+/// The held edits and the save of [ns] the bar shows.
+({int changes, PluginConfigJob? job}) _barOf(AsyncValue<PluginConfigState?> async, String ns) =>
+    (changes: async.value?.draftOf(ns).length ?? 0, job: async.value?.jobOf(ns));
+
+/// Room at the end of the page while the save bar shows, so nothing hides
+/// under it.
+class _SaveBarRoom extends ConsumerWidget {
+  const _SaveBarRoom({required this.ns});
+
+  final String ns;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final shows = ref.watch(
+      pluginConfigProvider.select((async) {
+        final (:changes, :job) = _barOf(async, ns);
+        return PluginConfigSaveBar.shows(changes, job);
+      }),
+    );
+    return SizedBox(height: shows ? PluginConfigSaveBar.reserve : 0);
+  }
+}
+
+/// The save bar at the page's foot, above the keyboard. It watches the held
+/// edits and the save itself: an edit redraws the bar, not the page, and
+/// neither does the keyboard sliding in.
+class _SaveBarSlot extends ConsumerWidget {
+  const _SaveBarSlot({required this.ns, required this.controller});
+
+  final String ns;
+  final PluginConfigController controller;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (:changes, :job) = ref.watch(pluginConfigProvider.select((async) => _barOf(async, ns)));
+    final bar = PluginConfigSaveBar.shows(changes, job);
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: MediaQuery.viewInsetsOf(context).bottom,
+      child: AnimatedSwitcher(
+        duration: AppMotion.of(context, AppMotion.standard),
+        switchInCurve: AppMotion.enter,
+        switchOutCurve: AppMotion.exit,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween(begin: const Offset(0, 0.25), end: Offset.zero).animate(animation),
+            child: child,
+          ),
+        ),
+        child: bar
+            ? PluginConfigSaveBar(
+                key: const ValueKey('plugin-config-bar'),
+                changes: changes,
+                job: job,
+                onSave: () => unawaited(controller.save(ns)),
+                onDiscard: () => controller.discard(ns),
+                onRetry: () => unawaited(controller.retry(ns)),
+                onRestore: () => unawaited(controller.rollback(ns)),
+              )
+            : const SizedBox.shrink(),
+      ),
+    );
+  }
+}
+
+/// What a page shows while it is still sliding in (its route's entrance):
+/// the loading line, then [onEntered] once the page is in place — after this
+/// frame when it already is.
+class _AfterEntrance extends StatefulWidget {
+  const _AfterEntrance({required this.onEntered});
+
+  final VoidCallback onEntered;
+
+  @override
+  State<_AfterEntrance> createState() => _AfterEntranceState();
+}
+
+class _AfterEntranceState extends State<_AfterEntrance> {
+  Animation<double>? _entrance;
+  var _entered = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final entrance = ModalRoute.of(context)?.animation;
+    if (identical(entrance, _entrance)) return;
+    _entrance?.removeStatusListener(_onStatus);
+    _entrance = entrance;
+    if (entrance != null && entrance.status == AnimationStatus.forward) {
+      entrance.addStatusListener(_onStatus);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _enter());
+    }
+  }
+
+  void _onStatus(AnimationStatus status) {
+    if (status != AnimationStatus.forward) _enter();
+  }
+
+  void _enter() {
+    _entrance?.removeStatusListener(_onStatus);
+    if (!mounted || _entered) return;
+    _entered = true;
+    widget.onEntered();
+  }
+
+  @override
+  void dispose() {
+    _entrance?.removeStatusListener(_onStatus);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const FeatureLoading();
 }
