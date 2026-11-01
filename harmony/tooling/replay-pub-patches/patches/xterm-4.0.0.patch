@@ -1,0 +1,12 @@
+diff --git a/lib/src/ui/shortcut/shortcuts.dart b/lib/src/ui/shortcut/shortcuts.dart
+index 042ee15..aca2c0a 100644
+--- a/lib/src/ui/shortcut/shortcuts.dart
++++ b/lib/src/ui/shortcut/shortcuts.dart
+@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
+ Map<ShortcutActivator, Intent> get defaultTerminalShortcuts {
+   switch (defaultTargetPlatform) {
+     case TargetPlatform.android:
++    case TargetPlatform.ohos:
+     case TargetPlatform.fuchsia:
+     case TargetPlatform.linux:
+     case TargetPlatform.windows:

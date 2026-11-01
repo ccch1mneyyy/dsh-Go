@@ -1,0 +1,349 @@
+{
+  "formatVersion": 1,
+  "originalLockCommit": "98921aae113642c36b591dda224989a095ebd347",
+  "originalLockPath": "app/pubspec.lock",
+  "archiveVerification": "受版本控制锁文件与本机pub缓存归档元数据一致；本次未重新获取或重算远端归档",
+  "treeHashFormat": "sorted relative path + NUL + lowercase file SHA256 + LF, then SHA256",
+  "packages": [
+    {
+      "name": "material_ui",
+      "version": "1.8.0",
+      "hostedUrl": "https://pub.dev",
+      "archiveSha256": "e4031746f96c8316864d9b92bce375f1320a36ed56e166307e1e1bda9d90b4ab",
+      "sourceTreeSha256": "550bd8837ae3bdcf928e3db00629dac255669ba2079121bb7009bb620b5fd1b0",
+      "patchedTreeSha256": "e0a42f4291d5be391b3baf4669b8c98d3f6d9744cc60c74b3a2f30bc3cc7d2f2",
+      "sourceFileCount": 1273,
+      "patch": "patches/material_ui-1.8.0.patch",
+      "patchSha256": "2518c8c913ad86acd7c5333df0780481f490f8b299889841cfbdaef8d7213a02",
+      "license": "licenses/material_ui-1.8.0.LICENSE",
+      "licenseSha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "lineEndingsAfterPatch": [
+        {
+          "file": "lib/src/text_field.dart",
+          "style": "crlf"
+        }
+      ],
+      "changedFiles": [
+        {
+          "file": "lib/src/about.dart",
+          "beforeSha256": "1ed66e06cbf495f252e86f8d4524502c7fb065392a8c517a3d9b747c8b620f0d",
+          "afterSha256": "a516b2a48d14bca294e5f6ed558af4f8420b7f661e57cf725c97fdc40e08443f"
+        },
+        {
+          "file": "lib/src/action_buttons.dart",
+          "beforeSha256": "db70f723d577bf0ae1a475e496ac4b822437f86d62da1222751ef8757f3c1fab",
+          "afterSha256": "d25f44df79b4e9e7083a261d031186a9cb96847a2e94bfcd096561a99beacb0e"
+        },
+        {
+          "file": "lib/src/adaptive_text_selection_toolbar.dart",
+          "beforeSha256": "0ee99bb00446f6ae631173e8a5ba5826e0e2ca1187f4d95913c7921757dc8eab",
+          "afterSha256": "7c83a6ac64b927aba251e44c84761347e9844790d51a16cc3370c95f7cd984f3"
+        },
+        {
+          "file": "lib/src/app.dart",
+          "beforeSha256": "885875311aebda74a6e36e8fd866477ab656e6a3a408b0079dfc4eea5d8d4daf",
+          "afterSha256": "4b86f6ecd472d82c32017a531ed99788a87115c9a5070348b7b232cee77e8290"
+        },
+        {
+          "file": "lib/src/app_bar.dart",
+          "beforeSha256": "fafb754bb75b2ae886cae8661036dbd8c5ee2dba31c3ebe6674c1271aee98b4c",
+          "afterSha256": "e22f8b20dca63d167be8e6a3ef76106f32ba37b7dc34110d138379b4508de2df"
+        },
+        {
+          "file": "lib/src/bottom_sheet.dart",
+          "beforeSha256": "f636bae1281588346f45a866229cfcb12b9a671718d252b7020172ac293be9ae",
+          "afterSha256": "2a68416f8cb76b59827d9ce508224bbeac828feda980d363c0fc4682a31a69a3"
+        },
+        {
+          "file": "lib/src/calendar_date_picker.dart",
+          "beforeSha256": "1f83a32609f833b93259927cecd7dc6681f52788a049140b5099cfe08047a6fc",
+          "afterSha256": "7fdfb5a5694ae1453ddb3275d669022ab130d126c10d77abb40def6769737625"
+        },
+        {
+          "file": "lib/src/checkbox.dart",
+          "beforeSha256": "456ff020ead27c24524b4fabe6d8dc16297d17046e31c5889d8061f50360303f",
+          "afterSha256": "da116f36e8ca7177609852c5e4da96cb9e3df3e4886fba40c48a570f4ffb5763"
+        },
+        {
+          "file": "lib/src/date_picker.dart",
+          "beforeSha256": "aea154ca035b6e6c6a5ccf4d04c99e76f09942a637bf79a20a3f34b5180131b1",
+          "afterSha256": "5f963761560a259f3587dd84368f5d91438922a19558a80e1628cee3d406f075"
+        },
+        {
+          "file": "lib/src/dialog.dart",
+          "beforeSha256": "c40b0f5bf9584a25d3cc6fd157dbc674a8458eeb9903b6a351cd1b31d75340f5",
+          "afterSha256": "46e08156c359ed773df03af1095c22e99081896abfee84d0704ff37bd0003bf3"
+        },
+        {
+          "file": "lib/src/drawer.dart",
+          "beforeSha256": "5fd08da00c62629424630a0a1ba6aabefdec04ae5252a7d9b2e1cdd39169addb",
+          "afterSha256": "feb3b0bf4a15329e0838de22fb9a9a725a81894ad4f6e8590a4aaf5f4cf0e3a8"
+        },
+        {
+          "file": "lib/src/dropdown_menu.dart",
+          "beforeSha256": "8f2c56c5bb112e1b84e96c0c3cc1d353d0b3da8e5d1fe07cbb0b1e3996ca3daa",
+          "afterSha256": "6e439f009c7907fbce9e0e73e586e2dd8aba408f570bccff57c9341acd478237"
+        },
+        {
+          "file": "lib/src/flexible_space_bar.dart",
+          "beforeSha256": "4af58be371e5701b58e8708243e6c5a9a947193f17a9fbd8221e986ee8a505ed",
+          "afterSha256": "3208e84464efb8964ad600d0b26836b6114664edc90f660969c88f99322101e8"
+        },
+        {
+          "file": "lib/src/icons.dart",
+          "beforeSha256": "073ec9e4c431e2d9b130d59d28337db7e3510c3865fabca3087d8febcbdc8e08",
+          "afterSha256": "9046f15f241c126adb6085b384abe581eba0db41e67d9d5fd4c2de878ceb3200"
+        },
+        {
+          "file": "lib/src/magnifier.dart",
+          "beforeSha256": "cac57d253238cf54bafc717e02c56e25019089f20462a46014d715023c62794b",
+          "afterSha256": "cbe60b8fc0e74696d740916c62cd09154c31f43b8f9bb719805ef0c2b739642f"
+        },
+        {
+          "file": "lib/src/menu_anchor.dart",
+          "beforeSha256": "340daa85f0a80a7be7b5794b941e2a880ddcf0e668752405d695e6a3f589c6be",
+          "afterSha256": "9058a0549981517589ee97f8a1e4673add806fe5affe744090fec9b49f1aa1d8"
+        },
+        {
+          "file": "lib/src/page.dart",
+          "beforeSha256": "f0542cac4300b144e5fe567168bbc1307e74c92ece250b29a4287e712159b353",
+          "afterSha256": "3851d6e5f17d1227c87ae5014b7de048e5cfcbb4ada3efb1afca3e27994c8398"
+        },
+        {
+          "file": "lib/src/page_transitions_theme.dart",
+          "beforeSha256": "1e0a61231509c2656ed91ec5596dcba02b9c5ecd2970418242eef7b8c044a2ce",
+          "afterSha256": "b61026e85a88b2c60906c13fd336863c34c793e87c58ffebe0c48417048ea1e3"
+        },
+        {
+          "file": "lib/src/popup_menu.dart",
+          "beforeSha256": "4be4cb651c08e06c145803428ed1b97f88f8f050a7c9df29610df8ad255a1505",
+          "afterSha256": "ea4a5e6730ff7193dd0217955fef5f0ba5ac86754bb95b0c6a7b0b99f665ca36"
+        },
+        {
+          "file": "lib/src/progress_indicator.dart",
+          "beforeSha256": "6169a7f1d8d6ff92d0b35a593512d90b4338d837256d48936a5144dc74d09a50",
+          "afterSha256": "61cb5e401c8a54b64166ea9b5745032dc1d7875963c6f92678c5cc2343439736"
+        },
+        {
+          "file": "lib/src/radio.dart",
+          "beforeSha256": "f8be750e2dea11cf352b36f8e3e735b1ab991ed0297094d9ffba15653ff1a90b",
+          "afterSha256": "de990e742f15cbe30f08272133d8a882a8c550a259c1dea38a2726269a073343"
+        },
+        {
+          "file": "lib/src/range_slider.dart",
+          "beforeSha256": "143b609f6d1a8a50c4d2a65859d89b75768f10ec05a05ecd6ef58cfe8545fb88",
+          "afterSha256": "663cc19bc1969d75f6bb540e07e900d066dfdb464c3035874d05eda040b10967"
+        },
+        {
+          "file": "lib/src/refresh_indicator.dart",
+          "beforeSha256": "d83d2eacbdbda3f068eb349c08b941969a46a5347dd38bd0e844e4e5673029d7",
+          "afterSha256": "512571620cabf6e93e39340ee07faf60556fadee5fcfe9613b431ec17fc2d1d5"
+        },
+        {
+          "file": "lib/src/reorderable_list.dart",
+          "beforeSha256": "2edfaa76f56c6af9c6dd8fb34d0f40d6cf055e00a0f6f5f4a27ca46966cf7258",
+          "afterSha256": "523473327dc64192d59b87e0f232022b078797fef20aa3fb1f1a98a4615323e1"
+        },
+        {
+          "file": "lib/src/scaffold.dart",
+          "beforeSha256": "646af4eaa34817aeda5aab2b6379f511e0111b08ed5b7b04753bfef262329dc5",
+          "afterSha256": "94dc8942d337b89e9e119fcbc64b0471654390ab60f8922fc0112a68e63e4af6"
+        },
+        {
+          "file": "lib/src/scrollbar.dart",
+          "beforeSha256": "c5ddfb963e5496ce8e7d94ed3f3bbc03912abe30c32d4e4e32c02fedf06ae60d",
+          "afterSha256": "9ce10d87b9126aaee7ad443bdeae6c8e9bcd2f9cdcf382570f6800687e6c355a"
+        },
+        {
+          "file": "lib/src/search.dart",
+          "beforeSha256": "ab87fb6e9acd2107e846c137f83c1a1dbb79a4095a6cc2d24d611a4aba3a0c76",
+          "afterSha256": "d168812fa0e53e9ac5f39c398a91a93ec0c6d2e0ba291604651ea2e22b41e365"
+        },
+        {
+          "file": "lib/src/search_anchor.dart",
+          "beforeSha256": "9c03c4120047e85223b852fe0451e0407ecfcbb097b62b12822498233fdf73d8",
+          "afterSha256": "1445f3d53553dc24cfe5bcb648c99cc7d5a63df80a6d7fd2c482bb52c183eb66"
+        },
+        {
+          "file": "lib/src/selectable_text.dart",
+          "beforeSha256": "2312d60667c343c14ef51fced528eb57dfb496594ee684a52cd7c89bb6a5bf3f",
+          "afterSha256": "298eca5f5166a6cd76785eebc72481e8bc7fd843b8b98a1a54d094ee489f9bcd"
+        },
+        {
+          "file": "lib/src/selection_area.dart",
+          "beforeSha256": "b03d7867d272dbd503eaf0db4524efdb163bfc87d2a52602eef6bd2150683966",
+          "afterSha256": "5928c98899c18e0b212f0d9a7acbfc73556240209a8ece1a5477e9ccf1bf14bd"
+        },
+        {
+          "file": "lib/src/slider.dart",
+          "beforeSha256": "9bf7d448e52854ce774502086c4cdfc572164630ec753c78ef990958d927e308",
+          "afterSha256": "859825346a92bdb90bf777243f86b3be19a4af2d3ba4d917588d2a7ba759e074"
+        },
+        {
+          "file": "lib/src/switch.dart",
+          "beforeSha256": "7d87702f815aa7e97f6e2ebf13d040d5a2bb33c75313824a5dc6992d93e5853a",
+          "afterSha256": "e4ae378bcfe44ee2987989160ca050c3c6a6170cc42ec6db78060d101dbb5f13"
+        },
+        {
+          "file": "lib/src/text_field.dart",
+          "beforeSha256": "9021d2273d5f7fccddc233b72b3668b05ef735d900f73413930616e01fb3b96c",
+          "afterSha256": "1097002f845af1730bf4852e01205f601370413139c294d32f6f210d084aa4d5"
+        },
+        {
+          "file": "lib/src/theme_data.dart",
+          "beforeSha256": "7568b44950aecc970779ef3301aedd6e73af2739192281e674a8209dd4903420",
+          "afterSha256": "c90c4920373f64be76e63b205f257c7677678e22992ab8c948b1d2ad2b2700d8"
+        },
+        {
+          "file": "lib/src/time_picker.dart",
+          "beforeSha256": "799f139c49173a1afca0e310d97446921edaba6a6b8a3e86021d3ce0bbb18a66",
+          "afterSha256": "caac8924d2fdd6c92c318684bfc4434f964b2fec7333896790cc0e60332114b4"
+        },
+        {
+          "file": "lib/src/tooltip.dart",
+          "beforeSha256": "d9539325e9adab89de593434d8eb6816b757e609a03a240381b588c74bf47d08",
+          "afterSha256": "aba4af683f10e33ddda33705afd993523da3c075f1927a424c046b1e50a3afb7"
+        },
+        {
+          "file": "lib/src/typography.dart",
+          "beforeSha256": "6ca127f747f4d90a9640dfe0cf1b36aedd3e56cfd558296ee11b9e9aa8fd5227",
+          "afterSha256": "0e6f63d3338dc92b47f2fb8008f1e4d1d0ddff61f99f1c296d30189bb585a1b7"
+        }
+      ]
+    },
+    {
+      "name": "cupertino_ui",
+      "version": "1.1.4",
+      "hostedUrl": "https://pub.dev",
+      "archiveSha256": "a47c4e7c66fd7444a063a602597fceb238f705c3f6b1322bc0053d0a2638ee6e",
+      "sourceTreeSha256": "3a3a399c5c12ab12ac3ed40847f7de0414a0436cc0736b84c20f1a06a875e073",
+      "patchedTreeSha256": "7efffe0ef3a6cf6276528f42d701dd20846bb0b207b047530eb780a97485bd58",
+      "sourceFileCount": 419,
+      "patch": "patches/cupertino_ui-1.1.4.patch",
+      "patchSha256": "022793aef870346c3acd28ea0725331607181e27fe33f2e2ad08e7a4bc23355e",
+      "license": "licenses/cupertino_ui-1.1.4.LICENSE",
+      "licenseSha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "lineEndingsAfterPatch": [],
+      "changedFiles": [
+        {
+          "file": "lib/src/adaptive_text_selection_toolbar.dart",
+          "beforeSha256": "e590588c6332b6a5f77cc480b386e4d78ca562aa97bf4d0b7718df2f0ef85074",
+          "afterSha256": "8421364d5bda357b74551679f6edb6e92c131a69418dce701674edb1c744773c"
+        },
+        {
+          "file": "lib/src/app.dart",
+          "beforeSha256": "36602139c23ccdd9edf6ab253fd2a99d6fbac37c22a506d12d97b398bac285c2",
+          "afterSha256": "c07b220b916eb312db06ad49997944f8a503515ce61659b25959e7488e83ef3f"
+        },
+        {
+          "file": "lib/src/button.dart",
+          "beforeSha256": "d2895e1581faf651bc20faa3e928942b12466105c97a0c7f7e7bba006f3f697d",
+          "afterSha256": "281c0ed88973461ed60a0179a2041340de91a94a0f0321f5fc24c2c54d7500dd"
+        },
+        {
+          "file": "lib/src/checkbox.dart",
+          "beforeSha256": "be2ee79dbfced44fd9ea5ed567abe27b47ff89c2cfcd75fe666950cf815374fa",
+          "afterSha256": "91f41effcfa2b99c047c00a819dd66a8cd8ba28f2b5b305172a7b801d7d32916"
+        },
+        {
+          "file": "lib/src/dialog.dart",
+          "beforeSha256": "6441c9871db608362965318413d27d4b6f730e71019bb4841cf89aa7a5961575",
+          "afterSha256": "73f5e3d95e720e0700873615209ecd437e2414d667da6b4e24eb783ccfbb9f38"
+        },
+        {
+          "file": "lib/src/expansion_tile.dart",
+          "beforeSha256": "f295218106ee6b16706cf2d00dc33fb5e2f9d566d1e61762a51e27087c9105de",
+          "afterSha256": "07a60033101ebf83a852ee0f76b3f751476c6b436c14d0dabcdc5314104548da"
+        },
+        {
+          "file": "lib/src/menu_anchor.dart",
+          "beforeSha256": "d50cb44610d05b23355c7907ee75d2a3a620cf55dd28692fa4aefa52442f7dae",
+          "afterSha256": "e9ecce162c5703eebdc0b14ed53690b48411a918297c90b6216d38cc0a8d654d"
+        },
+        {
+          "file": "lib/src/picker.dart",
+          "beforeSha256": "90c8955d69db35e7b82cd4fc5df912cbdb1b94df71026e550c67877b0bb197ed",
+          "afterSha256": "b37ee2f28432640ee3e2bbfe9993ab271adf15379e4564e2711159ce37babffb"
+        },
+        {
+          "file": "lib/src/slider.dart",
+          "beforeSha256": "03f7c0b4d28b487c53be5c03bb8774fc9ae169f42fb65f30ab4e07a25a117502",
+          "afterSha256": "90abb6aade77749e6db5d726acd74db885e67cfec98d1b2a01f35c98516b00db"
+        },
+        {
+          "file": "lib/src/switch.dart",
+          "beforeSha256": "2cf7d459be7be57dd9b9b0aebdf9c3dc035ae04ca22e8fe49e74fc69cbfe0232",
+          "afterSha256": "99a0d51f9a9f6716c530f9e22ed68019473456f3eb59d4509cf2562613258a37"
+        },
+        {
+          "file": "lib/src/text_field.dart",
+          "beforeSha256": "74d08974f0f66deb4818817e16460d7df5fc2c1639647f8a959bb1e51a5773a4",
+          "afterSha256": "5985a11a531c296fc945cb6299bda7086588483963a965f779b7188f6cfb05ba"
+        }
+      ]
+    },
+    {
+      "name": "xterm",
+      "version": "4.0.0",
+      "hostedUrl": "https://pub.dev",
+      "archiveSha256": "168dfedca77cba33fdb6f52e2cd001e9fde216e398e89335c19b524bb22da3a2",
+      "sourceTreeSha256": "55d51ef33c360b102a8899167de2f9ae1e774684c462c5eb647dcbb54c05b803",
+      "patchedTreeSha256": "2757f746cd849efa5454f3d8debdcc2576fa0d2d092b4bed6358898d1d8a0194",
+      "sourceFileCount": 256,
+      "patch": "patches/xterm-4.0.0.patch",
+      "patchSha256": "aa5478e2f696ecca1cb76e61564dceee60790b05b082b3cf8e060f4226f5c28f",
+      "license": "licenses/xterm-4.0.0.LICENSE",
+      "licenseSha256": "85e38359ef3934db03a2b0a6fc0be41ff89e9070cf4e491ff1e89129e86b4b3b",
+      "lineEndingsAfterPatch": [],
+      "changedFiles": [
+        {
+          "file": "lib/src/ui/shortcut/shortcuts.dart",
+          "beforeSha256": "1717362ba5a0fa1443ed342285c508c24ec711708944be2e5b7699e3bc15f2d9",
+          "afterSha256": "073acecc55e5fa1c1dab7c81921c985136f175b3111077ca765b6ba1163b2f1c"
+        }
+      ]
+    },
+    {
+      "name": "gpt_markdown",
+      "version": "1.4.0",
+      "hostedUrl": "https://pub.dev",
+      "archiveSha256": "5634a7af948e25735302cc09e2c192a9fac0ea6dccb16f83d5c170e519a8a91e",
+      "sourceTreeSha256": "b4e3fc3d824a1ef994d6e3d75420865bc437a0a33187f82bad9352737b6e4cfd",
+      "patchedTreeSha256": "b2ba455a13ddff9181b09869d993507d07fa076af42dd3cc4f5c6e65ab63320d",
+      "sourceFileCount": 92,
+      "patch": "patches/gpt_markdown-1.4.0.patch",
+      "patchSha256": "0d56dca1a6f6d1270cb524ca367e756cc83099273116d8efb928aa84e8d6629e",
+      "license": "licenses/gpt_markdown-1.4.0.LICENSE",
+      "licenseSha256": "02f5a2b64165495a966bc1b0fada70eb662bebbc20be06b1a9e18863fc90c268",
+      "lineEndingsAfterPatch": [],
+      "changedFiles": [
+        {
+          "file": "lib/shared_render.dart",
+          "beforeSha256": "2f2643661771658ed2e98b56a738cb7446535a3be51577e21c2677ad0427654a",
+          "afterSha256": "cb075588b49a75cbb0594a4d64bf17615d4542f166f233ae86d18e45cdf06e24"
+        }
+      ]
+    },
+    {
+      "name": "flutter_secure_storage",
+      "version": "11.2.0",
+      "hostedUrl": "https://pub.dev",
+      "archiveSha256": "d4e1fb6b2cb524868929e78dc0282fa000554b22060fb53789dc481c9fc95bb8",
+      "sourceTreeSha256": "ffd1f27faae2633b9f34a2a415a52d5c598fb81ff1b3b2009cfad966dd31aa84",
+      "patchedTreeSha256": "6c4540b566cdfb5a4b4e7e9a08f7e412c0e7fc80c7419d71b8045e683f73ea16",
+      "sourceFileCount": 180,
+      "patch": "patches/flutter_secure_storage-11.2.0.patch",
+      "patchSha256": "aacdf0363dbeda2f1ec1004c20f2683afedc3168f60ae6c365ff0adf7e6a06ab",
+      "license": "licenses/flutter_secure_storage-11.2.0.LICENSE",
+      "licenseSha256": "55dafb084270616f95b9bea53654adda8bdcad95c022a83c4cf8769073f829fa",
+      "lineEndingsAfterPatch": [],
+      "changedFiles": [
+        {
+          "file": "lib/flutter_secure_storage.dart",
+          "beforeSha256": "b54695b49e2bfdd3573f2f9609a4e0f510f2a7b3bd0412f4981fc76afa612824",
+          "afterSha256": "66f3fe93f75e8e124f671b35ac4ed509a9e20590ff3a875bfc732ce65197c95d"
+        }
+      ]
+    }
+  ]
+}

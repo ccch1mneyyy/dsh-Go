@@ -1,0 +1,16 @@
+name: harmony_secure_paste
+description: 鸿蒙系统可见粘贴控件的平台视图实现。
+version: 0.0.1
+publish_to: none
+environment:
+  sdk: ^3.13.5
+  flutter: '>=3.47.0'
+dependencies:
+  flutter:
+    sdk: flutter
+flutter:
+  plugin:
+    platforms:
+      ohos:
+        package: dev.dsh.harmonysecurepaste
+        pluginClass: SecurePastePlugin

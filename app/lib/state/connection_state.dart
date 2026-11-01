@@ -44,8 +44,8 @@ class HostConnection {
   final HostKind kind;
   final String? hostId;
 
-  /// Default cwd for new sessions on a remote host (absolute, `~` resolved);
-  /// null lets the remote DSH pick.
+  /// 新会话的默认工作目录：本地由运行时提供，远程为已解析的主机配置。
+  /// 远程为空时由DSH选择，本地旧运行时仍使用原默认目录。
   final String? workingDirectory;
 }
 
@@ -74,10 +74,10 @@ class LocalConnectionController extends AsyncNotifier<HostConnection?> {
     final endpoint = r.watch(
       localRuntimeProvider.select((s) {
         final st = s.status;
-        return st.phase == RuntimePhase.running ? (st.baseUrl, st.token) : (null, null);
+        return st.phase == RuntimePhase.running ? (st.baseUrl, st.token, st.workspaceDir) : (null, null, null);
       }),
     );
-    final (baseUrl, token) = endpoint;
+    final (baseUrl, token, workspaceDir) = endpoint;
     if (baseUrl == null || token == null) return null;
 
     final client = await r.read(localClientConnectorProvider)(baseUri: Uri.parse(baseUrl), token: token);
@@ -116,7 +116,7 @@ class LocalConnectionController extends AsyncNotifier<HostConnection?> {
     if (apiKey.isNotEmpty) await _pushKey(client, apiKey);
     if (!r.mounted) return null;
     if (readyFailure case final failure?) Error.throwWithStackTrace(failure.$1, failure.$2);
-    final connection = HostConnection(client: client, isLocal: true);
+    final connection = HostConnection(client: client, isLocal: true, workingDirectory: workspaceDir);
     // HTTP is usable now; keep build pending so ready failures retain Riverpod's retry policy.
     state = AsyncData(connection);
     await ready;

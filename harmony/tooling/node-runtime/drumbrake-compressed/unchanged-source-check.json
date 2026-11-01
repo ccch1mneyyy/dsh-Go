@@ -1,0 +1,34 @@
+{
+  "src/node.cc": {
+    "matchesOfficial": true,
+    "sha256": "914d1f6c2595856566b6cbdb4c87dcd9416916d2c8fa6dd8f7eba7321ffd6d66"
+  },
+  "src/node_main.cc": {
+    "matchesOfficial": true,
+    "sha256": "c946687691d86754f5d53560b54a70d17cfed62bf23158ac457497b8b912d740"
+  },
+  "src/node_errors.cc": {
+    "matchesOfficial": true,
+    "sha256": "d59af875ee23730a197fb541f72c488f2f6ecc04aedeb2e6bad4b68994fb1143"
+  },
+  "src/api/environment.cc": {
+    "matchesOfficial": true,
+    "sha256": "1496f188cd9af14789763119811f8dce5cd211ce26e7a557407fa6d18d965be6"
+  },
+  "deps/undici/undici.js": {
+    "matchesOfficial": true,
+    "sha256": "476c71d3693ef407dc2074c446f35186a07fe10291a088495cafa773573691c1"
+  },
+  "Makefile": {
+    "matchesOfficial": true,
+    "sha256": "66510b6c4e5afbb55648b88ca31a048acfe577075b056e6d56f46400cc33723b"
+  },
+  "common.gypi": {
+    "matchesOfficial": true,
+    "sha256": "37dac346a00e775cab4c2c552f770827a9aa9f428a5d54d09a2d4d1094cbf038"
+  },
+  "node.gyp": {
+    "matchesOfficial": true,
+    "sha256": "9dba9042e2e4e2570b45617043ecc3f67eb1cc393f5b1f62aaaf68e1bc0f59c4"
+  }
+}

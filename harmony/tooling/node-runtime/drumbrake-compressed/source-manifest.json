@@ -1,0 +1,69 @@
+{
+  "commit": "591ba692bfe30408e6a67397e7d18bfa1b9c3561",
+  "version": "v24.2.0",
+  "patchSha256": "55b4de6dae5f48fe2f1c2b9e82f9201223ccbcb1a478b501df108902b99c7273",
+  "nodeSha256": "b2c73a809530bb0e83b1b87797063da65c10a11c49dedd488698a6bb83ed4cb5",
+  "originalConfigSha256": "94ed1adbbaad899930b13555bc754dd73a166a663a8d7af5e64359b764f4dfe3",
+  "files": {
+    "configure.py": {
+      "before": "0452c6b7b2afd31dedaf5d3d3609a450ede9ffb7828ac788416081c657525d58",
+      "after": "f823606095b36ebdede3f3b2617c1eeaf847c9f0fa463e169ea03a9ac97676f0",
+      "actualImageSha256": "f823606095b36ebdede3f3b2617c1eeaf847c9f0fa463e169ea03a9ac97676f0",
+      "actualImageCrlfCount": 0
+    },
+    "deps/uv/src/unix/linux.c": {
+      "before": "d527b1b7330c474f60b363b0ec8ccea50bc2f1b7ae7e185fc97b6943bf993d99",
+      "after": "bb0f373c8e8560f4deb13d32c174a759821dcf5c9f8cf9f19d05bd123fef1c5e",
+      "actualImageSha256": "87e9ad9cd67200d28ad61d3cc3ccc8e714a03038bf69269cc66e6e09304eccf9",
+      "actualImageCrlfCount": 2763
+    },
+    "deps/v8/src/wasm/interpreter/arm64/interpreter-builtins-arm64.cc": {
+      "before": "bd1434e0821774b08c6811e802ac024c081b809116e45f425979ad610431d4ef",
+      "after": "847f3d5c4563661fcd9da0b2c92addca4ff1792351a5d565210c9aac3f0ccfcc",
+      "actualImageSha256": "847f3d5c4563661fcd9da0b2c92addca4ff1792351a5d565210c9aac3f0ccfcc",
+      "actualImageCrlfCount": 0
+    },
+    "deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.cc": {
+      "before": "5beb0c6c47b8cca2f710779474addd434ac9bbbc2df25078c7f0bdc3b399da42",
+      "after": "e1bf36a0bc2d4974a6651a845edde8e265a94db0aa7bbe0880d6ff55835a3d94",
+      "actualImageSha256": "e1bf36a0bc2d4974a6651a845edde8e265a94db0aa7bbe0880d6ff55835a3d94",
+      "actualImageCrlfCount": 0
+    },
+    "deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.h": {
+      "before": "2f318f7fe9403f45869835728149af4bfc7fdd23a2901446d7c7b3b52119107c",
+      "after": "10dbd5c02f1a4d64beea108363941fe4c2757ae1eeface92b3794e53c6a9c3c5",
+      "actualImageSha256": "10dbd5c02f1a4d64beea108363941fe4c2757ae1eeface92b3794e53c6a9c3c5",
+      "actualImageCrlfCount": 0
+    },
+    "deps/v8/src/wasm/interpreter/wasm-interpreter.cc": {
+      "before": "196d37bfb4339d7b69ea81341f7408bb2caa37444b8be3b8e1c3daeca45a4eaf",
+      "after": "cf5358de98c90199fa06e75540c4901ed516cb3a0b744df860b75292f373c3cc",
+      "actualImageSha256": "cf5358de98c90199fa06e75540c4901ed516cb3a0b744df860b75292f373c3cc",
+      "actualImageCrlfCount": 0
+    },
+    "deps/v8/src/wasm/value-type.h": {
+      "before": "f4ce2c77ac97017eca4af11445d17fac9935d999e5f444409492ecc62c4db98c",
+      "after": "e5b78973b71a3f581b9c88133ee9b4c221204cac306659165418e039d74fba2a",
+      "actualImageSha256": "e5b78973b71a3f581b9c88133ee9b4c221204cac306659165418e039d74fba2a",
+      "actualImageCrlfCount": 0
+    },
+    "tools/gyp/pylib/gyp/generator/make.py": {
+      "before": "e455602aabb8964b930dc47063f63764c87b31b413a7804bf9856f55c3a6f102",
+      "after": "a8c1e49640b62942e34d3ffd673675985a28e03047ce149a8f8a85019b7e7dd3",
+      "actualImageSha256": "a8c1e49640b62942e34d3ffd673675985a28e03047ce149a8f8a85019b7e7dd3",
+      "actualImageCrlfCount": 0
+    },
+    "tools/v8_gypfiles/features.gypi": {
+      "before": "afbcb2609a6c4f684a092485fbf9a7666f2f44a4f20eb5931b58ec0b3d49b7a3",
+      "after": "5d7e18b070d1fd3e627dd84c5f08f515b9a58b9fe9274d256ba9e7fbd82d3e6d",
+      "actualImageSha256": "5d7e18b070d1fd3e627dd84c5f08f515b9a58b9fe9274d256ba9e7fbd82d3e6d",
+      "actualImageCrlfCount": 0
+    },
+    "tools/v8_gypfiles/v8.gyp": {
+      "before": "b1c4118fb977b568c09c96ae233b00062e5d8d591673dc4dcce222ddf0f4c38b",
+      "after": "677545fa74d782acffa5eec1dee6c6f0b6c209518abbdf3c04f0c199cec5f8dd",
+      "actualImageSha256": "677545fa74d782acffa5eec1dee6c6f0b6c209518abbdf3c04f0c199cec5f8dd",
+      "actualImageCrlfCount": 0
+    }
+  }
+}

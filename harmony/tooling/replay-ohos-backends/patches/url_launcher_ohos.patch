@@ -1,0 +1,240 @@
+diff --git a/lib/url_launcher_ohos.dart b/lib/url_launcher_ohos.dart
+index cdd06aa..a13a765 100644
+--- a/lib/url_launcher_ohos.dart
++++ b/lib/url_launcher_ohos.dart
+@@ -39,20 +39,7 @@ class UrlLauncherOhos extends UrlLauncherPlatform {
+ 
+   @override
+   Future<bool> canLaunch(String url) async {
+-    final bool canLaunchSpecificUrl = await _hostApi.canLaunchUrl(url);
+-    if (!canLaunchSpecificUrl) {
+-      final String scheme = _getUrlScheme(url);
+-      // canLaunch can return false when a custom application is registered to
+-      // handle a web URL, but the caller doesn't have permission to see what
+-      // that handler is. If that happens, try a web URL (with the same scheme
+-      // variant, to be safe) that should not have a custom handler. If that
+-      // returns true, then there is a browser, which means that there is
+-      // at least one handler for the original URL.
+-      if (scheme == 'http' || scheme == 'https') {
+-        return _hostApi.canLaunchUrl('$scheme://flutter.dev');
+-      }
+-    }
+-    return canLaunchSpecificUrl;
++    return _isAllowedWebUrl(url) && await _hostApi.canLaunchUrl(url);
+   }
+ 
+   @override
+@@ -60,65 +47,38 @@ class UrlLauncherOhos extends UrlLauncherPlatform {
+     return _hostApi.closeWebView();
+   }
+ 
++  static bool _isAllowedWebUrl(String value) {
++    final uri = Uri.tryParse(value);
++    return uri != null &&
++        (uri.scheme == 'http' || uri.scheme == 'https') &&
++        uri.hasAuthority && uri.host.isNotEmpty && uri.userInfo.isEmpty;
++  }
++
+   @override
+   Future<bool> launchUrl(String url, LaunchOptions options) async {
+-    final bool inApp;
+-    switch (options.mode) {
+-      case PreferredLaunchMode.inAppWebView:
+-      case PreferredLaunchMode.inAppBrowserView:
+-        inApp = true;
+-      case PreferredLaunchMode.externalApplication:
+-      case PreferredLaunchMode.externalNonBrowserApplication:
+-        inApp = false;
+-      case PreferredLaunchMode.platformDefault:
+-      default:
+-        inApp = url.startsWith('http:') || url.startsWith('https:');
+-    }
+-
+-    final bool succeeded;
+-    if (inApp) {
+-      succeeded = await _hostApi.openUrlInWebView(
+-          url,
+-          WebViewOptions(
+-              enableJavaScript: options.webViewConfiguration.enableJavaScript,
+-              enableDomStorage: options.webViewConfiguration.enableDomStorage,
+-              headers: options.webViewConfiguration.headers),
+-          BrowserOptions(
+-              showTitle: options.browserConfiguration.showTitle));
+-    } else {
+-      succeeded =
+-          await _hostApi.launchUrl(url, options.webViewConfiguration.headers);
++    if (!await supportsMode(options.mode)) {
++      throw PlatformException(
++          code: 'UNSUPPORTED_LAUNCH_MODE',
++          message: '鸿蒙登录仅支持外部浏览器。');
+     }
+-
++    if (!_isAllowedWebUrl(url)) return false;
++    final succeeded =
++        await _hostApi.launchUrl(url, options.webViewConfiguration.headers);
+     if (!succeeded) {
+       throw PlatformException(
+-          code: 'ACTIVITY_NOT_FOUND',
+-          message: 'No Activity found to handle intent { $url }');
++          code: 'ACTIVITY_NOT_FOUND', message: '无法打开系统浏览器。');
+     }
+-
+-    return succeeded;
++    return true;
+   }
+ 
+   @override
+   Future<bool> supportsMode(PreferredLaunchMode mode) async {
+-    switch (mode) {
+-      case PreferredLaunchMode.platformDefault:
+-      case PreferredLaunchMode.inAppWebView:
+-      case PreferredLaunchMode.inAppBrowserView:
+-      case PreferredLaunchMode.externalApplication:
+-        return true;
+-      case PreferredLaunchMode.externalNonBrowserApplication:
+-        return false;
+-      default:
+-        return false;
+-    }
++    return mode == PreferredLaunchMode.platformDefault ||
++        mode == PreferredLaunchMode.externalApplication;
+   }
+ 
+   @override
+-  Future<bool> supportsCloseForMode(PreferredLaunchMode mode) async {
+-    return mode == PreferredLaunchMode.inAppWebView ||
+-        mode == PreferredLaunchMode.inAppBrowserView;
+-  }
++  Future<bool> supportsCloseForMode(PreferredLaunchMode mode) async => false;
+ 
+   // TODO(stuartmorgan): Implement launchUrl, and make this a passthrough
+   // to launchUrl. See also https://github.com/flutter/flutter/issues/66721
+@@ -145,15 +105,4 @@ class UrlLauncherOhos extends UrlLauncherPlatform {
+                 headers: headers)));
+   }
+ 
+-  // Returns the part of [url] up to the first ':', or an empty string if there
+-  // is no ':'. This deliberately does not use [Uri] to extract the scheme
+-  // so that it works on strings that aren't actually valid URLs, since Ohos
+-  // is very lenient about what it accepts for launching.
+-  String _getUrlScheme(String url) {
+-    final int schemeEnd = url.indexOf(':');
+-    if (schemeEnd == -1) {
+-      return '';
+-    }
+-    return url.substring(0, schemeEnd);
+-  }
+ }
+diff --git a/ohos/src/main/ets/components/plugin/UrlLauncher.ets b/ohos/src/main/ets/components/plugin/UrlLauncher.ets
+index 9dc0689..1336f79 100644
+--- a/ohos/src/main/ets/components/plugin/UrlLauncher.ets
++++ b/ohos/src/main/ets/components/plugin/UrlLauncher.ets
+@@ -16,6 +16,7 @@ import { BinaryMessenger } from '@ohos/flutter_ohos/src/main/ets/plugin/common/B
+ import MessageCodec from '@ohos/flutter_ohos/src/main/ets/plugin/common/MessageCodec';
+ import BasicMessageChannel, { Reply } from '@ohos/flutter_ohos/src/main/ets/plugin/common/BasicMessageChannel';
+ import Want from '@ohos.app.ability.Want';
++import urlUtil from '@ohos.url';
+ import wantConstant from '@ohos.app.ability.wantConstant';
+ import fileuri from '@ohos.file.fileuri';
+ import { FlutterError, UrlLauncherApi, UrlLauncherApiCodec, WebViewOptions, BrowserOptions, wrapError } from './Messages';
+@@ -80,58 +81,23 @@ export class UrlLauncher implements UrlLauncherApi {
+     });
+   }
+ 
+-  canLaunchUrl(url: string): boolean {
+-    let encodedUri = encodeURI(url);
+-    // Trick：由于 sms、tel、file、mailto 用 bundleManager.canOpenLink 判断会报 17700055 错误，这里暂时保留 if 这段条件判断代码
+-    if (encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_TEL) ||
+-        encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_WEB_HTTP) ||
+-        encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_WEB_HTTPS) ||
+-        encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_MAILTO) ||
+-        encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_SMS) ||
+-        encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_FILE) ||
+-        encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_APP_GALLERY)) {
+-      return true;
+-    }
+-
++  canLaunchUrl(link: string): boolean {
+     try {
+-      // 除了 sms、tel、file、mailto、http、https 开头的这六种 uri 之外的，用下面的方法判断是否支持打开。
+-      // 需要在 src/main/module.json5 的 querySchemes 中增加对应的头部信息，例如打开 "amapuri://route/plan/?did=xxx"，module.json5 的样例：{ "module": { "querySchemes": [ "amapuri" ] } }
+-      if (bundleManager.canOpenLink(encodedUri)) {
+-        return true;
+-      }
+-      return false;
+-    } catch (error) {
+-      Log.e(TAG, 'canOpenLink error: ', JSON.stringify(error));
++      const target = new urlUtil.URL(link);
++      return (target.protocol === 'http:' || target.protocol === 'https:') &&
++        target.hostname.length > 0 && target.username.length === 0 && target.password.length === 0;
++    } catch (_) {
+       return false;
+     }
+   }
+ 
+-  launchUrl(url: string, headers: Map<string, string>): boolean {
+-    if (!this.canLaunchUrl(url)) {
++  async launchUrl(link: string, _headers: Map<string, string>): Promise<boolean> {
++    if (!this.canLaunchUrl(link)) {
+       return false;
+     }
+-
+     this.ensureContext();
+-    let encodedUri = encodeURI(url);
+-    Log.d(TAG, 'launchUrl. url:' + url + '  eurl:' + encodedUri);
+-    if (encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_TEL)) {
+-      return this.launchTel(url);
+-    } else if (encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_WEB_HTTP) ||
+-               encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_WEB_HTTPS)) {
+-      return this.launchWeb(url, headers);
+-    } else if (encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_MAILTO)) {
+-      return this.launchMail(url);
+-    } else if (encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_SMS)) {
+-      return this.launchSms(url);
+-    } else if (encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_FILE)) {
+-      return this.launchFile(url);
+-    } else if (encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_ENTERPRISE)) {
+-      return this.launchOther(url);
+-    } else if (encodedUri.startsWith(UrlLauncher.LAUNCH_TYPE_APP_GALLERY)) {
+-      return this.launchAppGallery(url);
+-    } else {
+-      return this.launchOther(url);
+-    }
++    await this.context.openLink(link, { appLinkingOnly: false });
++    return true;
+   }
+ 
+   format(number: string) {
+@@ -416,14 +382,12 @@ export class UrlLauncher implements UrlLauncherApi {
+             let args = msg as Array<Object>;
+             let urlArg = args[0] as string;
+             let headersArg = args[1] as Map<string, string>;
+-            try {
+-              let output = api.launchUrl(urlArg, headersArg);
++            api.launchUrl(urlArg, headersArg).then((output: boolean) => {
+               wrapped.push(output);
+-            } catch (err) {
+-              let errs = wrapError(err);
+-              wrapped = errs;
+-            }
+-            reply.reply(wrapped)
++              reply.reply(wrapped);
++            }).catch((err: Error) => {
++              reply.reply(wrapError(err));
++            });
+           }
+         });
+       } else {
+diff --git a/ohos/src/main/ets/components/plugin/Messages.ets b/ohos/src/main/ets/components/plugin/Messages.ets
+index 09e1fcf..4498dda 100644
+--- a/ohos/src/main/ets/components/plugin/Messages.ets
++++ b/ohos/src/main/ets/components/plugin/Messages.ets
+@@ -190,7 +190,7 @@ export interface UrlLauncherApi {
+   canLaunchUrl(url: string): boolean;
+ 
+   /** Opens the URL externally, returning true if successful. */
+-  launchUrl(url: string, headers: Map<string, string>): boolean;
++  launchUrl(url: string, headers: Map<string, string>): Promise<boolean>;
+ 
+   /** Opens the URL in an in-app WebView, returning true if it opens successfully. */
+   openUrlInWebView(url: string, options: WebViewOptions, browserOptions: BrowserOptions): boolean;

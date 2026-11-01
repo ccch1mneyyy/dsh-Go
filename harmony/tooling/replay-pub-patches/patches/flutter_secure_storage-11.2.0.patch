@@ -1,0 +1,14 @@
+diff --git a/lib/flutter_secure_storage.dart b/lib/flutter_secure_storage.dart
+index 584e4c2..44c5568 100644
+--- a/lib/flutter_secure_storage.dart
++++ b/lib/flutter_secure_storage.dart
+@@ -358,6 +358,9 @@ class FlutterSecureStorage {
+   ) {
+     if (kIsWeb) {
+       return webOptions?.params ?? this.webOptions.params;
++    } else if (defaultTargetPlatform.name == 'ohos') {
++      // 鸿蒙使用本项目 HUKS 插件的默认保护策略，不复用 Android 专用选项。
++      return const <String, String>{};
+     } else if (defaultTargetPlatform == TargetPlatform.linux) {
+       return lOptions?.params ?? this.lOptions.params;
+     } else if (defaultTargetPlatform == TargetPlatform.iOS) {

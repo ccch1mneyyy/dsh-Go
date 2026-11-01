@@ -33,8 +33,8 @@ Future<void> _settle() async {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  ProviderContainer containerFor(FakeWorkspaceHost host, {bool local = true}) {
-    final conn = workspaceHost(host, local: local);
+  ProviderContainer containerFor(FakeWorkspaceHost host, {bool local = true, String? workingDirectory}) {
+    final conn = workspaceHost(host, local: local, workingDirectory: workingDirectory);
     final container = ProviderContainer(
       overrides: [
         activeConnectionProvider.overrideWithValue(AsyncData(conn)),
@@ -181,6 +181,46 @@ void main() {
   });
 
   group('new conversations', () {
+    test('本地会话使用运行时实际提供的工作目录', () async {
+      const directory = '/data/test-private-runtime/home/workspace';
+      final host = FakeWorkspaceHost(folders: [directory]);
+      final container = containerFor(host, workingDirectory: directory);
+      await container.read(sessionsProvider.notifier).create();
+      expect(host.argsOf('session/create').last, {
+        'request': {'cwd': directory},
+      });
+    });
+
+    test('本地已选工作区被删除时回退同一真实工作目录', () async {
+      const directory = '/data/test-private-runtime/home/workspace';
+      final host = FakeWorkspaceHost(folders: [directory, '/data/test-private-runtime/project']);
+      final workspace = host.seedWorkspace('/data/test-private-runtime/project');
+      final container = containerFor(host, workingDirectory: directory);
+      container.listen(workspacesProvider, (_, _) {});
+      await _settle();
+      await container.read(workspacePrefsProvider.notifier).selection();
+      await container.read(workspacePrefsProvider.notifier).select(workspace['workspaceId'] as String);
+      expect(container.read(workspacesProvider).byId(workspace['workspaceId'] as String), isNotNull);
+      host.workspaces.clear();
+      await container.read(sessionsProvider.notifier).create();
+      expect(
+        [for (final call in host.argsOf('session/create')) call['request']],
+        [
+          {'workspaceId': workspace['workspaceId']},
+          {'cwd': directory},
+        ],
+      );
+    });
+
+    test('SSH仍使用配置工作目录或交由远端选择', () async {
+      for (final directory in [null, '/srv/remote-workspace']) {
+        final host = FakeWorkspaceHost();
+        final container = containerFor(host, local: false, workingDirectory: directory);
+        await container.read(sessionsProvider.notifier).create();
+        expect(host.argsOf('session/create').last['request'], directory == null ? {} : {'cwd': directory});
+      }
+    });
+
     test('start in the selected workspace, else in the default folder', () async {
       final host = FakeWorkspaceHost(folders: ['/root/code/app']);
       final ws = host.seedWorkspace('/root/code/app');

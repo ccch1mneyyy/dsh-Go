@@ -150,6 +150,7 @@ class RuntimeStatus {
     this.nodeVersion,
     this.baseUrl,
     this.token,
+    this.workspaceDir,
     this.managedSkillGeneration,
     this.error,
     this.mode = EngineMode.normal,
@@ -183,6 +184,9 @@ class RuntimeStatus {
   final String? nodeVersion;
   final String? baseUrl;
   final String? token;
+
+  /// 运行时实际提供的本地默认工作目录；旧平台未提供时保持未知。
+  final String? workspaceDir;
 
   /// Native grant generation for bundled-skill writes only (runtime ready and
   /// Flutter attachment). Unknown means the
@@ -268,6 +272,10 @@ class RuntimeStatus {
     nodeVersion: map['nodeVersion'] as String?,
     baseUrl: map['baseUrl'] as String?,
     token: map['token'] as String?,
+    workspaceDir: switch (map['workspaceDir']) {
+      final String value when value.trim().isNotEmpty => value,
+      _ => null,
+    },
     managedSkillGeneration: switch (map['managedSkillGeneration']) {
       final int value when value > 0 => value,
       _ => null,

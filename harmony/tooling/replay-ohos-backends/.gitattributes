@@ -1,0 +1,2 @@
+patches/*.patch -text -whitespace
+licenses/* -text -whitespace

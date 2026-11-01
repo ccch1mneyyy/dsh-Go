@@ -1,0 +1,7 @@
+{
+  "module": {
+    "name": "harmony_secure_paste",
+    "type": "har",
+    "deviceTypes": ["default", "tablet"]
+  }
+}

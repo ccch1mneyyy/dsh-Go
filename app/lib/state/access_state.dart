@@ -18,6 +18,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -310,6 +311,12 @@ class SystemAccessDriver implements AccessDriver {
 
   @override
   Future<bool> open(AccessItem item, {bool again = false}) async {
+    // 鸿蒙没有 Android 的那套权限页通道，统一改走本插件的系统设置入口。
+    if (Platform.operatingSystem == 'ohos') {
+      final opened = await _safe<bool>(() =>
+          const MethodChannel('dsh/runtime').invokeMethod<bool>('openAppSettings'));
+      return opened ?? false;
+    }
     final bridge = ref.read(runtimeBridgeProvider);
     final opened = await _safe<bool>(() async {
       switch (item) {
@@ -345,7 +352,14 @@ class SystemAccessDriver implements AccessDriver {
   }
 
   @override
-  Future<bool> openAppInfo() async => await _safe(ref.read(phoneProvider.notifier).openAppDetails) ?? false;
+  Future<bool> openAppInfo() async {
+    if (Platform.operatingSystem == 'ohos') {
+      final opened = await _safe<bool>(() =>
+          const MethodChannel('dsh/runtime').invokeMethod<bool>('openAppSettings'));
+      return opened ?? false;
+    }
+    return await _safe(ref.read(phoneProvider.notifier).openAppDetails) ?? false;
+  }
 }
 
 final accessDriverProvider = Provider<AccessDriver>((ref) => SystemAccessDriver(ref));

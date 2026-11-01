@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
+import path from 'node:path';
+const modules=process.argv[2];
+if (!modules) throw Error('需传入固定发行资产node_modules路径');
+const req=createRequire(path.resolve(modules,'test.cjs'));
+const load=async name=>import(pathToFileURL(req.resolve('@deepseek-ai/'+name)).href);
+const {Context}=await load('cordis');
+const {default:Llm}=await load('dsh-llm');
+const deepseek=await load('dsh-llm-deepseek-api-key');
+const {createLaunchEnvironmentSnapshot}=await load('dsh-launch-environment');
+const ctx=new Context(); let credentialReads=0, requests=0;
+const oldFetch=globalThis.fetch; globalThis.fetch=()=>{requests++;throw Error('NETWORK_FORBIDDEN')};
+try {
+ ctx.provide('launchEnvironment',createLaunchEnvironmentSnapshot([]));
+ ctx.provide('credentials',{resolve(){credentialReads++;throw Error('CREDENTIAL_READ_FORBIDDEN')}});
+ await ctx.plugin(Llm); await ctx.plugin(deepseek,{});
+ assert.equal(ctx.llm.adapters.has('deepseek-official'),true);
+ assert.equal(ctx.llm.listConfigurableProviders().some(x=>x.provider==='deepseek-official'),true);
+ assert.equal(credentialReads,0); assert.equal(requests,0);
+ console.log(JSON.stringify({deepseekAdapterRegistered:true,deepseekConfigurable:true,credentialReads,requests}));
+} finally {await ctx.fiber.dispose();globalThis.fetch=oldFetch;}
+const timeout=await load('dsh-tool-call-timeout-policy');
+let handler; timeout.apply({tools:{get(){return {timeoutMs:10}}},on(_event,fn){handler=fn}});
+const upstream=new AbortController().signal; const exec={name:'test',signal:upstream};
+const result=await handler(exec,async()=>{await new Promise(resolve=>setTimeout(resolve,30));return {kind:'success'}});
+assert.equal(exec.signal,upstream);assert.notDeepEqual(result,{kind:'success'});
+const repeat=await load('dsh-repeat-tool-reminder');const events=new Map();
+repeat.apply({on(event,fn){events.set(event,fn)}},{thresholds:[3,5,8],include:[],exclude:[],argumentsPreviewChars:500});
+const agent={};const execution={agent,name:'test',arguments:{text:'fixed-test'}};
+for(let i=0;i<2;i++)assert.equal((await events.get('tools/post-execute')(execution,{},async()=>({kind:'allow'}))).additionalContexts,undefined);
+assert.equal((await events.get('tools/post-execute')(execution,{},async()=>({kind:'allow'}))).additionalContexts.length,1);
+await events.get('agent/pre-step')({agent,messages:[{source:{kind:'user'}}]},()=>{});
+assert.equal((await events.get('tools/post-execute')(execution,{},async()=>({kind:'allow'}))).additionalContexts,undefined);
+console.log(JSON.stringify({timeoutReplacesExpiredResult:true,upstreamSignalRestored:true,repeatThreshold:true,userMessageResetsRepeat:true}));

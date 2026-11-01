@@ -1,0 +1,643 @@
+diff --git a/configure.py b/configure.py
+index a648c21f..200632df 100755
+--- a/configure.py
++++ b/configure.py
+@@ -1623,7 +1623,7 @@ def configure_node(o):
+   o['variables']['libdir'] = options.libdir
+   node_module_version = getmoduleversion.get_version()
+ 
+-  if options.dest_os == 'android':
++  if options.dest_os in ('android', 'openharmony'):
+     shlib_suffix = 'so'
+   elif sys.platform == 'darwin':
+     shlib_suffix = '%s.dylib'
+diff --git a/deps/uv/src/unix/linux.c b/deps/uv/src/unix/linux.c
+index ea3e2de0..3445bd0b 100644
+--- a/deps/uv/src/unix/linux.c
++++ b/deps/uv/src/unix/linux.c
+@@ -456,7 +456,9 @@ int uv__io_uring_register(int fd, unsigned opcode, void* arg, unsigned nargs) {
+ 
+ 
+ static int uv__use_io_uring(uint32_t flags) {
+-#if defined(__ANDROID_API__)
++#if defined(__OHOS__)
++  return 0;  /* 当前平台不启用可选 io_uring，沿用 epoll 与线程池路径。 */
++#elif defined(__ANDROID_API__)
+   return 0;  /* Possibly available but blocked by seccomp. */
+ #elif defined(__arm__) && __SIZEOF_POINTER__ == 4
+   /* See https://github.com/libuv/libuv/issues/4158. */
+diff --git a/deps/v8/src/wasm/interpreter/arm64/interpreter-builtins-arm64.cc b/deps/v8/src/wasm/interpreter/arm64/interpreter-builtins-arm64.cc
+index 5d983c3a..41989349 100644
+--- a/deps/v8/src/wasm/interpreter/arm64/interpreter-builtins-arm64.cc
++++ b/deps/v8/src/wasm/interpreter/arm64/interpreter-builtins-arm64.cc
+@@ -560,7 +560,7 @@ void Builtins::Generate_GenericJSToWasmInterpreterWrapper(
+   Label param_conversion_done;
+   Label check_ref_param;
+   Label convert_param;
+-  __ cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
+   __ B(&check_ref_param, ne);
+   __ JumpIfNotSmi(param, &convert_param);
+ 
+@@ -574,12 +574,9 @@ void Builtins::Generate_GenericJSToWasmInterpreterWrapper(
+   Label handle_ref_param;
+   __ bind(&check_ref_param);
+ 
+-  // wasm::ValueKind::kRefNull is not representable as a cmp immediate operand.
+-  __ And(valuetype, valuetype, Immediate(wasm::kWasmValueKindBitsMask));
+-  __ cmp(valuetype, Immediate(wasm::ValueKind::kRefNull));
+-  __ B(&handle_ref_param, eq);
+-  __ cmp(valuetype, Immediate(wasm::ValueKind::kRef));
+-  __ B(&convert_param, ne);
++  // 新布局以 IsRef 位表示引用；保留数值位供后续分支使用。
++  __ Tst(valuetype, Immediate(wasm::value_type_impl::IsRefField::kMask));
++  __ B(&convert_param, eq);
+ 
+   // Place the reference param into the proper slot.
+   __ bind(&handle_ref_param);
+@@ -623,16 +620,16 @@ void Builtins::Generate_GenericJSToWasmInterpreterWrapper(
+   Label param_kWasmI32_not_smi, param_kWasmI64, param_kWasmF32, param_kWasmF64,
+       throw_type_error;
+ 
+-  __ cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
+   __ B(&param_kWasmI32_not_smi, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
+   __ B(&param_kWasmI64, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
+   __ B(&param_kWasmF32, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
+   __ B(&param_kWasmF64, eq);
+ 
+-  __ cmp(valuetype, Immediate(wasm::kWasmS128.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmS128.raw_bit_field()));
+   // Simd arguments cannot be passed from JavaScript.
+   __ B(&throw_type_error, eq);
+ 
+@@ -807,21 +804,18 @@ void Builtins::Generate_GenericJSToWasmInterpreterWrapper(
+   Label return_kWasmI32, return_kWasmI64, return_kWasmF32, return_kWasmF64,
+       return_kWasmRef;
+ 
+-  __ cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
+   __ B(&return_kWasmI32, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
+   __ B(&return_kWasmI64, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
+   __ B(&return_kWasmF32, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
+   __ B(&return_kWasmF64, eq);
+ 
+   {
+-    __ And(valuetype, valuetype, Immediate(wasm::kWasmValueKindBitsMask));
+-    __ cmp(valuetype, Immediate(wasm::ValueKind::kRefNull));
+-    __ B(&return_kWasmRef, eq);
+-    __ cmp(valuetype, Immediate(wasm::ValueKind::kRef));
+-    __ B(&return_kWasmRef, eq);
++    __ Tst(valuetype, Immediate(wasm::value_type_impl::IsRefField::kMask));
++  __ B(&return_kWasmRef, ne);
+ 
+     // Invalid type. Wasm cannot return Simd results to JavaScript.
+     __ DebugBreak();
+@@ -1276,26 +1270,23 @@ void Builtins::Generate_GenericWasmToJSInterpreterWrapper(
+     __ bind(&loop_copy_param_ref);
+     __ Ldr(valuetype, MemOperand(valuetypes_array_ptr,
+                                  wasm::ValueType::bit_field_offset()));
+-    __ And(valuetype, valuetype, Immediate(wasm::kWasmValueKindBitsMask));
+-    __ cmp(valuetype, Immediate(wasm::ValueKind::kRefNull));
+-    __ B(&load_ref_param, eq);
+-    __ cmp(valuetype, Immediate(wasm::ValueKind::kRef));
+-    __ B(&load_ref_param, eq);
++    __ Tst(valuetype, Immediate(wasm::value_type_impl::IsRefField::kMask));
++  __ B(&load_ref_param, ne);
+ 
+     // Initialize non-ref type slots to zero since they can be visited by GC
+     // when converting wasm numbers into heap numbers.
+     __ Mov(param, Smi::zero());
+ 
+     Label inc_param_32bit;
+-    __ cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
++    __ Cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
+     __ B(&inc_param_32bit, eq);
+-    __ cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
++    __ Cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
+     __ B(&inc_param_32bit, eq);
+ 
+     Label inc_param_64bit;
+-    __ cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
++    __ Cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
+     __ B(&inc_param_64bit, eq);
+-    __ cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
++    __ Cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
+     __ B(&inc_param_64bit, eq);
+ 
+     // Invalid type. Wasm cannot pass Simd arguments to JavaScript.
+@@ -1353,7 +1344,7 @@ void Builtins::Generate_GenericWasmToJSInterpreterWrapper(
+   // If param is a Smi we can easily convert it. Otherwise we'll call a builtin
+   // for conversion.
+   Label param_conversion_done, check_ref_param, skip_ref_param, convert_param;
+-  __ cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
+   __ B(&check_ref_param, ne);
+ 
+   // I32 param: change to Smi.
+@@ -1381,11 +1372,8 @@ void Builtins::Generate_GenericWasmToJSInterpreterWrapper(
+ 
+   // Skip Ref params. We already copied reference params in the first loop.
+   __ bind(&check_ref_param);
+-  __ And(valuetype, valuetype, Immediate(wasm::kWasmValueKindBitsMask));
+-  __ cmp(valuetype, Immediate(wasm::ValueKind::kRefNull));
+-  __ B(&skip_ref_param, eq);
+-  __ cmp(valuetype, Immediate(wasm::ValueKind::kRef));
+-  __ B(&convert_param, ne);
++  __ Tst(valuetype, Immediate(wasm::value_type_impl::IsRefField::kMask));
++  __ B(&convert_param, eq);
+ 
+   __ bind(&skip_ref_param);
+   __ Add(param_index, param_index, 1);
+@@ -1414,13 +1402,13 @@ void Builtins::Generate_GenericWasmToJSInterpreterWrapper(
+   Label param_kWasmF64;
+   Label finish_param_conversion;
+ 
+-  __ cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
+   __ B(&param_kWasmI32_not_smi, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
+   __ B(&param_kWasmI64, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
+   __ B(&param_kWasmF32, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
+   __ B(&param_kWasmF64, eq);
+ 
+   // Invalid type. Wasm cannot pass Simd arguments to JavaScript.
+@@ -1611,20 +1599,17 @@ void Builtins::Generate_GenericWasmToJSInterpreterWrapper(
+ 
+   // Prepare for builtin call.
+ 
+-  __ cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
+   __ B(&return_kWasmI32, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
+   __ B(&return_kWasmI64, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
+   __ B(&return_kWasmF32, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
+   __ B(&return_kWasmF64, eq);
+ 
+-  __ And(valuetype, valuetype, Immediate(wasm::kWasmValueKindBitsMask));
+-  __ cmp(valuetype, Immediate(wasm::ValueKind::kRefNull));
+-  __ B(&return_kWasmRef, eq);
+-  __ cmp(valuetype, Immediate(wasm::ValueKind::kRef));
+-  __ B(&return_kWasmRef, eq);
++  __ Tst(valuetype, Immediate(wasm::value_type_impl::IsRefField::kMask));
++  __ B(&return_kWasmRef, ne);
+ 
+   // Invalid type. JavaScript cannot return Simd results to WebAssembly.
+   __ DebugBreak();
+@@ -1735,22 +1720,19 @@ void Builtins::Generate_GenericWasmToJSInterpreterWrapper(
+   __ Ldr(valuetype,
+          MemOperand(valuetypes_array_ptr, wasm::ValueType::bit_field_offset()));
+ 
+-  __ And(valuetype, valuetype, Immediate(wasm::kWasmValueKindBitsMask));
+-  __ cmp(valuetype, Immediate(wasm::ValueKind::kRefNull));
+-  __ B(&copy_return_ref, eq);
+-  __ cmp(valuetype, Immediate(wasm::ValueKind::kRef));
+-  __ B(&copy_return_ref, eq);
++  __ Tst(valuetype, Immediate(wasm::value_type_impl::IsRefField::kMask));
++  __ B(&copy_return_ref, ne);
+ 
+   Label inc_result_32bit;
+-  __ cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI32.raw_bit_field()));
+   __ B(&inc_result_32bit, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF32.raw_bit_field()));
+   __ B(&inc_result_32bit, eq);
+ 
+   Label inc_result_64bit;
+-  __ cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmI64.raw_bit_field()));
+   __ B(&inc_result_64bit, eq);
+-  __ cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
++  __ Cmp(valuetype, Immediate(wasm::kWasmF64.raw_bit_field()));
+   __ B(&inc_result_64bit, eq);
+ 
+   // Invalid type. JavaScript cannot return Simd values to WebAssembly.
+diff --git a/deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.cc b/deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.cc
+index a28724a8..466eda78 100644
+--- a/deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.cc
++++ b/deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.cc
+@@ -166,7 +166,7 @@ RUNTIME_FUNCTION(Runtime_WasmRunInterpreter) {
+           wasm_args[i] = wasm::WasmValue(
+               ref,
+               anyref ? wasm::kWasmAnyRef
+-                     : wasm::CanonicalValueType::Ref(wasm::HeapType::kString));
++                     : wasm::CanonicalValueType{wasm::kWasmRefString});
+           arg_buf_ptr += kSystemPointerSize;
+           break;
+         }
+@@ -1140,7 +1140,7 @@ void WasmInterpreterRuntime::ContinueExecution(WasmInterpreterThread* thread,
+               ref = WasmToJSObject(ref);
+               function_result_[index] = WasmValue(
+                   ref, sig->GetReturn(index).kind() == kRef
+-                           ? CanonicalValueType::Ref(HeapType::kString)
++                           ? CanonicalValueType{kWasmRefString}
+                            : kWasmAnyRef);
+               dst += sizeof(WasmRef) / kSlotSize;
+               break;
+@@ -1756,7 +1756,7 @@ bool WasmInterpreterRuntime::CheckIndirectCallSignature(
+     uint32_t table_index, uint32_t entry_index, uint32_t sig_index) const {
+   const WasmTable& table = module_->tables[table_index];
+   bool needs_type_check = !EquivalentTypes(
+-      table.type.AsNonNull(), ValueType::Ref(ModuleTypeIndex({sig_index})),
++      table.type.AsNonNull(), ValueType::Ref(module_->heap_type(ModuleTypeIndex({sig_index}))),
+       module_, module_);
+   bool needs_null_check = table.type.is_nullable();
+ 
+@@ -2542,17 +2542,11 @@ WasmRef WasmInterpreterRuntime::WasmJSToWasmObject(
+ 
+ WasmRef WasmInterpreterRuntime::JSToWasmObject(WasmRef extern_ref,
+                                                ValueType type) const {
+-  wasm::CanonicalTypeIndex canonical_index;
+-  if (type.has_index()) {
+-    canonical_index =
+-        module_->isorecursive_canonical_type_ids[type.ref_index().index];
+-    type = wasm::ValueType::RefMaybeNull(ModuleTypeIndex({canonical_index}),
+-                                         type.nullability());
+-  }
++  const CanonicalValueType canonical_type = module_->canonical_type(type);
+   const char* error_message;
+   {
+     DirectHandle<Object> result;
+-    if (wasm::JSToWasmObject(isolate_, extern_ref, (CanonicalValueType)type,
++    if (wasm::JSToWasmObject(isolate_, extern_ref, canonical_type,
+                              &error_message)
+             .ToHandle(&result)) {
+       return result;
+@@ -2633,7 +2627,7 @@ bool WasmInterpreterRuntime::SubtypeCheck(const WasmRef obj,
+   }
+ 
+   // Add Smi check if the source type may store a Smi (i31ref or JS Smi).
+-  ValueType i31ref = ValueType::Ref(HeapType::kI31);
++  ValueType i31ref = ValueType::Ref(HeapType::Generic(GenericKind::kI31, false));
+   if (IsSubtypeOf(i31ref, obj_type, module_) && IsSmi(*obj)) {
+     return false;
+   }
+diff --git a/deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.h b/deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.h
+index 5a649399..3be09427 100644
+--- a/deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.h
++++ b/deps/v8/src/wasm/interpreter/wasm-interpreter-runtime.h
+@@ -28,6 +28,7 @@ struct WasmTag;
+ 
+ class WasmInterpreterRuntime {
+  public:
++  const WasmModule* module() const { return module_; }
+   WasmInterpreterRuntime(const WasmModule* module, Isolate* isolate,
+                          DirectHandle<WasmInstanceObject> instance_object,
+                          WasmInterpreter::CodeMap* codemap);
+diff --git a/deps/v8/src/wasm/interpreter/wasm-interpreter.cc b/deps/v8/src/wasm/interpreter/wasm-interpreter.cc
+index fce4d426..0f78065d 100644
+--- a/deps/v8/src/wasm/interpreter/wasm-interpreter.cc
++++ b/deps/v8/src/wasm/interpreter/wasm-interpreter.cc
+@@ -27,6 +27,54 @@
+ namespace v8 {
+ namespace internal {
+ namespace wasm {
++// 兼容解释器旧编码，索引类型从模块恢复共享性和种类。
++static HeapType InterpreterHeapType(uint32_t value, const WasmModule* module) {
++  if (value < kV8MaxWasmTypes) return module->heap_type(ModuleTypeIndex{value});
++  switch (value) {
++    case HeapType::kFunc: return HeapType::Generic(GenericKind::kFunc, false);
++    case HeapType::kEq: return HeapType::Generic(GenericKind::kEq, false);
++    case HeapType::kI31: return HeapType::Generic(GenericKind::kI31, false);
++    case HeapType::kStruct: return HeapType::Generic(GenericKind::kStruct, false);
++    case HeapType::kArray: return HeapType::Generic(GenericKind::kArray, false);
++    case HeapType::kAny: return HeapType::Generic(GenericKind::kAny, false);
++    case HeapType::kExtern: return HeapType::Generic(GenericKind::kExtern, false);
++    case HeapType::kExternString: return HeapType::Generic(GenericKind::kExternString, false);
++    case HeapType::kExn: return HeapType::Generic(GenericKind::kExn, false);
++    case HeapType::kString: return HeapType::Generic(GenericKind::kString, false);
++    case HeapType::kStringViewWtf8: return HeapType::Generic(GenericKind::kStringViewWtf8, false);
++    case HeapType::kStringViewWtf16: return HeapType::Generic(GenericKind::kStringViewWtf16, false);
++    case HeapType::kStringViewIter: return HeapType::Generic(GenericKind::kStringViewIter, false);
++    case HeapType::kNone: return HeapType::Generic(GenericKind::kNone, false);
++    case HeapType::kNoFunc: return HeapType::Generic(GenericKind::kNoFunc, false);
++    case HeapType::kNoExtern: return HeapType::Generic(GenericKind::kNoExtern, false);
++    case HeapType::kNoExn: return HeapType::Generic(GenericKind::kNoExn, false);
++    case HeapType::kCont: return HeapType::Generic(GenericKind::kCont, false);
++    case HeapType::kContShared: return HeapType::Generic(GenericKind::kCont, true);
++    case HeapType::kNoCont: return HeapType::Generic(GenericKind::kNoCont, false);
++    case HeapType::kFuncShared: return HeapType::Generic(GenericKind::kFunc, true);
++    case HeapType::kEqShared: return HeapType::Generic(GenericKind::kEq, true);
++    case HeapType::kI31Shared: return HeapType::Generic(GenericKind::kI31, true);
++    case HeapType::kStructShared: return HeapType::Generic(GenericKind::kStruct, true);
++    case HeapType::kArrayShared: return HeapType::Generic(GenericKind::kArray, true);
++    case HeapType::kAnyShared: return HeapType::Generic(GenericKind::kAny, true);
++    case HeapType::kExternShared: return HeapType::Generic(GenericKind::kExtern, true);
++    case HeapType::kExternStringShared: return HeapType::Generic(GenericKind::kExternString, true);
++    case HeapType::kExnShared: return HeapType::Generic(GenericKind::kExn, true);
++    case HeapType::kStringShared: return HeapType::Generic(GenericKind::kString, true);
++    case HeapType::kStringViewWtf8Shared: return HeapType::Generic(GenericKind::kStringViewWtf8, true);
++    case HeapType::kStringViewWtf16Shared: return HeapType::Generic(GenericKind::kStringViewWtf16, true);
++    case HeapType::kStringViewIterShared: return HeapType::Generic(GenericKind::kStringViewIter, true);
++    case HeapType::kNoneShared: return HeapType::Generic(GenericKind::kNone, true);
++    case HeapType::kNoFuncShared: return HeapType::Generic(GenericKind::kNoFunc, true);
++    case HeapType::kNoExternShared: return HeapType::Generic(GenericKind::kNoExtern, true);
++    case HeapType::kNoExnShared: return HeapType::Generic(GenericKind::kNoExn, true);
++    case HeapType::kNoContShared: return HeapType::Generic(GenericKind::kNoCont, true);
++    case HeapType::kTop: return HeapType::Generic(GenericKind::kTop, false);
++    case HeapType::kBottom: return HeapType::Generic(GenericKind::kBottom, false);
++    default: UNREACHABLE();
++  }
++}
++
+ 
+ #define EMIT_INSTR_HANDLER(name) EmitFnId(k_##name);
+ #define EMIT_INSTR_HANDLER_WITH_PC(name, pc) EmitFnId(k_##name, pc);
+@@ -5794,8 +5842,7 @@ class Handlers : public HandlersBase {
+       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
+       int64_t r0, double fp0) {
+     bool null_succeeds = Read<int32_t>(code);
+-    HeapType target_type(
+-        ModuleTypeIndex({static_cast<uint32_t>(Read<int32_t>(code))}));
++    HeapType target_type = InterpreterHeapType(static_cast<uint32_t>(Read<int32_t>(code)), wasm_runtime->module());
+ 
+     WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
+     const uint32_t ref_bitfield = Read<int32_t>(code);
+@@ -5832,8 +5879,7 @@ class Handlers : public HandlersBase {
+       const uint8_t* code, uint32_t* sp, WasmInterpreterRuntime* wasm_runtime,
+       int64_t r0, double fp0) {
+     bool null_succeeds = Read<int32_t>(code);
+-    HeapType target_type(
+-        ModuleTypeIndex({static_cast<uint32_t>(Read<int32_t>(code))}));
++    HeapType target_type = InterpreterHeapType(static_cast<uint32_t>(Read<int32_t>(code)), wasm_runtime->module());
+ 
+     WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
+     const uint32_t ref_bitfield = Read<int32_t>(code);
+@@ -6754,8 +6800,7 @@ class Handlers : public HandlersBase {
+   INSTRUCTION_HANDLER_FUNC RefCast(const uint8_t* code, uint32_t* sp,
+                                    WasmInterpreterRuntime* wasm_runtime,
+                                    int64_t r0, double fp0) {
+-    HeapType target_type(
+-        ModuleTypeIndex({static_cast<uint32_t>(Read<int32_t>(code))}));
++    HeapType target_type = InterpreterHeapType(static_cast<uint32_t>(Read<int32_t>(code)), wasm_runtime->module());
+ 
+     WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
+ 
+@@ -6777,8 +6822,7 @@ class Handlers : public HandlersBase {
+   INSTRUCTION_HANDLER_FUNC RefTest(const uint8_t* code, uint32_t* sp,
+                                    WasmInterpreterRuntime* wasm_runtime,
+                                    int64_t r0, double fp0) {
+-    HeapType target_type(
+-        ModuleTypeIndex({static_cast<uint32_t>(Read<int32_t>(code))}));
++    HeapType target_type = InterpreterHeapType(static_cast<uint32_t>(Read<int32_t>(code)), wasm_runtime->module());
+ 
+     WasmRef ref = pop<WasmRef>(sp, code, wasm_runtime);
+ 
+@@ -9744,7 +9788,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+           GetTargetBranch(br_on_cast_data.label_depth);
+       bool null_succeeds = br_on_cast_data.res_is_null;
+       const ValueType target_type = ValueType::RefMaybeNull(
+-          ModuleTypeIndex({br_on_cast_data.target_type}),
++          InterpreterHeapType(br_on_cast_data.target_type, module_),
+           null_succeeds ? kNullable : kNonNullable);
+ 
+       const ValueType obj_type = slots_[stack_.back()].value_type;
+@@ -9771,7 +9815,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+         EMIT_INSTR_HANDLER(s2s_BranchOnCast);
+         EmitI32Const(null_succeeds);
+         HeapType br_on_cast_data_target_type(
+-            ModuleTypeIndex({br_on_cast_data.target_type}));
++            InterpreterHeapType(br_on_cast_data.target_type, module_));
+         EmitI32Const(br_on_cast_data_target_type.is_index()
+                          ? br_on_cast_data_target_type.representation()
+                          : target_type.heap_type().representation());
+@@ -9798,7 +9842,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+           GetTargetBranch(br_on_cast_data.label_depth);
+       bool null_succeeds = br_on_cast_data.res_is_null;
+       HeapType br_on_cast_data_target_type(
+-          ModuleTypeIndex({br_on_cast_data.target_type}));
++          InterpreterHeapType(br_on_cast_data.target_type, module_));
+       const ValueType target_type =
+           ValueType::RefMaybeNull(br_on_cast_data_target_type,
+                                   null_succeeds ? kNullable : kNonNullable);
+@@ -11164,7 +11208,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+     case kExprRefNull: {
+       EMIT_INSTR_HANDLER(s2s_RefNull);
+       ValueType value_type =
+-          ValueType::RefNull(HeapType(instr.optional.ref_type));
++          ValueType::RefNull(InterpreterHeapType(instr.optional.ref_type, module_));
+       EmitRefValueType(value_type.raw_bit_field());
+       RefPush(value_type);
+       break;
+@@ -11180,7 +11224,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+       EMIT_INSTR_HANDLER(s2s_RefFunc);
+       EmitI32Const(instr.optional.index);
+       ValueType value_type =
+-          ValueType::Ref(module_->functions[instr.optional.index].sig_index);
++          ValueType::Ref(module_->heap_type(module_->functions[instr.optional.index].sig_index));
+       RefPush(value_type);
+       break;
+     }
+@@ -11211,14 +11255,14 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+         Pop(kind);
+       }
+ 
+-      RefPush(ValueType::Ref(ModuleTypeIndex({instr.optional.index})));
++      RefPush(ValueType::Ref(module_->heap_type(ModuleTypeIndex({instr.optional.index}))));
+       break;
+     }
+ 
+     case kExprStructNewDefault: {
+       EMIT_INSTR_HANDLER(s2s_StructNewDefault);
+       EmitI32Const(instr.optional.index);
+-      RefPush(ValueType::Ref(ModuleTypeIndex({instr.optional.index})));
++      RefPush(ValueType::Ref(module_->heap_type(ModuleTypeIndex({instr.optional.index}))));
+       break;
+     }
+ 
+@@ -11413,7 +11457,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+           UNREACHABLE();
+       }
+       // Push the new array.
+-      RefPush(ValueType::Ref(ModuleTypeIndex({array_index})));
++      RefPush(ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
+       break;
+     }
+ 
+@@ -11456,7 +11500,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+         }
+       }
+       // Push the new array.
+-      RefPush(ValueType::Ref(ModuleTypeIndex({array_index})));
++      RefPush(ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
+       break;
+     }
+ 
+@@ -11465,7 +11509,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+       EmitI32Const(instr.optional.index);
+       I32Pop();
+       // Push the new array.
+-      RefPush(ValueType::Ref(ModuleTypeIndex({instr.optional.index})));
++      RefPush(ValueType::Ref(module_->heap_type(ModuleTypeIndex({instr.optional.index}))));
+       break;
+     }
+ 
+@@ -11479,7 +11523,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+       I32Pop();
+       I32Pop();
+       // Push the new array.
+-      RefPush(ValueType::Ref(ModuleTypeIndex({array_index})));
++      RefPush(ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
+       break;
+     }
+ 
+@@ -11493,7 +11537,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+       I32Pop();
+       I32Pop();
+       // Push the new array.
+-      RefPush(ValueType::Ref(ModuleTypeIndex({array_index})));
++      RefPush(ValueType::Ref(module_->heap_type(ModuleTypeIndex({array_index}))));
+       break;
+     }
+ 
+@@ -11747,7 +11791,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+     case kExprRefI31: {
+       EMIT_INSTR_HANDLER(s2s_RefI31);
+       I32Pop();
+-      RefPush(ValueType::Ref(HeapType::kI31));
++      RefPush(ValueType::Ref(HeapType::Generic(GenericKind::kI31, false)));
+       break;
+     }
+ 
+@@ -11857,7 +11901,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+       EMIT_INSTR_HANDLER_WITH_PC(s2s_AnyConvertExtern, instr.pc);
+       ValueType extern_val = RefPop();
+       ValueType intern_type = ValueType::RefMaybeNull(
+-          HeapType::kAny, Nullability(extern_val.is_nullable()));
++          HeapType::Generic(GenericKind::kAny, false), Nullability(extern_val.is_nullable()));
+       RefPush(intern_type);
+       break;
+     }
+@@ -11866,7 +11910,7 @@ RegMode WasmBytecodeGenerator::DoEncodeInstruction(const WasmInstruction& instr,
+       EMIT_INSTR_HANDLER(s2s_ExternConvertAny);
+       ValueType value_type = RefPop();
+       ValueType extern_type = ValueType::RefMaybeNull(
+-          HeapType::kExtern, Nullability(value_type.is_nullable()));
++          HeapType::Generic(GenericKind::kExtern, false), Nullability(value_type.is_nullable()));
+       RefPush(extern_type);
+       break;
+     }
+@@ -12967,7 +13011,7 @@ std::unique_ptr<WasmBytecode> WasmBytecodeGenerator::GenerateBytecode() {
+   }
+ 
+   current_block_index_ =
+-      BeginBlock(kExprBlock, {wasm_code_->function->sig_index, kBottom});
++      BeginBlock(kExprBlock, {wasm_code_->function->sig_index, kWasmBottom.raw_bit_field()});
+ 
+   WasmInstruction curr_instr;
+   WasmInstruction next_instr;
+diff --git a/deps/v8/src/wasm/value-type.h b/deps/v8/src/wasm/value-type.h
+index 62d47481..b932aa76 100644
+--- a/deps/v8/src/wasm/value-type.h
++++ b/deps/v8/src/wasm/value-type.h
+@@ -591,6 +591,10 @@ class ValueTypeBase {
+     return value_type_impl::ReservedField::decode(bit_field_) == 0;
+   }
+ 
++  // 为同源解释器汇编公开底层字段偏移，不改变类型布局。
++  static constexpr size_t bit_field_offset() {
++    return offsetof(ValueTypeBase, bit_field_);
++  }
+   constexpr uint32_t raw_bit_field() const { return bit_field_; }
+ 
+   size_t hash_value() const { return bit_field_; }
+diff --git a/tools/gyp/pylib/gyp/generator/make.py b/tools/gyp/pylib/gyp/generator/make.py
+index e8604790..e97ee398 100644
+--- a/tools/gyp/pylib/gyp/generator/make.py
++++ b/tools/gyp/pylib/gyp/generator/make.py
+@@ -1882,7 +1882,7 @@ $(obj).$(TOOLSET)/$(TARGET)/%%.o: $(obj)/%%%s FORCE_DO_CMD
+                 self.flavor not in ("mac", "openbsd", "netbsd", "win")
+                 and not self.is_standalone_static_library
+             ):
+-                if self.flavor in ("linux", "android"):
++                if self.flavor in ("linux", "android", "openharmony"):
+                     self.WriteMakeRule(
+                         [self.output_binary],
+                         link_deps,
+@@ -1896,7 +1896,7 @@ $(obj).$(TOOLSET)/$(TARGET)/%%.o: $(obj)/%%%s FORCE_DO_CMD
+                         part_of_all,
+                         postbuilds=postbuilds,
+                     )
+-            elif self.flavor in ("linux", "android"):
++            elif self.flavor in ("linux", "android", "openharmony"):
+                 self.WriteMakeRule(
+                     [self.output_binary],
+                     link_deps,
+diff --git a/tools/v8_gypfiles/features.gypi b/tools/v8_gypfiles/features.gypi
+index 9b2917e4..638630e3 100644
+--- a/tools/v8_gypfiles/features.gypi
++++ b/tools/v8_gypfiles/features.gypi
+@@ -29,6 +29,8 @@
+ 
+ {
+   'variables': {
++    # 鸿蒙采用官方Wasm解释器；默认保持原有构建行为。
++    'v8_enable_drumbrake%': 0,
+     'v8_target_arch%': '<(target_arch)',
+ 
+     'v8_current_cpu%': '<(target_arch)',
+@@ -524,6 +526,9 @@
+       ['v8_enable_webassembly==1', {
+         'defines': ['V8_ENABLE_WEBASSEMBLY',],
+       }],
++      ['v8_enable_webassembly==1 and v8_enable_drumbrake==1', {
++        'defines': ['V8_ENABLE_DRUMBRAKE', 'V8_DRUMBRAKE_BOUNDS_CHECKS'],
++      }],
+       ['v8_dict_property_const_tracking==1', {
+         'defines': ['V8_DICT_PROPERTY_CONST_TRACKING',],
+       }],
+diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
+index dd977d86..60c12ab0 100644
+--- a/tools/v8_gypfiles/v8.gyp
++++ b/tools/v8_gypfiles/v8.gyp
+@@ -323,6 +323,12 @@
+         '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "\\"v8_initializers.*?sources = ")',
+       ],
+       'conditions': [
++        ['v8_enable_webassembly==1 and v8_enable_drumbrake==1', {
++          'conditions': [
++            ['v8_target_arch=="arm64"', {'sources': ['<(V8_ROOT)/src/wasm/interpreter/arm64/interpreter-builtins-arm64.cc']}],
++            ['v8_target_arch=="x64"', {'sources': ['<(V8_ROOT)/src/wasm/interpreter/x64/interpreter-builtins-x64.cc']}],
++          ],
++        }],
+         ['v8_enable_webassembly==1', {
+           'dependencies': [
+             'v8_initializers_slow',
+@@ -1080,6 +1086,14 @@
+         '<@(inspector_all_sources)',
+       ],
+       'conditions': [
++        ['v8_enable_webassembly==1 and v8_enable_drumbrake==1', {
++          'sources': [
++            '<(V8_ROOT)/src/wasm/interpreter/wasm-interpreter-objects.cc',
++            '<(V8_ROOT)/src/wasm/interpreter/wasm-interpreter-runtime.cc',
++            '<(V8_ROOT)/src/wasm/interpreter/wasm-interpreter-simd.cc',
++            '<(V8_ROOT)/src/wasm/interpreter/wasm-interpreter.cc',
++          ],
++        }],
+         ['v8_enable_snapshot_compression==1', {
+           'sources': [
+             '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "\\"v8_base_without_compiler.*?v8_enable_snapshot_compression.*?sources \\+= ")',

@@ -169,6 +169,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.8.0"
+  dsh_attachment_picker_ohos:
+    dependency: "direct main"
+    description:
+      path: "../harmony/plugins/dsh_attachment_picker_ohos"
+      relative: true
+    source: path
+    version: "0.1.0"
   dsh_client:
     dependency: "direct main"
     description:
@@ -419,6 +426,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  harmony_secure_paste:
+    dependency: "direct main"
+    description:
+      path: "../harmony/plugins/harmony_secure_paste"
+      relative: true
+    source: path
+    version: "0.0.1"
   hooks:
     dependency: transitive
     description:
@@ -715,6 +729,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.2"
+  path_provider_ohos:
+    dependency: "direct main"
+    description:
+      path: "packages/path_provider/path_provider_ohos"
+      ref: d4e49daa0acbd0bc419d58b1da27d64d44fab54b
+      resolved-ref: d4e49daa0acbd0bc419d58b1da27d64d44fab54b
+      url: "https://gitcode.com/CPF-Flutter/flutter_packages.git"
+    source: git
+    version: "2.2.17"
   path_provider_platform_interface:
     dependency: transitive
     description:
@@ -867,6 +890,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
+  shared_preferences_ohos:
+    dependency: "direct main"
+    description:
+      path: "packages/shared_preferences/shared_preferences_ohos"
+      ref: "143d83e7669a359a1ab1ee6558c4a2e4f7f4c53f"
+      resolved-ref: "143d83e7669a359a1ab1ee6558c4a2e4f7f4c53f"
+      url: "https://gitcode.com/CPF-Flutter/flutter_packages.git"
+    source: git
+    version: "2.5.4"
   shared_preferences_platform_interface:
     dependency: transitive
     description:
@@ -1016,6 +1048,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.6"
+  url_launcher_ohos:
+    dependency: "direct main"
+    description:
+      path: "packages/url_launcher/url_launcher_ohos"
+      ref: ae4494a78db5a9e0fe760b0eba9231605ae45716
+      resolved-ref: ae4494a78db5a9e0fe760b0eba9231605ae45716
+      url: "https://gitcode.com/CPF-Flutter/flutter_packages.git"
+    source: git
+    version: "6.3.2"
   url_launcher_platform_interface:
     dependency: transitive
     description:
@@ -1152,6 +1193,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.14.1"
+  webview_flutter_ohos:
+    dependency: "direct main"
+    description:
+      path: "packages/webview_flutter/webview_flutter_ohos"
+      ref: "3467191089ef4abc76132fff65b8e3354c2c21dd"
+      resolved-ref: "3467191089ef4abc76132fff65b8e3354c2c21dd"
+      url: "https://gitcode.com/CPF-Flutter/flutter_packages.git"
+    source: git
+    version: "4.7.0"
   webview_flutter_platform_interface:
     dependency: transitive
     description:

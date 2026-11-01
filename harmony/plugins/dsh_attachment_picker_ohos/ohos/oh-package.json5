@@ -1,0 +1,9 @@
+{
+  "name": "dsh_attachment_picker_ohos",
+  "version": "0.1.0",
+  "main": "index.ets",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:./har/flutter.har"
+  }
+}

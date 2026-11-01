@@ -33,3 +33,25 @@ site/build/
 
 # Release assets (tooling/release_assets.py)
 /dist/
+# HarmonyOS / Flutter-OH build outputs and local tool state
+app/ohos/entry/build/
+app/ohos/oh_modules/
+app/ohos/.hvigor/
+app/ohos/node_modules/
+app/ohos/local.properties
+app/ohos/entry/src/main/resources/rawfile/flutter_assets/
+harmony/plugins/*/build/
+harmony/plugins/*/.dart_tool/
+harmony/plugins/*/oh_modules/
+**/*.dill
+
+# 鸿蒙本机桥和运行资产由工具链生成，不提交签名包或本机依赖锁。
+app/ohos/entry/libs/
+app/ohos/entry/src/main/resources/rawfile/dsh-runtime.zip
+app/ohos/oh-package-lock.json5
+app/ohos/entry/oh-package-lock.json5
+harmony/plugins/dsh_runtime_ohos/native/runtime_launcher.c.bak
+
+harmony/plugins/dsh_runtime_ohos/native/ptc_loader.h
+harmony/plugins/*/pubspec.lock
+harmony/plugins/*/ohos/BuildProfile.ets

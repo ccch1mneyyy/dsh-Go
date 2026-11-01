@@ -1,0 +1,5 @@
+*.patch -text -whitespace
+*-LICENSE -text -whitespace
+*.json text eol=lf
+*.py text eol=lf
+*.sh text eol=lf

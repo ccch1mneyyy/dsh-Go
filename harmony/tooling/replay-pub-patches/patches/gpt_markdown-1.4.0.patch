@@ -1,0 +1,12 @@
+diff --git a/lib/shared_render.dart b/lib/shared_render.dart
+index 7bada7a..00979fb 100644
+--- a/lib/shared_render.dart
++++ b/lib/shared_render.dart
+@@ -1118,6 +1118,7 @@ class _TableViewportState extends State<_TableViewport> {
+     // it belongs to.
+     switch (Theme.of(context).platform) {
+       case TargetPlatform.android:
++      case TargetPlatform.ohos:
+       case TargetPlatform.iOS:
+       case TargetPlatform.fuchsia:
+         return SingleChildScrollView(

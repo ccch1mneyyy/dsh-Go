@@ -1,0 +1,14 @@
+
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "libdsh_control.so": "file:./src/main/cpp/types/libdsh_control",
+    "libdsh_ptc_task.so": "file:./src/main/cpp/types/libdsh_ptc_task",
+    "libdsh_broker.so": "file:./src/main/cpp/types/libdsh_broker",
+  },
+}
