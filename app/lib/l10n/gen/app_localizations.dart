@@ -10070,6 +10070,12 @@ abstract class L10n {
   /// **'上下文长度'**
   String get engineModelContextLength;
 
+  /// No description provided for @engineModelContextOverrideHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'留空使用渠道目录里的值；改大后引擎按新值计算上下文占用与压缩。'**
+  String get engineModelContextOverrideHint;
+
   /// No description provided for @engineModelMaxOutput.
   ///
   /// In zh, this message translates to:
@@ -13243,6 +13249,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'手机布局'**
   String get hubInterfacePhoneLayout;
+
   /// No description provided for @hubTableTint.
   ///
   /// In zh, this message translates to:
@@ -13272,6 +13279,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'隔行淡一档，长表格更好扫读'**
   String get hubTableTintFillHint;
+
   /// No description provided for @hubTableTintFollowHint.
   ///
   /// In zh, this message translates to:
@@ -23969,6 +23977,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'字号,字体,文字大小,大字,字体大小'**
   String get searchKwTextSize;
+
   /// No description provided for @searchKwTableTint.
   ///
   /// In zh, this message translates to:

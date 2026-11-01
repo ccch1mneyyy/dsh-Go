@@ -5796,6 +5796,10 @@ class L10nEn extends L10n {
   String get engineModelContextLength => 'Context length';
 
   @override
+  String get engineModelContextOverrideHint =>
+      'Empty uses the catalog\'s figure. A larger value is what the engine counts context pressure and compaction against.';
+
+  @override
   String get engineModelMaxOutput => 'Max output';
 
   @override
