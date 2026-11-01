@@ -17,7 +17,7 @@ class GuestDnsWriteTest {
     private val servers = listOf("1.1.1.1", "2001:4860:4860::8888", "223.5.5.5")
     private val expected = "# written by dsh-app from the device's active network\n" +
         "nameserver 1.1.1.1\nnameserver 2001:4860:4860::8888\nnameserver 223.5.5.5\n" +
-        "options timeout:2 attempts:2\n"
+        "options timeout:2 attempts:2 no-aaaa\n"
 
     private fun replace(from: String, to: String) {
         Files.move(File(from).toPath(), File(to).toPath(), ATOMIC_MOVE, REPLACE_EXISTING)

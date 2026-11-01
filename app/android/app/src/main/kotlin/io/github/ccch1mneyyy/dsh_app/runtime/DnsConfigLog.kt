@@ -16,7 +16,12 @@ data class DnsConfigReport(
     val networkRead: DnsNetworkRead = DnsNetworkRead.PROVIDED,
 ) {
     companion object {
-        const val OPTIONS = "timeout:2 attempts:2"
+        // no-aaaa: glibc's getaddrinfo(AF_UNSPEC) throws the whole answer away when one family
+        // fails, so a link that drops AAAA queries (transparent proxies, fake-IP routers) breaks
+        // every hostname at once — see issue #152 and #55. The guest ships glibc 2.39 (Ubuntu
+        // 24.04), where `no-aaaa` is understood; A records alone are enough for the engine, and
+        // the direct launcher already keeps the two families independent (runtime/direct/dns.mjs).
+        const val OPTIONS = "timeout:2 attempts:2 no-aaaa"
     }
 }
 
