@@ -28,6 +28,13 @@ import subprocess
 import sys
 from collections import OrderedDict
 
+# Windows 的控制台默认不是 UTF-8（cp1252 / cp936）。本脚本会打印 ✓ / ✗ 和中文，
+# stdout 编码不是 UTF-8 时 print 会抛 UnicodeEncodeError（连 --help 都会崩），报错信息也会被转义成 \uXXXX。
+# 把两个流切到 UTF-8，并让无法编码的字符降级。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        _stream.reconfigure(encoding='utf-8', errors='replace')
+
 APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 L10N = os.path.join(APP, 'lib', 'l10n')
 PARTS = os.path.join(L10N, 'parts')
