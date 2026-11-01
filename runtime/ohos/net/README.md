@@ -94,7 +94,7 @@ mkdir -p verify/base
 cp runtime/locks/dsh-0.2.1-rc.4/package*.json verify/base/
 (cd verify/base && npm ci)
 cp -a verify/base verify/ohos
-python3 runtime/lib/rtbuild.py patch-dsh --prefix verify/ohos --dsh-version 0.2.1-rc.4
+python3 runtime/lib/rtbuild.py patch-dsh --prefix verify/ohos --dsh-version 0.2.1-rc.4 --target ohos
 NODE=/path/to/node-v24.22.1/bin/node \
 OHOS_TEST_BASE_PREFIX="$PWD/verify/base" \
 OHOS_TEST_DSH_PREFIX="$PWD/verify/ohos" \
