@@ -18,7 +18,10 @@ import io.github.ccch1mneyyy.dsh_app.phone.TargetInfo
  * [io.github.ccch1mneyyy.dsh_app.phone.PhoneRegistry].backgroundDriver only while a task uses it.
  * All calls are serialised by the bridge; this class never retries a dispatched action.
  */
-class BackgroundDisplay(private val channelProvider: () -> PrivilegedChannel?) : PhoneDriver {
+class BackgroundDisplay(
+    private val channelProvider: () -> PrivilegedChannel?,
+    private val releaseChannelProvider: () -> PrivilegedChannel?,
+) : PhoneDriver {
 
     override val screen: PhoneScreen = PhoneScreen.BACKGROUND
 
@@ -153,7 +156,8 @@ class BackgroundDisplay(private val channelProvider: () -> PrivilegedChannel?) :
 
     fun release() {
         runCatching {
-            channelProvider()?.execute(Bundle().apply {
+            // Cleanup may use an existing session, but must not connect or start a new process.
+            releaseChannelProvider()?.execute(Bundle().apply {
                 putString(Proto.OP, Proto.OP_RELEASE); putString(Proto.OWNER, "task")
             })
         }

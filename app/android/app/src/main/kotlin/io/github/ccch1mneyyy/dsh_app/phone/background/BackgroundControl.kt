@@ -240,7 +240,10 @@ class BackgroundControl private constructor(context: Context) {
             if (mode == "off" || taskId <= endedTaskId.get() || (driverTaskId ?: Long.MIN_VALUE) > taskId) return false
             if (driverTaskId == taskId && driver != null && PhoneRegistry.backgroundDriver === driver) return true
             if (driver != null) endTask()
-            val d = BackgroundDisplay { activeChannel() }.also { driver = it }
+            val d = BackgroundDisplay(
+                channelProvider = { activeChannel() },
+                releaseChannelProvider = { channel?.takeIf { it.alive() } },
+            ).also { driver = it }
             // Publish the pending owner before checking cancellation: a stop
             // either records the ended ID first, or sees this owner and releases
             // it after the remaining registration (which performs no setup IPC).
