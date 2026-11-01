@@ -5,6 +5,8 @@ name: update-goldens
 # and only they are pushed back. Deleted before the PR merges.
 
 on:
+  push:
+    branches: [fix/chat-plugins-sheet-ways-in]
   workflow_dispatch:
 
 permissions:
