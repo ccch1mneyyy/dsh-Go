@@ -19,7 +19,7 @@ Cordis 的 `subprocess` 提供者改为本目录的 `index.mjs`，`sandbox` 提�
 
 `sandbox.confine()` 发放随机、单次的 argv 票据。策略留在宿主 Map 中，不放进可伪造的环境变量；prepare 与 spawn 解封后的实际 argv 共用无 NUL / 非空命令校验；票据不能把非法脚本藏在外壳后绕过原子进程限制。spawn 在进入队列前消费票据，重复使用、任意猜测和取消后的票据均被拒绝。`read-only` 拒绝所有受限 FS 写方法；`workspace-write` 将可见的工作区收窄到该调用的会话根。原工具层获准的 `danger-full-access` 也只能访问宿主启动时授权的根。
 
-每个任务在独立 `worker_threads` 中运行已固定的 just-bash 解释器。同一服务串行运行 worker，避免其各自的 `ReadWriteFs` 并发修改。没有改写 `child_process`、`fs`、`process.cwd`、Request/Response 或其他 Node 全局。`python:false`、`javascript:false`，命令注册表排除了 SQLite、Python、JS 执行及网络命令。`defenseInDepth:false` 防止 just-bash 全局改写宿主内建入口；因此这里依赖受限解释器、命令表与 FS 边界，不宣称是能运行不可信任意 JS 的安全容器。
+每个任务在独立 `worker_threads` 中运行已固定的 just-bash 解释器。同一服务使用两个 FIFO 队列：直接 `rg` 独占一个搜索槽，其余命令共享一个执行槽，总共最多两个 worker。写操作仍串行；长 bash 不再阻塞直接搜索。bash 内部调用 rg 仍在执行槽，因为同一脚本可能同时写文件。搜索可能观察到同时执行任务或外部编辑器正在修改的文件，不宣称快照一致性。没有改写 `child_process`、`fs`、`process.cwd`、Request/Response 或其他 Node 全局。`python:false`、`javascript:false`，命令注册表排除了 SQLite、Python、JS 执行及网络命令。`defenseInDepth:false` 防止 just-bash 全局改写宿主内建入口；因此这里依赖受限解释器、命令表与 FS 边界，不宣称是能运行不可信任意 JS 的安全容器。
 
 `ReadWriteFs` 的路径和符号链接检查能拒绝已存在的越界链接；检查与后续宿主文件操作之间不是原子的，不能对抗另一个宿主调用同时替换路径的竞态。因此返回的 `sandbox.enforcement` 是 `partial`。这不是完整 OS 沙箱，真机验证也不能把这一结构边界消掉。
 

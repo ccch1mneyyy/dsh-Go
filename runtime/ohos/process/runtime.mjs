@@ -23,8 +23,7 @@ const commandName = command => {
 export class VirtualSubprocessRuntime {
   capabilities = capabilities;
   live = new Set();
-  queue = [];
-  active;
+  lanes = { search: { queue: [] }, execution: { queue: [] } };
   closed = false;
   prepared = new Map();
 
@@ -86,6 +85,7 @@ export class VirtualSubprocessRuntime {
       policy = prepared.policy;
       validateArgv(argv);
     }
+    const lane = this.lanes[commandName(argv[0]) === 'rg' ? 'search' : 'execution'];
     const state = { worker: undefined, stopped: false, settled: false, outcome: undefined, failure: undefined };
     const completion = Promise.withResolvers();
     const gone = Promise.withResolvers();
@@ -111,11 +111,11 @@ export class VirtualSubprocessRuntime {
       for (const collector of Object.values(collected)) collector.seal();
       for (const stream of Object.values(output)) stream.end();
       this.live.delete(handle);
-      if (this.active === handle) this.active = undefined;
+      if (lane.active === handle) lane.active = undefined;
       gone.resolve(true);
       if (state.failure && !state.stopped) completion.reject(state.failure);
       else completion.resolve(state.stopped ? { exitCode: null, signal: 'SIGTERM' } : state.outcome);
-      queueMicrotask(() => this.startNext());
+      queueMicrotask(() => this.startNext(lane));
     };
     const handle = {
       stdin: undefined, stdout: output.stdout, stderr: output.stderr, control: undefined, collected,
@@ -137,7 +137,7 @@ export class VirtualSubprocessRuntime {
       },
       start: () => {
         if (state.settled) return;
-        this.active = handle;
+        lane.active = handle;
         try {
           if (spec.stdio.stdin === 'pipe' || spec.stdio.control === 'pipe') {
             throw Object.assign(new Error('当前虚拟 shell 只支持批量 stdin；交互字节通道尚未实现'), { code: 'ERR_OHOS_STREAM_UNAVAILABLE' });
@@ -194,15 +194,15 @@ export class VirtualSubprocessRuntime {
     };
     this.live.add(handle);
     spec.signal?.addEventListener('abort', handle.terminate, { once: true });
-    this.queue.push(handle);
-    queueMicrotask(() => this.startNext());
+    lane.queue.push(handle);
+    queueMicrotask(() => this.startNext(lane));
     return handle;
   }
 
-  startNext() {
-    if (this.active || this.closed) return;
-    while (this.queue.length) {
-      const next = this.queue.shift();
+  startNext(lane) {
+    if (lane.active || this.closed) return;
+    while (lane.queue.length) {
+      const next = lane.queue.shift();
       if (!this.live.has(next)) continue;
       next.start();
       break;
@@ -215,6 +215,7 @@ export class VirtualSubprocessRuntime {
     this.prepared.clear();
     const handles = [...this.live];
     for (const handle of handles) handle.terminate();
+    for (const lane of Object.values(this.lanes)) lane.queue.length = 0;
     await Promise.all(handles.map(handle => handle.waitForExit()));
   }
 }
