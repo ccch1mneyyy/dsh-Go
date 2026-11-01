@@ -10,9 +10,10 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
 export OHOS_NET_TEST_CERT="$fixtures/cert.pem"
 export OHOS_NET_TEST_KEY="$fixtures/key.pem"
 "${NODE:-node}" --test "$repo/runtime/tests/ohos/net.test.mjs"
-simulation=(--jitless --import "$repo/runtime/ohos/net/preload.mjs")
+simulation=(--jitless --import "$repo/runtime/ohos/sim/marker.mjs")
 if [[ -n ${OHOS_SIM_PRELOAD:-} ]]; then
   simulation+=(--import "$OHOS_SIM_PRELOAD" --test-isolation=none)
 fi
-DSH_GO_OHOS_SIM=1 "${NODE:-node}" "${simulation[@]}" \
+simulation+=(--import "$repo/runtime/ohos/net/preload.mjs")
+"${NODE:-node}" "${simulation[@]}" \
   --test "$repo/runtime/tests/ohos/net.test.mjs"

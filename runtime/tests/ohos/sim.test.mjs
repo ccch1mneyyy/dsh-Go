@@ -7,12 +7,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const preload = fileURLToPath(new URL('../../ohos/sim/preload.mjs', import.meta.url));
-function run(code, overrides = {}, enabled = true) {
+const marker = fileURLToPath(new URL('../../ohos/sim/marker.mjs', import.meta.url));
+function run(code, overrides = {}, mode = 'strict') {
   const env = { ...process.env };
   for (const key of ['DSH_GO_OHOS_SIM', 'DSH_GO_OHOS_SIM_PLATFORM', 'DSH_GO_OHOS_SIM_ADDONS']) delete env[key];
-  if (enabled) env.DSH_GO_OHOS_SIM = '1';
   Object.assign(env, overrides);
-  return spawnSync(process.execPath, [...(enabled ? ['--jitless'] : []), '--import', preload, '--input-type=module', '-e', code], {
+  const flags = mode === 'strict' ? ['--jitless', '--import', preload] : mode === 'marker' ? ['--import', marker] : [];
+  return spawnSync(process.execPath, [...flags, '--input-type=module', '-e', code], {
     env, encoding: 'utf8', timeout: 15000,
   });
 }
@@ -22,11 +23,32 @@ function result(child) {
   return JSON.parse(child.stdout);
 }
 
-test('preload is inert without explicit simulation, including normal subprocesses', () => {
+test('the obsolete environment switch alone leaves ordinary Node unchanged', () => {
   const value = result(run(`import { spawnSync } from 'node:child_process';
     console.log(JSON.stringify({ wasm: typeof WebAssembly, platform: process.platform,
-      status: spawnSync(process.execPath, ['-e', '']).status }));`, {}, false));
-  assert.deepEqual(value, { wasm: 'object', platform: process.platform, status: 0 });
+      simulated: globalThis[Symbol.for('dsh.go.ohos.sim')] === true,
+      status: spawnSync(process.execPath, ['-e', '']).status }));`, { DSH_GO_OHOS_SIM: '1' }, 'none'));
+  assert.deepEqual(value, { wasm: 'object', platform: process.platform, simulated: false, status: 0 });
+});
+
+test('the explicit marker preload preserves JIT and ordinary Node abilities', () => {
+  const value = result(run(`import { spawnSync } from 'node:child_process';
+    console.log(JSON.stringify({ wasm: typeof WebAssembly, platform: process.platform,
+      simulated: globalThis[Symbol.for('dsh.go.ohos.sim')] === true,
+      jitless: process.execArgv.includes('--jitless'),
+      legacyEnv: Object.hasOwn(process.env, 'DSH_GO_OHOS_SIM'),
+      status: spawnSync(process.execPath, ['-e', '']).status }));`, {}, 'marker'));
+  assert.deepEqual(value, { wasm: 'object', platform: process.platform, simulated: true, jitless: false, legacyEnv: false, status: 0 });
+});
+
+test('a real worker recreates the explicit marker from inherited preloads without environment activation', () => {
+  const value = result(run(`import { Worker } from 'node:worker_threads';
+    const worker = new Worker(new URL('data:text/javascript,' + encodeURIComponent(
+      "import { parentPort } from 'node:worker_threads'; parentPort.postMessage({simulated:globalThis[Symbol.for('dsh.go.ohos.sim')]===true,wasm:typeof WebAssembly,jitless:process.execArgv.includes('--jitless'),legacyEnv:Object.hasOwn(process.env,'DSH_GO_OHOS_SIM')});"
+    )));
+    const value = await new Promise((resolve, reject) => { worker.once('message',resolve); worker.once('error',reject); });
+    await worker.terminate(); console.log(JSON.stringify(value));`, {}, 'marker'));
+  assert.deepEqual(value, { simulated: true, wasm: 'object', jitless: false, legacyEnv: false });
 });
 
 test('all public child_process execution entrances fail synchronously and record stack only', () => {
@@ -108,12 +130,12 @@ test('an exact whitelisted addon reaches the real loader', () => {
 test('ordinary worker inherits preload and the process restriction', () => {
   const child = run(`import { Worker } from 'node:worker_threads';
     const worker = new Worker(new URL('data:text/javascript,' + encodeURIComponent(
-      "import { parentPort } from 'node:worker_threads'; import { spawnSync } from 'node:child_process'; let code; try { spawnSync('FAKE_SECRET_ARG_6f3d'); } catch (e) { code=e.code; console.error(e); } parentPort.postMessage({wasm:typeof WebAssembly,code});"
+      "import { parentPort } from 'node:worker_threads'; import { spawnSync } from 'node:child_process'; let code; try { spawnSync('FAKE_SECRET_ARG_6f3d'); } catch (e) { code=e.code; console.error(e); } parentPort.postMessage({wasm:typeof WebAssembly,code,simulated:globalThis[Symbol.for('dsh.go.ohos.sim')]===true,legacyEnv:Object.hasOwn(process.env,'DSH_GO_OHOS_SIM')});"
     )));
     const value = await new Promise((resolve, reject) => { worker.once('message',resolve); worker.once('error',reject); });
     await worker.terminate(); console.log(JSON.stringify(value));`);
   const value = result(child);
-  assert.deepEqual(value, { wasm: 'undefined', code: 'ERR_OHOS_SIM_SPAWN' });
+  assert.deepEqual(value, { wasm: 'undefined', code: 'ERR_OHOS_SIM_SPAWN', simulated: true, legacyEnv: false });
   assert.doesNotMatch(child.stderr, /FAKE_SECRET_ARG_6f3d|data:text\/javascript|parentPort/);
   assert.match(child.stderr, /<dynamic source>/);
 });

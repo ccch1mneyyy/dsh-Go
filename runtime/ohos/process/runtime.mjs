@@ -155,11 +155,10 @@ export class VirtualSubprocessRuntime {
           }
           const env = { ...scrubbedParentEnv(), ...spec.env, TMPDIR: this.temporaryRoot };
           for (const [key, value] of Object.entries(env)) if (value === undefined) delete env[key];
-          // 测试约束必须同样进入 worker；不转发父引擎其余 DSH_* 身份或凭据。
+          // Worker 通过继承 --import 重新建立测试标记；环境变量不能启用仿真。
           const workerEnv = { ...env };
-          if (process.env.DSH_GO_OHOS_SIM === '1') {
-            workerEnv.DSH_GO_OHOS_SIM = '1';
-            if (process.env.DSH_GO_OHOS_SIM_PLATFORM) workerEnv.DSH_GO_OHOS_SIM_PLATFORM = process.env.DSH_GO_OHOS_SIM_PLATFORM;
+          if (globalThis[Symbol.for('dsh.go.ohos.sim')] === true && process.env.DSH_GO_OHOS_SIM_PLATFORM) {
+            workerEnv.DSH_GO_OHOS_SIM_PLATFORM = process.env.DSH_GO_OHOS_SIM_PLATFORM;
           }
           const worker = state.worker = new Worker(new URL('./worker.mjs', import.meta.url), {
             workerData: {
