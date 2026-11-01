@@ -23,7 +23,7 @@ if [[ -z "${DSH_OHOS_PREFIX:-}" ]]; then
   cp -- "$repo_root/runtime/locks/dsh-0.2.1-rc.4/package-lock.json" "$prefix/package-lock.json"
   node_path="$(command -v -- "$node_bin")"
   PATH="$(dirname -- "$node_path"):$PATH" npm ci --prefix "$prefix" --ignore-scripts --no-audit --no-fund
-  python3 "$repo_root/runtime/lib/rtbuild.py" patch-dsh --prefix "$prefix" --dsh-version 0.2.1-rc.4 --out "$case_root/patches.json"
+  python3 "$repo_root/runtime/lib/rtbuild.py" patch-dsh --prefix "$prefix" --dsh-version 0.2.1-rc.4 --target ohos --out "$case_root/patches.json" --target-report "$case_root/patch-target.json"
 fi
 result=0
 for mode in jit jitless sim; do
