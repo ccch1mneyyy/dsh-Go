@@ -86,6 +86,12 @@ final _paragraphBreak = RegExp(r'\r?\n(?:[\t ]*\r?\n)+');
 class _ThinkingPillState extends State<ThinkingPill> {
   bool _expanded = false;
 
+  /// 正文里是不是有选中的文字(用户正在复制思考内容)。
+  bool _selectionActive = false;
+
+  /// 这一下按下去的时候是不是已经选中了文字:是的话这一下是来清选区的。
+  bool _tapStartedOnSelection = false;
+
   /// 译文与"看译文还是原文":收起再展开也还在。
   final _translation = _TranslationHolder();
 
@@ -100,6 +106,19 @@ class _ThinkingPillState extends State<ThinkingPill> {
   /// 展开区自己也能收回去:长思考读完时人已经在下面了,不必滚回标题行。
   void _collapse() {
     if (_expanded) setState(() => _expanded = false);
+  }
+
+  void _onSelectionChanged(SelectedContent? content) {
+    _selectionActive = content?.plainText.isNotEmpty ?? false;
+  }
+
+  /// 点正文:没选区就收起。
+  ///
+  /// 按下时已有选区 ⇒ 这一下只是把选区清掉(复制流程的收尾),收起交给第二下,
+  /// 免得「选好、复制、点一下」把整段思考连带收走。
+  void _tapBody() {
+    if (_tapStartedOnSelection) return;
+    _collapse();
   }
 
   @override
@@ -187,7 +206,8 @@ class _ThinkingPillState extends State<ThinkingPill> {
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   excludeFromSemantics: true,
-                  onTap: _collapse,
+                  onTapDown: (_) => _tapStartedOnSelection = _selectionActive,
+                  onTap: _tapBody,
                   child: Padding(padding: const EdgeInsets.only(top: 4), child: body),
                 ),
                 const SizedBox(height: 4),
@@ -329,6 +349,7 @@ class _TranslatableReasoningState extends ConsumerState<_TranslatableReasoning> 
       text: showing ? controller.text.trim() : widget.text,
       streaming: widget.active,
       secondary: true,
+      onSelectionChanged: _onSelectionChanged,
     );
     if (controller == null && !offered) return body;
 
