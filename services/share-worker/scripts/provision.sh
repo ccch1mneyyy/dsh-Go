@@ -9,14 +9,31 @@
 #   CF_TOKEN_FILE=<file> scripts/provision.sh check    read-only: what exists, which domain
 #   CF_TOKEN_FILE=<file> scripts/provision.sh apply    create what's missing, deploy, e2e
 #   CF_TOKEN_FILE=<file> scripts/provision.sh deploy   redeploy the code only
+#   … apply|deploy --analytics   with the Analytics Engine datasets (wrangler.jsonc), once
+#                                it's enabled on the account; DSH_ANALYTICS=1 does the same
+#
+# Works from the public tree: the account id and the KV namespace id come from
+# the environment or files outside it (scripts/cloudflare.sh; apply writes the
+# KV id's file), are checked against the account, and only go into a temporary
+# copy of wrangler.jsonc that wrangler deploys with. The tracked file never changes.
 #
 # The token is only ever passed as `$(cat "$CF_TOKEN_FILE")` straight into
 # curl / wrangler: never echoed, stored or put in a URL. Don't add `set -x`.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+die() { echo "provision: $*" >&2; exit 1; }
+mode=${1:-check}
+ANALYTICS=${DSH_ANALYTICS:-0}
+case "${2:-}" in --analytics) ANALYTICS=1 ;; '') ;; *) mode=usage ;; esac
+[[ "$mode" =~ ^(check|apply|deploy)$ ]] || { echo "usage: CF_TOKEN_FILE=<file> $0 check|apply|deploy [--analytics]" >&2; exit 2; }
 : "${CF_TOKEN_FILE:?set CF_TOKEN_FILE to the API token file}"
-[[ -r "$CF_TOKEN_FILE" ]] || { echo "can't read CF_TOKEN_FILE" >&2; exit 1; }
+[[ -r "$CF_TOKEN_FILE" ]] || die "can't read CF_TOKEN_FILE"
+source scripts/cloudflare.sh
+# The placeholders are refused before anything runs; apply may still make the KV namespace.
+real_id "$ACCOUNT" || die "no Cloudflare account id: set CF_ACCOUNT_ID or write it to $ACCOUNT_FILE (wrangler.jsonc has only a placeholder in the public tree)"
+real_id "$KV_ID" || KV_ID=
+[[ -n "$KV_ID" || "$mode" != deploy ]] || die "no KV namespace id: set CF_KV_QUOTA_ID or write it to $KV_ID_FILE (provision.sh apply does)"
 ZONE_NAME=${ZONE_NAME:-dshtui.com}
 WORKER=dshgo-share
 BUCKET=dshgo-share
@@ -32,16 +49,13 @@ cf() { # METHOD PATH [JSON]
 }
 
 ok() { jq -e '.success == true' >/dev/null <<<"$1"; }
-die() { echo "provision: $*" >&2; exit 1; }
-
-wr() { CLOUDFLARE_API_TOKEN="$(cat "$CF_TOKEN_FILE")" CLOUDFLARE_ACCOUNT_ID="$ACCOUNT" WRANGLER_SEND_METRICS=false npx wrangler "$@"; }
 
 # ── Read-only discovery ──────────────────────────────────────────────────
 zone_json=$(cf GET "/zones?name=$ZONE_NAME")
 ok "$zone_json" || die "zone lookup failed: $(jq -c '.errors' <<<"$zone_json")"
 ZONE=$(jq -r '.result[0].id // empty' <<<"$zone_json")
-ACCOUNT=$(jq -r '.result[0].account.id // empty' <<<"$zone_json")
-[[ -n "$ZONE" && -n "$ACCOUNT" ]] || die "zone $ZONE_NAME is not on this account"
+[[ -n "$ZONE" ]] || die "zone $ZONE_NAME is not on this account"
+[[ "$(jq -r '.result[0].account.id' <<<"$zone_json")" == "$ACCOUNT" ]] || die "zone $ZONE_NAME is on another account than $ACCOUNT (CF_ACCOUNT_ID / $ACCOUNT_FILE)"
 echo "zone $ZONE_NAME: $ZONE (account $ACCOUNT)"
 
 scripts=$(cf GET "/accounts/$ACCOUNT/workers/scripts")
@@ -97,10 +111,10 @@ echo "bucket $BUCKET exists: $([[ $BUCKET_EXISTS == 1 ]] && echo yes || echo no)
 
 kv_list=$(cf GET "/accounts/$ACCOUNT/storage/kv/namespaces?per_page=100")
 ok "$kv_list" || die "listing KV namespaces failed"
-KV_ID=$(jq -r --arg t "$KV_TITLE" '[.result[] | select(.title == $t) | .id] | first // empty' <<<"$kv_list")
-echo "kv $KV_TITLE: ${KV_ID:-missing}"
+FOUND_KV=$(jq -r --arg t "$KV_TITLE" '[.result[] | select(.title == $t) | .id] | first // empty' <<<"$kv_list")
+echo "kv $KV_TITLE: ${FOUND_KV:-missing}$([[ -n "$KV_ID" ]] || echo " (no id in CF_KV_QUOTA_ID / $KV_ID_FILE yet)")"
+[[ -z "$KV_ID" || -z "$FOUND_KV" || "$KV_ID" == "$FOUND_KV" ]] || die "$KV_TITLE is $FOUND_KV, not $KV_ID (CF_KV_QUOTA_ID / $KV_ID_FILE)"
 
-mode=${1:-check}
 [[ "$mode" == check ]] && exit 0
 
 # ── Writes: only our own resources ───────────────────────────────────────
@@ -122,11 +136,17 @@ if [[ "$mode" == apply ]]; then
   ok "$res" || die "setting lifecycle failed: $(jq -c '.errors' <<<"$res")"
   echo "lifecycle: 7d/ → 7 days, 30d/ → 30 days"
 
-  if [[ -z "$KV_ID" ]]; then
+  if [[ -z "$FOUND_KV" ]]; then
     res=$(cf POST "/accounts/$ACCOUNT/storage/kv/namespaces" "{\"title\":\"$KV_TITLE\"}")
     ok "$res" || die "creating KV failed: $(jq -c '.errors' <<<"$res")"
-    KV_ID=$(jq -r '.result.id' <<<"$res")
-    echo "created kv $KV_TITLE: $KV_ID"
+    FOUND_KV=$(jq -r '.result.id' <<<"$res")
+    echo "created kv $KV_TITLE: $FOUND_KV"
+  fi
+  if [[ -z "$KV_ID" ]]; then
+    mkdir -p "$(dirname "$KV_ID_FILE")"
+    printf '%s\n' "$FOUND_KV" >"$KV_ID_FILE"
+    KV_ID=$FOUND_KV
+    echo "kv id written to $KV_ID_FILE"
   fi
 
   if [[ ! -s "$ADMIN_FILE" ]]; then
@@ -137,17 +157,10 @@ if [[ "$mode" == apply ]]; then
   fi
 fi
 
-[[ -n "$KV_ID" ]] || die "KV namespace $KV_TITLE is missing: run apply"
-# Writes our KV id and the chosen host into wrangler.jsonc (neither is secret;
-# commit the result so later deploys match).
-node -e '
-  const fs = require("fs");
-  const [, kv, host] = process.argv;
-  let s = fs.readFileSync("wrangler.jsonc", "utf8");
-  s = s.replace(/"id": "[0-9a-f]{32}"/, `"id": "${kv}"`).replace(/"pattern": "[^"]+", "custom_domain": true/, `"pattern": "${host}", "custom_domain": true`);
-  fs.writeFileSync("wrangler.jsonc", s);
-' "$KV_ID" "$HOST"
-
+[[ -n "$FOUND_KV" ]] || die "KV namespace $KV_TITLE is missing: run apply"
+# Our ids and the chosen host, in a copy of wrangler.jsonc next to it.
+wrangler_config "$HOST"
+echo "analytics: $([[ $ANALYTICS == 1 ]] && echo 'on (DOWNLOADS, CHECKS, USAGE)' || echo 'off (--analytics once Analytics Engine is enabled)')"
 wr deploy
 if [[ "$mode" == apply ]]; then
   wr secret put ADMIN_KEY <"$ADMIN_FILE"
