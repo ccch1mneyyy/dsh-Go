@@ -1,5 +1,17 @@
 {
   "patches": {
+    "ohos-virtual-process.diff": {
+      "0.2.1-rc.4": {
+        "node_modules/@deepseek-ai/dsh-tool-fs-search/lib/index.js": {
+          "before": "8d64d2e8a5310b442ae66bc0daf7d6957ec095dbe43cabd9eb208f7370e381ed",
+          "after": "e90195556554b9c646721295c2eadd0a12def94aa9611707a058c05ead4b96eb"
+        },
+        "node_modules/@deepseek-ai/dsh-tool-bash/lib/index.js": {
+          "before": "a1215d7bcaf82c0755be48321ef6bb45075f1cb33296d6263009e9d10fd596f6",
+          "after": "1e5f3f70a1d798682d7ca304c1cc3a001a5f742995960a64eb6549b9c107b3dc"
+        }
+      }
+    },
     "fs-create-exclusive.diff": {
       "0.2.1-rc.2": {
         "node_modules/@deepseek-ai/dsh-fs-local/lib/index.js": {
