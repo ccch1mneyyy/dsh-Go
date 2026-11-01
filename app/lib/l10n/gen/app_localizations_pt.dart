@@ -10,6 +10,56 @@ class L10nPt extends L10n {
   L10nPt([String locale = 'pt']) : super(locale);
 
   @override
+  String get a11yRestoreTitle => 'Restaurar acessibilidade automaticamente';
+
+  @override
+  String get searchKwA11yRestore =>
+      'acessibilidade,restaurar,reconectar,recuperação automática,permissão,ADB,Shizuku,Sui,root';
+
+  @override
+  String get a11yRestoreNeedsGrant => 'Autorização necessária';
+
+  @override
+  String get a11yRestoreNotice =>
+      'Depois de autorizar, a acessibilidade será reativada se for desativada nas configurações do sistema. Para interromper o controle do telefone, desative-o no DSH Go.';
+
+  @override
+  String get a11yRestoreForceStop => 'Depois de forçar a parada, abra o DSH Go novamente para restaurar o serviço.';
+
+  @override
+  String get a11yRestoreGrant => 'Autorizar e ativar';
+
+  @override
+  String get a11yRestoreGrantShizuku => 'Conceder com Shizuku';
+
+  @override
+  String get a11yRestoreGrantShizukuPermission => 'Autorize o Shizuku e depois conceda a permissão';
+
+  @override
+  String get a11yRestoreGrantAdb => 'Conceder com ADB direto';
+
+  @override
+  String get a11yRestoreRootNote => 'Executa pm grant uma vez como root, somente para esta permissão.';
+
+  @override
+  String get a11yRestoreSetup => 'Configure o Shizuku ou a depuração sem fio';
+
+  @override
+  String get a11yRestoreWaiting => 'Autorize a solicitação no Shizuku';
+
+  @override
+  String get a11yRestoreWaitingSui => 'Autorize a solicitação no Sui';
+
+  @override
+  String get a11yRestoreComputer => 'Ou conecte a um computador e execute uma vez:';
+
+  @override
+  String get a11yRestoreCopy => 'Copiar comando';
+
+  @override
+  String get a11yRestoreCopied => 'Comando copiado';
+
+  @override
   String get accessPickTitle => 'Como o DSH Go pode ajudar?';
 
   @override
@@ -3350,6 +3400,18 @@ class L10nPt extends L10n {
   String get catalogAllSettings => 'Todas as configurações';
 
   @override
+  String get diagnosticsForAi => 'Permitir que a IA leia os diagnósticos';
+
+  @override
+  String get diagnosticsForAiHint => 'Salve o instantâneo em um local que o mecanismo possa acessar';
+
+  @override
+  String get diagnosticsForAiDone => 'Salvo — peça à IA para “verificar os diagnósticos”';
+
+  @override
+  String get diagnosticsForAiFailed => 'Não foi salvo: o ambiente de execução local não está instalado';
+
+  @override
   String get chatBackgroundTaskNotice => 'Aviso de tarefa em segundo plano';
 
   @override
@@ -3624,6 +3686,29 @@ class L10nPt extends L10n {
 
   @override
   String get chatExpandTodos => 'Expandir lista';
+
+  @override
+  String chatDockFolded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count barras de status recolhidas',
+      one: '1 barra de status recolhida',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatDockSpread => 'Expandir';
+
+  @override
+  String get chatDockFold => 'Recolher as barras de status';
+
+  @override
+  String get chatDockNext => 'Próximo cartão';
+
+  @override
+  String get chatDockPrevious => 'Cartão anterior';
 
   @override
   String get chatTodoNotStarted => 'Não iniciado';
@@ -5826,6 +5911,10 @@ class L10nPt extends L10n {
   String get engineModelContextLength => 'Comprimento do contexto';
 
   @override
+  String get engineModelContextOverrideHint =>
+      'Deixe vazio para usar o valor do catálogo. Um valor maior é usado pelo mecanismo para calcular a pressão de contexto e a compactação.';
+
+  @override
   String get engineModelMaxOutput => 'Saída máxima';
 
   @override
@@ -7694,6 +7783,27 @@ class L10nPt extends L10n {
   String get hubInterfacePhoneLayout => 'Layout para celular';
 
   @override
+  String get hubTableTint => 'Cor da tabela';
+
+  @override
+  String get hubTableTintFollow => 'Tema';
+
+  @override
+  String get hubTableTintFill => 'Colorida';
+
+  @override
+  String get hubTableTintNone => 'Simples';
+
+  @override
+  String get hubTableTintFillHint => 'Alterne a cor das linhas para facilitar a leitura de tabelas longas';
+
+  @override
+  String get hubTableTintFollowHint => 'Apenas o cabeçalho recebe cor; o corpo segue a resposta';
+
+  @override
+  String get hubTableTintNoneHint => 'Somente linhas de grade, com visual mais leve';
+
+  @override
   String get hubAbout => 'Sobre o DSH Go';
 
   @override
@@ -7740,6 +7850,13 @@ class L10nPt extends L10n {
 
   @override
   String get hubPermissionPhoneConfirm => 'Confirmação do controle do celular';
+
+  @override
+  String get hubHardwareEnterSends => 'Enviar com a tecla Enter física';
+
+  @override
+  String get hubHardwareEnterSendsHint =>
+      'Quando ativado, Shift+Enter insere uma nova linha. O teclado na tela continua inserindo linhas; Ctrl/⌘+Enter sempre envia.';
 
   @override
   String get launchScreenTitle => 'Tela de lançamento';
@@ -7861,6 +7978,89 @@ class L10nPt extends L10n {
   String get searchKwIconShortcut => 'atalho, ícone personalizado, imagem da tela pessoal';
 
   @override
+  String get liveThinking => 'Pensando';
+
+  @override
+  String get liveWorking => 'Trabalhando';
+
+  @override
+  String get liveJuggling => 'Subagentes em ação';
+
+  @override
+  String get liveSweeping => 'Compactando o contexto';
+
+  @override
+  String liveRunsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversas em andamento',
+      one: '1 conversa em andamento',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get liveChipThinking => 'Pensando';
+
+  @override
+  String get liveChipWorking => 'Trabalhando';
+
+  @override
+  String get liveChipJuggling => 'Assistentes';
+
+  @override
+  String get liveChipSweeping => 'Organizando';
+
+  @override
+  String get liveChipApproval => 'Aprovar';
+
+  @override
+  String get liveChipQuestion => 'Responder';
+
+  @override
+  String get liveChipDone => 'Concluído';
+
+  @override
+  String get liveChipFailed => 'Falhou';
+
+  @override
+  String get livePublicRunning => 'O DSH está trabalhando';
+
+  @override
+  String get livePublicWaiting => 'O DSH está aguardando você';
+
+  @override
+  String get livePublicDone => 'O DSH concluiu';
+
+  @override
+  String get livePublicFailed => 'O DSH encontrou um erro';
+
+  @override
+  String get liveSettingsTitle => 'Atividade ao vivo';
+
+  @override
+  String get liveSettingsSwitch => 'Mostrar atividade ao vivo';
+
+  @override
+  String get liveSettingsSubtitle =>
+      'Enquanto o DSH trabalha, aguarda você ou controla o telefone: no chip da barra de status e na tela de bloqueio, e na ilha em celulares compatíveis';
+
+  @override
+  String get liveSettingsFooter =>
+      'Atualizações ao vivo do Android 16. Disponível no Xiaomi HyperOS 3.1+, OPPO / OnePlus ColorOS 16, Honor MagicOS 10 e Pixel. A Atomic Island da vivo e a Now Bar da Samsung são restritas a apps parceiros dos fabricantes.';
+
+  @override
+  String get liveUnsupported => 'O sistema deste celular ainda não oferece atividades ao vivo';
+
+  @override
+  String get liveBlockedTitle => 'As atividades ao vivo estão desativadas para o DSH Go';
+
+  @override
+  String get liveBlockedText =>
+      'Ative as atividades ao vivo do DSH Go nas configurações do sistema (em alguns celulares, a opção se chama “Mostrar nos alertas ao vivo”)';
+
+  @override
   String get localeTitle => 'Idioma';
 
   @override
@@ -7951,6 +8151,174 @@ class L10nPt extends L10n {
 
   @override
   String get localEnvSignInInstallFirst => 'Instale o DSH para entrar';
+
+  @override
+  String get marketSectionOfficial => 'Oficiais';
+
+  @override
+  String get marketSectionAdapted => 'Feitos para o DSH Go';
+
+  @override
+  String get marketSectionAll => 'Todos';
+
+  @override
+  String get marketSectionLoading => 'Carregando…';
+
+  @override
+  String get marketSectionFailed => 'Não foi possível carregar o catálogo oficial';
+
+  @override
+  String get marketSectionEmpty => 'Nenhum por enquanto';
+
+  @override
+  String get marketTierOfficial => 'Oficial';
+
+  @override
+  String get marketTierAdapted => 'Feito para o DSH Go';
+
+  @override
+  String get marketRiskMedium => 'Risco médio';
+
+  @override
+  String get marketRiskHigh => 'Alto risco';
+
+  @override
+  String get marketFlagInstallScripts => 'Executa scripts de instalação';
+
+  @override
+  String get marketFlagInstallScriptsBody =>
+      'Executa os próprios scripts do pacote durante a instalação (preinstall, install ou postinstall)';
+
+  @override
+  String get marketFlagNativeCode => 'Código nativo';
+
+  @override
+  String get marketFlagNativeCodeBody =>
+      'Contém código nativo compilado (.node, binding.gyp ou binários) que não pode ser lido como código-fonte';
+
+  @override
+  String get marketFlagShell => 'Executa comandos';
+
+  @override
+  String get marketFlagShellBody => 'O código executa comandos do sistema (child_process)';
+
+  @override
+  String get marketFlagNetwork => 'Acesso à rede';
+
+  @override
+  String get marketFlagNetworkBody => 'O código faz solicitações de rede (fetch, http, WebSocket)';
+
+  @override
+  String get marketFlagFilesystem => 'Grava fora do espaço de trabalho';
+
+  @override
+  String get marketFlagFilesystemBody => 'Grava em caminhos fora do espaço de trabalho';
+
+  @override
+  String get marketFlagObfuscated => 'Difícil de revisar';
+
+  @override
+  String get marketFlagObfuscatedBody => 'Contém arquivos grandes minificados ou ofuscados, difíceis de entender';
+
+  @override
+  String get marketFlagNotAdapted => 'Não foi feito para o DSH Go';
+
+  @override
+  String get marketFlagNotAdaptedBody =>
+      'Não declara suporte ao protocolo nativo do DSH Go e, por isso, não tem telas nativas no app';
+
+  @override
+  String get marketFlagOtherBody => 'Outro aspecto identificado pelas verificações automáticas';
+
+  @override
+  String get marketChecksTitle => 'Verificações automáticas';
+
+  @override
+  String get marketChecksClean => 'Nenhum risco identificado';
+
+  @override
+  String get marketChecksNote =>
+      'As verificações automáticas encontraram estes aspectos; isso não significa que o plug-in seja malicioso';
+
+  @override
+  String marketCheckedOn(String date) {
+    return 'Verificado em $date';
+  }
+
+  @override
+  String marketScreenshot(int index) {
+    return 'Captura de tela $index';
+  }
+
+  @override
+  String marketRiskConfirmTitle(String name) {
+    return '$name apresenta riscos';
+  }
+
+  @override
+  String get marketRiskConfirmAction => 'Instalar mesmo assim';
+
+  @override
+  String get marketPinnedVersion => 'Versão fixada';
+
+  @override
+  String get marketRequiresApp => 'Requer o DSH Go';
+
+  @override
+  String marketNeedsApp(String version) {
+    return 'Requer o DSH Go $version ou posterior';
+  }
+
+  @override
+  String get marketUpdateAvailable => 'Atualização disponível';
+
+  @override
+  String get marketBlockedTitle => 'Esta versão foi retirada';
+
+  @override
+  String marketBlockedMessage(String version) {
+    return 'A versão $version instalada foi retirada do mercado de plug-ins. Recomendamos desinstalá-la.';
+  }
+
+  @override
+  String get marketBlockedRow => 'Versão retirada: recomendamos desinstalar';
+
+  @override
+  String get marketBlockedBadge => 'Retirada';
+
+  @override
+  String get marketVerifying => 'Verificando a versão…';
+
+  @override
+  String get marketMismatchTitle => 'Falha ao verificar a versão';
+
+  @override
+  String marketMismatchMessage(String version) {
+    return 'A versão $version no npm não corresponde ao pacote verificado pelo mercado de plug-ins. Nada foi instalado.';
+  }
+
+  @override
+  String get marketSubmit => 'Enviar um plug-in';
+
+  @override
+  String get marketSubmitHint => 'No GitHub; será listado após a aprovação nas verificações automáticas';
+
+  @override
+  String marketLinkNotFound(String name) {
+    return '$name não está no mercado de plug-ins';
+  }
+
+  @override
+  String get marketVerificationUnavailableTitle => 'Não foi possível verificar a versão';
+
+  @override
+  String get marketVerificationUnavailableBody =>
+      'O npm não retornou informações de integridade. A instalação não foi iniciada. Verifique sua conexão e tente novamente.';
+
+  @override
+  String marketCombinedCount(int count) {
+    return '$count plug-ins';
+  }
 
   @override
   String get mediaGenerateTile => 'Criar';
@@ -8225,6 +8593,206 @@ class L10nPt extends L10n {
       'geração de imagens, texto para imagem, geração de vídeos,IA arte, gerar imagens, gerar vídeo';
 
   @override
+  String get mediaSettingsDefaults => 'Padrões';
+
+  @override
+  String get mediaSettingsLegacyDefault => 'Padrão geral antigo';
+
+  @override
+  String get mediaSettingsLegacyDefaultHint =>
+      'A configuração da versão 0.2.x; usada quando um tipo não tem um padrão próprio';
+
+  @override
+  String get mediaSettingsLegacyDefaultStale => 'O serviço está indisponível; remova-o para evitar falhas na geração';
+
+  @override
+  String get mediaSettingsLegacyDefaultClear => 'Remover o padrão geral antigo';
+
+  @override
+  String get mediaSettingsDefaultModel => 'Modelo padrão';
+
+  @override
+  String get mediaSettingsDefaultFooterLegacy =>
+      'Um plug-in antigo tem um único modelo padrão; atualize-o para configurar imagens e vídeos separadamente.';
+
+  @override
+  String get mediaSettingsDefaultsFooter =>
+      'Escolha um modelo padrão para imagens e outro para vídeos; deixe em Automático para usar o primeiro disponível.';
+
+  @override
+  String get mediaSettingsNoVideoModels => 'O catálogo deste host ainda não tem modelos de vídeo';
+
+  @override
+  String get mediaSettingsServices => 'Serviços';
+
+  @override
+  String get mediaSettingsAddService => 'Adicionar serviço';
+
+  @override
+  String get mediaSettingsAddServiceHint =>
+      'Comece com uma predefinição de provedor; o endpoint, o protocolo e os modelos serão preenchidos';
+
+  @override
+  String mediaSettingsServiceLimit(int count) {
+    return 'Até $count serviços';
+  }
+
+  @override
+  String get mediaSettingsNoServices =>
+      'Ainda não há serviços. Adicione um provedor para começar a gerar imagens ou vídeos.';
+
+  @override
+  String get mediaSettingsNoModels => 'Nenhum modelo selecionado';
+
+  @override
+  String get mediaSettingsKeyMissing => 'Chave de API ausente';
+
+  @override
+  String get mediaSettingsCatalogMissing =>
+      'O plug-in deste host não oferece um catálogo de modelos. Você ainda pode editar os serviços existentes, mas não pode adicionar modelos nem escolher um padrão.';
+
+  @override
+  String get mediaSettingsCatalogBroken =>
+      'Não foi possível ler o catálogo de modelos (talvez seja incompatível). Você ainda pode editar os serviços existentes, mas não pode adicionar modelos nem escolher um padrão.';
+
+  @override
+  String get mediaSettingsCatalogEmpty =>
+      'O catálogo de modelos ainda está vazio. Você ainda pode editar os serviços existentes, mas não pode adicionar modelos nem escolher um padrão.';
+
+  @override
+  String get mediaSettingsNoPresets => 'Ainda não há serviços disponíveis para adicionar deste catálogo.';
+
+  @override
+  String get mediaSettingsLimits => 'Limites das solicitações';
+
+  @override
+  String get mediaSettingsLimitsHint =>
+      'Limita imagens e bytes por solicitação; os padrões são os limites máximos do plug-in';
+
+  @override
+  String get mediaSettingsMaxImages => 'Imagens por solicitação';
+
+  @override
+  String get mediaSettingsMaxImageBytes => 'Tamanho máximo de cada original';
+
+  @override
+  String get mediaSettingsMaxResponseBytes => 'Tamanho máximo da resposta do provedor';
+
+  @override
+  String get mediaSettingsMaxTotalImageBytes => 'Tamanho total máximo das imagens por solicitação';
+
+  @override
+  String get mediaSettingsMaxVideoBytes => 'Tamanho máximo do vídeo';
+
+  @override
+  String get mediaSettingsBudget => 'Proteção de custos';
+
+  @override
+  String get mediaSettingsDailyBudget => 'Limite diário (CNY)';
+
+  @override
+  String get mediaSettingsDailyBudgetHint =>
+      'Reinicia na data de Xangai; a geração é pausada quando o limite é atingido';
+
+  @override
+  String get mediaSettingsUnknownPriceHold => 'Reserva por solicitação quando o preço é desconhecido (CNY)';
+
+  @override
+  String get mediaSettingsUnknownPriceHoldHint =>
+      'Valor reservado por solicitação; não é um limite de cobrança do provedor';
+
+  @override
+  String get mediaSettingsApiKey => 'Chave de API';
+
+  @override
+  String get mediaSettingsReuseKey => 'Reutilizar chave';
+
+  @override
+  String get mediaSettingsReuseKeyHint =>
+      'Imagens e vídeos do mesmo provedor podem compartilhar uma chave de API; não é necessário digitá-la novamente.';
+
+  @override
+  String get mediaSettingsReuseKeyNone => 'Ainda não há outro serviço deste provedor.';
+
+  @override
+  String get mediaSettingsReuseKeyShared => 'Compartilhada';
+
+  @override
+  String get mediaSettingsModels => 'Modelos';
+
+  @override
+  String get mediaSettingsModelsEmpty => 'O catálogo não tem modelos para este protocolo';
+
+  @override
+  String get mediaSettingsModelKeepOne => 'Mantenha pelo menos um modelo';
+
+  @override
+  String get mediaSettingsModelMissing => 'Não está no catálogo';
+
+  @override
+  String get mediaSettingsAdvanced => 'Avançado';
+
+  @override
+  String get mediaSettingsBaseUrl => 'URL base da API';
+
+  @override
+  String get mediaSettingsBaseUrlInvalid => 'O endereço deve começar com https://';
+
+  @override
+  String get mediaSettingsProvider => 'ID do provedor';
+
+  @override
+  String get mediaSettingsKeyRef => 'Nome da credencial';
+
+  @override
+  String get mediaSettingsKeyRefInvalid => 'Use apenas letras, números e sublinhados';
+
+  @override
+  String get mediaSettingsResponseFormat => 'Formato da resposta';
+
+  @override
+  String get mediaSettingsResponseFormatAuto => 'De acordo com o protocolo';
+
+  @override
+  String get mediaSettingsServiceId => 'ID do serviço';
+
+  @override
+  String get mediaSettingsServiceGone => 'Este serviço não existe mais';
+
+  @override
+  String get mediaSettingsServiceGoneBody => 'Ele pode ter sido removido em outro lugar. Volte e adicione-o novamente.';
+
+  @override
+  String get mediaSettingsDelete => 'Excluir serviço';
+
+  @override
+  String mediaSettingsDeleteTitle(String name) {
+    return 'Excluir “$name”?';
+  }
+
+  @override
+  String get mediaSettingsDeleteBody =>
+      'Somente o serviço deste host será removido; a chave de API será mantida. Os padrões que apontam para ele também serão removidos.';
+
+  @override
+  String get mediaSettingsNoImageModels => 'O catálogo ainda não tem modelos de imagem';
+
+  @override
+  String get mediaSettingsNoAvailableService => 'Nenhum serviço está pronto; adicione um e informe sua chave.';
+
+  @override
+  String get mediaSettingsNoImageService => 'Nenhum serviço de imagem está pronto; adicione um e informe sua chave.';
+
+  @override
+  String get mediaSettingsNoVideoService => 'Nenhum serviço de vídeo está pronto; adicione um e informe sua chave.';
+
+  @override
+  String get mediaSettingsKeyExternal => 'Gerenciada por outra configuração; apenas referenciada aqui';
+
+  @override
+  String get mediaSettingsEnabledHint => 'Desativa este serviço para geração';
+
+  @override
   String get nearbyThisChat => 'Esta conversa';
 
   @override
@@ -8293,6 +8861,49 @@ class L10nPt extends L10n {
 
   @override
   String get performanceRemoteHint => 'Conecte-se a um computador ou servidor para reduzir o trabalho neste celular';
+
+  @override
+  String get performanceRefresh => 'Taxa de atualização';
+
+  @override
+  String get performanceRefreshMax => 'Máxima';
+
+  @override
+  String get performanceRefreshSystem => 'Sistema';
+
+  @override
+  String get performanceRefreshHint =>
+      'Automático: usa a taxa mais alta durante a animação e devolve o controle quando a tela fica parada; Sistema: deixa a decisão para o sistema.';
+
+  @override
+  String get searchKwRefreshRate => 'taxa de atualização alta 120Hz 90Hz fluidez';
+
+  @override
+  String get petActionSending => 'Enviando…';
+
+  @override
+  String get petActionTargetChanged => 'O host mudou. Abra o pedido rápido novamente; seu texto foi mantido.';
+
+  @override
+  String get petActionSendFailed => 'Não foi possível enviar. Seu texto foi mantido; tente novamente.';
+
+  @override
+  String get petActionBusy => 'Esta conversa está ocupada. Escolha Nova conversa.';
+
+  @override
+  String get petActionVoiceMissing => 'Baixe primeiro o modelo de voz offline no app.';
+
+  @override
+  String get petActionVoiceTitle => 'Voz para pedido rápido';
+
+  @override
+  String get petActionVoiceReturn => 'Voltar ao mascote';
+
+  @override
+  String get petActionVoiceStop => 'Concluir gravação';
+
+  @override
+  String get petActionVoiceStart => 'Gravar';
 
   @override
   String get phoneDiagnosticsCollecting => 'A recolher...';
@@ -8630,13 +9241,7 @@ class L10nPt extends L10n {
   String get phoneDndHiddenScreen => 'Funciona em uma tela escondida';
 
   @override
-  String get phoneDndShizukuReady => 'Shizuku · Pronto';
-
-  @override
   String get phoneNotReadyYet => 'Ainda não está pronto.';
-
-  @override
-  String get phoneDndAdbReady => 'ADB direto · Pronto';
 
   @override
   String get phoneActionFailedLater => 'Não foi possível completar. Tente novamente mais tarde.';
@@ -8676,19 +9281,89 @@ class L10nPt extends L10n {
   String get phoneDndKeepDebugging => 'Fique no Wi-Fi com opções de desenvolvedor e depuração sem fio.';
 
   @override
-  String get phoneDndUsingShizuku => 'Usando Shizuku';
-
-  @override
-  String get phoneDndUsingAdb => 'Usar o ADB Directo';
-
-  @override
   String get phoneReady => 'Pronto';
 
   @override
-  String get phoneDndUseShizuku => 'Usar Shizuku';
+  String get phoneDndDirectAdb => 'ADB direto';
 
   @override
-  String get phoneDndDirectAdb => 'ADB direto';
+  String get phoneDndChannels => 'Canal';
+
+  @override
+  String get phoneDndShizukuFor => 'Celulares com o app Shizuku';
+
+  @override
+  String get phoneDndSuiFor => 'Módulo Sui no Magisk ou KernelSU';
+
+  @override
+  String get phoneDndRootFor => 'Celulares com root';
+
+  @override
+  String get phoneDndAdbFor => 'Sem app extra; usa a depuração sem fio';
+
+  @override
+  String get phoneDndStateInUse => 'Em uso';
+
+  @override
+  String get phoneDndStateNotReady => 'Não está pronto';
+
+  @override
+  String get phoneDndStateUsable => 'Pronto';
+
+  @override
+  String get phoneDndStateNeedsGrant => 'Permissão necessária';
+
+  @override
+  String get phoneDndStateNotRunning => 'Não está em execução';
+
+  @override
+  String get phoneDndStateNotInstalled => 'Não instalado';
+
+  @override
+  String get phoneDndStateNotFound => 'Não encontrado';
+
+  @override
+  String get phoneDndStateViaSui => 'Via Sui';
+
+  @override
+  String get phoneDndStateWaiting => 'Aguardando';
+
+  @override
+  String get phoneDndStateDisconnected => 'Desconectado';
+
+  @override
+  String get phoneDndStateNotPaired => 'Não pareado';
+
+  @override
+  String get phoneDndShizukuViaSui => 'Neste celular, a interface do Shizuku é fornecida pelo Sui. Use o Sui.';
+
+  @override
+  String get phoneDndSuiMissing =>
+      'O Sui não foi encontrado. Instale o módulo Sui no Magisk ou KernelSU, reinicie o celular e tente novamente.';
+
+  @override
+  String get phoneDndSuiRunning => 'Interface do Sui disponível';
+
+  @override
+  String get phoneDndSuiStopped =>
+      'A interface do Sui não está disponível. Confira se o módulo está ativado, reinicie o celular e tente novamente.';
+
+  @override
+  String get phoneDndSuiAllSet => 'O Sui está pronto.';
+
+  @override
+  String get phoneDndSuiPermissionFailed =>
+      'Não foi possível solicitar permissão ao Sui. Confira se o módulo está ativado e tente novamente.';
+
+  @override
+  String get phoneDndRootWaiting => 'Aguardando root. Responda à solicitação do gerenciador root.';
+
+  @override
+  String get phoneDndRootConnected =>
+      'Root conectado. Se a conexão cair, escolha esta opção novamente: o DSH Go nunca solicita root por conta própria.';
+
+  @override
+  String get phoneDndRootRetry => 'Solicitar root novamente';
 
   @override
   String get phoneDndInstallShizuku =>
@@ -8733,9 +9408,6 @@ class L10nPt extends L10n {
   String get phoneDndConnected => 'Ligado';
 
   @override
-  String get phoneDndPairOnce => 'Par uma vez (sem aplicativo extra)';
-
-  @override
   String get phoneDndDeveloperOptionsStep =>
       'Ativar as opções do Desenvolvedor: toque em “Compilar número” 7 vezes em “Sobre telefone”. Em Xiaomi, toque em “versão OS” em “Meu dispositivo → Informações detalhadas e especificações”; on vivo, toque em “Versão de software”.';
 
@@ -8773,9 +9445,6 @@ class L10nPt extends L10n {
   @override
   String get phoneDndXiaomiUsbHint =>
       'Ligar “Depuração USB (Configurações de segurança)” requer um cartão SIM e uma conta Xiaomi.';
-
-  @override
-  String get phoneDndEnable => 'Ativar o modo não- disruptivo';
 
   @override
   String get phoneDndEnterCodeTitle => 'Digite o código de pareamento';
@@ -9424,18 +10093,47 @@ class L10nPt extends L10n {
   }
 
   @override
-  String phoneDndShizukuStatus(String reason) {
-    return 'Shizuku · $reason';
-  }
-
-  @override
-  String phoneDndAdbStatus(String reason) {
-    return 'ADB direto · $reason';
-  }
-
-  @override
   String phoneDndBrowserFailed(String url) {
     return 'Não é possível abrir o navegador. URL: $url';
+  }
+
+  @override
+  String phoneDndChannelReady(String channel) {
+    return '$channel · Pronto';
+  }
+
+  @override
+  String phoneDndChannelStatus(String channel, String reason) {
+    return '$channel · $reason';
+  }
+
+  @override
+  String phoneDndUsing(String channel) {
+    return 'Usando $channel';
+  }
+
+  @override
+  String phoneDndEnableWith(String mode) {
+    String _temp0 = intl.Intl.selectLogic(mode, {
+      'shizuku': 'Ativar com Shizuku',
+      'sui': 'Ativar com Sui',
+      'root': 'Ativar com root',
+      'adb': 'Ativar com ADB direto',
+      'other': 'Ativar',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String phoneDndSwitchTo(String mode) {
+    String _temp0 = intl.Intl.selectLogic(mode, {
+      'shizuku': 'Mudar para Shizuku',
+      'sui': 'Mudar para Sui',
+      'root': 'Mudar para root',
+      'adb': 'Mudar para ADB direto',
+      'other': 'Mudar para este canal',
+    });
+    return '$_temp0';
   }
 
   @override
@@ -9678,6 +10376,16 @@ class L10nPt extends L10n {
   }
 
   @override
+  String get phoneDndManualConnect => 'Conectar pela porta';
+
+  @override
+  String get phoneDndConnectPortLabel => 'Porta de conexão';
+
+  @override
+  String get phoneDndConnectPortHint =>
+      'Na página principal das configurações de depuração sem fio, localize “Endereço IP e porta” e informe a porta após os dois-pontos. Não use a porta da tela do código de pareamento.';
+
+  @override
   String get phoneTaskResultReady => 'Tarefa concluída · Ver o resultado';
 
   @override
@@ -9709,6 +10417,49 @@ class L10nPt extends L10n {
 
   @override
   String get phoneBackgroundNotificationBlocked => 'Permitir alertas pop-up para notificações de controle de telefone';
+
+  @override
+  String get phonePrivilegedUpgrade =>
+      'Esta versão do app não oferece suporte a esse canal privilegiado. Atualize o DSH Go para usá-lo.';
+
+  @override
+  String get phonePrivilegedSui => 'Sui';
+
+  @override
+  String get phonePrivilegedRoot => 'Root';
+
+  @override
+  String get phonePrivilegedSuiDescription =>
+      'Usa a interface do módulo Sui. A autorização só será solicitada quando você tocar.';
+
+  @override
+  String get phonePrivilegedRootDescription =>
+      'Para Magisk, KernelSU ou APatch. O primeiro comando root só será executado depois que você escolher este canal.';
+
+  @override
+  String get phonePrivilegedRootPrepare => 'Autorizar root';
+
+  @override
+  String get phonePrivilegedRootUnchecked => 'Não verificado';
+
+  @override
+  String get phonePrivilegedGrantRoot => 'Conceder com root';
+
+  @override
+  String get phonePrivilegedGrantSui => 'Conceder com Sui';
+
+  @override
+  String get phonePrivilegedGrantSuiPermission => 'Autorize o Sui e depois conceda a permissão';
+
+  @override
+  String get phonePrivilegedSuggested => 'Recomendado';
+
+  @override
+  String get phonePrivilegedRootRiskTitle => 'Conceder acesso root ao DSH Go?';
+
+  @override
+  String get phonePrivilegedRootRiskBody =>
+      'Seu gerenciador root (Magisk, KernelSU ou APatch) solicitará autorização. Se você permitir, o DSH Go executará seu próprio serviço em segundo plano como root e não solicitará novamente por conta própria após uma desconexão.';
 
   @override
   String get phoneModeTitle => 'Como o DSH confirma as ações';
@@ -12772,6 +13523,20 @@ class L10nPt extends L10n {
   String get remoteConnectedEncrypted => 'Conectado · Criptografado de ponta a ponta';
 
   @override
+  String remoteConnectedVia(String path) {
+    return 'Conectado · $path · Criptografia de ponta a ponta';
+  }
+
+  @override
+  String get remotePathDirect => 'Direta';
+
+  @override
+  String get remotePathTurn => 'TURN';
+
+  @override
+  String get remotePathRelay => 'Retransmissão';
+
+  @override
   String remoteConnectedSsh(String address) {
     return 'Conectado · SSH $address';
   }
@@ -13336,6 +14101,93 @@ class L10nPt extends L10n {
   }
 
   @override
+  String get remotePathLan => 'LAN';
+
+  @override
+  String get remotePathP2p => 'P2P';
+
+  @override
+  String get remoteNetworkDetails => 'Detalhes da rede';
+
+  @override
+  String get remoteNetworkAutomatic =>
+      'Tenta automaticamente LAN → P2P → TURN → retransmissão, sempre com criptografia de ponta a ponta.';
+
+  @override
+  String get remoteNetworkCurrentPath => 'Rota atual';
+
+  @override
+  String get remoteNetworkConnectDuration => 'Tempo de conexão';
+
+  @override
+  String get remoteNetworkRoundTripTime => 'Tempo de ida e volta (RTT)';
+
+  @override
+  String get remoteNetworkUnmeasured => 'Não medido';
+
+  @override
+  String get remoteNetworkUnknownPath => 'Não confirmado';
+
+  @override
+  String remoteNetworkMilliseconds(int value) {
+    return '$value ms';
+  }
+
+  @override
+  String get remoteNetworkMeasure => 'Atualizar rede / medir latência';
+
+  @override
+  String get remoteNetworkMeasuring => 'Medindo…';
+
+  @override
+  String get remoteNetworkMeasureFailed => 'Não foi possível medir a latência. Tente novamente mais tarde.';
+
+  @override
+  String get remoteNetworkDisconnected => 'Desconectado. Reconecte para medir a latência.';
+
+  @override
+  String get remoteNetworkFallback => 'Motivo da rota alternativa';
+
+  @override
+  String get remoteNetworkFallbackUnknown =>
+      'Uma conexão direta não estava disponível; outra rota disponível foi escolhida automaticamente.';
+
+  @override
+  String get remoteNetworkFallbackWebrtcUnavailable =>
+      'WebRTC não está disponível neste dispositivo; usando retransmissão.';
+
+  @override
+  String get remoteNetworkFallbackDirectFailed =>
+      'Não foi possível conectar por LAN / P2P; tentando a próxima rota disponível.';
+
+  @override
+  String get remoteNetworkFallbackDirectTimeout =>
+      'A conexão por LAN / P2P expirou; tentando a próxima rota disponível.';
+
+  @override
+  String get remoteNetworkFallbackDirectRecentlyFailed =>
+      'Uma tentativa direta recente falhou; usando uma retransmissão disponível nesta conexão.';
+
+  @override
+  String get remoteNetworkFallbackTurnUnavailable => 'TURN não está disponível; usando retransmissão.';
+
+  @override
+  String get remoteNetworkFallbackTurnFailed => 'Não foi possível conectar por TURN; usando retransmissão.';
+
+  @override
+  String get remoteNetworkFallbackTurnTimeout => 'A conexão por TURN expirou; usando retransmissão.';
+
+  @override
+  String get remoteNetworkFallbackPathUnverified => 'O tipo da rota WebRTC ainda não foi confirmado.';
+
+  @override
+  String get remoteNetworkSnapshotHint =>
+      'Mostra a última rota e latência confirmadas. Atualize para verificar novamente.';
+
+  @override
+  String get remoteNetworkObservedAt => 'Verificado pela última vez';
+
+  @override
   String get riskDontShowAgain => 'Não mostrar novamente';
 
   @override
@@ -13567,6 +14419,9 @@ class L10nPt extends L10n {
   String get searchKwTextSize => 'fonte, tamanho, tamanho do texto, texto maior';
 
   @override
+  String get searchKwTableTint => 'tabela,cor,cabeçalho,faixas,linha,fundo';
+
+  @override
   String get searchKwFoldTurns => 'colapso, dobra, passos';
 
   @override
@@ -13646,6 +14501,10 @@ class L10nPt extends L10n {
 
   @override
   String get searchKwNotifyQuestion => 'Pergunta, pergunta-te';
+
+  @override
+  String get searchKwNotifyLive =>
+      'ilha dinâmica,atualização ao vivo,atividade ao vivo,chip da barra de status,now bar,alertas ao vivo,tela de bloqueio';
 
   @override
   String get searchKwNotifySystem => 'som, banner, tela de bloqueio, sistema';
@@ -13767,6 +14626,109 @@ class L10nPt extends L10n {
   @override
   String get searchKwUsageStats =>
       'estatísticas, estatísticas, dados de uso, análises, telemetria, anonymous,privacy,data';
+
+  @override
+  String get shellDeletePermanently => 'Excluir permanentemente';
+
+  @override
+  String get shellDeleteNoUndo => 'Esta ação não pode ser desfeita e não é um arquivamento';
+
+  @override
+  String get shellDeleteChecking => 'Verificando se este host permite exclusão permanente…';
+
+  @override
+  String get shellDeleteUnsupported =>
+      'Este host não oferece suporte à exclusão permanente segura. Ainda é possível arquivar.';
+
+  @override
+  String get shellDeleteUnavailable =>
+      'A exclusão permanente segura está indisponível. Reconecte ou atualize este host; nada foi arquivado no lugar.';
+
+  @override
+  String shellDeleteChatConfirmation(String title) {
+    return 'Excluir permanentemente “$title”?';
+  }
+
+  @override
+  String shellDeleteChatsConfirmation(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Excluir $count conversas permanentemente?',
+      one: 'Excluir 1 conversa permanentemente?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shellDeleteWarning =>
+      'O histórico selecionado será excluído permanentemente deste host. Esta ação não pode ser desfeita e não é um arquivamento.\n\nPastas de trabalho, arquivos gerados, conversas derivadas, anexos compartilhados e compartilhamentos publicados na nuvem serão mantidos. Compartilhamentos na nuvem devem ser removidos separadamente. O host pode recusar a exclusão de conversas com tarefas ativas ou relacionadas.';
+
+  @override
+  String get shellDeleteOwnerChanged =>
+      'O host ou a conexão mudou. Cancele e inicie a exclusão novamente; a confirmação anterior não é mais válida.';
+
+  @override
+  String get shellDeletingChats => 'Excluindo conversas…';
+
+  @override
+  String shellChatsDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversas excluídas permanentemente',
+      one: '1 conversa excluída permanentemente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shellDeletePartial(int deleted, int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      deleted,
+      locale: localeName,
+      other: '$deleted conversas excluídas',
+      one: '1 conversa excluída',
+    );
+    String _temp1 = intl.Intl.pluralLogic(failed, locale: localeName, other: '$failed falhas', one: '1 falha');
+    return '$_temp0; $_temp1';
+  }
+
+  @override
+  String get shellDeleteRunning =>
+      'Interrompa o trabalho em andamento antes de excluir. O host também verifica tarefas e agendamentos ativos.';
+
+  @override
+  String get shellDeleteRelated =>
+      'Esta conversa tem trabalho relacionado de subagentes. O host recusou a exclusão para protegê-lo.';
+
+  @override
+  String get shellDeleteWriterHeld =>
+      'Outro processo está usando esta conversa. Feche-a nesse processo e tente novamente.';
+
+  @override
+  String get shellDeleteNotFound => 'Esta conversa não existe mais neste host. Atualize a lista.';
+
+  @override
+  String get shellDeleteConnectionLost =>
+      'A conexão caiu e não foi possível confirmar o resultado da exclusão. Atualize a lista de conversas antes de continuar.';
+
+  @override
+  String get shellDeleteArchivePending => 'Há um arquivamento pendente. Conclua-o ou desfaça-o antes de excluir.';
+
+  @override
+  String get shellDeleteInventoryChanged => 'A lista de conversas mudou. Atualize e selecione as conversas novamente.';
+
+  @override
+  String get shellDeleteProtocolError =>
+      'Não foi possível confirmar o resultado da exclusão. Atualize a lista de conversas antes de continuar.';
+
+  @override
+  String get shellDeleteNotAttempted =>
+      'A exclusão não foi iniciada. Confira a lista de conversas antes de tentar novamente.';
+
+  @override
+  String get shellDeleteFailed => 'O host não confirmou a exclusão. Atualize a lista antes de tentar novamente.';
 
   @override
   String get setupAppearanceTitle => 'Escolha a aparência';
@@ -16188,6 +17150,13 @@ class L10nPt extends L10n {
   String get updateInstallCancelledMessage => 'O pacote está salvo. Você pode instalá-lo a qualquer momento.';
 
   @override
+  String get updateInstallUnconfirmed => 'Resultado da instalação não confirmado';
+
+  @override
+  String get updateInstallUnconfirmedMessage =>
+      'O pacote foi salvo. Confira os avisos do sistema e tente novamente ou abra-o pelo instalador do sistema.';
+
+  @override
   String get updateSignatureMismatch => 'As assinaturas do aplicativo não correspondem';
 
   @override
@@ -16306,6 +17275,12 @@ class L10nPt extends L10n {
 
   @override
   String get updateSkipVersion => 'Ignorar esta versão';
+
+  @override
+  String get updateInstallWithSystem => 'Instalar pelo instalador do sistema';
+
+  @override
+  String get updateSystemInstallerFailed => 'Não foi possível abrir o instalador do sistema';
 
   @override
   String get updateStarProject => 'Estrelar';
@@ -16496,6 +17471,12 @@ class L10nPt extends L10n {
 
   @override
   String get viewBalanceNoAlert => 'Desligado';
+
+  @override
+  String get viewBalanceBannerHidden => 'Alerta de saldo oculto até o DSH Go reiniciar';
+
+  @override
+  String get viewBalanceTurnOff => 'Desativar';
 
   @override
   String viewBalanceBelow(String value) {
@@ -16936,6 +17917,19 @@ class L10nPt extends L10n {
   @override
   String viewUiReplyCancel(String value) {
     return 'Cancelar: $value';
+  }
+
+  @override
+  String viewUiReplyOther(String value) {
+    return 'Outro: $value';
+  }
+
+  @override
+  String get viewUiFreeTextHint => 'Outro (digite sua resposta)';
+
+  @override
+  String viewUiChosenOther(String value) {
+    return 'Texto inserido: $value';
   }
 
   @override

@@ -1,6 +1,8 @@
 import type { RateLimiter } from './limits';
 
 export interface Env {
+  /** HTTPS publication root; defaults to dsh-go-market GitHub Pages. */
+  MARKET_SOURCE_URL?: string;
   /** Static files: the viewer (`/c.html`) and the landing page (`/share/`). */
   ASSETS: { fetch(request: Request): Promise<Response> };
   /** Ciphertexts, under the tier prefixes of ids.ts. */
@@ -21,11 +23,13 @@ export interface Env {
   /** "public": /download serves the latest build to anyone and /beta
    *  redirects there. Anything else (default "key"): an access key on /beta. */
   DOWNLOAD_ACCESS?: string;
-  /** Public /download goes here instead of showing the page (e.g. GitHub Releases). */
-  DOWNLOAD_REDIRECT?: string;
   /** Base URL of the Hong Kong bucket (the China route): files are at
    *  `<base><version>/<file>`. Empty or not https: the route isn't offered. */
   CN_BASE_URL?: string;
+  /** Base URL of the public download bucket (dshgo-dl): files at
+   *  `<base>download/<version>/<file>`, the Global route's once a release is
+   *  there. Empty or not https: Global stays on /download/<version>/<file>. */
+  DL_BASE_URL?: string;
   /** Workers Analytics Engine datasets (src/stats.ts, src/usage.ts). */
   DOWNLOADS?: AnalyticsEngineDataset;
   CHECKS?: AnalyticsEngineDataset;

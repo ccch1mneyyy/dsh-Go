@@ -337,5 +337,10 @@
   "viewUiDialectKindMap": "Mapa",
   "viewUiDialectKindOther": "Esta parte",
   "viewUiDialectInvalid": "Este bloco aparece na Web DSH",
-  "viewUiDialectNote": "Mostrado na Web DSH"
+  "viewUiDialectNote": "Mostrado na Web DSH",
+  "viewBalanceBannerHidden": "Alerta de saldo oculto até o DSH Go reiniciar",
+  "viewBalanceTurnOff": "Desativar",
+  "viewUiReplyOther": "Outro: {value}",
+  "viewUiFreeTextHint": "Outro (digite sua resposta)",
+  "viewUiChosenOther": "Texto inserido: {value}"
 }

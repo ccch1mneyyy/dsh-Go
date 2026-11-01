@@ -104,5 +104,7 @@
   "searchKwWebCollapse": "etapas de trabalho, colapso, web",
   "searchKwWebBusySend": "enviar, fila, enquanto IA funciona",
   "searchKwPluginsMarket": "mercado de plugins, plugins de instalação, marketplace",
-  "searchKwUsageStats": "estatísticas, estatísticas, dados de uso, análises, telemetria, anonymous,privacy,data"
+  "searchKwUsageStats": "estatísticas, estatísticas, dados de uso, análises, telemetria, anonymous,privacy,data",
+  "searchKwTableTint": "tabela,cor,cabeçalho,faixas,linha,fundo",
+  "searchKwNotifyLive": "ilha dinâmica,atualização ao vivo,atividade ao vivo,chip da barra de status,now bar,alertas ao vivo,tela de bloqueio"
 }

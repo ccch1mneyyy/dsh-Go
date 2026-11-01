@@ -15,24 +15,25 @@ import '../common/sheet_title_bar.dart';
 import '../theme/theme.dart';
 import 'balance_widgets.dart';
 
-/// `8,421` / `1.2 万` / `100 万` / `1.5 亿`。
+/// `999` / `1K` / `43K` / `500K` / `1.05M` / `100M`: K is a thousand and M a
+/// million in every UI language (no 万/亿), the same units model context
+/// windows are quoted in.
 String formatTokens(int n) {
   final locale = AppLocale.current.toString();
-  String trim(double v) {
-    final formatter = NumberFormat.decimalPattern(locale)..maximumFractionDigits = v >= 100 ? 0 : 1;
-    return formatter.format(v);
-  }
-
-  if (n < 10000) {
+  final sign = n < 0 ? '-' : '';
+  final value = n.abs();
+  if (value < 1000) {
     return NumberFormat.decimalPattern(locale).format(n);
   }
-  if (AppLocale.usesWesternConventions) {
-    return n < 1000000
-        ? appL10n.activityTokensTenThousands(trim(n / 1000))
-        : appL10n.activityTokensHundredMillions(trim(n / 1000000));
+  if (value < 1000000) {
+    final k = value / 1000;
+    // 43K and 500K stay whole; below 100 one decimal reads better (8.4K).
+    final text = (NumberFormat.decimalPattern(locale)..maximumFractionDigits = k >= 100 ? 0 : 1).format(k);
+    // 999,900…999,999 would round up to 1000K: show the carry as M instead.
+    if (k.round() < 1000) return '$sign${text}K';
   }
-  if (n < 100000000) return appL10n.activityTokensTenThousands(trim(n / 10000));
-  return appL10n.activityTokensHundredMillions(trim(n / 100000000));
+  final millions = NumberFormat.decimalPattern(locale)..maximumFractionDigits = 2;
+  return '$sign${millions.format(value / 1000000)}M';
 }
 
 /// `12%`;大于 0 但不到 1% 时写 `<1%`。
@@ -141,9 +142,9 @@ Future<void> showUsageSheet(BuildContext context, {required String sessionId, Mo
 ///   用量                                   (×)
 ///     上下文
 ///   ╭──────────────────────────────────────╮
-///   │ 6%                    6.2 万 / 100 万 │
+///   │ 6%                      61.8K / 1M │
 ///   │ ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ │
-///   │ 系统 1,467 · 工具 5,157 · 消息 5.5 万   │
+///   │ 系统 1.5K · 工具 5.2K · 消息 54.9K    │
 ///   ╰──────────────────────────────────────╯
 ///     本对话 …          DeepSeek 余额 …
 /// ```
@@ -221,8 +222,8 @@ class SessionUsageSections extends StatelessWidget {
   }
 }
 
-/// 一个数:数字是等宽数字,后面的单位(`万`、`%`)小一号、次要色。
-/// `7.1 万` → **7.1** 万;`¥110.00` → ¥ **110.00**。纯文本仍是原字符串。
+/// 一个数:数字是等宽数字,后面的单位(`K`、`M`、`%`)小一号、次要色。
+/// `71K` → **71** K;`¥110.00` → ¥ **110.00**。纯文本仍是原字符串。
 class UsageFigure extends StatelessWidget {
   const UsageFigure(this.text, {super.key, required this.style, this.color});
 

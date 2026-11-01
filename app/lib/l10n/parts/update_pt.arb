@@ -73,5 +73,9 @@
   "updateOpenPermissionSettings": "Ligar",
   "updateNoAbiPackage": "Não {abi} pacote para esta versão ainda. Verifique a página de lançamento.",
   "updateNoPackage": "Nenhum pacote para este lançamento ainda. Verifique a página de lançamento.",
-  "updateDownloadingPercent": "Baixando {percent}%"
+  "updateDownloadingPercent": "Baixando {percent}%",
+  "updateInstallUnconfirmed": "Resultado da instalação não confirmado",
+  "updateInstallUnconfirmedMessage": "O pacote foi salvo. Confira os avisos do sistema e tente novamente ou abra-o pelo instalador do sistema.",
+  "updateInstallWithSystem": "Instalar pelo instalador do sistema",
+  "updateSystemInstallerFailed": "Não foi possível abrir o instalador do sistema"
 }

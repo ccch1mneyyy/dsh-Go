@@ -326,6 +326,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with SingleTickerProvider
                               onClose: _closeDrawer,
                               onOpen: _openDestination,
                               identityBarHeight: _identityBar,
+                              drawerMotion: _drawer,
                             ),
                             onClose: _closeDrawer,
                           ),
@@ -419,12 +420,18 @@ class _DrawerOverlay extends StatelessWidget {
                 ),
               ),
             ),
+            // 面板位置用 Transform 走(paint-only):每帧改 Positioned.left 会让
+            // Stack 和整块抽屉重新布局,拖动时白白多一层成本。
             Positioned(
-              left: (progress - 1) * (width + 24),
+              left: 0,
               top: 0,
               bottom: 0,
               width: width,
-              child: Visibility(visible: progress > 0, maintainState: true, child: drawer!),
+              child: Visibility(
+                visible: progress > 0,
+                maintainState: true,
+                child: Transform.translate(offset: Offset((progress - 1) * (width + 24), 0), child: drawer!),
+              ),
             ),
           ],
         );

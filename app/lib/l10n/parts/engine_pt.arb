@@ -338,5 +338,6 @@
   "engineFieldEditOnWeb": "Editar este item na Web",
   "engineSettingsHostChanged": "O hospedeiro mudou. Reabrir estas configurações para editar.",
   "engineSecretTargetChanged": "Este campo mudou. Reabrir para editar.",
-  "engineSettingsGroupCount": "{count, plural, =1{1 ajuste} other{{count} configurações}}"
+  "engineSettingsGroupCount": "{count, plural, =1{1 ajuste} other{{count} configurações}}",
+  "engineModelContextOverrideHint": "Deixe vazio para usar o valor do catálogo. Um valor maior é usado pelo mecanismo para calcular a pressão de contexto e a compactação."
 }

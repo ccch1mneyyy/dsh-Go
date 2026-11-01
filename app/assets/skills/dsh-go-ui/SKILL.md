@@ -1,8 +1,8 @@
 ---
 # dsh-go:managed — the dsh-go app keeps this skill up to date; delete this line to keep your own edits.
 name: dsh-go-ui
-description: dsh-go 手机 App 原生界面的配置（$DSH_HOME/dsh-go/ui.json）：顶栏按钮、输入框上方的快捷胶囊、新对话建议卡、抽屉分组与排序、密度、隐藏元素、主题和强调色、平板快捷键、插件座位。用户要改 App 本身的样子时先加载它，比如「把顶栏的 XX 换成 YY」「输入框上面加个总结按钮」「新对话页放几个常用问题」「抽屉按创建时间排」「把回合脚注藏掉」「换成暗色 / 黛青」「加个 ctrl+k 打开搜索」。Change how the dsh-go phone app's native screens look and behave by editing ui.json — header buttons, quick-action capsules, suggestion cards, drawer, density, hidden elements, theme, shortcuts.
-whenToUse: The user asks to change the dsh-go app (手机 App / 原生界面) itself. Not for the web UI or for DSH settings; anything that needs logic or data is a plugin (dsh-go-plugin).
+description: dsh-go 手机 App 原生界面的配置（$DSH_HOME/dsh-go/ui.json）：顶栏按钮、输入框上方的快捷胶囊、新对话建议卡、抽屉分组与排序、密度、隐藏元素、主题和强调色、平板快捷键、插件座位。只改 **dsh-go 手机原生界面**；用户要改 Harness 网页版 / 桌面端、做 Cordis 插件或网页插件时，用官方技能，不要用本技能。用户要改 App 本身的样子时先加载它，比如「把顶栏的 XX 换成 YY」「输入框上面加个总结按钮」「新对话页放几个常用问题」「抽屉按创建时间排」「把回合脚注藏掉」「换成暗色 / 黛青」「加个 ctrl+k 打开搜索」。Change how the dsh-go phone app's native screens look and behave by editing ui.json; the Harness Web UI / Cordis plugins are the official skills' business.
+whenToUse: The user asks to change the dsh-go app (手机 App / 原生界面) itself. Not for the Harness Web UI, Cordis plugins or DSH settings; anything that needs logic or data is a plugin (dsh-go-plugin).
 ---
 
 # dsh-go 界面配置（ui.json）
@@ -10,6 +10,13 @@ whenToUse: The user asks to change the dsh-go app (手机 App / 原生界面) it
 dsh-go App 会读 `$DSH_HOME/dsh-go/ui.json`（`DSH_HOME` 默认 `~/.dsh`），按里面的声明改自己的原生界面。改完保存，App 一两秒内自动生效，不用重启。
 
 文件只能声明，不能执行：没有脚本、没有网络请求、不能装东西。按钮能做的事只有四种动作（见下），而且都要用户亲手点才会发生。
+
+## 和官方技能的分工
+
+- **本技能**：改 dsh-go 手机 App 的原生界面（ui.json）。
+- **dsh-go-plugin**：给手机 App 加胶囊、菜单、状态条、原生面板、工具卡；要逻辑或数据时用它，不用 ui.json。
+- **官方 `cordis-plugin-development` 等**：Harness Web UI / 桌面端的插件、装饰、槽位、页面和 MCP；目录在工作区，安装走 `plugin_manager → install_bundle`。
+- 用户没点名界面载体时，手机上默认是 dsh-go 原生界面；先确定载体再选技能，不看加载顺序。两套配置（ui.json / Cordis bundle）不要混写，也不要拿官方网页插件的做法套到 App 上。
 
 ## 怎么改
 
@@ -58,7 +65,7 @@ dsh-go App 会读 `$DSH_HOME/dsh-go/ui.json`（`DSH_HOME` 默认 `~/.dsh`），�
 | `drawer.sort` | `activity`（最近活动）或 `created`（创建时间） |
 | `drawer.filter` | 打开抽屉时的筛选：`all`、`running`、`pending`、`unread` |
 | `density` | `compact` 或 `comfortable` |
-| `hide` | 要藏起来的元素：`turnFooter`（回合脚注）、`tokenCount`（token 数）、`reasoningDetails`（思考过程）、`activityStrip`（生成中的活动条）、`whaleTail`（鲸尾动画）、`todoPill`（待办条）、`goalBar`（目标条） |
+| `hide` | 要藏起来的元素：`turnFooter`（回合脚注）、`tokenCount`（token 数）、`reasoningDetails`（思考过程）、`activityStrip`（生成中的活动条）、`whaleTail`（鲸尾动画）、`todoPill`（待办条）、`goalBar`（目标条）、`pluginCapsule`（聊天输入框上方由 App 绘制的「插件」入口） |
 | `theme.mode` | `system`、`light`、`dark` |
 | `theme.accentPreset` | `mist` 雾蓝、`daiqing` 黛青、`dusk` 暮紫、`turquoise` 松石、`amber` 琥珀、`graphite` 石墨 |
 | `theme.accent` | 自定义强调色 `#RRGGBB`（App 会自动调到对比度达标）；和 `accentPreset` 二选一 |
@@ -67,6 +74,8 @@ dsh-go App 会读 `$DSH_HOME/dsh-go/ui.json`（`DSH_HOME` 默认 `~/.dsh`），�
 | `plugins.seats` | 插件在原生界面里怎么出现：`{ "<slot>": { "<npm 包名>": "native" \| "island" \| "web" \| "hidden" } }`（原生画 / 内嵌网页 / 在网页版打开 / 隐藏）。slot 名见 `schema.json` 的 `x-dsh-go.slots.known`；`unseatable` 里的是 App 自己的界面，不放插件 |
 
 图标（`icon`）：bolt star sparkle heart flag bookmark pin bell clock alarm calendar todo note document folder search code terminal globe chart lightbulb book puzzle robot chat mail translate image camera mic link summary wrench bug travel school home play refresh archive team wallet palette
+
+要隐藏聊天页的「插件」入口，把 `pluginCapsule` 加进现有 `hide` 数组，例如 `{"version":1,"hide":["pluginCapsule"]}`。它只隐藏 App 的聚合入口，不停用插件、不隐藏插件自己的快捷胶囊，也不改变「全部功能」或「对话详情」的入口。删除该项或在界面配置页恢复默认即可显示。`plugins.seats` 配置的是插件的槽位，不是这个 App 入口；不要用 `chat.panel` / `dsh-go.panel` 座位设置替代。
 
 ## 动作（action）
 

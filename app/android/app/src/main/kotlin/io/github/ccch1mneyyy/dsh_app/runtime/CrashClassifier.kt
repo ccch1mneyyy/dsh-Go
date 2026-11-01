@@ -2,8 +2,8 @@ package io.github.ccch1mneyyy.dsh_app.runtime
 
 /**
  * Why the local DSH stopped when nobody asked it to.
- * Only DSH's own fatal markers count as a plugin/config problem; an exit without one
- * (low-memory kill, battery saver, Android's child-process limits) never does.
+ * DSH fatal markers and explicit early V8 heap exhaustion can count toward recovery.
+ * An unmarked exit (low-memory kill, battery saver, child-process limits) never does.
  */
 enum class FailureKind(val wire: String) {
     /** The shell/loader or direct preload could not start DSH before ready. */
@@ -80,6 +80,10 @@ object CrashClassifier {
         Regex("^[A-Za-z]*Error: dsh: "),
         Regex("^dsh: profile startup and cleanup failed"),
     )
+    private val HEAP_OOM = Regex(
+        "^FATAL ERROR: (?:Reached heap limit|Ineffective mark-compacts near heap limit) " +
+            "Allocation failed - JavaScript heap out of memory$",
+    )
     private val NO_SPACE = Regex("ENOSPC|No space left on device")
     // Fixed executable and shell prefix: a plugin's generic error is not launch evidence.
     private val EXEC_FAILED = Regex(
@@ -124,7 +128,10 @@ object CrashClassifier {
         safeMode: Boolean,
         directEngine: Boolean = false,
     ): RunFailure {
-        val fatal = tail.firstOrNull(::isFatal)
+        // V8 running out of heap while starting or just after counts like a DSH fatal (#75);
+        // later it stays KILLED, which restarts. Neither names a culprit plugin.
+        val early = exitCode != 0 && (readyAt == null || now - readyAt <= EARLY_WINDOW_MS)
+        val fatal = tail.firstOrNull(::isFatal) ?: tail.firstOrNull { HEAP_OOM.matches(it) }?.takeIf { early }
         val launch = if (readyAt == null && exitCode != 0) tail.firstOrNull {
             EXEC_FAILED.matches(it) || (directEngine && DIRECT_FAILED.any { pattern -> pattern.matches(it) })
         } ?: (if (directEngine && exitCode == SIGSYS_EXIT) SECCOMP_KILLED else null) else null

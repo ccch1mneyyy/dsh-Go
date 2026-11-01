@@ -13,5 +13,10 @@
   "performanceAnimations": "Animação da interface",
   "performanceSystemMotion": "Também segue a configuração de animações de remoção do sistema",
   "performanceFollowMode": "Siga o modo de desempenho",
-  "performanceRemoteHint": "Conecte-se a um computador ou servidor para reduzir o trabalho neste celular"
+  "performanceRemoteHint": "Conecte-se a um computador ou servidor para reduzir o trabalho neste celular",
+  "performanceRefresh": "Taxa de atualização",
+  "performanceRefreshMax": "Máxima",
+  "performanceRefreshSystem": "Sistema",
+  "performanceRefreshHint": "Automático: usa a taxa mais alta durante a animação e devolve o controle quando a tela fica parada; Sistema: deixa a decisão para o sistema.",
+  "searchKwRefreshRate": "taxa de atualização alta 120Hz 90Hz fluidez"
 }

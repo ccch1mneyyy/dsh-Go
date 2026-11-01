@@ -34,6 +34,14 @@ internal class Capture(
      * the emulator's Wi-Fi page. Treated as a secure window.
      */
     val hiddenWindowTitle: String? = null,
+    /**
+     * Title of the front window that is there but gives us nothing readable: no text, no
+     * children. Android 14+ hides views marked accessibilityDataSensitive from non-tool
+     * services this way (GitHub, banking and password pages), so the root survives while the
+     * content subtree does not. Only a hint: report 「可能受敏感视图策略限制」, never assert
+     * that the app is a sensitive page (a fresh, still-drawing app looks the same for a moment).
+     */
+    val unreadableWindowTitle: String? = null,
     val takenAt: Long = SystemClock.uptimeMillis(),
 ) {
     fun native(ref: Int): AccessibilityNodeInfo? = natives.getOrNull(ref)
@@ -79,6 +87,7 @@ internal object TreeCapture {
         var ownFront = false
         var systemFront = false
         var hidden: String? = null
+        var unreadable: String? = null
         val screenArea = screen.area.coerceAtLeast(1)
         try {
             for (w in sorted) {
@@ -112,6 +121,13 @@ internal object TreeCapture {
                 }
                 val title = if (Build.VERSION.SDK_INT >= 24) w.title?.toString() else null
                 val node = convert(root, 0, st)
+                // Front full-screen app window with a root but nothing under it: the content is
+                // filtered, not merely text-poor (a game/canvas still exposes its SurfaceView).
+                if (chosen.isEmpty() && w.type == AccessibilityWindowInfo.TYPE_APPLICATION && share >= 0.8 &&
+                    (node == null || (node.text.isNullOrBlank() && node.desc.isNullOrBlank() && node.children.isEmpty()))
+                ) {
+                    unreadable = title ?: ""
+                }
                 chosen += UiWindow(
                     w.id, if (w.type == AccessibilityWindowInfo.TYPE_SYSTEM) WindowKind.SYSTEM else WindowKind.APP,
                     pkg, title, bounds, node,
@@ -132,6 +148,7 @@ internal object TreeCapture {
             systemInFront = systemFront,
             truncated = st.truncated,
             hiddenWindowTitle = hidden,
+            unreadableWindowTitle = unreadable,
         )
     }
 

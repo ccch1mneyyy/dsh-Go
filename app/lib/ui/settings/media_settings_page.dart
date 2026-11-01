@@ -1,10 +1,12 @@
-// 设置 › 能力 › 图像与视频 (docs/design/media-generation.md §5.8, first
-// version): the media plugin's own settings, drawn from its schema by the
-// native form — services, write-only keys, defaults, limits. The namespace is
-// the one whose schema carries the catalogue (the host may rename the
-// instance), else the plugin's own name. Without the plugin on this host:
-// 「在此主机上安装」, to the plugin market. The curated page of §5.8
-// (services, usage, works) comes later (M6 proper).
+// 设置 › 能力 › 图像与视频 (docs/design/media-generation.md §5.8): the curated
+// page over the media plugin's settings (ui/settings/media/), found under the
+// namespace whose schema carries the catalogue (the host may rename the
+// instance), else the plugin's own name. The schema form is not drawn here
+// any more: services, keys, defaults and the cost guard are curated rows.
+// Without the plugin on this host: 「在此主机上安装」, which installs the
+// official market's media plugin (docs/design/plugin-market.md §6).
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,12 +14,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/l10n.dart';
 import '../../state/engine_settings_state.dart';
 import '../../state/media_generation.dart';
+import '../../state/plugins_state.dart';
 import '../common/app_sheet.dart';
 import '../common/empty_view.dart';
-import '../engine_settings/engine_settings_page.dart' show EngineSettingsPage;
+import '../plugins/plugin_actions.dart' show installMarketEntry;
+import '../plugins/plugin_detail_sheet.dart' show showMarketPluginSheet;
+import '../plugins/plugin_widgets.dart' show PluginInstallProgress;
 import '../plugins/plugins_screen.dart';
 import '../shell/page_frame.dart';
 import '../theme/app_icons.dart';
+import 'media/media_settings_home.dart';
 
 class MediaSettingsPage extends ConsumerWidget {
   const MediaSettingsPage({super.key});
@@ -30,38 +36,74 @@ class MediaSettingsPage extends ConsumerWidget {
         (namespaces == null ? null : mediaNamespacesOf(namespaces).firstOrNull) ??
         mediaSettingsNamespaces.where((n) => namespaces?.containsKey(n) ?? false).firstOrNull;
     final plugin = ref.watch(mediaPluginProvider);
-    if (ns != null) return EngineSettingsPage(ns: ns, title: l10n.mediaSettingsTitle);
-    // Still reading what the host has: the form's own loading state.
-    if (namespaces == null && plugin != MediaPluginState.absent) {
-      return EngineSettingsPage(ns: mediaSettingsNamespaces.first, title: l10n.mediaSettingsTitle);
+    if (ns != null) return MediaSettingsHomePage(ns: ns);
+    // Still reading what the host has: the scaffold's own loading state.
+    if (namespaces == null && plugin == MediaPluginState.ready) {
+      return MediaSettingsHomePage(ns: mediaSettingsNamespaces.first);
     }
-    return AppPage.list(
-      title: l10n.mediaSettingsTitle,
-      children: [
-        const SizedBox(height: 48),
-        MediaInstallPrompt(onInstall: () => openMediaPluginMarket(context)),
-      ],
-    );
+    return AppPage.list(title: l10n.mediaSettingsTitle, children: const [SizedBox(height: 48), MediaInstallPrompt()]);
   }
 }
 
-/// 「图像与视频」 · 「这台主机还没有图像与视频插件」 · 「在此主机上安装」.
-class MediaInstallPrompt extends StatelessWidget {
-  const MediaInstallPrompt({super.key, required this.onInstall, this.compact = false});
+/// 「图像与视频」 · 「这台主机还没有图像与视频插件」 · 「在此主机上安装」, which
+/// installs the official market's media plugin on this host, its progress in
+/// place. Where that can't happen from here (a relay host, safe mode, an app
+/// too old for it) the plugin's market page says why; without a market entry,
+/// or with the plugin installed but off, the plugin pages take over.
+class MediaInstallPrompt extends ConsumerWidget {
+  const MediaInstallPrompt({super.key, this.compact = false, this.onInstalled});
 
-  final VoidCallback onInstall;
   final bool compact;
 
+  /// The plugin is on this host now (the sheet closes).
+  final VoidCallback? onInstalled;
+
+  Future<void> _install(BuildContext context, WidgetRef ref, MarketEntry? entry) async {
+    final listed =
+        ref
+            .read(installedPluginsProvider)
+            .value
+            ?.any((b) => isMediaPluginName(b.name) && (b.installed || b.availability == 'profile')) ??
+        false;
+    if (entry == null || listed) {
+      await openMediaPluginMarket(context, tab: listed ? PluginsTab.installed : PluginsTab.market);
+      return;
+    }
+    final host = ref.read(pluginHostProvider);
+    if (host == null || !host.canInstall || marketNeedsApp(entry, ref.read(appVersionProvider)) != null) {
+      await showMarketPluginSheet(context, entry);
+      return;
+    }
+    final job = await installMarketEntry(context, entry);
+    if (job?.phase == PluginInstallPhase.succeeded && context.mounted) onInstalled?.call();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final entry = ref.watch(mediaMarketEntryProvider);
+    final job = entry == null ? null : ref.watch(pluginInstallsProvider.select((jobs) => jobs[entry.name]));
     return EmptyView(
       icon: AppIcons.generateMedia,
       compact: compact,
       title: l10n.mediaInstallTitle,
       message: l10n.mediaInstallBody,
-      actionLabel: l10n.mediaInstallAction,
-      onAction: onInstall,
+      action: job != null && job.isActive
+          ? ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: PluginInstallProgress(
+                job: job,
+                onCancel: () => unawaited(ref.read(pluginInstallsProvider.notifier).cancel(job.request.name)),
+              ),
+            )
+          : OutlinedButton(
+              onPressed: () => unawaited(_install(context, ref, entry)),
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(0, compact ? 38 : 44),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+              ),
+              child: Text(l10n.mediaInstallAction),
+            ),
     );
   }
 }
@@ -95,20 +137,15 @@ Future<void> showMediaUnavailableSheet(BuildContext context) => showAppSheet<voi
   ),
 );
 
-/// 生成 on a host without the plugin (§2.2, M7): the same prompt as a sheet.
+/// 生成 on a host without the plugin (§2.2, M7): the same prompt as a sheet,
+/// closed once the plugin is installed.
 Future<void> showMediaInstallSheet(BuildContext context) => showAppSheet<void>(
   context,
   builder: (sheet) => SafeArea(
     top: false,
     child: Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: MediaInstallPrompt(
-        compact: true,
-        onInstall: () {
-          Navigator.of(sheet).pop();
-          openMediaPluginMarket(context);
-        },
-      ),
+      child: MediaInstallPrompt(compact: true, onInstalled: () => Navigator.of(sheet).pop()),
     ),
   ),
 );

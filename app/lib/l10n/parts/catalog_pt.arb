@@ -102,5 +102,9 @@
   "catalogCordisRemoveVersions": "{versions, plural, =1{Isto irá pará-lo e apagar 1 versão.} other{Isto irá parar e apagar tudo {versions} versões.}}",
   "catalogCordisVersionCount": "{count, plural, =1{1 versão} other{{count} versões}}",
   "catalogToolsSection": "Ferramentas",
-  "catalogAllSettings": "Todas as configurações"
+  "catalogAllSettings": "Todas as configurações",
+  "diagnosticsForAi": "Permitir que a IA leia os diagnósticos",
+  "diagnosticsForAiHint": "Salve o instantâneo em um local que o mecanismo possa acessar",
+  "diagnosticsForAiDone": "Salvo — peça à IA para “verificar os diagnósticos”",
+  "diagnosticsForAiFailed": "Não foi salvo: o ambiente de execução local não está instalado"
 }

@@ -177,7 +177,7 @@ class _ScheduleEditorPageState extends ConsumerState<ScheduleEditorPage> {
   }
 
   Future<void> _pickZone(ScheduleDraft draft, String device) async {
-    final picked = await showZoneSheet(context, selected: draft.timeZone, device: device);
+    final picked = await showZoneSheet(context, selected: draft.timeZone, device: device, at: _now);
     if (picked == null || !mounted) return;
     _update(_draft!.copyWith(timeZone: picked));
   }

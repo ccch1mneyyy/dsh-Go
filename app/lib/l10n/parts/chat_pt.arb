@@ -293,5 +293,10 @@
   "chatGoalStateSemantics": "Objetivo {objective}, {state}",
   "chatTodoItemSemantics": "{content}, {state}",
   "chatMentionSemantics": "{kind}: {label}",
-  "chatArtifactSemantics": "{name}, {description}"
+  "chatArtifactSemantics": "{name}, {description}",
+  "chatDockFolded": "{count, plural, =1{1 barra de status recolhida} other{{count} barras de status recolhidas}}",
+  "chatDockSpread": "Expandir",
+  "chatDockFold": "Recolher as barras de status",
+  "chatDockNext": "Próximo cartão",
+  "chatDockPrevious": "Cartão anterior"
 }

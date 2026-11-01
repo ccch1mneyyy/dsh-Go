@@ -149,5 +149,14 @@
   "hubEngineStartup": "Inicialização",
   "hubThemeLightDark": "Claro e escuro",
   "hubPermissionPhone": "Celular",
-  "hubPermissionPhoneConfirm": "Confirmação do controle do celular"
+  "hubPermissionPhoneConfirm": "Confirmação do controle do celular",
+  "hubTableTint": "Cor da tabela",
+  "hubTableTintFollow": "Tema",
+  "hubTableTintFill": "Colorida",
+  "hubTableTintNone": "Simples",
+  "hubTableTintFillHint": "Alterne a cor das linhas para facilitar a leitura de tabelas longas",
+  "hubTableTintFollowHint": "Apenas o cabeçalho recebe cor; o corpo segue a resposta",
+  "hubTableTintNoneHint": "Somente linhas de grade, com visual mais leve",
+  "hubHardwareEnterSends": "Enviar com a tecla Enter física",
+  "hubHardwareEnterSendsHint": "Quando ativado, Shift+Enter insere uma nova linha. O teclado na tela continua inserindo linhas; Ctrl/⌘+Enter sempre envia."
 }

@@ -8,5 +8,18 @@
   "phoneBackgroundReturnHint": "Se o aplicativo não retornar quando uma tarefa terminar, toque em \"Tarefa completa · Ver resultado\". Se as notificações do sistema ou janelas de fundo estão bloqueadas, você pode precisar abrir o DSH Go você mesmo.",
   "phoneBackgroundGotIt": "Entendido.",
   "phoneBackgroundOpenSettings": "Abrir configurações do sistema",
-  "phoneBackgroundNotificationBlocked": "Permitir alertas pop-up para notificações de controle de telefone"
+  "phoneBackgroundNotificationBlocked": "Permitir alertas pop-up para notificações de controle de telefone",
+  "phonePrivilegedUpgrade": "Esta versão do app não oferece suporte a esse canal privilegiado. Atualize o DSH Go para usá-lo.",
+  "phonePrivilegedSui": "Sui",
+  "phonePrivilegedRoot": "Root",
+  "phonePrivilegedSuiDescription": "Usa a interface do módulo Sui. A autorização só será solicitada quando você tocar.",
+  "phonePrivilegedRootDescription": "Para Magisk, KernelSU ou APatch. O primeiro comando root só será executado depois que você escolher este canal.",
+  "phonePrivilegedRootPrepare": "Autorizar root",
+  "phonePrivilegedRootUnchecked": "Não verificado",
+  "phonePrivilegedGrantRoot": "Conceder com root",
+  "phonePrivilegedGrantSui": "Conceder com Sui",
+  "phonePrivilegedGrantSuiPermission": "Autorize o Sui e depois conceda a permissão",
+  "phonePrivilegedSuggested": "Recomendado",
+  "phonePrivilegedRootRiskTitle": "Conceder acesso root ao DSH Go?",
+  "phonePrivilegedRootRiskBody": "Seu gerenciador root (Magisk, KernelSU ou APatch) solicitará autorização. Se você permitir, o DSH Go executará seu próprio serviço em segundo plano como root e não solicitará novamente por conta própria após uma desconexão."
 }
