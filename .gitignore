@@ -27,3 +27,7 @@ site/build/
 
 # Release assets (tooling/release_assets.py)
 /dist/
+
+# Python bytecode from the tooling tests (python3 -m unittest discover -s tooling)
+__pycache__/
+*.pyc
