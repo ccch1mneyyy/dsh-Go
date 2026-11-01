@@ -11,11 +11,11 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
   >"$fixtures/openssl.log" 2>&1
 export OHOS_NET_TEST_CERT="$fixtures/cert.pem"
 export OHOS_NET_TEST_KEY="$fixtures/key.pem"
-env -u DSH_GO_OHOS_SIM "${NODE:-node}" --test "$repo/runtime/tests/ohos/net-android-path.test.mjs"
-DSH_GO_OHOS_SIM=1 "${NODE:-node}" --test "$repo/runtime/tests/ohos/net-integration.test.mjs"
-simulation=(--jitless)
+DSH_GO_OHOS_SIM=1 "${NODE:-node}" --test "$repo/runtime/tests/ohos/net-android-path.test.mjs"
+env -u DSH_GO_OHOS_SIM "${NODE:-node}" --import "$repo/runtime/ohos/sim/marker.mjs" --test "$repo/runtime/tests/ohos/net-integration.test.mjs"
+simulation=(--jitless --import "$repo/runtime/ohos/sim/marker.mjs")
 if [[ -n ${OHOS_SIM_PRELOAD:-} ]]; then
   simulation+=(--import "$OHOS_SIM_PRELOAD" --test-isolation=none)
 fi
-DSH_GO_OHOS_SIM=1 "${NODE:-node}" "${simulation[@]}" \
+env -u DSH_GO_OHOS_SIM "${NODE:-node}" "${simulation[@]}" \
   --test "$repo/runtime/tests/ohos/net-integration.test.mjs"

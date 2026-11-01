@@ -1,5 +1,5 @@
 # dsh-go OHOS: native HTTP transport with existing DNS pins and proxy policy.
-# Only openharmony or DSH_GO_OHOS_SIM=1 uses the adapter; Android stays on its original path.
+# Only openharmony or the explicit test preload marker uses the adapter; Android stays on its original path.
 # Pinned to @deepseek-ai/dsh 0.2.1-rc.4. 未在鸿蒙真机核实。
 --- a/node_modules/@deepseek-ai/dsh-http-proxy/lib/index.js
 +++ b/node_modules/@deepseek-ai/dsh-http-proxy/lib/index.js
@@ -8,7 +8,7 @@
  * @returns the dispatcher to install, owning every per-origin agent its factory created.
  */
 +function ohosNetwork() {
-+	if (process.platform !== "openharmony" && process.env.DSH_GO_OHOS_SIM !== "1") return void 0;
++	if (process.platform !== "openharmony" && globalThis[Symbol.for("dsh.go.ohos.sim")] !== true) return void 0;
 +	const network = globalThis[Symbol.for("dsh.go.ohos.net")];
 +	if (!network) throw Object.assign(new Error("OHOS network preload is required"), { code: "ERR_OHOS_NET_PRELOAD_MISSING" });
 +	return network;
@@ -74,7 +74,7 @@
  * @returns a response plus the disposer its consumer must call.
  */
 +function ohosNetwork() {
-+	if (process.platform !== "openharmony" && process.env.DSH_GO_OHOS_SIM !== "1") return void 0;
++	if (process.platform !== "openharmony" && globalThis[Symbol.for("dsh.go.ohos.sim")] !== true) return void 0;
 +	const network = globalThis[Symbol.for("dsh.go.ohos.net")];
 +	if (!network) throw Object.assign(new Error("OHOS network preload is required"), { code: "ERR_OHOS_NET_PRELOAD_MISSING" });
 +	return network;

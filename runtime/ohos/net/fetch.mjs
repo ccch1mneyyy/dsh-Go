@@ -8,7 +8,7 @@ export function createFetch(dispatcher) {
 }
 
 export function installFetch() {
-  if (process.platform !== 'openharmony' && process.env.DSH_GO_OHOS_SIM !== '1') return;
+  if (process.platform !== 'openharmony' && globalThis[Symbol.for('dsh.go.ohos.sim')] !== true) return;
   const key = Symbol.for('dsh.go.ohos.net');
   if (globalThis[key]) return globalThis[key];
   const network = {

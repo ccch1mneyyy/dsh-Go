@@ -6,7 +6,8 @@ import { pathToFileURL } from 'node:url';
 import OhSubprocessRuntime from '../../ohos/process/index.mjs';
 import OhSandboxProvider from '../../ohos/process/sandbox.mjs';
 
-assert.notEqual(process.env.DSH_GO_OHOS_SIM, '1', 'Android 对照不能启用仿真');
+process.env.DSH_GO_OHOS_SIM = '1';
+assert.notEqual(globalThis[Symbol.for('dsh.go.ohos.sim')], true, 'Android 对照不加载仿真预载，旧环境变量不得启用它');
 const base = createRequire(join(resolve(process.env.OHOS_TEST_BASE_PREFIX), 'package.json'));
 const patched = createRequire(join(resolve(process.env.OHOS_TEST_PROCESS_PREFIX), 'package.json'));
 const load = (name, require = base) => import(pathToFileURL(require.resolve(`@deepseek-ai/${name}`)));
@@ -16,7 +17,7 @@ const [{ Context }, { SystemPrompt }, { ToolRuntime }, { LocalFileSystem }, { Wo
 ]);
 const platform = Object.getOwnPropertyDescriptor(process, 'platform');
 
-test('Android未开仿真时两个鸿蒙服务拒绝装入，Node全局不改写', () => {
+test('Android携带旧环境变量且没有显式预载时两个鸿蒙服务拒绝装入，Node全局不改写', () => {
   const original = [Request, Response, Headers, FormData, process.cwd];
   Object.defineProperty(process, 'platform', { ...platform, value: 'android' });
   try {

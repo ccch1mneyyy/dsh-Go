@@ -8,7 +8,7 @@
 
 `dispatcher.mjs` 按此版本原生 Fetch 实际使用的 内置 Undici 7 legacy 与锁定外部 Undici 8.11.2 Dispatcher 回调契约实现 HTTP/HTTPS 传输，HTTP 解析交给 Node 内建 `node:http` / `node:https`。`fetch.mjs` 把该 dispatcher 传给原生 Fetch，保留四个原生构造器的对象身份、Response 的元数据、clone、不可修改响应头及所有原生正文操作。没有新增 npm 依赖。
 
-`preload.mjs` 仅在 `process.platform === 'openharmony'` 或显式 `DSH_GO_OHOS_SIM=1` 时替换全局 fetch。普通 Linux/Android 导入该文件也不安装、不创建连接池。Android 原有启动文件均未修改。O0 的限制预加载和网络预加载是两个独立入口。
+`preload.mjs` 仅在 `process.platform === 'openharmony'` 或明确的仿真预加载已设置进程内 `Symbol.for('dsh.go.ohos.sim') === true` 时替换全局 fetch。生产门控不读取 `DSH_GO_OHOS_SIM`；Android 即使继承这个旧环境变量，也继续原路径。普通 Linux/Android 仅导入网络 preload 不安装、不创建连接池。Android 原有启动文件均未修改。`sim/marker.mjs` 只标记本次测试，保留 JIT 与普通 Node 能力；`sim/preload.mjs` 同时设置标记和 O0 限制。网络传输仍由单独的网络 preload 安装。
 
 默认连接预算 10 秒、响应头预算 300 秒、响应正文无进展预算 300 秒；调用方的 AbortSignal 仍由原生 Fetch 处理。正文被消费端背压暂停时不计算正文无进展期限，resume 后重新计时。超时会销毁请求，不能只发 timeout 事件。`close()` 等待已有 HTTP 请求结束再关池，`destroy()` 立即中断它们；已经交给 WebSocket 调用方的升级连接由该调用方关闭。
 
@@ -19,7 +19,8 @@
 鸿蒙宿主在引擎入口前加载 `runtime/ohos/net/preload.mjs`。模拟时：
 
 ```bash
-DSH_GO_OHOS_SIM=1 node --jitless --import ./runtime/ohos/net/preload.mjs your-entry.mjs
+node --jitless --import ./runtime/ohos/sim/preload.mjs \
+  --import ./runtime/ohos/net/preload.mjs your-entry.mjs
 ```
 
 纯工厂接口适合测试和按请求固定 DNS 地址：

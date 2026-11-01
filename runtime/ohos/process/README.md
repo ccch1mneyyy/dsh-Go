@@ -96,3 +96,11 @@ v1 的独立审查 `cb25400e…` 为 BLOCKED：缺失路径和合法零宽正则
 
 - [RE2JS 官方项目](https://github.com/le0pard/re2js) 及锁定包 1.3.3 的 matcher(number[]) / find / start / end 公开 API；字节坐标以原生差分为证据。
 - [ripgrep 官方指南](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md)；本文具体行为数据由随 DSH 分发的 15.0.0 实测，而非以最新版文档代替已锁版本。
+
+## M3-3 进程内标记迁移
+
+本附属差分只在已审 O4a v3（补丁 SHA256 `2f134c973c565b0b771acdff483537e85a844ee6d7faf5ad5cdea12d418c2581`）上迁移门控。生产服务、rg resolver 与 bash 说明只判断 `openharmony` 平台或显式预加载设置的 `Symbol.for('dsh.go.ohos.sim') === true`，不再读取旧 `DSH_GO_OHOS_SIM` 环境开关。
+
+测试先应用 M3-3 主包，以取得 `sim/marker.mjs` 与新版完整预加载器。`test.sh` 的 Android 组故意携带旧环境变量，JIT 组只加载 marker，严格组加载完整 O0。Worker 不靠环境变量建立标记，而由默认继承的 `--import` 再次运行预加载；仅显式仿真下转发平台覆写配置。没有改动 argv 校验、权限票据、命令注册、rg 搜索语义或取消实现。
+
+O4a 原有范围与限制不变；本迁移不把尚未完成的 node 脚本、实时输出或 O4b 硬取消宣布可用。

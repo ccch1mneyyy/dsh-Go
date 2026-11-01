@@ -72,7 +72,6 @@ const env = {
   PATH: process.env.PATH, LANG: 'C.UTF-8', DSH_HOME: join(out, 'home'),
   DSH_OHOS_TEST_KEY: 'ohos-local-fixture-only', DSH_PERMISSION_MODE: 'workspace-write',
 };
-if (values.mode === 'sim') env.DSH_GO_OHOS_SIM = '1';
 if (values.platform) env.DSH_GO_OHOS_SIM_PLATFORM = 'openharmony';
 const args = [...flags, join(prefix, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), 'web'];
 for (const name of [...values.patch, overlay]) args.push('--patch', resolve(name));

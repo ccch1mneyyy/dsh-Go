@@ -16,7 +16,7 @@ const prefix = resolve(process.env.OHOS_TEST_DSH_PREFIX);
 const fromPackage = (file) => import(pathToFileURL(join(prefix, 'node_modules', file)).href);
 const nativeFetch = globalThis.fetch;
 const network = installFetch();
-assert.ok(network, 'enable the OHOS runtime or explicit simulator switch');
+assert.ok(network, 'enable the OHOS runtime or explicitly preload sim/marker.mjs');
 const undici = await fromPackage('undici/index.js');
 const { EventSource } = await fromPackage('eventsource/dist/index.js');
 const { installProxyFromEnvironment, proxyRouteFor, proxyEnvironmentForChild } = await fromPackage('@deepseek-ai/dsh-http-proxy/lib/index.js');

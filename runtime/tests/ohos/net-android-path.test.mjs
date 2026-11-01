@@ -4,15 +4,24 @@ import http from 'node:http';
 import { once } from 'node:events';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { installFetch } from '../../ohos/net/fetch.mjs';
 
 assert.ok(process.env.OHOS_TEST_BASE_PREFIX && process.env.OHOS_TEST_DSH_PREFIX, 'provide both unchanged and patched npm-ci verification trees');
-assert.notEqual(process.env.DSH_GO_OHOS_SIM, '1');
+// The old environment switch must not enable a production Android branch.
+process.env.DSH_GO_OHOS_SIM = '1';
+assert.notEqual(globalThis[Symbol.for('dsh.go.ohos.sim')], true);
 Object.defineProperty(process, 'platform', { value: 'android' });
 let ohosCalls = 0;
 globalThis[Symbol.for('dsh.go.ohos.net')] = { createDispatcher() { ohosCalls++; throw new Error('OHOS branch reached on Android'); } };
 
 const load = (prefix, name) => import(pathToFileURL(join(resolve(prefix), 'node_modules', '@deepseek-ai', name, 'lib/index.js')).href);
 const traces = [];
+
+test('Android plus the obsolete environment switch leaves native fetch unchanged', () => {
+  const original = globalThis.fetch;
+  assert.equal(installFetch(), undefined);
+  assert.equal(globalThis.fetch, original);
+});
 
 for (const [name, prefix] of [['base', process.env.OHOS_TEST_BASE_PREFIX], ['patched', process.env.OHOS_TEST_DSH_PREFIX]]) {
   test(`${name} uses the original Android proxy and pinned-fetch path`, async () => {

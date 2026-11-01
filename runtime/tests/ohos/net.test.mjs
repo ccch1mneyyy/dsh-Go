@@ -422,7 +422,7 @@ test('destroy releases active requests and has an awaitable completion', async (
 });
 
 test('a normal Linux/Android path does not install the OHOS fetch preload', () => {
-  if (process.platform === 'openharmony' || process.env.DSH_GO_OHOS_SIM === '1') return;
+  if (process.platform === 'openharmony' || globalThis[Symbol.for('dsh.go.ohos.sim')] === true) return;
   const before = globalThis.fetch;
   assert.equal(installFetch(), undefined);
   assert.equal(globalThis.fetch, before);
