@@ -42,7 +42,8 @@ No `error` lines means done. `--json` for machines.
 
 | | Item | |
 |---|---|---|
-| ⬜ | Only the 16 components; unknown ones become placeholders | ⚙️ |
+| ⬜ | Only the documented components: 16 in v1, plus `emptyState` / `gallery` / `progress.shape` / `metric.trend` when the root sets `v: 2`; unknown ones become placeholders | ⚙️ |
+| ⬜ | A v2 view sets `v: 2` on the root and falls back through `adaptView` for older apps | ⚙️ |
 | ⬜ | Tool cards ≤ 8 KiB, ≤ 40 components, ≤ 6 levels; panels ≤ 32 KiB, ≤ 120, ≤ 8 | ⚙️ |
 | ⬜ | Tool cards without bindings (no data model) and without buttons (not tappable in phase 0) | ⚙️ |
 | ⬜ | `presentationMeta` wrapped in `toolCard()`: never throws, never returns `undefined` / `NaN` | |
