@@ -1,0 +1,7 @@
+# Applied when a profile selects this bundle:
+#   dsh plugin --profile web add /path/to/dsh-go-example-whatsapp-voice
+# The sidecar is a separate process (see README); this plugin only talks to it
+# over HTTP, so mounting needs no restart of anything but the profile.
+- insert:
+    - id: dsh-go-example-whatsapp-voice
+      name: dsh-go-example-whatsapp-voice
