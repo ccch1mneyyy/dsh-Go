@@ -27,6 +27,8 @@ app/android/build/
 runtime/media/dsh-media/node_modules/
 # the OHOS virtual process backend installs its pinned deps (npm ci) in place
 runtime/ohos/process/node_modules/
+# build-time esbuild for the OHOS Node build (runtime/ohos/node/BUILD.md)
+runtime/ohos/node/build-tools/node_modules/
 # Python bytecode from tooling/
 **/__pycache__/
 *.pyc
