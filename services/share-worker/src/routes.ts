@@ -65,7 +65,7 @@ export function dlUrl(env: Env, build: { version: string; name: string; onDl: bo
   return base && `${base}download/${path(build.version, build.name)}`;
 }
 
-/** The routes to offer for [name] of [version]; [global] is this Worker's own URL for it. */
+/** The routes to offer for [name] of [version]; [global] is the Global route's URL for it (src/download.ts). */
 export function routesFor(env: Env, build: { version: string; name: string; routeIds: readonly RouteId[] }, global: string): Route[] {
   const routes: Route[] = [];
   for (const id of ROUTE_IDS) {
