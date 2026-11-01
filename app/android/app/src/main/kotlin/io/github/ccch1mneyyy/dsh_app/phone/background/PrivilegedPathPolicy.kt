@@ -23,6 +23,14 @@ object PrivilegedPathPolicy {
     fun legacyReason(mode: String, actualReason: String?, rootCompatibilityReason: String): String? =
         if (mode == "root" && actualReason == null) rootCompatibilityReason else actualReason
 
+    /**
+     * Whether a screen-off interrupt, after releasing the task's display, closes [starter]'s
+     * connection: only one a later task reopens by itself (the Shizuku/Sui UserService rebinds,
+     * self-ADB reconnects). Root reopens only on another explicit choice, since a task never
+     * runs su, so its idle process stays for the next task.
+     */
+    fun closesOnInterrupt(starter: String): Boolean = starter != "root"
+
     /** Sui and the legacy Shizuku grant name share one UserService connection. */
     fun sharesGrantChannel(mode: String, via: String): Boolean = when (via) {
         "shizuku", "sui" -> mode == "shizuku" || mode == "sui"

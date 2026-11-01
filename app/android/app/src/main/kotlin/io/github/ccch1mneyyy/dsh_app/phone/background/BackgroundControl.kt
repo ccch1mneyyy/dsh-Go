@@ -296,10 +296,13 @@ class BackgroundControl private constructor(context: Context) {
         }
     }
 
-    /** Screen off / lock / channel death: stop and release. */
+    /**
+     * Screen off / lock / channel death: stop and release, and drop the channels a later task
+     * reopens by itself ([PrivilegedPathPolicy.closesOnInterrupt]; root's would need su again).
+     */
     fun interrupt() {
         endTask()
-        disconnectAll()
+        disconnectAll(PrivilegedPathPolicy::closesOnInterrupt)
     }
 
     // ---- channel plumbing --------------------------------------------------
@@ -315,11 +318,11 @@ class BackgroundControl private constructor(context: Context) {
         return channel
     }
 
-    private fun disconnectAll() {
+    private fun disconnectAll(closes: (String) -> Boolean = { true }) {
         channel = null
-        shizuku.disconnect()
-        adb.disconnect()
-        root.disconnect()
+        if (closes("shizuku")) shizuku.disconnect()
+        if (closes("adb")) adb.disconnect()
+        if (closes("root")) root.disconnect()
     }
 
     private fun runGateProbe(): String? {

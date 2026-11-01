@@ -120,7 +120,8 @@ Sui与Shizuku共享同一starter。选择sui后，旧兼容授予路径仍可能
 - 选择off：释放当前后台任务和显示、断开各通道，mode=off、rootSelected=false，清空gate缓存。
 - 切换为另一通道：清旧任务/连接后才尝试新选择；root失效不自动切身份。
 - 手机操控总开关关闭：主线程先使旧root意图过期并关闭root；IO处理总开关并将后台模式设off。WSS已经授予的权限不主动撤销，A11yKeeper依据总开关停止恢复；不能把保留系统permission误读为仍在自动恢复。
-- 锁屏/熄屏、服务死亡、任务中断：沿用已有停止/资源释放路径；root丢失连接后任务只读connect，不能静默重新su。按实际触发路径观察资源是否释放，不把未开始的后台任务与已创建虚拟屏混同。
+- 熄屏（`BackgroundControl.interrupt`）：停止任务、释放虚拟屏；Shizuku/Sui与ADB连接断开，下个任务自行重连；root的空闲进程保留，下个任务直接复用（`PrivilegedPathPolicy.closesOnInterrupt`），否则一次熄屏就要用户重新选择root。
+- 服务死亡、任务中断：沿用已有停止/资源释放路径；root丢失连接后任务只读connect，不能静默重新su。按实际触发路径观察资源是否释放，不把未开始的后台任务与已创建虚拟屏混同。
 - engine detach：使队列动作失效并关闭root，已经启动的外部授权按上一节边界处理。
 - App/进程重启：mode与rootSelected是本会话字段，不从磁盘自动恢复root授权尝试。已持有的WSS仍是系统permission事实，两者分开显示。
 
