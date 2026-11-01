@@ -8,6 +8,20 @@ import { spawnSync } from 'node:child_process'
 import { checkView, checkViewText, exitCode, formatReport } from '../lib/check.js'
 
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../../app')
+
+// Windows 上 flutter 是 flutter.bat：Node 既不会按 PATHEXT 找它（ENOENT），也不允许直接
+// spawn 一个 .bat（EINVAL）。所以 win32 上统一经 cmd.exe 启动；其它平台原样传。
+// 单独抽成纯函数，测试不用真的装 Flutter 也能覆盖两边的形状。
+export function flutterSpawn(command, args, platform = process.platform, comspec = process.env.ComSpec || 'cmd.exe') {
+  if (platform !== 'win32') return { command, args, extra: {} }
+  // 只有确定安全的字符才不包引号；cmd 的元字符（", &, |, ^, %, 空格…）一律进引号，" 用 "" 转义。
+  const safe = /^[A-Za-z0-9._:/\\-]+$/
+  const quote = value => (safe.test(value) ? value : `"${value.replaceAll('"', '""')}"`)
+  // /s 会让 cmd 把整行最外层的一对引号剥掉，所以整行必须再包一层 —— 这就是常见的
+  // cmd /d /s /c ""C:\\path with space\\flutter.bat" test" 写法。
+  const line = [quote(command), ...args.map(quote)].join(' ')
+  return { command: comspec, args: ['/d', '/s', '/c', `"${line}"`], extra: { windowsVerbatimArguments: true } }
+}
 const usage = `node sdk/plugin-kit/bin/preview.mjs view.json --out NEW_DIRECTORY
   [--data data.json] [--budget toolCard|panel|strip] [--lang zh|en]
   [--width 320] [--height 960] [--scale 1.3] [--theme light|dark|both]
@@ -72,8 +86,9 @@ export function main(argv, run = spawnSync) {
     mkdirSync(job.out, { recursive: true })
     writeFileSync(join(job.out, 'request.json'), JSON.stringify(job.request, null, 2) + '\n', { flag: 'wx' })
     writeFileSync(join(job.out, 'sdk-diagnostics.json'), JSON.stringify(job.report, null, 2) + '\n', { flag: 'wx' })
-    const result = run(job.opts.flutter, ['test', '--no-pub', 'test/plugins/view/local_preview_test.dart'], {
-      cwd: appDir, stdio: 'inherit', env: { ...process.env, DSH_PLUGIN_PREVIEW_REQUEST: join(job.out, 'request.json') },
+    const launch = flutterSpawn(job.opts.flutter, ['test', '--no-pub', 'test/plugins/view/local_preview_test.dart'])
+    const result = run(launch.command, launch.args, {
+      cwd: appDir, stdio: 'inherit', env: { ...process.env, DSH_PLUGIN_PREVIEW_REQUEST: join(job.out, 'request.json') }, ...launch.extra,
     })
     if (result.error) throw result.error
     if (result.status !== 0) { process.stderr.write(`Flutter preview failed; partial output: ${job.out}\n`); return 3 }
