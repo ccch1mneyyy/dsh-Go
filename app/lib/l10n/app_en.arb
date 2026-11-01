@@ -2912,7 +2912,7 @@
   "plugInputNestedForm": "Forms cannot be nested",
   "plugInputSubmitMissing": "Form needs a submit action",
   "plugInputTooLarge": "Too much content. Shorten it and try again",
-  "pluginOptionSelectionTooLarge": "Selection not sent: it exceeds 4 KiB. Remove more options to send it.",
+  "pluginOptionSelectionTooLarge": "Selection not sent: it exceeds 4 KiB. Remove options or choose shorter values.",
   "plugInputCheckFields": "Check the highlighted fields",
   "plugInputFailed": "Not saved. Try again",
   "plugInputSubmit": "Save",

@@ -17568,7 +17568,7 @@ abstract class L10n {
   /// No description provided for @pluginOptionSelectionTooLarge.
   ///
   /// In zh, this message translates to:
-  /// **'选择未发送：超过 4 KiB。请再移除一些选项后发送。'**
+  /// **'选择未发送：超过 4 KiB。请移除选项或选择较短的值。'**
   String get pluginOptionSelectionTooLarge;
 
   /// No description provided for @plugInputCheckFields.

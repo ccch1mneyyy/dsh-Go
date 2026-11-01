@@ -10110,7 +10110,8 @@ class L10nPt extends L10n {
   String get plugInputTooLarge => 'Muito contente. Encurta-o e tente novamente.';
 
   @override
-  String get pluginOptionSelectionTooLarge => 'Seleção não enviada: excede 4 KiB. Remova mais opções para enviá-la.';
+  String get pluginOptionSelectionTooLarge =>
+      'Seleção não enviada: excede 4 KiB. Remova opções ou escolha valores menores.';
 
   @override
   String get plugInputCheckFields => 'Verificar os campos realçados';
