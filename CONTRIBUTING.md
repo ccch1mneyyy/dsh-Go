@@ -45,6 +45,15 @@
 (cd packages/dsh_remote && dart pub get && dart analyze && dart test)
 ```
 
+**发版与版本一致性：**
+
+```bash
+python3 tooling/release_check.py          # pubspec / changelog / tag / update.json 是否都指同一个版本
+python3 -m unittest discover -s tooling -p 'test_*.py'   # 其中的 build_number 用例需要 Flutter
+```
+
+`release_check.py` 只读 git、`app/pubspec.yaml`、`docs/changelog.md`，不联网；用一个已发布的 `update.json` 比对时加 `--update-json`。
+
 **插件 SDK：**
 
 ```bash
