@@ -14,7 +14,7 @@
   "searchKwSharedLinks": "links,share,shared,public link",
   "searchKwPhone": "accessibility,automation,tap,control phone",
   "searchKwAppRules": "apps,blocklist,allowlist,deny,app list",
-  "searchKwDnd": "dnd,shizuku,adb,background",
+  "searchKwDnd": "dnd,shizuku,sui,root,adb,background",
   "searchKwEngine": "engine,runtime,start,stop,restart,DSH",
   "searchKwBackground": "keep alive,background activity,battery optimization,autostart,killed",
   "searchKwSystemAccess": "permissions,grant,overlay,display over other apps,accessibility,background pop-ups,microphone,file access,notification permission,restricted settings",

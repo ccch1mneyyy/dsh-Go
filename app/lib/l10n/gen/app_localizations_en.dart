@@ -13,7 +13,8 @@ class L10nEn extends L10n {
   String get a11yRestoreTitle => 'Restore accessibility automatically';
 
   @override
-  String get searchKwA11yRestore => 'accessibility,restore,reconnect,automatic recovery,permission,ADB,Shizuku';
+  String get searchKwA11yRestore =>
+      'accessibility,restore,reconnect,automatic recovery,permission,ADB,Shizuku,Sui,root';
 
   @override
   String get a11yRestoreNeedsGrant => 'Authorization required';
@@ -29,10 +30,25 @@ class L10nEn extends L10n {
   String get a11yRestoreGrant => 'Authorize and enable';
 
   @override
+  String get a11yRestoreGrantShizuku => 'Grant with Shizuku';
+
+  @override
+  String get a11yRestoreGrantShizukuPermission => 'Authorize Shizuku, then grant';
+
+  @override
+  String get a11yRestoreGrantAdb => 'Grant with Direct ADB';
+
+  @override
+  String get a11yRestoreRootNote => 'Runs pm grant once as root, for this one permission only.';
+
+  @override
   String get a11yRestoreSetup => 'Set up Shizuku or wireless debugging';
 
   @override
   String get a11yRestoreWaiting => 'Allow the request in Shizuku';
+
+  @override
+  String get a11yRestoreWaitingSui => 'Allow the request in Sui';
 
   @override
   String get a11yRestoreComputer => 'Or connect to a computer and run once:';
@@ -9100,13 +9116,7 @@ class L10nEn extends L10n {
   String get phoneDndHiddenScreen => 'Works on a hidden screen';
 
   @override
-  String get phoneDndShizukuReady => 'Shizuku · Ready';
-
-  @override
   String get phoneNotReadyYet => 'Not ready yet';
-
-  @override
-  String get phoneDndAdbReady => 'Direct ADB · Ready';
 
   @override
   String get phoneActionFailedLater => 'Couldn’t complete. Try again later.';
@@ -9143,22 +9153,92 @@ class L10nEn extends L10n {
   String get phoneDndReactivate => 'Reactivate after restarting your phone.';
 
   @override
-  String get phoneDndKeepDebugging => 'Stay on Wi-Fi with Developer options and Wireless debugging on.';
-
-  @override
-  String get phoneDndUsingShizuku => 'Using Shizuku';
-
-  @override
-  String get phoneDndUsingAdb => 'Using Direct ADB';
+  String get phoneDndKeepDebugging => 'With Shizuku or Direct ADB, stay on Wi-Fi with Wireless debugging on.';
 
   @override
   String get phoneReady => 'Ready';
 
   @override
-  String get phoneDndUseShizuku => 'Use Shizuku';
+  String get phoneDndDirectAdb => 'Direct ADB';
 
   @override
-  String get phoneDndDirectAdb => 'Direct ADB';
+  String get phoneDndChannels => 'Channel';
+
+  @override
+  String get phoneDndShizukuFor => 'Phones with the Shizuku app';
+
+  @override
+  String get phoneDndSuiFor => 'Sui module on Magisk or KernelSU';
+
+  @override
+  String get phoneDndRootFor => 'Rooted phones';
+
+  @override
+  String get phoneDndAdbFor => 'No extra app, uses wireless debugging';
+
+  @override
+  String get phoneDndStateInUse => 'In use';
+
+  @override
+  String get phoneDndStateNotReady => 'Not ready';
+
+  @override
+  String get phoneDndStateUsable => 'Ready';
+
+  @override
+  String get phoneDndStateNeedsGrant => 'Needs permission';
+
+  @override
+  String get phoneDndStateNotRunning => 'Not running';
+
+  @override
+  String get phoneDndStateNotInstalled => 'Not installed';
+
+  @override
+  String get phoneDndStateNotFound => 'Not found';
+
+  @override
+  String get phoneDndStateViaSui => 'Via Sui';
+
+  @override
+  String get phoneDndStateWaiting => 'Waiting';
+
+  @override
+  String get phoneDndStateDisconnected => 'Not connected';
+
+  @override
+  String get phoneDndStateNotPaired => 'Not paired';
+
+  @override
+  String get phoneDndShizukuViaSui => 'On this phone the Shizuku interface comes from Sui. Use Sui instead.';
+
+  @override
+  String get phoneDndSuiMissing =>
+      'Sui wasn’t found. Install the Sui module in Magisk or KernelSU, restart the phone, then come back.';
+
+  @override
+  String get phoneDndSuiRunning => 'Sui interface available';
+
+  @override
+  String get phoneDndSuiStopped =>
+      'The Sui interface isn’t available. Check that the Sui module is enabled, restart the phone and try again.';
+
+  @override
+  String get phoneDndSuiAllSet => 'Sui is ready.';
+
+  @override
+  String get phoneDndSuiPermissionFailed =>
+      'Couldn’t ask Sui for permission. Check that the Sui module is enabled and try again.';
+
+  @override
+  String get phoneDndRootWaiting => 'Waiting for root. Answer your root manager’s prompt.';
+
+  @override
+  String get phoneDndRootConnected =>
+      'Root is connected. If it drops, choose it here again: DSH Go never asks for root on its own.';
+
+  @override
+  String get phoneDndRootRetry => 'Ask for root again';
 
   @override
   String get phoneDndInstallShizuku =>
@@ -9203,9 +9283,6 @@ class L10nEn extends L10n {
   String get phoneDndConnected => 'Connected';
 
   @override
-  String get phoneDndPairOnce => 'Pair once (no extra app)';
-
-  @override
   String get phoneDndDeveloperOptionsStep =>
       'Turn on Developer options: tap “Build number” 7 times in “About phone”. On Xiaomi, tap “OS version” in “My device → Detailed info and specs”; on vivo, tap “Software version”.';
 
@@ -9242,9 +9319,6 @@ class L10nEn extends L10n {
   @override
   String get phoneDndXiaomiUsbHint =>
       'Turning on “USB debugging (Security settings)” requires a SIM card and a Xiaomi account.';
-
-  @override
-  String get phoneDndEnable => 'Enable non-disruptive mode';
 
   @override
   String get phoneDndEnterCodeTitle => 'Enter pairing code';
@@ -9884,18 +9958,47 @@ class L10nEn extends L10n {
   }
 
   @override
-  String phoneDndShizukuStatus(String reason) {
-    return 'Shizuku · $reason';
-  }
-
-  @override
-  String phoneDndAdbStatus(String reason) {
-    return 'Direct ADB · $reason';
-  }
-
-  @override
   String phoneDndBrowserFailed(String url) {
     return 'Can’t open the browser. URL: $url';
+  }
+
+  @override
+  String phoneDndChannelReady(String channel) {
+    return '$channel · Ready';
+  }
+
+  @override
+  String phoneDndChannelStatus(String channel, String reason) {
+    return '$channel · $reason';
+  }
+
+  @override
+  String phoneDndUsing(String channel) {
+    return 'Using $channel';
+  }
+
+  @override
+  String phoneDndEnableWith(String mode) {
+    String _temp0 = intl.Intl.selectLogic(mode, {
+      'shizuku': 'Turn on with Shizuku',
+      'sui': 'Turn on with Sui',
+      'root': 'Turn on with Root',
+      'adb': 'Turn on with Direct ADB',
+      'other': 'Turn on',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String phoneDndSwitchTo(String mode) {
+    String _temp0 = intl.Intl.selectLogic(mode, {
+      'shizuku': 'Switch to Shizuku',
+      'sui': 'Switch to Sui',
+      'root': 'Switch to Root',
+      'adb': 'Switch to Direct ADB',
+      'other': 'Switch to this channel',
+    });
+    return '$_temp0';
   }
 
   @override
@@ -10188,7 +10291,7 @@ class L10nEn extends L10n {
   String get phonePrivilegedRootPrepare => 'Authorize root';
 
   @override
-  String get phonePrivilegedRootUnchecked => 'Root has not been checked';
+  String get phonePrivilegedRootUnchecked => 'Not checked';
 
   @override
   String get phonePrivilegedGrantRoot => 'Grant with root';
@@ -10200,7 +10303,14 @@ class L10nEn extends L10n {
   String get phonePrivilegedGrantSuiPermission => 'Authorize Sui, then grant';
 
   @override
-  String get phonePrivilegedSuggested => 'Suggested channel';
+  String get phonePrivilegedSuggested => 'Suggested';
+
+  @override
+  String get phonePrivilegedRootRiskTitle => 'Give DSH Go root access?';
+
+  @override
+  String get phonePrivilegedRootRiskBody =>
+      'Your root manager (Magisk, KernelSU or APatch) will ask you. If you allow it, DSH Go runs its own background service as root, and never asks again on its own after a disconnect.';
 
   @override
   String get phoneModeTitle => 'How DSH confirms';
@@ -14048,7 +14158,7 @@ class L10nEn extends L10n {
   String get searchKwAppRules => 'apps,blocklist,allowlist,deny,app list';
 
   @override
-  String get searchKwDnd => 'dnd,shizuku,adb,background';
+  String get searchKwDnd => 'dnd,shizuku,sui,root,adb,background';
 
   @override
   String get searchKwEngine => 'engine,runtime,start,stop,restart,DSH';
