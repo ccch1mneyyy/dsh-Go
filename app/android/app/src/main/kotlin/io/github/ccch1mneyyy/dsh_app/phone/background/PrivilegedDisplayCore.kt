@@ -670,14 +670,30 @@ class PrivilegedDisplayCore(private val context: Context) {
         val id = display?.display?.displayId ?: throw Fault("displayMissing")
         InputEvent::class.java.getDeclaredMethod("setDisplayId", Int::class.javaPrimitiveType)
             .apply { isAccessible = true }.invoke(event, id)
-        val type = Class.forName("android.hardware.input.InputManager")
-        val manager = type.getDeclaredMethod("getInstance").apply { isAccessible = true }.invoke(null)
-        val method = type.getMethod("injectInputEvent", InputEvent::class.java, Int::class.javaPrimitiveType)
+        val manager = inputManager()
+        val method = manager.javaClass.getMethod(
+            "injectInputEvent", InputEvent::class.java, Int::class.javaPrimitiveType)
         // Prefer WAIT_FOR_FINISH (2) for a confirmed delivery; some ROMs and the emulator only
         // accept ASYNC (0). Either way the action is verified by re-observing the screen, never by
         // replaying it — so an async accept is safe here.
         val accepted = method.invoke(manager, event, 2) == true || method.invoke(manager, event, 0) == true
         if (!accepted) throw Fault("inputRejected")
+    }
+
+    /**
+     * Android 17 removed `InputManager.getInstance()`; the singleton it returned lives in
+     * `InputManagerGlobal` since Android 13. Try the old class first so older systems keep their
+     * current path, and fall back to the new one when `getInstance` is gone.
+     */
+    private fun inputManager(): Any {
+        val legacy = runCatching {
+            Class.forName("android.hardware.input.InputManager")
+                .getDeclaredMethod("getInstance").apply { isAccessible = true }.invoke(null)
+        }.getOrNull()
+        if (legacy != null) return legacy
+        return Class.forName("android.hardware.input.InputManagerGlobal")
+            .getDeclaredMethod("getInstance").apply { isAccessible = true }.invoke(null)
+            ?: throw Fault("systemOperationDenied")
     }
 
     private fun setImePolicyHide(displayId: Int) {
