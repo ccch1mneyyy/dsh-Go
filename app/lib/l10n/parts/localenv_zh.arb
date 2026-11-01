@@ -29,6 +29,7 @@
     }
   },
   "localEnvRemoteDetail": "连接电脑或服务器上的 DSH",
+  "localEnvUnavailable": "这台设备暂时不能在本机运行 DSH",
   "localEnvRecommended": "推荐",
   "localEnvInstallTitle": "安装本机运行环境",
   "localEnvInstallMessage": "在这台手机上运行 DSH",

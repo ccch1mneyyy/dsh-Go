@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dsh_app/runtime/runtime_bridge.dart';
 import 'package:dsh_app/runtime/runtime_state.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -32,6 +33,20 @@ void main() {
   });
 
   Future<void> flush() => Future<void>.delayed(Duration.zero);
+
+  test('no native runtime (no dsh/runtime handler): loaded, only remote hosts', () async {
+    bridge.initialStatus.completeError(MissingPluginException());
+    await flush();
+    final state = container.read(localRuntimeProvider);
+    expect(state.loaded, isTrue);
+    expect(state.available, isFalse);
+  });
+
+  test('any other status failure still counts as a runtime that is there', () async {
+    bridge.initialStatus.completeError(PlatformException(code: 'io'));
+    await flush();
+    expect(container.read(localRuntimeProvider).available, isTrue);
+  });
 
   test('late logs cannot overwrite a newer running event', () async {
     bridge.initialStatus.complete(const RuntimeStatus(phase: RuntimePhase.starting));

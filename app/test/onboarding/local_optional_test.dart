@@ -120,9 +120,10 @@ void main() {
       RuntimeStatus status = missingStatus,
       VoidCallback? onRemote,
       bool choose = true,
+      bool available = true,
       OnboardingPrefs prefs = const OnboardingPrefs(loaded: true, welcomeSeen: true),
     }) async {
-      final runtime = RecordingLocalRuntime(LocalRuntimeState(loaded: true, status: status));
+      final runtime = RecordingLocalRuntime(LocalRuntimeState(loaded: true, status: status, available: available));
       usePhoneSurface(tester);
       await tester.pumpWidget(
         goldenApp(
@@ -215,6 +216,26 @@ void main() {
       await pump(tester, phone: fullPhone, onRemote: () {});
       expect(find.text('存储空间不足，需要约 900 MB'), findsOneWidget);
       expect(tester.getSemantics(find.byKey(_remote)), isSemantics(isSelected: true));
+    });
+
+    testWidgets('a build without the runtime only goes on with the remote host', (tester) async {
+      var remote = 0;
+      final (runtime, _) = await pump(tester, available: false, onRemote: () => remote++);
+      expect(find.text('这台设备暂时不能在本机运行 DSH'), findsOneWidget);
+      expect(find.text('推荐'), findsNothing);
+      expect(
+        tester.getSemantics(find.byKey(_local)),
+        isSemantics(isSelected: false, isEnabled: false, hasEnabledState: true),
+      );
+      expect(tester.getSemantics(find.byKey(_remote)), isSemantics(isSelected: true));
+
+      await tester.tap(find.byKey(_local));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.getSemantics(find.byKey(_remote)), isSemantics(isSelected: true));
+      await tester.tap(find.widgetWithText(FilledButton, '继续'));
+      await tester.pump();
+      expect(remote, 1);
+      expect(runtime.calls, isEmpty);
     });
 
     testWidgets('installing clears a past 「远程主机」', (tester) async {

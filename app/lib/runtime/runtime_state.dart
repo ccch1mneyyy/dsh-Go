@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:flutter/services.dart' show MissingPluginException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../state/settings_state.dart';
@@ -26,6 +27,7 @@ class LocalRuntimeState {
     this.progress,
     this.loaded = false,
     this.notice,
+    this.available = true,
   });
 
   final RuntimeStatus status;
@@ -37,17 +39,23 @@ class LocalRuntimeState {
   /// The latest notice; shown once by `SafeModeNoticeListener`.
   final RuntimeNotice? notice;
 
+  /// False when this build has no native runtime at all (no `dsh/runtime`
+  /// handler, e.g. HarmonyOS before its engine host lands): only remote hosts.
+  final bool available;
+
   LocalRuntimeState copyWith({
     RuntimeStatus? status,
     RuntimeProgressEvent? progress,
     bool clearProgress = false,
     bool? loaded,
     RuntimeNotice? notice,
+    bool? available,
   }) => LocalRuntimeState(
     status: status ?? this.status,
     progress: clearProgress ? null : (progress ?? this.progress),
     loaded: loaded ?? this.loaded,
     notice: notice ?? this.notice,
+    available: available ?? this.available,
   );
 }
 
@@ -72,6 +80,8 @@ class LocalRuntimeController extends Notifier<LocalRuntimeState> {
       final status = await _bridge.status();
       if (!r.mounted) return;
       state = state.copyWith(status: status, loaded: true, clearProgress: status.phase != RuntimePhase.installing);
+    } on MissingPluginException {
+      if (r.mounted) state = state.copyWith(loaded: true, available: false);
     } catch (_) {
       if (r.mounted) state = state.copyWith(loaded: true);
     }
