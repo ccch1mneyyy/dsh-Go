@@ -1,4 +1,4 @@
-# 鸿蒙网络传输与 DSH 接入（O5b v3）
+# 鸿蒙网络传输与 DSH 接入（O5b v3 + M3-3～5）
 
 **未在鸿蒙真机核实。** 本包包含独立网络基础层与 DSH 的地址固定、代理策略接入补丁；整体替代 O5a，不叠加安装。不能把本包的桌面测试称为 O5 全部完成或完整 WHATWG 合规。
 
@@ -16,14 +16,15 @@
 
 ## 使用与验证
 
-鸿蒙宿主在引擎入口前加载 `runtime/ohos/net/preload.mjs`。模拟时：
+DSH 鸿蒙宿主必须在应用、插件及其它 dispatcher 配置之前，以真正的锁定 DSH bin 为主入口，加载专用 `runtime/ohos/net/dsh-preload.mjs`。它从该入口解析已锁定的 Undici 8.11.2，用公共 API 建立明确的安全基底。全局代理策略卸载时恢复其捕获的实际 prior；安全基底建立后由调用方设置的 custom dispatcher 也原样恢复。若外部 Undici 已载入但尚无本层的启动记录，则明确报 `ERR_OHOS_NET_BOOTSTRAP_ORDER`，不覆盖已有对象。详见 `M3-5.md`。模拟时：
 
 ```bash
 node --jitless --import ./runtime/ohos/sim/preload.mjs \
-  --import ./runtime/ohos/net/preload.mjs your-entry.mjs
+  --import ./runtime/ohos/net/dsh-preload.mjs \
+  /path/to/dsh-prefix/node_modules/@deepseek-ai/dsh/lib/bin.js
 ```
 
-纯工厂接口适合测试和按请求固定 DNS 地址：
+普通工厂或非 DSH 入口仍可使用 `preload.mjs` / `createFetch`，不会自动改变外部 Undici 的全局 dispatcher。DSH 全局代理安装要求专用启动前置，缺失时报 `ERR_OHOS_NET_BOOTSTRAP_REQUIRED`。Worker 继承专用 preload 时只安装该 isolate 的普通 fetch，不把 worker 文件误识别为 DSH bin。纯工厂接口适合测试和按请求固定 DNS 地址：
 
 ```js
 import { createHttpDispatcher } from './dispatcher.mjs';
@@ -102,7 +103,7 @@ DSH_GO_OHOS_SIM_PLATFORM=openharmony \
 bash runtime/ohos/net/test-integration.sh
 ```
 
-实际结果：Android 平台分支对照 **3/3 PASS**；JIT 集成 **13/13 PASS**；O0 全限制集成 **13/13 PASS**。集成包含未打补丁/已打补丁的 Android 请求轨迹一致、OHOS 分支未被调用，真实 provider 的固定 DNS/双栈回退/私有地址拒绝、代理路由、no_proxy、嵌套恢复、HTTP CONNECT 到 HTTPS 的证书验证、默认 WebSocket、既有 EventSource、内置7和外部8的共享路由。
+实际结果：Android 平台分支对照（包含旧环境变量为 1）**4/4 PASS**；JIT 集成 **13/13 PASS**；O0 全限制集成 **13/13 PASS**。集成包含未打补丁/已打补丁的 Android 请求轨迹一致、OHOS 分支未被调用，真实 provider 的固定 DNS/双栈回退/私有地址拒绝、代理路由、no_proxy、嵌套恢复、HTTP CONNECT 到 HTTPS 的证书验证、默认 WebSocket、既有 EventSource、内置7和外部8的共享路由。
 
 外部 `undici.fetch` 保留其自己的 Request/Response 类型；`network.fetch` 与全局 fetch 始终保留 Node 内置类型。不要混用两套 FormData/Request。测试没有以外部 Undici 替换全局构造器。
 
@@ -117,3 +118,7 @@ v2（补丁 SHA256 e0d1995f3056fbb0ab776cfc515f54390974d4778edec27b0c76041878b6c
 v3 只有显式 abort 会改变 controller 的只读 aborted/reason 状态，且保留第一次调用；网络错误继续交给 onResponseError，不伪装成调用方取消。resume 也按锁定 Undici 的语义，仅在已暂停时起效。DSH 集成新增首次连接断开、第二次恢复的真实 RetryAgent 测试，以及开连接前连续取消仍保持首 reason 的测试。复核员独立 6 项夹具在完整 O0 下通过，包括背压期间停计 bodyTimeout、正文超时关闭连接、正文自定义 reason 取消及 upgrade 拒绝后一次收尾。
 
 此修复不消除上文的 5 个原生规范 TODO。旧 v2 文件保留供追溯，不允许把 v2 的哈希当作 v3 的审查结果。
+
+## M3-5 回归
+
+`M3-5.md` 记录默认 dispatcher 恢复、closed 回调及不可修改请求头三个子项的先失败证据、必要启动前提和复跑命令。请求头会独立复制并按小写归一，混合大小写 Content-Length 与实际上传字节数比较；非法或重复长度走错误回调。策略关闭后的 dispatch 返回 false，并异步单次通知 legacy/v8 handler，不再同步 throw。新的 JIT/严格 O0 header+closed 矩阵各 27/27，启动矩阵合计 18/18；本页上文的五个原生规范 TODO 未消失。

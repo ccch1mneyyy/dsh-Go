@@ -258,7 +258,7 @@
       "0.2.1-rc.4": {
         "node_modules/@deepseek-ai/dsh-http-proxy/lib/index.js": {
           "before": "5310861bc89788ea24be82a3b323e34cbd42b9e6214e2a179b2e6f92a8758cd5",
-          "after": "f3d22a3ff90162b957c9ae91b87390384b87a2a802669c03caf6c5f2666c82cc"
+          "after": "a7fc14bf0adad3d4dedaa391296ecbbaf1075baf3d23dfdc4eb6ff53b7a3f650"
         },
         "node_modules/@deepseek-ai/dsh-web-fetch-http/lib/index.js": {
           "before": "489fef91b0c11c063029ea7aed27b312817570b9c3177aeaa44983b9a25aedcd",
