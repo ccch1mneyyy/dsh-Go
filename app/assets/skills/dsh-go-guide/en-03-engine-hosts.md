@@ -74,7 +74,7 @@ Testing starts DSH on the host, and it keeps running afterwards. To change or de
 
 No network setup, end-to-end encrypted. Good for computers on another network.
 
-1. Install the remote plugin in the host's DSH and sign in.
+1. Install the remote plugin in the host's DSH and sign in. The plugin is [ds-harness-remote](https://github.com/liguobao/ds-harness-remote) (currently 0.6.0): install it from npm in DSH Desktop's plugin manager, or run `dsh plugin --profile desktop add -w ds-harness-remote@0.6.0` on the host, then restart DSH.
 2. On the remote hosts page, choose the same sign-in provider you used on that host, for example “Continue with GitHub”, and sign in with the same account. If the page lists no providers and shows only **Sign in in browser**, tap that button.
 3. Select an online host. On first connection, check that the identity fingerprint matches the one the host's remote plugin shows, then tap **Trust and connect**.
 
