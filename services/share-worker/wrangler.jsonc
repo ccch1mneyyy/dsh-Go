@@ -45,11 +45,16 @@
     { "tag": "v1", "new_sqlite_classes": ["BetaGuard"] },
     { "tag": "v2", "new_sqlite_classes": ["StatsSalt"] }
   ],
-  // No Analytics Engine datasets (it isn't enabled on the account): downloads
-  // and update checks aren't counted and /api/usage/v1 is 404 (src/stats.ts,
-  // src/usage.ts). To count again, enable Analytics Engine and bind
-  // DOWNLOADS → dshgo_downloads, CHECKS → dshgo_checks, USAGE → dshgo_usage
-  // under "analytics_engine_datasets".
+  // Download clicks, update checks, the app's usage reports (src/stats.ts,
+  // src/usage.ts). Analytics Engine isn't enabled on the account yet, so
+  // provision.sh deploys without them unless --analytics (or DSH_ANALYTICS=1):
+  // until then nothing is counted and /api/usage/v1 is 404. wrangler dev has
+  // them locally. docs/design/share-links.md §15.
+  "analytics_engine_datasets": [
+    { "binding": "DOWNLOADS", "dataset": "dshgo_downloads" },
+    { "binding": "CHECKS", "dataset": "dshgo_checks" },
+    { "binding": "USAGE", "dataset": "dshgo_usage" }
+  ],
   "ratelimits": [
     { "name": "UPLOAD_BURST", "namespace_id": "42001", "simple": { "limit": 5, "period": 60 } },
     { "name": "READ_LIMIT", "namespace_id": "42002", "simple": { "limit": 120, "period": 60 } },

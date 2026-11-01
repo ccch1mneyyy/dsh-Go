@@ -9,6 +9,8 @@
 #   CF_TOKEN_FILE=<file> scripts/provision.sh check    read-only: what exists, which domain
 #   CF_TOKEN_FILE=<file> scripts/provision.sh apply    create what's missing, deploy, e2e
 #   CF_TOKEN_FILE=<file> scripts/provision.sh deploy   redeploy the code only
+#   … apply|deploy --analytics   with the Analytics Engine datasets (wrangler.jsonc), once
+#                                it's enabled on the account; DSH_ANALYTICS=1 does the same
 #
 # Works from the public tree: the account id and the KV namespace id come from
 # the environment or files outside it (scripts/cloudflare.sh; apply writes the
@@ -22,7 +24,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 die() { echo "provision: $*" >&2; exit 1; }
 mode=${1:-check}
-[[ "$mode" =~ ^(check|apply|deploy)$ ]] || { echo "usage: CF_TOKEN_FILE=<file> $0 check|apply|deploy" >&2; exit 2; }
+ANALYTICS=${DSH_ANALYTICS:-0}
+case "${2:-}" in --analytics) ANALYTICS=1 ;; '') ;; *) mode=usage ;; esac
+[[ "$mode" =~ ^(check|apply|deploy)$ ]] || { echo "usage: CF_TOKEN_FILE=<file> $0 check|apply|deploy [--analytics]" >&2; exit 2; }
 : "${CF_TOKEN_FILE:?set CF_TOKEN_FILE to the API token file}"
 [[ -r "$CF_TOKEN_FILE" ]] || die "can't read CF_TOKEN_FILE"
 source scripts/cloudflare.sh
@@ -156,6 +160,7 @@ fi
 [[ -n "$FOUND_KV" ]] || die "KV namespace $KV_TITLE is missing: run apply"
 # Our ids and the chosen host, in a copy of wrangler.jsonc next to it.
 wrangler_config "$HOST"
+echo "analytics: $([[ $ANALYTICS == 1 ]] && echo 'on (DOWNLOADS, CHECKS, USAGE)' || echo 'off (--analytics once Analytics Engine is enabled)')"
 wr deploy
 if [[ "$mode" == apply ]]; then
   wr secret put ADMIN_KEY <"$ADMIN_FILE"
