@@ -7719,6 +7719,13 @@ class L10nEn extends L10n {
   String get hubPermissionPhoneConfirm => 'Phone control confirmation';
 
   @override
+  String get hubHardwareEnterSends => 'Send with hardware Enter';
+
+  @override
+  String get hubHardwareEnterSendsHint =>
+      'When on, Shift+Enter inserts a new line. The on-screen keyboard keeps newlines; Ctrl/⌘+Enter always sends.';
+
+  @override
   String get launchScreenTitle => 'Launch screen';
 
   @override

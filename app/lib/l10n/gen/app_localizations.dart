@@ -13243,6 +13243,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'手机布局'**
   String get hubInterfacePhoneLayout;
+
   /// No description provided for @hubTableTint.
   ///
   /// In zh, this message translates to:
@@ -13272,6 +13273,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'隔行淡一档，长表格更好扫读'**
   String get hubTableTintFillHint;
+
   /// No description provided for @hubTableTintFollowHint.
   ///
   /// In zh, this message translates to:
@@ -13367,6 +13369,18 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'手机操控确认'**
   String get hubPermissionPhoneConfirm;
+
+  /// No description provided for @hubHardwareEnterSends.
+  ///
+  /// In zh, this message translates to:
+  /// **'外接键盘按 Enter 发送'**
+  String get hubHardwareEnterSends;
+
+  /// No description provided for @hubHardwareEnterSendsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后，Shift+Enter 换行。屏幕键盘仍换行；Ctrl/⌘+Enter 始终可发送。'**
+  String get hubHardwareEnterSendsHint;
 
   /// No description provided for @launchScreenTitle.
   ///
@@ -23969,6 +23983,7 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'字号,字体,文字大小,大字,字体大小'**
   String get searchKwTextSize;
+
   /// No description provided for @searchKwTableTint.
   ///
   /// In zh, this message translates to:

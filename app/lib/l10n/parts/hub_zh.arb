@@ -325,5 +325,7 @@
   "hubEngineStartup": "启动",
   "hubThemeLightDark": "明暗",
   "hubPermissionPhone": "手机",
-  "hubPermissionPhoneConfirm": "手机操控确认"
+  "hubPermissionPhoneConfirm": "手机操控确认",
+  "hubHardwareEnterSends": "外接键盘按 Enter 发送",
+  "hubHardwareEnterSendsHint": "开启后，Shift+Enter 换行。屏幕键盘仍换行；Ctrl/⌘+Enter 始终可发送。"
 }

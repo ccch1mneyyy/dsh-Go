@@ -7307,6 +7307,12 @@ class L10nZh extends L10n {
   String get hubPermissionPhoneConfirm => '手机操控确认';
 
   @override
+  String get hubHardwareEnterSends => '外接键盘按 Enter 发送';
+
+  @override
+  String get hubHardwareEnterSendsHint => '开启后，Shift+Enter 换行。屏幕键盘仍换行；Ctrl/⌘+Enter 始终可发送。';
+
+  @override
   String get launchScreenTitle => '启动画面';
 
   @override
