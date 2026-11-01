@@ -1,0 +1,5 @@
+# 生成器按 byte 比对：这些目录在 Windows 上若被转成 CRLF，
+# sync-skill.mjs / guide_sync.py 的自检会假报「过期」（内容其实没变）。
+sdk/plugin-kit/** text eol=lf
+app/assets/skills/** text eol=lf
+docs/guide/** text eol=lf
