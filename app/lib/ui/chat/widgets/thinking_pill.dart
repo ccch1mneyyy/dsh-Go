@@ -108,8 +108,8 @@ class _ThinkingPillState extends State<ThinkingPill> {
     if (_expanded) setState(() => _expanded = false);
   }
 
-  void _onSelectionChanged(SelectedContent? content) {
-    _selectionActive = content?.plainText.isNotEmpty ?? false;
+  void _onSelectionChange(String text) {
+    _selectionActive = text.isNotEmpty;
   }
 
   /// 点正文:没选区就收起。
@@ -349,7 +349,7 @@ class _TranslatableReasoningState extends ConsumerState<_TranslatableReasoning> 
       text: showing ? controller.text.trim() : widget.text,
       streaming: widget.active,
       secondary: true,
-      onSelectionChanged: _onSelectionChanged,
+      onSelectionChange: _onSelectionChange,
     );
     if (controller == null && !offered) return body;
 
