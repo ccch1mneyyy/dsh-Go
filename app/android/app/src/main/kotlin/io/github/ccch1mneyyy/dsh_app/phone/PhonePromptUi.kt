@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -149,7 +150,11 @@ internal object PhonePromptUi {
 
     private fun dp(ctx: Context, value: Int) = (ctx.resources.displayMetrics.density * value).toInt()
 
-    /** Same injected/obscured-input boundary as ControlOverlay, also used by the Activity fallback. */
+    /**
+     * Same injected/obscured-input boundary as ControlOverlay, also used by the Activity fallback.
+     * Like every guarded button it judges the touch by [MotionFacts], never by a device id that a
+     * ROM may report as ≤ 0 for a real finger on an overlay window.
+     */
     private class PromptButton(ctx: Context, private val armedAt: Long, private val p: PromptPresentation) : TextView(ctx) {
         private val a11y = ctx.getSystemService(AccessibilityManager::class.java)
         private var rejected = false
@@ -158,9 +163,9 @@ internal object PhonePromptUi {
         override fun dispatchTouchEvent(event: MotionEvent): Boolean {
             if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                 rejected = !PromptInputPolicy.allows(SystemClock.elapsedRealtime(), armedAt, p.live, InjectGuard.active(),
-                    event.flags and (MotionEvent.FLAG_WINDOW_IS_OBSCURED or MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED) != 0,
-                    event.deviceId <= 0, event.flags and 0x800 != 0 || event.getToolType(0) == MotionEvent.TOOL_TYPE_UNKNOWN,
+                    MotionFacts.obscured(event), MotionFacts.injectedStroke(event),
                     a11y.isTouchExplorationEnabled)
+                Log.i("DshPrompt", "prompt button '$text': ${if (rejected) "refused" else "accepted"} ${MotionFacts.describe(event)}")
             }
             if (rejected) {
                 if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) isPressed = false

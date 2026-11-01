@@ -314,8 +314,15 @@ class MainThreadCall<T>(private val block: () -> T) {
 
 /** Input facts are supplied by Android; policies stay testable without pretending to inject a real touch. */
 object PromptInputPolicy {
+    /**
+     * @param injectedStroke [MotionFacts.injectedStroke]: the event carries no pointing tool, so it
+     *   came from `dispatchGesture` rather than an input device. A device id is deliberately not
+     *   consulted — some ROMs report `deviceId <= 0` for a real finger on an overlay window, and
+     *   judging by it silently refused every press there.
+     * @param touchExploration TalkBack answers through those very strokes; double-tap is the way in.
+     */
     fun allows(now: Long, armedAt: Long, live: Boolean, injecting: Boolean, obscured: Boolean,
-               virtualDevice: Boolean, suspiciousStroke: Boolean, touchExploration: Boolean): Boolean =
+               injectedStroke: Boolean, touchExploration: Boolean): Boolean =
         live && now >= armedAt && !injecting && !obscured &&
-            !(virtualDevice && suspiciousStroke && !touchExploration)
+            !(injectedStroke && !touchExploration)
 }
