@@ -335,6 +335,10 @@ void main() {
       final spec = tester.widget<seats.FakeIsland>(find.byType(seats.FakeIsland)).spec;
       expect(spec.slot, Slots.chatSheet);
       expect(find.textContaining('网页插件'), findsOneWidget);
+      // The ways in sit under the island, DSH Web always last: a part that
+      // opens something the island never shows still has a way in.
+      expect(find.byKey(const ValueKey('chat-plugins-ways-in')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-plugins-web-link')), findsOneWidget);
     });
 
     testWidgets('an island that can\'t come up is one 在网页版打开 row into the conversation', (tester) async {
