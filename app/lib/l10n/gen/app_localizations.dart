@@ -29450,6 +29450,18 @@ abstract class L10n {
   /// **'安装包还在，随时可以再装。'**
   String get updateInstallCancelledMessage;
 
+  /// No description provided for @updateInstallUnconfirmed.
+  ///
+  /// In zh, this message translates to:
+  /// **'尚未确认安装结果'**
+  String get updateInstallUnconfirmed;
+
+  /// No description provided for @updateInstallUnconfirmedMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'安装包已保留。可先检查系统提示，再重试或用系统安装器打开。'**
+  String get updateInstallUnconfirmedMessage;
+
   /// No description provided for @updateSignatureMismatch.
   ///
   /// In zh, this message translates to:

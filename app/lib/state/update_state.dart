@@ -68,6 +68,7 @@ enum UpdateProblem {
   noSpace,
   permissionUnavailable,
   installCancelled,
+  installUnconfirmed,
   signature,
   notDsh,
   downgrade,
@@ -727,7 +728,9 @@ class AppUpdateController extends Notifier<AppUpdateState> {
         await Future<void>.delayed(confirmGrace);
         if (ref.mounted && run == _run && state.task == UpdateTaskPhase.installing) {
           _run++;
-          state = state.copyWith(task: UpdateTaskPhase.ready, problem: () => UpdateProblem.installCancelled);
+          // No result is not evidence of user cancellation: even inspect may
+          // still be pending. Keep the package and the existing retry/fallback.
+          state = state.copyWith(task: UpdateTaskPhase.ready, problem: () => UpdateProblem.installUnconfirmed);
           // The offer named another digest for it meanwhile: not ready again.
           if (_apk case final apk? when !apk.isFor(state)) await _conflicted();
         }

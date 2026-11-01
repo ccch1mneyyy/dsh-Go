@@ -16989,6 +16989,13 @@ class L10nEn extends L10n {
   String get updateInstallCancelledMessage => 'The package is saved. You can install it anytime.';
 
   @override
+  String get updateInstallUnconfirmed => 'Installation result not confirmed';
+
+  @override
+  String get updateInstallUnconfirmedMessage =>
+      'The package is saved. Check any system prompts, then retry or open it with the system installer.';
+
+  @override
   String get updateSignatureMismatch => 'App signatures don’t match';
 
   @override

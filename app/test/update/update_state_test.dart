@@ -333,6 +333,7 @@ void main() {
       expect(c.read(appUpdateProvider).task, UpdateTaskPhase.installing);
       await controller.onAppResumed(confirmGrace: const Duration(milliseconds: 10));
       expect(c.read(appUpdateProvider).task, UpdateTaskPhase.ready);
+      expect(c.read(appUpdateProvider).problem, UpdateProblem.installUnconfirmed);
       // A late answer from the abandoned attempt changes nothing.
       installer.pending!.complete(const InstallResult(InstallStatus.failure));
       await installing;
