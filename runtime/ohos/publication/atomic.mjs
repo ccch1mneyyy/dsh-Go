@@ -36,16 +36,7 @@ export function cleanupOwnedTemporary(receipt) {
   return { removed: true, absent: false };
 }
 
-async function allocateTemporary({ parent, source, target, fs }) {
-  for (let attempt = 0; attempt < 32; attempt++) {
-    const path = join(parent, `.dsh-ohos-publish-${randomUUID()}.tmp`);
-    if (path === source || path === target) continue;
-    try { return { path, handle: await fs.open(path, 'wx', 0o600) }; }
-    catch (error) { if (error.code !== 'EEXIST') throw error; }
-  }
-  throw Object.assign(new Error('Could not allocate an exclusive publication temporary'),
-    { code: 'ERR_OHOS_PUBLICATION_TEMP_COLLISION' });
-}
+const chooseTemporaryPath = ({ parent }) => join(parent, `.dsh-ohos-publish-${randomUUID()}.tmp`);
 
 async function copyStream(input, output, signal) {
   const buffer = Buffer.allocUnsafe(65536);
@@ -75,19 +66,24 @@ async function legacyExclusiveCopy(source, target, fs, signal) {
  * renameat2(..., RENAME_NOREPLACE), synchronously returning undefined or throwing
  * a system error. No plain rename/copy is a native fallback.
  *
- * registerTemporary runs after identity acquisition and before the first copy
- * write. Persisting that record enables recovery for the recorded interval;
- * a crash between file creation and registration remains explicitly outside
- * automatic recovery. Unknown files must be preserved.
+ * The ledger is mandatory: reserve must durably finish before open('wx'), and
+ * identify must durably finish before the first write. A crash after creation
+ * but before identification leaves an explicitly unresolved reservation. Never
+ * infer ownership from a filename or delete a reserved-but-unidentified file.
+ * selectTemporaryPath only selects a path; this core owns exclusive creation.
  */
 export function createAtomicPublisher({
   renameNoReplace,
+  ledger,
   fs = promises,
-  createTemporary = allocateTemporary,
-  registerTemporary = async () => {},
+  selectTemporaryPath = chooseTemporaryPath,
   onFallback = () => {},
 } = {}) {
   if (typeof renameNoReplace !== 'function') throw new TypeError('renameNoReplace is required');
+  if (!ledger || ['reserve', 'identify', 'release'].some(name => typeof ledger[name] !== 'function')) {
+    throw new TypeError('A durable ownership ledger with reserve, identify and release is required');
+  }
+  if (typeof selectTemporaryPath !== 'function') throw new TypeError('selectTemporaryPath must be a function');
   const publications = new Map();
   const publish = async function publish(source, target, { signal, fs: callFs } = {}) {
     source = requirePath(source, 'source');
@@ -97,7 +93,7 @@ export function createAtomicPublisher({
     const completed = Promise.withResolvers();
     publications.set(target, completed.promise);
     if (previous) await previous;
-    let input, output, receipt, method, failure;
+    let input, output, path, token, receipt, method, failure;
     try {
       signal?.throwIfAborted();
       try {
@@ -107,17 +103,36 @@ export function createAtomicPublisher({
         if (!linkFallbackCodes.has(error?.code)) throw error;
       }
       input = await activeFs.open(source, 'r');
-      const temporary = await createTemporary({ parent: dirname(target), source, target, fs: activeFs });
-      output = temporary.handle;
-      const path = requirePath(temporary.path, 'temporary');
-      if (dirname(path) !== dirname(target) || path === target || path === source) {
-        throw new Error('Publication temporary must be a distinct entry in the final target directory');
+      for (let attempt = 0; attempt < 32; attempt++) {
+        path = requirePath(await selectTemporaryPath({ parent: dirname(target), source, target, attempt }), 'temporary');
+        if (dirname(path) !== dirname(target) || path === target || path === source) {
+          throw new Error('Publication temporary must be a distinct entry in the final target directory');
+        }
+        token = await ledger.reserve(path, target);
+        if (typeof token !== 'string' || token.length === 0 || token.includes('\0')) {
+          throw new TypeError('Ownership ledger reserve must return a nonempty token');
+        }
+        try {
+          output = await activeFs.open(path, 'wx', 0o600);
+          break;
+        } catch (error) {
+          if (error?.code !== 'EEXIST') throw error;
+          // wx did not create this entry. Preserve it and remove only our
+          // reservation, before selecting another candidate.
+          await ledger.release(token);
+          token = undefined;
+          path = undefined;
+        }
+      }
+      if (!output) {
+        throw Object.assign(new Error('Could not allocate an exclusive publication temporary'),
+          { code: 'ERR_OHOS_PUBLICATION_TEMP_COLLISION' });
       }
       const info = await output.stat({ bigint: true });
       if (!info.isFile()) throw new Error('Publication temporary must be a regular file');
-      if (BigInt(info.size) !== 0n) throw new Error('Publication temporary must be newly allocated and empty');
       receipt = { path, ...identityOf(info) };
-      await registerTemporary(Object.freeze({ ...receipt }));
+      if (BigInt(info.size) !== 0n) throw new Error('Publication temporary must be newly allocated and empty');
+      await ledger.identify(token, identityOf(info));
       await copyStream(input, output, signal);
       signal?.throwIfAborted();
       // No await separates the same-Node ownership check and synchronous commit.
@@ -142,11 +157,30 @@ export function createAtomicPublisher({
     } catch (error) { failure = error; }
     finally {
       const failures = failure === undefined ? [] : [failure];
+      let cleared = false;
+      if (token !== undefined) {
+        try {
+          if (receipt) {
+            // Keep the opened inode alive until the identity check/unlink has
+            // completed; closing first would permit inode-number reuse.
+            cleanupOwnedTemporary(receipt);
+            cleared = true;
+          } else {
+            try { lstatSync(path, { bigint: true }); }
+            catch (error) {
+              if (error.code !== 'ENOENT') throw error;
+              cleared = true;
+            }
+            if (!cleared) throw Object.assign(new Error('Unidentified publication temporary is preserved with its ledger reservation'),
+              { code: 'ERR_OHOS_PUBLICATION_TEMP_UNIDENTIFIED' });
+          }
+        } catch (error) { failures.push(error); }
+      }
       for (const handle of [output, input]) if (handle) {
         try { await handle.close(); } catch (error) { failures.push(error); }
       }
-      if (receipt) {
-        try { cleanupOwnedTemporary(receipt); } catch (error) { failures.push(error); }
+      if (token !== undefined && cleared) {
+        try { await ledger.release(token); } catch (error) { failures.push(error); }
       }
       completed.resolve();
       if (publications.get(target) === completed.promise) publications.delete(target);

@@ -1,10 +1,15 @@
 import { isMainThread } from 'node:worker_threads';
+import { realpath, stat } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { isAbsolute, join, parse } from 'node:path';
 import { createAtomicPublisher } from './atomic.mjs';
+import { openOwnershipLedger } from './ledger.mjs';
 
 export const publicationSymbol = Symbol.for('dsh.go.ohos.publication');
 const simulationSymbol = Symbol.for('dsh.go.ohos.sim');
+let installing = false;
 
-export function installPublication() {
+export async function installPublication() {
   if (process.platform !== 'openharmony' && globalThis[simulationSymbol] !== true) {
     return { installed: false, reason: 'not-openharmony' };
   }
@@ -15,7 +20,7 @@ export function installPublication() {
     throw Object.assign(new Error('OpenHarmony publication requires Node 24.22.1'),
       { code: 'ERR_OHOS_PUBLICATION_NODE_VERSION' });
   }
-  if (Object.hasOwn(globalThis, publicationSymbol)) {
+  if (installing || Object.hasOwn(globalThis, publicationSymbol)) {
     throw Object.assign(new Error('OpenHarmony publication service is already registered'),
       { code: 'ERR_OHOS_PUBLICATION_DUPLICATE' });
   }
@@ -25,26 +30,68 @@ export function installPublication() {
     throw Object.assign(new Error('OpenHarmony publication linked binding is unavailable', { cause }),
       { code: 'ERR_OHOS_PUBLICATION_BINDING_MISSING' });
   }
-  if (typeof binding.renameNoReplace !== 'function') {
-    throw Object.assign(new Error('OpenHarmony publication binding lacks renameNoReplace'),
+  const required = ['renameNoReplace', 'lockExclusive', 'setOwnershipMarker', 'getOwnershipMarker'];
+  if (required.some(name => typeof binding[name] !== 'function')) {
+    throw Object.assign(new Error('OpenHarmony publication binding lacks required ownership operations'),
       { code: 'ERR_OHOS_PUBLICATION_BINDING_INVALID' });
   }
-  let fallbackWarningIssued = false;
-  const publish = createAtomicPublisher({
-    renameNoReplace: binding.renameNoReplace,
-    onFallback() {
-      if (fallbackWarningIssued) return;
-      fallbackWarningIssued = true;
-      process.emitWarning('renameat2(RENAME_NOREPLACE) returned EINVAL. OpenHarmony publication is using exclusive copy; a partial final file can remain after failure or process death.',
-        { code: 'OHOS_PUBLICATION_NONATOMIC_FALLBACK' });
-    },
-  });
-  const service = Object.freeze({
-    protocolVersion: 1,
-    recovery: 'current-invocation-only; unregistered crash orphans are preserved',
-    get pendingCount() { return publish.pendingCount; },
-    publish,
-  });
-  Object.defineProperty(globalThis, publicationSymbol, { value: service });
-  return { installed: true, protocolVersion: service.protocolVersion };
+  installing = true;
+  let ledger;
+  try {
+    const configuredHome = process.env.DSH_HOME;
+    let home;
+    try {
+      if (typeof configuredHome !== 'string' || !isAbsolute(configuredHome) || configuredHome.includes('\0')) {
+        throw new TypeError('DSH_HOME must be explicitly set to an absolute existing app-data directory');
+      }
+      home = await realpath(configuredHome);
+      if (home === parse(home).root || !(await stat(home)).isDirectory()) {
+        throw new TypeError('DSH_HOME must be an existing app-data directory other than the filesystem root');
+      }
+    } catch (cause) {
+      throw Object.assign(new Error('OpenHarmony publication requires an explicit valid DSH_HOME', { cause }),
+        { code: 'ERR_OHOS_PUBLICATION_DATA_DIRECTORY' });
+    }
+    ledger = await openOwnershipLedger({
+      directory: join(home, 'ohos-ownership'),
+      ownerId: randomUUID(),
+      lockExclusive: binding.lockExclusive,
+      setOwnershipMarker: binding.setOwnershipMarker,
+      getOwnershipMarker: binding.getOwnershipMarker,
+    });
+    const recovered = await ledger.recover();
+    const recoverySummary = Object.freeze(Object.fromEntries(Object.entries(recovered)
+      .map(([name, rows]) => [name, Object.freeze(rows.map(row => Object.freeze({ ...row })))])));
+    if (recoverySummary.unresolved.length) {
+      process.emitWarning(`${recoverySummary.unresolved.length} publication ownership record(s) could not be safely recovered and were preserved.`,
+        { code: 'OHOS_PUBLICATION_RECOVERY_UNRESOLVED' });
+    }
+    let fallbackWarningIssued = false;
+    const publish = createAtomicPublisher({
+      renameNoReplace: binding.renameNoReplace,
+      ledger,
+      onFallback() {
+        if (fallbackWarningIssued) return;
+        fallbackWarningIssued = true;
+        process.emitWarning('renameat2(RENAME_NOREPLACE) returned EINVAL. OpenHarmony publication is using exclusive copy; a partial final file can remain after failure or process death.',
+          { code: 'OHOS_PUBLICATION_NONATOMIC_FALLBACK' });
+      },
+    });
+    const service = Object.freeze({
+      protocolVersion: 1,
+      recovery: 'durable ledger; unidentified or replaced entries are preserved',
+      ownerId: ledger.ownerId,
+      recoverySummary,
+      get pendingCount() { return publish.pendingCount; },
+      publish,
+    });
+    Object.defineProperty(globalThis, publicationSymbol, { value: service });
+    return { installed: true, protocolVersion: service.protocolVersion };
+  } catch (error) {
+    if (ledger) {
+      try { await ledger.close(); }
+      catch (closeError) { throw new AggregateError([error, closeError], 'Publication startup and ledger close failed', { cause: error }); }
+    }
+    throw error;
+  } finally { installing = false; }
 }
