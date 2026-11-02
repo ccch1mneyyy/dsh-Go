@@ -7,6 +7,7 @@
 library;
 
 import 'dart:collection';
+import 'dart:isolate';
 
 import 'goals_api.dart';
 import 'json.dart';
@@ -164,6 +165,7 @@ class ChatTranscript {
   final Map<String, UserQuestionRequest> _questions = {};
   Map<String, List<Message>> _inbox = const {'next-turn': [], 'next-step': []};
   List<ChatItem>? _durable;
+  List<ChatItem>? _preparedItems;
   _DurableFold? _durableFold;
   final List<SessionLogEvent> _durableTail = [];
   bool? _derivedRunning;
@@ -259,6 +261,7 @@ class ChatTranscript {
   }
 
   List<ChatItem> get items {
+    if (_preparedItems case final prepared?) return prepared;
     final durable = _durable ??= _build();
     if (_drafts.isEmpty) return durable;
     // A draft shares its step's row key with the message it commits to; keys stay unique when a step
@@ -272,8 +275,38 @@ class ChatTranscript {
     ];
   }
 
+  /// Builds a snapshot candidate without changing this transcript. The caller
+  /// must serialize later events and revalidate follow ownership before adopting
+  /// the result; an obsolete candidate can simply be discarded.
+  Future<ChatTranscript> prepareSnapshot(SessionSnapshotEvent event) async {
+    final candidate = await _prepareSnapshotInBackground(this, event);
+    // Isolates copy input objects. Keep local request identities and finished
+    // traces, just as an ordinary synchronous snapshot application does.
+    candidate._approvals
+      ..clear()
+      ..addAll(_approvals);
+    candidate._questions
+      ..clear()
+      ..addAll(_questions);
+    if (_approvals.isNotEmpty) {
+      final draftItems = candidate._preparedItems!.skip(candidate._durable!.length).toList();
+      candidate._durable = candidate._durableFold!.build(_approvals.values);
+      candidate._preparedItems = [...candidate._durable!, ...draftItems];
+    }
+    final finished = {
+      for (final trace in _traces ?? _previousTraces)
+        if (!trace.running) trace.startSeq: trace,
+    };
+    candidate._traces = [
+      for (final trace in candidate._traces!)
+        if (finished[trace.startSeq] case final previous? when previous.endSeq == trace.endSeq) previous else trace,
+    ];
+    return candidate;
+  }
+
   /// Applies one event; returns `true` when [items] may have changed.
   bool apply(DshEvent event) {
+    _preparedItems = null;
     switch (event) {
       case SessionSnapshotEvent():
         if (!event.isResync) _log.clear();
@@ -373,6 +406,7 @@ class ChatTranscript {
 
   /// Merges an older page from `DshClient.history(beforeSeq: oldestSeq)`.
   void prependHistory(HistoryPage page) {
+    _preparedItems = null;
     for (final e in page.events) {
       _log[e.seq] = e;
     }
@@ -421,6 +455,19 @@ class ChatTranscript {
     _ => null,
   };
 }
+
+// Keep the isolate closure outside the caller's scope: only pure transcript
+// data is copied, never an App controller, Ref, transport or ownership callback.
+Future<ChatTranscript> _prepareSnapshotInBackground(ChatTranscript transcript, SessionSnapshotEvent event) =>
+    Isolate.run(() {
+      transcript.apply(event);
+      transcript._preparedItems = transcript.items;
+      transcript.running;
+      transcript.turns;
+      transcript.todos;
+      transcript.goal;
+      return transcript;
+    });
 
 // Folded prefix of the log, extended by strictly appended events. Tools stay global:
 // late results and approvals can still update a row from an ended turn.

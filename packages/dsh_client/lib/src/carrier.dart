@@ -21,6 +21,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'background_json.dart';
 import 'binary_response.dart';
 import 'connection.dart';
 import 'errors.dart';
@@ -163,7 +164,7 @@ class DshHttpCarrier extends DshCarrier {
       }
       decoded = decodeBinaryResponse(response.body, boundary);
     } else {
-      decoded = asMap(tryDecodeJson(response.text));
+      decoded = asMap(await decodeJsonBytes(response.body));
     }
     tracer?.call(
       DshTraceEntry(
@@ -199,39 +200,49 @@ class _WebSocketMuxLink implements DshMuxLink {
   final DshTracer? _tracer;
   DshMuxLossHandler? _onLost;
   bool _lost = false;
+  StreamSubscription<Object?>? _incoming;
 
   @override
   void start({required DshMuxFrameHandler onFrame, required DshMuxLossHandler onLost}) {
     _onLost = onLost;
-    _socket.listen(
-      (data) {
-        if (_lost) return;
-        if (data is! String) {
-          _protocolFailure('binary WebSocket message');
-          return;
-        }
-        final frame = asMap(tryDecodeJson(data));
-        final streamId = asString(frame?['streamId']);
-        final type = asString(frame?['type']);
-        if (frame == null ||
-            streamId == null ||
-            streamId.isEmpty ||
-            (type != 'item' && type != 'end' && type != 'error')) {
-          _protocolFailure('invalid Remote stream frame');
-          return;
-        }
-        _tracer?.call(DshTraceEntry('in', 'mux', frame));
-        onFrame(frame);
-      },
-      onError: (Object error) => _lose(DshCarrierLostException('WebSocket error: $error'), null),
-      onDone: () => _lose(
-        DshCarrierLostException(
-          'WebSocket closed (${_socket.closeCode ?? 'no code'} ${_socket.closeReason ?? ''})'.trim(),
-        ),
-        null,
-      ),
-      cancelOnError: true,
-    );
+    // asyncMap pauses the socket while a large frame is decoded off-isolate.
+    // A later token/end/error must never overtake that frame. Small frames
+    // return synchronously and do not start a worker for every streamed token.
+    _incoming = _socket
+        .asyncMap<Object?>((data) {
+          if (_lost) return null;
+          if (data is! String) return const _BinaryMuxMessage();
+          return decodeJsonText(data);
+        })
+        .listen(
+          (data) {
+            if (_lost) return;
+            if (data is _BinaryMuxMessage) {
+              _protocolFailure('binary WebSocket message');
+              return;
+            }
+            final frame = asMap(data);
+            final streamId = asString(frame?['streamId']);
+            final type = asString(frame?['type']);
+            if (frame == null ||
+                streamId == null ||
+                streamId.isEmpty ||
+                (type != 'item' && type != 'end' && type != 'error')) {
+              _protocolFailure('invalid Remote stream frame');
+              return;
+            }
+            _tracer?.call(DshTraceEntry('in', 'mux', frame));
+            onFrame(frame);
+          },
+          onError: (Object error) => _lose(DshCarrierLostException('WebSocket error: $error'), null),
+          onDone: () => _lose(
+            DshCarrierLostException(
+              'WebSocket closed (${_socket.closeCode ?? 'no code'} ${_socket.closeReason ?? ''})'.trim(),
+            ),
+            null,
+          ),
+          cancelOnError: true,
+        );
   }
 
   void _lose(DshCarrierLostException failure, Object? cause) {
@@ -266,6 +277,13 @@ class _WebSocketMuxLink implements DshMuxLink {
   @override
   Future<void> close(int code, String reason) async {
     _lost = true;
+    // Retire delivery immediately even if a background decode is still in
+    // flight; it may not publish into a replacement mux generation.
+    await _incoming?.cancel();
     await _socket.close(code, reason);
   }
+}
+
+class _BinaryMuxMessage {
+  const _BinaryMuxMessage();
 }

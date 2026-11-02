@@ -194,6 +194,48 @@ void main() {
       p.check();
     });
   }
+  for (final file in fixtures.where((file) => file.uri.pathSegments.last.startsWith('follow_'))) {
+    test('background snapshots match oracle without mutating source: ${file.uri.pathSegments.last}', () async {
+      var actual = ChatTranscript();
+      final expected = oracle.ChatTranscript();
+      var snapshots = 0;
+      for (final line in file.readAsLinesSync().where((line) => line.trim().isNotEmpty)) {
+        final event = parseFollowFrame('s', jsonDecode(line), isResync: snapshots > 0);
+        expected.apply(event);
+        if (event is SessionSnapshotEvent) {
+          snapshots++;
+          final before = observe(actual);
+          final previous = actual;
+          actual = await actual.prepareSnapshot(event);
+          expect(observe(previous), before, reason: 'preparation must not mutate the live baseline');
+        } else {
+          actual.apply(event);
+        }
+        expect(observe(actual), observe(expected));
+      }
+    });
+  }
+  test('background candidate retains local requests, connection and finished trace identities', () async {
+    final t = ChatTranscript();
+    t.apply(parseFollowFrame('s', ev(0, 'turn/start', {'turn': 1})));
+    t.apply(parseFollowFrame('s', call(1, 'c')));
+    t.apply(parseFollowFrame('s', end(2)));
+    final approval = ApprovalRequest(eventId: 'approval', sessionId: 's', toolName: 'tool', callId: 'c');
+    t.apply(ApprovalRequestedEvent(approval));
+    const question = UserQuestionRequest(eventId: 'question', sessionId: 's', questions: []);
+    t.apply(const UserQuestionRequestedEvent(question));
+    t.apply(const ConnectionStateEvent(DshConnectionState.connected));
+    final trace = t.turns.single;
+    final event = parseFollowFrame('s', snapshot([user(3)], cursor: 3), isResync: true) as SessionSnapshotEvent;
+    final candidate = await t.prepareSnapshot(event);
+    expect(candidate.pendingApprovals['approval'], same(approval));
+    expect(candidate.pendingQuestions['question'], same(question));
+    expect(candidate.items.whereType<ToolChatItem>().single.pendingApproval, same(approval));
+    expect(candidate.turns.single, same(trace));
+    expect(candidate.connectionState, DshConnectionState.connected);
+    expect(candidate.events.map((event) => event.seq), [0, 1, 2, 3]);
+    expect(t.events.map((event) => event.seq), [0, 1, 2]);
+  });
   for (final seed in [7, 42, 20261101]) {
     test('oracle random prefixes seed=$seed', () {
       final r = Random(seed);

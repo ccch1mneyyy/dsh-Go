@@ -7,6 +7,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'agents_api.dart';
+import 'background_follow.dart';
 import 'background_session_read.dart';
 import 'carrier.dart';
 import 'session_activation.dart';
@@ -1111,7 +1112,10 @@ class _SessionWatch {
         await for (final item in stream.items) {
           if (_stopped) break;
           if (!opened) {
-            final first = parseFollowFrame(sessionId, item, isResync: _lastSeq >= 0);
+            final first = await decodeFollowBaseline(sessionId, item, isResync: _lastSeq >= 0);
+            if (_stopped || !epoch.isCurrent || !identical(_epochGeneration, client.mux.generation)) {
+              throw const DshCarrierLostException('follow baseline belongs to a retired generation');
+            }
             if (first is! SessionSnapshotEvent) throw const _Resync('follow opened without snapshot');
             await _onSnapshot(first);
             opened = true;
@@ -1227,16 +1231,31 @@ class _SessionWatch {
   }
 
   Future<List<SessionLogEvent>> _fill({required int from, required int before, required int through}) async {
-    final out = <SessionLogEvent>[];
+    final epoch = _epoch!;
+    final generation = _epochGeneration;
+    void checkCurrent() {
+      if (_stopped || !epoch.isCurrent || !identical(generation, client.mux.generation)) {
+        throw const DshCarrierLostException('history repair belongs to a retired generation');
+      }
+    }
+
+    final pages = <List<SessionLogEvent>>[];
     var beforeSeq = before;
-    while (beforeSeq > from && !_stopped) {
+    while (beforeSeq > from) {
+      checkCurrent();
       final page = await client.history(sessionId, throughSeq: through, beforeSeq: beforeSeq, maxMessages: 500);
+      // A late response must not scan records or start another page after a
+      // disconnect/cancel, even when connection events were not requested.
+      checkCurrent();
       final usable = page.events.where((e) => e.seq >= from && e.seq < beforeSeq).toList();
       if (usable.isEmpty) break;
-      out.insertAll(0, usable);
+      pages.add(usable);
       beforeSeq = usable.first.seq;
       if (!page.hasMore) break;
     }
-    return out;
+    // History arrives newest page first. Reverse only the pages, preserving
+    // each page's order and exclusive boundary filtering without repeated
+    // shifts of all the records collected so far.
+    return [for (final page in pages.reversed) ...page];
   }
 }

@@ -423,8 +423,8 @@ class ChatController extends Notifier<ChatState> {
   ChatController(this.sessionId);
 
   final String sessionId;
-  final ChatTranscript _transcript = ChatTranscript();
-  StreamSubscription<DshEvent>? _sub;
+  ChatTranscript _transcript = ChatTranscript();
+  StreamSubscription<(DshEvent, ChatTranscript?)>? _sub;
   StreamSubscription<DshConnectionState>? _states;
   Timer? _flush;
   Timer? _stopTimeout;
@@ -739,6 +739,11 @@ class ChatController extends Notifier<ChatState> {
     final listener = _listenOwner = Object();
     _watchEnded = false;
     bool current() => owner.mounted && identical(listener, _listenOwner) && identical(client, _client);
+    bool currentSnapshot(SessionSnapshotEvent event) =>
+        identical(event.followEpoch, _followEpoch) &&
+        (event.followEpoch?.isCurrent ?? true) &&
+        (event.followEpoch == null ||
+            (client.mux.generation != null && identical(event.followEpoch!.generation, client.mux.generation)));
     if (!_syncReady.isCompleted) _syncReady.complete(false);
     _syncReady = Completer<bool>();
     _markSyncing(building: building);
@@ -756,8 +761,23 @@ class ChatController extends Notifier<ChatState> {
             },
           ),
         )
+        .asyncMap<(DshEvent, ChatTranscript?)>((event) {
+          // Small snapshots keep the cheap synchronous path. asyncMap pauses
+          // delivery of later frames, so no delta can overtake its baseline.
+          if (event is SessionSnapshotEvent &&
+              current() &&
+              currentSnapshot(event) &&
+              event.events.length +
+                      (event.isResync ? _transcript.events.length : 0) +
+                      (event.activeAttempt?.chunks.length ?? 0) >=
+                  256) {
+            return _transcript.prepareSnapshot(event).then((candidate) => (event, candidate));
+          }
+          return (event, null);
+        })
         .listen(
-          (event) {
+          (delivery) {
+            final (event, candidate) = delivery;
             if (!current()) return;
             if (event is SessionSyncEvent) {
               _markSyncing(epoch: event.epoch);
@@ -766,15 +786,9 @@ class ChatController extends Notifier<ChatState> {
             if (event is ConnectionStateEvent && event.state != DshConnectionState.connected) {
               _markSyncing();
             }
-            if (event is SessionSnapshotEvent) {
-              if (!identical(event.followEpoch, _followEpoch) || !(event.followEpoch?.isCurrent ?? true)) return;
-              // Recheck at delivery, not only when watch() emitted the frame.
-              // A queued old snapshot cannot adopt a newer (or null) mux.
-              if (event.followEpoch case final epoch?) {
-                final generation = client.mux.generation;
-                if (generation == null || !identical(epoch.generation, generation)) return;
-              }
-            }
+            // Recheck the original UI-side epoch after background preparation;
+            // a retired snapshot must not change even the auxiliary state.
+            if (event is SessionSnapshotEvent && !currentSnapshot(event)) return;
             _trackClock(event);
             pulse.observe(event, skew: _sameClock ? Duration.zero : _skew);
             _trackModel(event);
@@ -784,7 +798,13 @@ class ChatController extends Notifier<ChatState> {
                 (event is SessionSnapshotEvent && event.isResync);
             final before = reconcile ? _inboxIds() : const <String>{};
             if (event is SessionSnapshotEvent) _trackSnapshotClaims(event.events);
-            final changed = _transcript.apply(event);
+            final bool changed;
+            if (candidate != null) {
+              _transcript = candidate;
+              changed = true;
+            } else {
+              changed = _transcript.apply(event);
+            }
             if (_awayLong && !_quiet && _transcript.running) scheduleMicrotask(_quietIfRunning);
             if (reconcile) {
               final removed = before.difference(_inboxIds());
@@ -1782,7 +1802,7 @@ class ChatController extends Notifier<ChatState> {
   Future<void> loadOlder() async {
     final client = _client;
     final oldest = _transcript.oldestSeq;
-    if (client == null || oldest == null || !_transcript.hasMoreHistory || state.loadingOlder) {
+    if (client == null || !_canControl || oldest == null || !_transcript.hasMoreHistory || state.loadingOlder) {
       return;
     }
     final owner = ref;
