@@ -1,6 +1,9 @@
+import { isUtf8 } from 'node:buffer';
 import { selectRgFiles, validateRgGlobs } from './rg-select.mjs';
 const unsupported = detail => ({ stdout: '', stderr: `rg: 鸿蒙本机尚不支持${detail}，可以连接电脑执行\n`, exitCode: 2 });
 const flags = new Set(['--files', '--json', '--no-ignore', '--hidden', '--case-sensitive', '--ignore-case', '-i', '-s', '-n', '--line-number', '-F', '--fixed-strings', '--text', '-a']);
+// UTF-8 字节预算：先检查，再展开为 RE2JS 的 number[]；不降低原 JSON 输出预算。
+const maxJsonLineBytes = 4 * 1024 * 1024;
 
 // 先覆盖 DSH 的批量搜索模板；未等价实现的语义明确拒绝，不能悄悄给出漏项。
 async function executeRgBody(args, ctx) {
@@ -58,7 +61,7 @@ async function executeRgBody(args, ctx) {
     // just-bash 3.6.0 不接受 --；绝对化以短横开头的字面路径，防止再解析成选项。
     normalized.push(path.startsWith('-') ? ctx.fs.resolvePath(ctx.cwd, path) : path);
   }
-  if (!files && !options.includes('--text') && !options.includes('-a')) {
+  if (!files && !json && !options.includes('--text') && !options.includes('-a')) {
     for (const path of paths) {
       const absolute = ctx.fs.resolvePath(ctx.cwd, path);
       if ((await ctx.fs.stat(absolute)).isFile && (await ctx.fs.readFileBuffer(absolute)).includes(0)) return unsupported('默认二进制文件搜索；可明确使用 --text');
@@ -105,13 +108,20 @@ async function searchJson({ ctx, options, rawPatterns, fixed, globs, paths }) {
   if (selected.exitCode > 1 || (selected.exitCode === 1 && !explicit.length)) return selected;
   const records = [];
   let outputBytes = 0;
-  for (const path of [...explicit, ...selected.stdout.split('\0').filter(Boolean)]) {
-    let bytes = Buffer.from(await ctx.fs.readFileBuffer(ctx.fs.resolvePath(ctx.cwd, path)));
+  const filePaths = [...explicit, ...selected.stdout.split('\0').filter(Boolean)];
+  for (let fileIndex = 0; fileIndex < filePaths.length; fileIndex++) {
+    const path = filePaths[fileIndex];
+    const content = await ctx.fs.readFileBuffer(ctx.fs.resolvePath(ctx.cwd, path));
+    // IFileSystem 的公开返回类型为 Uint8Array；使用同一 backing store，不再复制整文件。
+    let bytes = Buffer.from(content.buffer, content.byteOffset, content.byteLength);
     // rg 的 UTF-8 BOM 探测仅移除文件最前的一枚 BOM；JSON 坐标以解码后字节计。
     if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) bytes = bytes.subarray(3);
-    if (!options.includes('--text') && !options.includes('-a') && bytes.includes(0)) continue;
-    try { new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
-    catch { return unsupported('非 UTF-8 文件的 JSON 文本搜索'); }
+    if (!options.includes('--text') && !options.includes('-a') && bytes.includes(0)) {
+      if (fileIndex < explicit.length) return unsupported('默认二进制文件搜索；可明确使用 --text');
+      continue;
+    }
+    // 公开 API 只验证编码，不为验证分配整文件的临时 UTF-16 字符串。
+    if (!isUtf8(bytes)) return unsupported('非 UTF-8 文件的 JSON 文本搜索');
     let displayPath = path;
     for (const literal of paths.filter(value => value.startsWith('-'))) {
       const absolute = ctx.fs.resolvePath(ctx.cwd, literal);
@@ -119,6 +129,7 @@ async function searchJson({ ctx, options, rawPatterns, fixed, globs, paths }) {
     }
     for (let start = 0, number = 1; start < bytes.length; number++) {
       const newline = bytes.indexOf(10, start), end = newline < 0 ? bytes.length : newline;
+      if (end - start > maxJsonLineBytes) return unsupported(`超过 ${maxJsonLineBytes} 字节的 JSON 搜索单行（第 ${number} 行为 ${end - start} 字节；不含 LF，含 CR，文件首 UTF-8 BOM 不计入）`);
       const line = bytes.subarray(start, end), matcher = regex.matcher(Array.from(line)), submatches = [];
       let matched = false, nonemptyEnd = -1;
       while (matcher.find()) {
