@@ -1,4 +1,4 @@
-// scriptver-141：鸿蒙本机引擎启动器；认证地址仅交给宿主，不暴露原始日志。
+// scriptver-151：鸿蒙本机引擎启动器；认证地址仅交给宿主，不暴露原始日志。
 import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { verifyRuntimeManifest } from './runtime-manifest.mjs';
@@ -288,28 +288,9 @@ async function main() {
   const nativeDirectory = process.env.DSH_HARMONY_NATIVE_LIBRARY_DIR;
   if (!nativeDirectory || !path.isAbsolute(nativeDirectory)) throw new Error('SIGNED_LIBRARY_DIRECTORY_MISSING');
   for (const name of Object.keys(process.env)) delete process.env[name];
-  Object.assign(process.env, { DSH_HARMONY_NATIVE_LIBRARY_DIR: nativeDirectory, DSH_HARMONY_DURABLE_ROOT: path.dirname(fresh), HOME: path.join(fresh, 'home'), USERPROFILE: path.join(fresh, 'home'), APPDATA: path.join(fresh, 'config'), LOCALAPPDATA: path.join(fresh, 'cache'), XDG_CONFIG_HOME: path.join(fresh, 'config'), XDG_CACHE_HOME: path.join(fresh, 'cache'), DSH_HOME: path.join(fresh, 'dsh-home'), DSH_AGENTS_HOME: path.join(fresh, 'agents'), TMPDIR: path.join(fresh, 'tmp'), TMP: path.join(fresh, 'tmp'), TEMP: path.join(fresh, 'tmp'), DSH_TELEMETRY_DISABLED: '1', NARB_DISABLE_NATIVE_CACHE: '1', NO_COLOR: '1', TZ: 'Asia/Shanghai' });
+  Object.assign(process.env, { DSH_HARMONY_NATIVE_LIBRARY_DIR: nativeDirectory, DSH_HARMONY_DURABLE_ROOT: fresh, HOME: path.join(fresh, 'home'), USERPROFILE: path.join(fresh, 'home'), APPDATA: path.join(fresh, 'config'), LOCALAPPDATA: path.join(fresh, 'cache'), XDG_CONFIG_HOME: path.join(fresh, 'config'), XDG_CACHE_HOME: path.join(fresh, 'cache'), DSH_HOME: path.join(fresh, 'dsh-home'), DSH_AGENTS_HOME: path.join(fresh, 'agents'), TMPDIR: path.join(fresh, 'tmp'), TMP: path.join(fresh, 'tmp'), TEMP: path.join(fresh, 'tmp'), DSH_TELEMETRY_DISABLED: '1', NARB_DISABLE_NATIVE_CACHE: '1', NO_COLOR: '1', TZ: 'Asia/Shanghai' });
   if (privateBroker !== null) Object.assign(process.env, { DSH_HARMONY_BROKER_FD: String(privateBroker.fd), DSH_HARMONY_BROKER_GENERATION: privateBroker.generation });
-  // 鸿蒙禁止第三方应用建硬链接：附件落盘的 link() 会失败（甚至阻塞）。
-  // 改成 link 失败即回退 copyFile，保留原 EEXIST 语义。
-  try {
-    const att = path.join(installed, 'opt/dsh/node_modules/@deepseek-ai/dsh-attachment-local/lib/index.js');
-    if (fs.existsSync(att)) {
-      let code = fs.readFileSync(att).toString('utf8');
-      if (!code.includes('HARMONY_LINK_FALLBACK_ATT')) {
-        code = code.replace(
-          'import { chmod, link, mkdir, open, readFile, rename, rm, unlink, writeFile } from "node:fs/promises";',
-          'import { chmod, link as nodeLink, copyFile, mkdir, open, readFile, rename, rm, unlink, writeFile } from "node:fs/promises";' +
-          String.fromCharCode(10) +
-          'const link = async (a, b) => { try { return await nodeLink(a, b); } catch (e) { if (!e || !["EACCES", "EPERM", "ENOTSUP", "EXDEV"].includes(e.code)) throw e; return await copyFile(a, b, constants.COPYFILE_EXCL); } }; /* HARMONY_LINK_FALLBACK_ATT */', 1);
-        const durableAnchor = 'await ensureDurableDirectory(home, parse(home).root);';
-        if (code.split(durableAnchor).length !== 2) throw new Error('ATTACHMENT_DURABLE_PATCH_MISMATCH');
-        code = code.replace(durableAnchor,
-          'let boundary = parse(home).root; if (process.platform === "openharmony") { const configured = process.env.DSH_HARMONY_DURABLE_ROOT; if (!configured || !home.startsWith(resolve(configured) + "/")) throw new Error("ATTACHMENT_OUTSIDE_SANDBOX"); boundary = resolve(configured); } await ensureDurableDirectory(home, boundary); /* HARMONY_DURABLE_BOUNDARY */');
-        fs.writeFileSync(att, code, { mode: 0o600 });
-      }
-    }
-  } catch (attErr) { }
+  // 附件固定SHA补丁和ImageKit helper由打包器纳入清单；不在启动时回退复制发布。
 
   // fs-local 的 watch 走 node:fs 的 watch 绑定，运行时改 fs.watch 改不到 ESM 绑定，
   // 这里直接改源码：鸿蒙没有可用 inotify，watch 会同步死锁整个事件循环。

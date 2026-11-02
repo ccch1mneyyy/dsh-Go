@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import zipfile
+from scripts.patch_imagekit import patch_attachment_source, EXPECTED as IMAGEKIT_SOURCE_SHA
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=Path, required=True)
@@ -30,7 +31,18 @@ files['scripts/patch-ptc-runtime.mjs'] = Path(__file__).parent / 'scripts' / 'pa
 files['scripts/patch-tool-capabilities.mjs'] = Path(__file__).parent / 'scripts' / 'patch-tool-capabilities.mjs'
 files['probe/session-list-probe.mjs'] = assets / 'session-list-probe.mjs'
 files['transport/cordis-min.yml'] = assets / 'platform-diagnostic.patch.yml'
-manifest = {name: hashlib.sha256(file.read_bytes()).hexdigest() for name, file in sorted(files.items())}
+# 原AttachmentStore在打包时一次性改写；未知原版在创建输出前停止。
+attachment = 'opt/dsh/node_modules/@deepseek-ai/dsh-attachment-local/lib/index.js'
+overrides = {attachment: patch_attachment_source(files[attachment].read_bytes())}
+files[attachment.rsplit('/', 1)[0] + '/ohos-imagekit.mjs'] = assets / 'imagekit/ohos-imagekit.mjs'
+for name in ['backend.mjs','container.mjs','encoded-icc.mjs','header-reader.mjs','container-worker.mjs']:
+    files['transport/imagekit/' + name] = assets / 'imagekit' / name
+provenance = 'transport/imagekit/patch-manifest.json'
+files[provenance] = assets / 'imagekit/ohos-imagekit.mjs'
+overrides[provenance] = json.dumps({'sourceSha256': IMAGEKIT_SOURCE_SHA, 'patchedSha256': hashlib.sha256(overrides[attachment]).hexdigest(), 'transformVersion': 'request-image-imagekit-candidate-v2'}, sort_keys=True).encode()
+def contents(name, file):
+    return overrides[name] if name in overrides else file.read_bytes()
+manifest = {name: hashlib.sha256(contents(name, file)).hexdigest() for name, file in sorted(files.items())}
 directories = set()
 for name in files:
     for parent in Path(name).parents:
@@ -45,6 +57,6 @@ with zipfile.ZipFile(args.output, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as
         info = zipfile.ZipInfo(name, (2026, 11, 1, 0, 0, 0))
         info.external_attr = 0o100644 << 16
         info.compress_type = zipfile.ZIP_DEFLATED
-        archive.writestr(info, file.read_bytes())
+        archive.writestr(info, contents(name, file))
     archive.writestr('harmony-assets-manifest.json', json.dumps(manifest, sort_keys=True))
 print(json.dumps({'files': len(files), 'archiveSha256': hashlib.sha256(args.output.read_bytes()).hexdigest()}))

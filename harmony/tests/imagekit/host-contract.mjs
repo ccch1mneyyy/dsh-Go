@@ -1,0 +1,62 @@
+// 便携真实原Store／工具回归；依赖路径显式提供，图像只来自固定合成夹具。
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { createRequire, registerHooks } from 'node:module';
+import { mkdtemp, mkdir, readFile, writeFile, copyFile, stat } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+const self=fileURLToPath(import.meta.url),tests=path.dirname(self),repo=path.resolve(tests,'../../..'),plugin=path.join(repo,'harmony/plugins/dsh_runtime_ohos');
+const hash=data=>createHash('sha256').update(data).digest('hex');
+const expected='cd39685581b4573a453c6126f8ce73da0bf1257c378827ebb431d6d4064f7662';
+const argv=process.argv.slice(2);
+if(argv[0]!=='--child'){
+ if(argv.length!==6||argv[0]!=='--modules-root'||argv[2]!=='--sharp-module'||argv[4]!=='--output-root'||![argv[1],argv[3],argv[5]].every(path.isAbsolute))throw Error('须显式提供三个绝对依赖／输出目录参数');
+ const [modules,sharp,output]=[argv[1],argv[3],argv[5]],source=path.join(modules,'@deepseek-ai/dsh-attachment-local/lib/index.js'),before=hash(await readFile(source));assert.equal(before,expected);
+ await mkdir(output,{recursive:true});const run=await mkdtemp(path.join(output,'imagekit-host-')),overlay=path.join(run,'overlay'),owner=path.join(overlay,'opt/dsh/node_modules/@deepseek-ai/dsh-attachment-local/lib/index.js');await mkdir(path.dirname(owner),{recursive:true});
+ const python=spawnSync('python',['-B','-c','import importlib.util,sys;from pathlib import Path;s=importlib.util.spec_from_file_location("image_patch",sys.argv[1]);m=importlib.util.module_from_spec(s);s.loader.exec_module(m);Path(sys.argv[3]).write_bytes(m.patch_attachment_source(Path(sys.argv[2]).read_bytes()))',path.join(plugin,'scripts/patch_imagekit.py'),source,owner],{encoding:'utf8',windowsHide:true});assert.equal(python.status,0);assert.equal(python.stderr,'');
+ await copyFile(path.join(modules,'@deepseek-ai/dsh-attachment-local/package.json'),path.join(path.dirname(owner),'../package.json'));
+ await copyFile(path.join(plugin,'assets/imagekit/ohos-imagekit.mjs'),path.join(path.dirname(owner),'ohos-imagekit.mjs'));
+ const transport=path.join(overlay,'transport/imagekit');await mkdir(transport,{recursive:true});for(const name of ['backend.mjs','container.mjs','encoded-icc.mjs','header-reader.mjs','container-worker.mjs'])await copyFile(path.join(plugin,'assets/imagekit',name),path.join(transport,name));
+ const env={SystemRoot:process.env.SystemRoot??'',HOME:path.join(run,'home'),USERPROFILE:path.join(run,'home'),APPDATA:path.join(run,'config'),LOCALAPPDATA:path.join(run,'cache'),DSH_HOME:path.join(run,'dsh-home'),DSH_AGENTS_HOME:path.join(run,'agents'),TMP:path.join(run,'tmp'),TEMP:path.join(run,'tmp'),DSH_TEST_SHARP_MODULE:sharp,NO_COLOR:'1'};for(const name of ['HOME','APPDATA','LOCALAPPDATA','DSH_HOME','DSH_AGENTS_HOME','TMP'])await mkdir(env[name],{recursive:true});
+ const reports={};for(const mode of ['other','ohos']){const child=spawnSync(process.execPath,[self,'--child',mode,modules,overlay,run],{env,encoding:'utf8',windowsHide:true,timeout:60000});assert.equal(child.error,undefined);assert.equal(child.status,0,child.stdout);assert.equal(child.stderr,'');reports[mode]=JSON.parse(child.stdout);assert.equal(reports[mode].passed,true);}
+ assert.equal(hash(await readFile(source)),before);const report={schema:1,kind:'imagekit-production-migration-host',nonOhosOriginalSharp:reports.other,ohosSimulatedGate:reports.ohos,sourceUnchanged:true,deviceUsed:false,productionIntegrated:false};await writeFile(path.join(run,'safe.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+}else{
+ const [,mode,modules,overlay,run]=argv,owner=pathToFileURL(path.join(overlay,'opt/dsh/node_modules/@deepseek-ai/dsh-attachment-local/lib/index.js')).href,helper=new URL('./ohos-imagekit.mjs',owner).href;
+ const req=createRequire(path.join(modules,'fixed-image-test.cjs')),nativeUrl=pathToFileURL(path.join(tests,'host-native.mjs')).href;
+ const {state,holdNextEncode}=await import(nativeUrl),{fixtures}=await import('./fixtures.mjs');
+ const output=process.stdout.write.bind(process.stdout),discard=(_chunk,encoding,callback)=>{const done=typeof encoding==='function'?encoding:callback;if(typeof done==='function')process.nextTick(done);return true;};process.stdout.write=discard;process.stderr.write=discard;
+ let helperLoaded=false,sharpLoaded=false,stage='setup';
+ const hooks=registerHooks({resolve(specifier,context,next){
+  if(specifier==='@deepseek-ai/dsh-attachment-local')return{url:owner,shortCircuit:true};
+  if(specifier==='sharp'&&context.parentURL===owner&&mode==='other'){sharpLoaded=true;return{url:pathToFileURL(req.resolve(process.env.DSH_TEST_SHARP_MODULE)).href,shortCircuit:true};}
+  if(specifier.startsWith('@deepseek-ai/')&&context.parentURL?.startsWith(pathToFileURL(overlay).href)){const parent=path.join(modules,path.relative(path.join(overlay,'opt/dsh/node_modules'),fileURLToPath(context.parentURL)));return next(specifier,{...context,parentURL:pathToFileURL(parent).href});}
+  return next(specifier,context);
+ },load(url,context,next){const loaded=next(url,context);if(url!==owner&&url!==helper)return loaded;let source=Buffer.from(loaded.source).toString('utf8');
+  if(url===owner&&mode==='ohos'){const gate='/* OHOS_IMAGEKIT_GATE */ process.platform === "openharmony"';assert.equal(source.split(gate).length,2);source=source.replace(gate,'/* OHOS_IMAGEKIT_GATE */ true');}
+  if(url===helper){helperLoaded=true;assert.equal(mode,'ohos');source=source.replace("/* OHOS_IMAGEKIT_HELPER_GATE */ process.platform !== 'openharmony'",'/* OHOS_IMAGEKIT_HELPER_GATE */ false');const call='process.dlopen(module,path.join(root,name));';assert.equal(source.split(call).length,2);source=source.replace(call,'module.exports=hostNativeFor(name);');source='import { hostNativeFor } from '+JSON.stringify(nativeUrl)+';\n'+source;}
+  return{...loaded,source};
+ }});
+ const semantic={},controls={};let checkpoint;
+ async function controlled({ctx,ref,requestImageVariantId,helper:loaded}){
+  const target={width:7,height:4,maxBytes:4096},abort=new AbortController(),barrier=holdNextEncode(),one=ctx.attachments.readImageRequest(ref,target,abort.signal),two=ctx.attachments.readImageRequest(ref,target),shared=ctx.attachments.requestInflight.get(String(requestImageVariantId(ref,target)));
+  try{await barrier.started.promise;abort.abort();await assert.rejects(one,{name:'AbortError'});assert.equal(shared.controller.signal.aborted,false);assert.equal(ctx.attachments.compression.active,1);}finally{barrier.release.resolve();}assert.equal((await two).width,7);controls.oneWaiterCancelOtherSucceeds=true;
+  const allTarget={width:6,height:3,maxBytes:4096},allAbort=new AbortController(),held=holdNextEncode(),waiter=ctx.attachments.readImageRequest(ref,allTarget,allAbort.signal),operation=ctx.attachments.requestInflight.get(String(requestImageVariantId(ref,allTarget)));
+  try{await held.started.promise;allAbort.abort();await assert.rejects(waiter,{name:'AbortError'});assert.equal(operation.controller.signal.aborted,true);assert.equal(operation.settled,false);assert.equal(ctx.attachments.compression.active,1);}finally{held.release.resolve();}await assert.rejects(operation.promise,{name:'AbortError'});assert.equal(operation.settled,true);const digest=String(requestImageVariantId(ref,allTarget)).slice(7);await assert.rejects(stat(path.join(ctx.attachments.cacheRoot,'request-images',digest.slice(0,2),digest)),{code:'ENOENT'});controls.allCancelledNoLateCache=true;
+  const closeHeld=holdNextEncode(),pending=ctx.attachments.readImageRequest(ref,{width:4,height:2,maxBytes:4096});let closed=false,closing;
+  try{await closeHeld.started.promise;closing=loaded.closeImagekitRuntime().then(()=>{closed=true;});await Promise.resolve();assert.equal(closed,false);}finally{closeHeld.release.resolve();}await closing;assert.equal((await pending).width,4);assert.equal((await loaded.detect((await ctx.attachments.readImage(ref)).data)).width,ref.width);controls.closeWaitsAndReopens=true;
+ }
+ function observe(point,data){if(['before-cache-repeat','before-corrupt-cache','before-source-icc'].includes(point))checkpoint=state.imageCalls;if(point==='after-cache-repeat'){assert.equal(state.imageCalls,checkpoint);semantic.cacheNoNative=true;}if(point==='after-corrupt-cache'){assert(state.imageCalls>checkpoint);semantic.corruptCacheRecovered=true;}if(point==='after-source-icc'){assert.equal(state.imageCalls,checkpoint);semantic.sourceIccRejectedBeforeNative=true;}if(point==='before-publish-concurrent')checkpoint={success:state.publishes,exists:state.publishEexist};if(point==='after-publish-concurrent'){assert.equal(state.publishes-checkpoint.success,1);assert(state.publishEexist>checkpoint.exists);semantic.eexistWinnerVerified=true;}if(point==='before-budget'){state.qualities=[];state.cleanLengths=[];}if(point==='after-budget'){assert.equal(state.qualities.join(','),'85,75,60');assert.equal(data.bytes,Math.min(...state.cleanLengths));semantic.qualityBudget=true;}}
+ try{
+  process.env.DSH_HARMONY_NATIVE_LIBRARY_DIR=path.join(run,'signed-placeholder');
+  if(mode==='other'){
+   const {Context}=await import(pathToFileURL(req.resolve('@deepseek-ai/cordis'))),{default:Store,requestImageVariantId}=await import(owner),ctx=new Context();
+   try{stage='linux-store';await ctx.plugin(Store,{dshHome:path.join(run,'linux'),normalizedImageMaxPixels:128,normalizedImageMaxDimension:16,normalizedImageMaxBytes:4096});stage='linux-save';const input={data:Buffer.from(fixtures[0].base64,'base64'),mediaType:fixtures[0].mediaType},ref=await ctx.attachments.saveImage(input);stage='linux-request';const variant=await ctx.attachments.readImageRequest(ref,{width:8,height:4,maxBytes:4096});stage='linux-assert';assert.equal(variant.width,8);assert.equal(variant.variantId,requestImageVariantId(ref,{width:8,height:4,maxBytes:4096}));assert.equal(sharpLoaded,true);assert.equal(helperLoaded,false);assert.equal(state.imageCalls,0);assert.equal(state.publishes,0);output(JSON.stringify({passed:true,originalSharpExecuted:true,ohosHelperLoaded:false,nativeUsed:false,deviceUsed:false})+'\n');}finally{await ctx.fiber.dispose();}
+  }else{
+   const {runOriginalToolProbe}=await import('./original-helper/original-tool-probe.mjs'),fixtureParent=path.join(run,'fixtures');await mkdir(fixtureParent);
+   stage='ohos-original-tool';const report=await runOriginalToolProbe({modulesRoot:modules,fixtureParent,controls:controlled,observe});assert.equal(report.phase,'PASSED');assert.equal(Object.keys(report.checks).length,31);assert(Object.values(report.checks).every(Boolean));assert.equal(Object.keys(semantic).length,5);assert(Object.values(semantic).every(Boolean));assert.equal(Object.keys(controls).length,3);assert(Object.values(controls).every(Boolean));
+   stage='ohos-error-recovery';const loaded=await import(helper),boundary=process.env.DSH_HARMONY_DURABLE_ROOT;assert.equal(loaded.durableBoundary(path.join(boundary,'home')),path.resolve(boundary));for(const outside of [boundary,path.join(boundary,'../outside'),boundary+'-sibling/home'])assert.throws(()=>loaded.durableBoundary(outside),e=>e.name==='AttachmentError'&&e.code==='ATTACHMENT_WRITE_FAILED');state.failNext=true;await assert.rejects(loaded.detect(Buffer.from(fixtures[0].base64,'base64')),e=>e.name==='AttachmentError'&&e.code==='INVALID_IMAGE'&&e.message==='鸿蒙图像处理失败。'&&!('cause'in e));assert.equal((await loaded.detect(Buffer.from(fixtures[0].base64,'base64'))).width,32);await loaded.closeImagekitRuntime();
+   output(JSON.stringify({passed:true,checks:report.checks,semantic,controls,durableBoundaryExact:true,errorRedacted:true,recoveryAfterFailure:true,helperLoaded,nativeSubstitute:true,deviceUsed:false})+'\n');
+  }
+ }catch{output(JSON.stringify({passed:false,errorCode:'HOST_IMAGEKIT_CONTRACT_FAILED',stage,mode,deviceUsed:false})+'\n');process.exitCode=1;}finally{hooks.deregister();}
+}
