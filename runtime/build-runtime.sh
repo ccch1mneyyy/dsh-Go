@@ -403,9 +403,9 @@ PYEOF
       echo "$RUNTIME_REVISION $abi $DSH_VERSION $NODE_VERSION $PNPM_VERSION $UBUNTU_VERSION $COMPRESS $XZ_PRESET $PRUNE_DEV_METADATA $SOURCE_DATE_EPOCH"
       sha256 "$base"; sha256 "$node"; sha256 "$python"; sha256sum "${extra_debs[@]}" | cut -d' ' -f1
       sha256 "$proot_deb"; sha256 "$talloc_deb"; sha256 "$shmem_deb"
-      sha256 "$lockfile"; sha256 "$pnpm_lockfile"; sha256 "$HERE/build-runtime.sh"; sha256 "$HERE/lib/rtbuild.py"
-      python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["inputSha256"])' "$work/dsh-patch-target.json"
-      (cd "$HERE" && find bridge boot direct -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum)
+      sha256 "$lockfile"; sha256 "$pnpm_lockfile"
+      # Preserve the reviewed pre-OHOS Android identity; changed Android inputs still invalidate it.
+      python3 -I "$HERE/lib/android_recipe.py" --dsh-version "$DSH_VERSION"
     } | sha256sum | cut -c1-12 )"
   local runtime_version="${RUNTIME_REVISION}-dsh${DSH_VERSION}-node${NODE_VERSION}-ubuntu${UBUNTU_VERSION}-${inputs_sha}"
   local runtime_info
