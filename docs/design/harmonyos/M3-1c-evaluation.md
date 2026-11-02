@@ -79,7 +79,7 @@
 
 ## 复跑与产物
 
-生成脚本和测试是本次新增、可读的实验源码；三份变体只存在构建输出/证据目录，不作为生产源码提交。补丁只添加本文和 `runtime/tests/ohos/publication-fallback-evaluation/` 下的两个实验脚本。`EVALUATION_SCRIPTS` 指向该脚本目录，`EVALUATION_OUT` 指向自己可写的实验输出目录。用已保存的 30 号原 core 执行：
+生成脚本和测试是本次新增、可读的实验源码；三份变体只存在构建输出/证据目录，不作为生产源码提交。补丁只添加本文和 `runtime/tests/ohos/publication-fallback-evaluation/` 下的两个实验脚本。`EVALUATION_SCRIPTS` 指向该脚本目录，`EVALUATION_OUT` 指向自己可写的实验输出目录。用已保存的 30 号原 core（M3-1b 之后的树里取 `git show 8238b75:runtime/ohos/publication/atomic.mjs`） 执行：
 
 ```sh
 mkdir -p "$EVALUATION_OUT/evidence"
@@ -96,4 +96,4 @@ DSH_TEST_M3C_STRICT=1 DSH_GO_OHOS_SIM_PLATFORM=openharmony DSH_GO_OHOS_SIM_ADDON
 
 manifest 记录源码、测试、Node、严格预加载器及逐用例 JSON/日志的 SHA-256。JSON 的 counters 区分 source/temporary/final；结果同时保留完整 execArgv、注入的门控、实际 final 字节数与哈希。没有附第三方源码或 tarball。
 
-本报告为 **EVALUATED，生产修改未做；独立复核待进行**。目标 OHOS 文件系统、权限、ABI 和真实 source 工作负载均 NOT_RUN；SIGKILL、断电、M3-1b ledger/marker 的集成由相应独立包验证，不借这 34 项代替。
+本报告为 **EVALUATED，生产修改未做；独立复核 PASS_SCOPED，只覆盖评估与实验源码，不批准生产修改**（报告 SHA256 `f1e668e9ddecb4d56a58cc65e20260077207e8913a19301a4b0369dad1f6e847`）。目标 OHOS 文件系统、权限、ABI 和真实 source 工作负载均 NOT_RUN；SIGKILL、断电、M3-1b ledger/marker 的集成由相应独立包验证，不借这 34 项代替。
