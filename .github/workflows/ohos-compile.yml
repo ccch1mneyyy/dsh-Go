@@ -1,0 +1,71 @@
+# Compiles the whole app for HarmonyOS arm64 up to libapp.so on a macOS runner,
+# where oh-flutter publishes its AOT tools (app/ohos/README.md). Needs no secrets:
+# packaging and signing a HAP is a later job, once Command Line Tools and a
+# signing profile exist.
+name: OHOS compile
+
+on:
+  push:
+    branches: ['claude/harmonyos-ohos', 'ohos/**']
+    paths:
+      - 'app/**'
+      - 'packages/**'
+      - 'tooling/ohos/**'
+      - '.github/workflows/ohos-compile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ohos-compile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      FLUTTER_OHOS_TAG: 3.47.9-ohos-1.0.0
+      FLUTTER_OHOS_COMMIT: e5f752df3e25ec897da3c98a74bcced7c21b0bd3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install oh-flutter
+        run: |
+          sdk="$RUNNER_TEMP/flutter-ohos"
+          git clone --depth 1 --branch "$FLUTTER_OHOS_TAG" https://atomgit.com/oh-flutter/flutter_flutter.git "$sdk"
+          test "$(git -C "$sdk" rev-parse HEAD)" = "$FLUTTER_OHOS_COMMIT"
+          echo "$sdk/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch the SDK's own tools
+        run: |
+          flutter --version
+          flutter precache --ohos
+
+      - name: Resolve dependencies with the OHOS plugins
+        working-directory: app
+        run: |
+          cp ohos/pubspec_overrides.ohos.yaml pubspec_overrides.yaml
+          flutter pub get
+
+      - name: Compile to libapp.so
+        working-directory: app
+        run: |
+          flutter assemble \
+            -dTargetPlatform=ohos-arm64 \
+            -dBuildMode=release \
+            -dTargetFile=lib/main.dart \
+            -dTreeShakeIcons=true \
+            --output=build/ohos-aot \
+            ohos_aot_bundle_release_ohos-arm64
+
+      - name: Report the result
+        working-directory: app
+        run: |
+          lib="$(find build/ohos-aot .dart_tool/flutter_build -name libapp.so | head -1)"
+          test -n "$lib"
+          file "$lib"
+          echo "libapp.so: $(wc -c < "$lib") bytes" >> "$GITHUB_STEP_SUMMARY"
