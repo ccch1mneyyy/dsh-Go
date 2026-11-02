@@ -45,11 +45,13 @@ jobs:
           flutter --version
           flutter precache --ohos
 
+      # dart pub, not flutter pub: the latter goes on to refresh the ohos project,
+      # which needs the HarmonyOS SDK this job does without.
       - name: Resolve dependencies with the OHOS plugins
         working-directory: app
         run: |
           cp ohos/pubspec_overrides.ohos.yaml pubspec_overrides.yaml
-          flutter pub get
+          dart pub get
 
       - name: Compile to libapp.so
         working-directory: app
