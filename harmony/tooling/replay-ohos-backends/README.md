@@ -45,7 +45,7 @@ node .\harmony\tooling\replay-ohos-backends\replay.cjs `
 
 ## 本次验证与范围
 
-2026-10-30 在仓库外 `D:\Codex\2026-10-28\zhe\work\harmony\replayed-ohos-backends` 完成实际离线重放：
+2026-10-30 在仓库外的独立工作目录完成实际离线重放：
 
 - shared_preferences_ohos：70 文件；path_provider_ohos：56 文件；url_launcher_ohos：60 文件；webview_flutter_ohos：129 文件；累计315文件。
 - 四包原始 Git 树、许可、补丁（后两包）及最终树指纹全部通过。
