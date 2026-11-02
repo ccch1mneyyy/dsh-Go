@@ -6,7 +6,7 @@ const machineCodes=new Set(['INVALID_IMAGE','IMAGE_TOO_LARGE','IMAGE_TOO_MANY_PI
 function platform() { if (/* OHOS_IMAGEKIT_HELPER_GATE */ process.platform !== 'openharmony') throw new Error('UNSUPPORTED_PLATFORM'); }
 function library(name) { platform();const root=process.env.DSH_HARMONY_NATIVE_LIBRARY_DIR;if(!root||!path.isAbsolute(root)||root.includes('..'))throw new Error('SIGNED_LIBRARY_DIRECTORY_MISSING');const module={exports:{}};process.dlopen(module,path.join(root,name));return module.exports; }
 async function backend() {
-  return runtime ??= (async()=>{platform();const {createImageKitBackend,IMAGEKIT_TRANSFORM_VERSION}=await import('../../../../../../transport/imagekit/backend.mjs');if(IMAGEKIT_TRANSFORM_VERSION!=='request-image-imagekit-candidate-v2')throw new Error('IMAGE_TRANSFORM_VERSION_MISMATCH');const native=library('libdsh_imagekit_candidate.so');if(typeof native.run!=='function')throw new Error('IMAGE_BINDING_MISSING');return createImageKitBackend(native);})();
+  return runtime ??= (async()=>{platform();const {createImageKitBackend,IMAGEKIT_TRANSFORM_VERSION}=await import('../../../../../../transport/imagekit-v3/backend.mjs');if(IMAGEKIT_TRANSFORM_VERSION!=='request-image-imagekit-candidate-v3')throw new Error('IMAGE_TRANSFORM_VERSION_MISMATCH');const native=library('libdsh_imagekit_candidate.so');if(typeof native.run!=='function')throw new Error('IMAGE_BINDING_MISSING');return createImageKitBackend(native);})();
 }
 // 原存储并发上界不变；同一系统后端的实际工作排队，避免正常多图被native忙拒绝。
 let operationTail=Promise.resolve();

@@ -35,11 +35,11 @@ files['transport/cordis-min.yml'] = assets / 'platform-diagnostic.patch.yml'
 attachment = 'opt/dsh/node_modules/@deepseek-ai/dsh-attachment-local/lib/index.js'
 overrides = {attachment: patch_attachment_source(files[attachment].read_bytes())}
 files[attachment.rsplit('/', 1)[0] + '/ohos-imagekit.mjs'] = assets / 'imagekit/ohos-imagekit.mjs'
-for name in ['backend.mjs','container.mjs','encoded-icc.mjs','header-reader.mjs','container-worker.mjs']:
-    files['transport/imagekit/' + name] = assets / 'imagekit' / name
-provenance = 'transport/imagekit/patch-manifest.json'
+for name in ['backend.mjs','container.mjs','encoded-icc.mjs','header-reader.mjs','container-worker.mjs','profile-policy.mjs','profile-templates.json','profile-templates.SOURCES.json','profile-templates.CC0']:
+    files['transport/imagekit-v3/' + name] = assets / 'imagekit' / name
+provenance = 'transport/imagekit-v3/patch-manifest.json'
 files[provenance] = assets / 'imagekit/ohos-imagekit.mjs'
-overrides[provenance] = json.dumps({'sourceSha256': IMAGEKIT_SOURCE_SHA, 'patchedSha256': hashlib.sha256(overrides[attachment]).hexdigest(), 'transformVersion': 'request-image-imagekit-candidate-v2'}, sort_keys=True).encode()
+overrides[provenance] = json.dumps({'sourceSha256': IMAGEKIT_SOURCE_SHA, 'patchedSha256': hashlib.sha256(overrides[attachment]).hexdigest(), 'transformVersion': 'request-image-imagekit-candidate-v3'}, sort_keys=True).encode()
 def contents(name, file):
     return overrides[name] if name in overrides else file.read_bytes()
 manifest = {name: hashlib.sha256(contents(name, file)).hexdigest() for name, file in sorted(files.items())}

@@ -21,7 +21,7 @@ REPLACEMENTS = [('const requireSharp = createLazyRequire("sharp", import.meta.ur
   'async function createRequestImage(attachment, target, hasAlpha) {\n'
   '\tif (OHOS_IMAGEKIT_ENABLED) return ohosImageOperation("request", attachment, target);'),
  ('const REQUEST_IMAGE_TRANSFORM_VERSION = "request-image-v6";',
-  'const REQUEST_IMAGE_TRANSFORM_VERSION = OHOS_IMAGEKIT_ENABLED ? "request-image-imagekit-candidate-v2" : '
+  'const REQUEST_IMAGE_TRANSFORM_VERSION = OHOS_IMAGEKIT_ENABLED ? "request-image-imagekit-candidate-v3" : '
   '"request-image-v6";'),
  ('await ensureDurableDirectory(home, parse(home).root);',
   'await ensureDurableDirectory(home, OHOS_IMAGEKIT_ENABLED ? await ohosImageOperation("durableBoundary", '
@@ -31,6 +31,10 @@ REPLACEMENTS = [('const requireSharp = createLazyRequire("sharp", import.meta.ur
   'link(staged.path, target);'),
  ('await unlink(staged.path);',
   'if (OHOS_IMAGEKIT_ENABLED) await removeTemporary(staged.path); else await unlink(staged.path);')]
+
+# 仅OHOS缓存接收门：允许源ICC，不把带元数据的缓存命中冒充clean输出。
+CACHE_READ_ANCHOR = '\t\tconst detected = await probeImage(data);'
+REPLACEMENTS.append((CACHE_READ_ANCHOR, CACHE_READ_ANCHOR + '\n\t\tif (OHOS_IMAGEKIT_ENABLED && detected.carriesMetadata) return void 0;'))
 
 def patch_attachment_source(source):
     if hashlib.sha256(source).hexdigest() != EXPECTED:

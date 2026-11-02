@@ -20,6 +20,7 @@ sha=lambda value:hashlib.sha256(value).hexdigest()
 
 class Contracts(unittest.TestCase):
  def test_fixed_source_inverse_and_unknown_rejected(self):
+  self.assertEqual(len(patch.REPLACEMENTS),10)
   changed=patch.patch_attachment_source(SOURCE)
   self.assertNotEqual(SOURCE,changed);self.assertEqual(sha(SOURCE),patch.EXPECTED)
   restored=changed.decode()
@@ -53,14 +54,26 @@ class Contracts(unittest.TestCase):
    self.assertEqual(files['opt/dsh/node_modules/@deepseek-ai/dsh-attachment-local/LICENSE'],b'fixed-license-sentinel')
    owner='opt/dsh/node_modules/@deepseek-ai/dsh-attachment-local/lib/index.js'
    self.assertEqual(files[owner],patch.patch_attachment_source(SOURCE))
-   self.assertIn('transport/imagekit/backend.mjs',files)
-   for name in ['backend.mjs','container.mjs','encoded-icc.mjs','header-reader.mjs','container-worker.mjs']:
-    self.assertEqual(files['transport/imagekit/'+name],(PLUGIN/'assets/imagekit'/name).read_bytes())
+   self.assertIn('transport/imagekit-v3/backend.mjs',files)
+   for name in ['backend.mjs','container.mjs','encoded-icc.mjs','header-reader.mjs','container-worker.mjs','profile-policy.mjs','profile-templates.json','profile-templates.SOURCES.json','profile-templates.CC0']:
+    self.assertEqual(files['transport/imagekit-v3/'+name],(PLUGIN/'assets/imagekit'/name).read_bytes())
    helper=files[owner.rsplit('/',1)[0]+'/ohos-imagekit.mjs'].decode()
-   self.assertIn('../../../../../../transport/imagekit/backend.mjs',helper)
-   provenance=json.loads(files['transport/imagekit/patch-manifest.json'])
+   self.assertIn('../../../../../../transport/imagekit-v3/backend.mjs',helper)
+   provenance=json.loads(files['transport/imagekit-v3/patch-manifest.json'])
    self.assertEqual(provenance['sourceSha256'],patch.EXPECTED);self.assertEqual(provenance['patchedSha256'],sha(files[owner]))
-   self.assertEqual(provenance['transformVersion'],'request-image-imagekit-candidate-v2')
+   self.assertEqual(provenance['transformVersion'],'request-image-imagekit-candidate-v3')
+
+ def test_imagekit_imports_provenance_and_lf(self):
+  root=PLUGIN/'assets/imagekit';sources=json.loads((root/'profile-templates.SOURCES.json').read_text(encoding='utf8'))
+  self.assertEqual(sources['templateSha256'],sha((root/'profile-templates.json').read_bytes()))
+  self.assertEqual(sources['licenseSha256'],sha((root/sources['licenseFile']).read_bytes()))
+  self.assertEqual((root/'.gitattributes').read_bytes(),b'* text eol=lf\n')
+  self.assertIn('native/imagekit.c text eol=lf',(PLUGIN/'.gitattributes').read_text(encoding='utf8'))
+  for name in ['profile-templates.json','profile-templates.SOURCES.json','profile-templates.CC0']:self.assertNotIn(b'\r',(root/name).read_bytes())
+  for name in ['backend.mjs','container.mjs','encoded-icc.mjs','header-reader.mjs','container-worker.mjs','profile-policy.mjs']:
+   data=(root/name).read_bytes()
+   for relative in re.findall(r"['\"](\./[^'\"]+)['\"]",data.decode()):self.assertTrue((root/relative).is_file(),relative)
+  self.assertIn("transformVersion='request-image-imagekit-candidate-v3'",(REPO/'harmony/tooling/build-imagekit-addon.ps1').read_text(encoding='utf8'))
 
  def test_bad_source_stops_before_output(self):
   root=self.make_source('bad',SOURCE+b'\n');out=ROOT/'must-not-exist.zip'
@@ -73,7 +86,7 @@ class Contracts(unittest.TestCase):
   self.assertIn('DSH_HARMONY_DURABLE_ROOT: fresh',bootstrap)
   self.assertNotIn('HARMONY_LINK_FALLBACK_ATT',bootstrap)
   self.assertNotIn('copyFile(a, b, constants.COPYFILE_EXCL)',bootstrap)
-  self.assertIn('scriptver-151',bootstrap);self.assertIn('scriptver-151',host)
+  self.assertIn('scriptver-153',bootstrap);self.assertIn('scriptver-153',host)
   build=(REPO/'harmony/tooling/build-imagekit-addon.ps1').read_text(encoding='utf8')
   for name in ['NativeSdk','NodeSource','NodeLibrary','OutputDirectory']:self.assertIn('[string]$'+name,build)
   self.assertIn('-DNAPI_VERSION=8',build);self.assertIn('libnode.so',build);self.assertIn('libace_napi',build)

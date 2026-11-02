@@ -1,6 +1,6 @@
 import { ImageFailure } from './container.mjs';
 import { createHeaderReader } from './header-reader.mjs';
-export const IMAGEKIT_TRANSFORM_VERSION = 'request-image-imagekit-candidate-v2';
+export const IMAGEKIT_TRANSFORM_VERSION = 'request-image-imagekit-candidate-v3';
 const fail = code => { throw new ImageFailure(code); };
 const integer = value => Number.isSafeInteger(value) && value > 0;
 const defaultLimits = { maxImageBytes: 20971520, maxImagePixels: 64000000, maxImageDimension: 8192 };

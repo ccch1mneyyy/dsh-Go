@@ -1,8 +1,22 @@
 // 有界容器事实解析；未知元数据/颜色明确拒绝，不把缺少系统字段解释成clean。
+import { inflateSync } from 'node:zlib';
+import { classifyProfile, MAX_ICC_BYTES } from './profile-policy.mjs';
 export class ImageFailure extends Error { constructor(code) { super('图像候选拒绝输入'); this.code = code; } }
 const fail = (code = 'INVALID_IMAGE') => { throw new ImageFailure(code); };
 const text = (b, a, z) => b.toString('latin1', a, z);
 const u24 = (b, at) => b[at] | b[at + 1] << 8 | b[at + 2] << 16;
+function profileKind(bytes) { try { return classifyProfile(bytes); } catch (_) { fail('IMAGE_COLOR_PROFILE_UNSUPPORTED'); } }
+function pngProfile(bytes) {
+  const zero=bytes.indexOf(0);
+  if(zero<1||zero>79||bytes[zero+1]!==0||zero+2>=bytes.length||bytes.length-zero-2>MAX_ICC_BYTES)fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+  const name=bytes.subarray(0,zero);
+  if(!name.every(v=>v>=32&&v<=126||v>=161)||name[0]===32||name.at(-1)===32||name.includes(Buffer.from('  ')))fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+  try {
+    const compressed=bytes.subarray(zero+2),out=inflateSync(compressed,{maxOutputLength:MAX_ICC_BYTES,info:true});
+    if(out.engine.bytesWritten!==compressed.length)fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+    return profileKind(out.buffer);
+  } catch (_) { fail('IMAGE_COLOR_PROFILE_UNSUPPORTED'); }
+}
 function crc32(bytes) { let crc = 0xffffffff; for (const byte of bytes) { crc ^= byte; for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0); } return (crc ^ 0xffffffff) >>> 0; }
 function orientationExif(bytes) {
   let b = bytes;
@@ -25,7 +39,7 @@ function orientationExif(bytes) {
   return orientation;
 }
 function png(b) {
-  let at = 8, width, height, depth, colour, alpha = false, orientation = 1, ended = false, data = false;
+  let at = 8, width, height, depth, colour, alpha = false, orientation = 1, ended = false, data = false, icc, srgb = false, plte = false;
   const metadata = [];
   while (at + 12 <= b.length) {
     const n = b.readUInt32BE(at), type = text(b, at + 4, at + 8), start = at + 8, end = start + n;
@@ -41,16 +55,23 @@ function png(b) {
     else if (type === 'tRNS') alpha = true;
     else if (type === 'eXIf') { metadata.push('exif'); orientation = orientationExif(b.subarray(start, end)); }
     else if (['tEXt', 'zTXt', 'iTXt', 'tIME'].includes(type)) metadata.push(type);
-    else if (['iCCP', 'gAMA', 'cHRM', 'cICP', 'mDCv', 'cLLi'].includes(type)) fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
-    else if (type === 'sRGB') { if (n !== 1 || b[start] > 3) fail(); }
+    else if (type === 'PLTE') plte=true;
+    else if (type === 'iCCP') {
+      if(icc||srgb||data||plte||!width||depth!==8||colour!==2)fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+      icc=pngProfile(b.subarray(start,end));metadata.push('icc');
+    }
+    else if (['gAMA', 'cHRM', 'cICP', 'mDCv', 'cLLi'].includes(type)) fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+    else if (type === 'sRGB') { if(icc||srgb||data||plte||!width)fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');if (n !== 1 || b[start] > 3) fail(); srgb=true; }
     else if (!['PLTE', 'pHYs', 'sBIT', 'bKGD', 'hIST'].includes(type)) fail('IMAGE_METADATA_UNSUPPORTED');
     at = end + 4;
   }
   if (!ended || !data) fail();
-  return { mediaType: 'image/png', rawWidth: width, rawHeight: height, orientation, pages: 1, hasAlpha: alpha, depth: depth === 16 ? 'ushort' : 'uchar', space: [0, 4].includes(colour) ? 'b-w' : depth === 16 ? 'rgb16' : 'srgb', metadata };
+  if (icc && alpha) fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+  return { mediaType: 'image/png', rawWidth: width, rawHeight: height, orientation, pages: 1, hasAlpha: alpha, depth: depth === 16 ? 'ushort' : 'uchar', space: [0, 4].includes(colour) ? 'b-w' : depth === 16 ? 'rgb16' : 'srgb', metadata, profileKind: icc };
 }
 function jpeg(b) {
-  let at = 2, width, height, components, orientation = 1, ended = false, entropy = false;
+  let at = 2, width, height, components, orientation = 1, ended = false, entropy = false, seenScan = false, iccCount = 0, iccBytes = 0;
+  const iccParts = new Map();
   const metadata = [];
   while (at < b.length) {
     if (entropy) {
@@ -73,15 +94,26 @@ function jpeg(b) {
       metadata.push('app1');
       if (text(b, start, start + 6) === 'Exif\0\0') orientation = orientationExif(b.subarray(start, end));
       else if (!text(b, start, end).startsWith('http://ns.adobe.com/xap/1.0/')) fail('IMAGE_METADATA_UNSUPPORTED');
-    } else if (marker === 0xe2 || marker === 0xee) fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+    } else if (marker === 0xe2) {
+      if(seenScan||end-start<15||text(b,start,start+12)!=='ICC_PROFILE\0')fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+      const sequence=b[start+12],count=b[start+13],part=b.subarray(start+14,end);
+      if(count<1||count>16||sequence<1||sequence>count||iccParts.has(sequence)||(iccCount&&iccCount!==count)||iccBytes+part.length>MAX_ICC_BYTES)fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+      iccCount=count;iccBytes+=part.length;iccParts.set(sequence,part);
+    } else if (marker === 0xee) fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
     else if (marker === 0xed || marker === 0xfe) metadata.push('jpeg-metadata');
     else if (marker === 0xe0) { if (!['JFIF\0', 'JFXX\0'].includes(text(b, start, start + 5))) fail('IMAGE_METADATA_UNSUPPORTED'); }
     else if (marker >= 0xe3 && marker <= 0xef) fail('IMAGE_METADATA_UNSUPPORTED');
     else if (![0xda, 0xdb, 0xc4, 0xdd].includes(marker) && ![0xc0, 0xc1, 0xc2].includes(marker)) fail();
-    at = end; if (marker === 0xda) entropy = true;
+    at = end; if (marker === 0xda) { entropy = true; seenScan = true; }
   }
   if (!ended || !width || !height) fail();
-  return { mediaType: 'image/jpeg', rawWidth: width, rawHeight: height, orientation, pages: 1, hasAlpha: false, depth: 'uchar', space: components === 1 ? 'b-w' : 'srgb', metadata };
+  let icc;
+  if(iccCount){
+    if(components!==3||iccParts.size!==iccCount)fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');
+    const ordered=[];for(let sequence=1;sequence<=iccCount;sequence++){if(!iccParts.has(sequence))fail('IMAGE_COLOR_PROFILE_UNSUPPORTED');ordered.push(iccParts.get(sequence));}
+    icc=profileKind(Buffer.concat(ordered,iccBytes));metadata.push('icc');
+  }
+  return { mediaType: 'image/jpeg', rawWidth: width, rawHeight: height, orientation, pages: 1, hasAlpha: false, depth: 'uchar', space: components === 1 ? 'b-w' : 'srgb', metadata, profileKind: icc };
 }
 function webp(b) {
   if (b.readUInt32LE(4) + 8 !== b.length) fail();
@@ -144,6 +176,8 @@ export function inspectContainer(bytes) {
     else if (['GIF87a', 'GIF89a'].includes(text(b, 0, 6))) info = gif(b);
     else fail();
     if (!Number.isSafeInteger(info.rawWidth) || !Number.isSafeInteger(info.rawHeight) || !info.rawWidth || !info.rawHeight) fail();
-    return { ...info, width: info.orientation >= 5 ? info.rawHeight : info.rawWidth, height: info.orientation >= 5 ? info.rawWidth : info.rawHeight, animated: info.pages > 1, carriesMetadata: info.metadata.length > 0, metadataKnown: true };
+    if(info.rawWidth*info.rawHeight>64000000)fail('IMAGE_TOO_MANY_PIXELS');
+    if(Math.max(info.rawWidth,info.rawHeight)>8192)fail('IMAGE_DIMENSION_TOO_LARGE');
+    return { ...info, hasProfile: !!info.profileKind, width: info.orientation >= 5 ? info.rawHeight : info.rawWidth, height: info.orientation >= 5 ? info.rawWidth : info.rawHeight, animated: info.pages > 1, carriesMetadata: info.metadata.length > 0, metadataKnown: true };
   } catch (error) { if (error instanceof ImageFailure) throw error; fail(); }
 }
