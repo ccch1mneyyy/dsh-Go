@@ -55,6 +55,8 @@ if (values['linked-publication-fixture'] !== undefined) {
 await mkdir(out, { recursive: false }); // A measurement never silently reuses another case's home.
 const workspace = join(out, 'workspace');
 await mkdir(workspace);
+// The host supplies an existing private application data directory before imports.
+await mkdir(join(out, 'home'), { mode: 0o700 });
 const require = createRequire(join(prefix, 'package.json'));
 const { WebSocket } = require('ws'); // Already in the locked DSH dependency tree.
 const model = await startFakeModel(workspace);

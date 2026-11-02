@@ -13,6 +13,9 @@ if (workerData.strict) {
 
 const binding = process._linkedBinding('dsh_ohos_publication');
 parentPort.postMessage({ type: typeof binding.renameNoReplace,
+  lockType: typeof binding.lockExclusive,
+  markerSetType: typeof binding.setOwnershipMarker,
+  markerGetType: typeof binding.getOwnershipMarker,
   version: process.version, wasm: typeof WebAssembly,
   strictConstraintsVerified: workerData.strict,
   marker: globalThis[Symbol.for('dsh.go.ohos.sim')] === true });

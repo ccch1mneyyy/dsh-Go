@@ -1,99 +1,120 @@
-# M3-1：用不覆盖的原子改名发布附件与会话
+# M3-1 / M3-1b：不覆盖发布与持久归属
 
-## 本轮范围与未完成项
+## 已实现的范围
 
-本候选把 OpenHarmony 两个 provider 的发布回退改为：在最终文件的**同一父目录**独占创建临时文件，逐块写完并执行文件 `fsync`，再调用自有 linked NAPI 模块的 `renameat2(..., RENAME_NOREPLACE)`。源文件只读打开，辅助函数不删除源文件；最终路径已存在时不覆盖。
+OpenHarmony 的附件和会话 provider 继续使用 30 号包的协议 1 接缝：先尝试硬链接，受限时在最终路径的同一父目录复制到独占临时文件，写完并同步，再执行 `renameat2(..., RENAME_NOREPLACE)`。源文件由辅助函数只读打开；已有最终文件不覆盖。
 
-本轮有真实 Linux 系统调用、两个实际 provider 辅助函数、外层附件/会话接口及 SIGKILL 后重试的证据。它尚不能被称为整个 M3-1 恢复任务完成：**生产 `installPublication()` 没有持久化临时文件登记；整个 App 在任意时刻被杀后的自动临时文件回收仍未完成。** 测试父进程预先持久登记的 receipt 只证明那个已登记区间可以按身份清理。创建成功到取得或持久登记身份之间留下的未知文件必须保留，不能通过文件名前缀或大小为零推定归属。
+M3-1b 增加了生产持久账本。临时路径在 `open('wx')` **之前**持久登记；已打开文件的身份和随机文件标记在**首个 payload 写入之前**持久确认；本调用安全收尾后注销。新主进程在安装 publication 服务前打开同一账本并恢复旧进程记录。测试父进程不再预建临时文件，不提供 receipt，也不代替产品删除它们。
 
-如果实际原生提交返回 `EINVAL`，按追加 7 的明确决定退回已有独占复制算法，同时发出 `OHOS_PUBLICATION_NONATOMIC_FALLBACK` 警告。此时半成品最终文件的风险仍然存在。本轮也真实重现该风险，没有将回退情形写为原子发布成功。
+本轮仍保留两个明确边界：
 
-## 接线与前置条件
+- 创建成功但身份确认尚未完成时，磁盘只有 `reserved` 记录。若路径已存在，重启会保留文件及记录，报告 `reserved-without-inode`。路径缺失则可以清账。不能仅凭名字、空文件或旧 inode 号推定归属。
+- 原生提交真实返回 `EINVAL` 时，按追加 7 的决定继续使用旧独占复制并告警；此时最终路径可能残留半文件。M3-1b 不删除历史或回退产生的最终文件，也不把这个分支列为原子发布。
 
-运行时固定为 Node **24.22.1**。自有宿主须在 Node 启动前注册名为 `dsh_ohos_publication` 的 linked NAPI 模块；该模块提供同步函数：
+因此，本轮补上了**有持久身份的半写临时文件在 App 进程死亡后的自动回收**。它不宣称任意中断窗口零遗留，也不宣称断电恢复或 OpenHarmony 真机已经验证。
 
-```js
-renameNoReplace(absoluteTemporaryPath, absoluteFinalPath)
-// 成功返回 undefined；失败抛带 code、errno、syscall 的系统错误。
-```
+## 宿主配置与启动
 
-原生函数只执行固定 `RENAME_NOREPLACE` 系统调用，不复制、不执行普通覆盖式 `rename`、不清理文件。本目录不实现或替代原生模块；其源码、构建与宿主注册由同一交付中的原生分项提供。Linux `.node` 或 `LD_PRELOAD` 测试库不是 OpenHarmony 产品二进制。
+Node 固定为 **24.22.1**。自有宿主在 Node 启动前注册 `dsh_ohos_publication` linked NAPI 模块，必须提供以下同步函数：
 
-正式启动显式增加 `--import /绝对路径/runtime/ohos/publication/preload.mjs`，保持它为独立启动输入，不把它藏入网络预加载。预加载仅在 `process.platform === 'openharmony'` 或测试预加载明确设置 `globalThis[Symbol.for('dsh.go.ohos.sim')] === true` 时安装服务；不会读取旧仿真环境变量来启用产品分支。缺少 linked binding、成员不符或 Node 版本不符都明确失败，不静默退回旧算法。
-
-服务注册在 `Symbol.for('dsh.go.ohos.publication')`，协议版本为 1，包含 `publish` 和只读 `pendingCount`。服务与同路径串行表属于一个主 Node 引擎。虚拟 shell 的 Worker 会继承 `--import` 参数；预加载在 Worker 中不安装该主引擎服务，也不使无关 Worker 启动失败。两个 provider 的新接缝在缺少服务时抛 `ERR_OHOS_PUBLICATION_PRELOAD_MISSING`。
-
-新 vendor 文件为 `zzzzzzzz-ohos-atomic-publication.diff`，排序在原附件/会话补丁之后，仅登记在 schema 2 的 `targetSets.ohos`。Android 集合及其原始 11 个公共补丁内容不变。锁实现没有改动。
-
-## 发布顺序与不变量
-
-1. 对同一最终绝对路径排队。不同路径可独立发布。
-2. 先沿用硬链接路径。只有 `EACCES`、`EPERM`、`EXDEV`、`ENOTSUP` 或 `EMLINK` 才进入 OpenHarmony 复制路径；硬链接的 `EEXIST` 原样传播。
-3. 用 `wx`、权限 `0600` 在最终路径的同一父目录分配唯一临时文件。候选名字在打开前排除原源路径和最终路径。取得已打开文件的 `dev/ino` 身份，确认它是空的普通文件。
-4. 每次最多读取 65,536 字节并写入临时文件，等待每次写入完成。写完执行临时文件的 `sync()`；取消发生在同步等待期间时，同步返回后再次检查取消状态，阻止后续提交。
-5. 核对临时目录项仍指向登记的身份。在同一 JS turn 中立即同步调用原生 `renameNoReplace`。支持该操作的文件系统上，最终路径只有缺失或完整文件两种状态；已有空文件、普通文件、目录或符号链接均不得被覆盖。
-6. 关闭本次打开的句柄，并只清理本调用明确登记的临时路径。成功改名后临时路径已经不存在，清理函数不会删除最终路径。若临时路径已被替换，拒绝删除替换者并保留错误。
-
-临时身份检查与 `unlink` 不是内核提供的原子“仅匹配 inode 才删除”操作。本实现适用于主引擎管理的应用私有发布目录；同一个 JS turn 不代表能阻止任意其他原生进程在检查与删除之间替换路径。不能将此清理函数描述为面向任意不可信共享目录的通用原语。最终路径的不覆盖提交由 `RENAME_NOREPLACE` 本身保证。
-
-源文件在复制期间应为 DSH 已有的不可变对象或已同步 staging 文件；本分项不新增对任意外部并发改写源文件的快照语义。附件 provider 原有的 staging 删除、摘要检查、只读权限与目录同步仍由原调用方执行；“辅助函数保留 source”不意味着改变原调用方成功后删除 staging 的行为。会话原来的 `rejectExistingLog` 也保持不变，历史遗留的半成品最终文件不会被这个新协议擅自删除。
-
-## 错误与回退
-
-| 出错位置/错误 | 行为 |
+| 成员 | 合同 |
 |---|---|
-| 硬链接 `EEXIST` | 原样传播；不打开源文件进行复制 |
-| 固定原生 `renameat2` 调用返回 `EINVAL` | 发出一次明确风险警告，然后执行原有 `open(final, 'wx')` 独占复制 |
-| 原生 `EEXIST`、`EACCES`、`EXDEV`、`ENOSYS`、其他错误 | 原样传播，绝不当作“不支持”而回退 |
-| 读写或 `fsync` 返回 `EINVAL` | 普通 I/O 失败，不进入原生提交的 `EINVAL` 回退门控 |
-| 临时路径身份改变 | 拒绝提交或清理该替换目录项 |
-| 提交之后关闭句柄失败 | 报告失败，但不删除已经完整发布的最终文件 |
+| `renameNoReplace(temp, final)` | 固定 `RENAME_NOREPLACE`；成功 `undefined`，失败抛系统错误 |
+| `lockExclusive(fd)` | 对已打开 fd 取非阻塞排他锁；不替调用方开关或删除文件 |
+| `setOwnershipMarker(fd, token)` | 在实际文件上独占设置随机归属标记；已有标记不能覆盖 |
+| `getOwnershipMarker(fd)` | 返回标记字符串；缺少标记为 `undefined`，其他系统错误抛出 |
 
-`EINVAL` 并不在所有系统调用场景下唯一表示“不支持”。这里的门控限定为固定 flags、普通临时文件、不同源/目标目录项、同一父目录等前置条件成立之后的原生调用，并且按 owner 的明确约定处理。不能把所有 I/O 层的 `EINVAL` 都吞掉。
+标记使用 `user.dsh_go_ownership`。成功改名后的最终 inode 保留该扩展属性，payload 字节不变。本轮不另开移除标记的中断窗口。四个函数的原生实现、固定构建脚本和独立边界测试属于配套原生分项；Linux `.node` / `LD_PRELOAD` 库仅是显式测试夹具，不是 OpenHarmony 产品二进制。
 
-## 已跑证据及其边界
+宿主必须先创建它授权的应用数据目录，并将 **`DSH_HOME` 显式设为既有的绝对目录路径**。预加载会用 `realpath` 得到实际目录；不存在、相对路径、普通文件及文件系统根目录均拒绝。不从 `cwd` 或系统临时目录推导应用数据权限。账本放在该目录下的 `ohos-ownership/`；账本 factory 创建或核查这个 `0700` 私有目录，拒绝符号链接和非私有权限。
 
-固定 Linux Node 和自有规范 linked 测试库上的作者结果如下，最终独立审查报告另行绑定精确补丁哈希：
+显式增加 `--import /绝对路径/runtime/ohos/publication/preload.mjs`。预加载独立于网络和仿真模块，顶层等待 `installPublication()` 完成。安装仅在真实 `process.platform === 'openharmony'` 或明确的进程内 `Symbol.for('dsh.go.ohos.sim') === true` 下执行；旧环境变量本身不会开启分支。Worker 继承 `--import` 时跳过主引擎服务，不竞争主引擎账本锁。
 
-| 验证 | 结果与范围 |
+安装过程先核版本、重复安装和四个原生成员，再取得账本排他锁，执行恢复，最后定义 `Symbol.for('dsh.go.ohos.publication')`。初始化失败时关闭已取得的 ledger。重复及并发安装都明确失败；缺少原生能力不静默降级。服务仍为 `protocolVersion: 1`，保留 `publish` 和只读 `pendingCount`，新增只读 `ownerId` 与深冻结的 `recoverySummary`。未解决记录只输出数量告警，保留详细结果供宿主检查。
+
+## 账本与身份
+
+`openOwnershipLedger` 由配套 `ledger.mjs` 实现。本核心只依赖 `reserve`、`identify`、`release`，不反向导入账本；账本可以复用精确临时文件清理函数。生产调用顺序如下：
+
+1. 对同一个最终绝对路径排队，尝试原硬链接。`EEXIST` 等不在回退集合的错误原样传播。
+2. 选择与源和最终路径不同、位于最终路径同一父目录的随机候选名。路径选择器只有选名权限，不能自行创建文件。
+3. `await ledger.reserve(temp, final)`，将路径、最终路径、本次启动 UUID 和 pid 等写入账本。提交完成后才能 `open(temp, 'wx', 0600)`。
+4. `fstat` 取得实际文件身份，确认空普通文件。`await ledger.identify(token, {dev, ino})` 会重新以 `O_NOFOLLOW` 打开同一路径，核对身份，设置独占随机标记并同步，再持久提交 identified 状态。
+5. 每次最多复制 65,536 字节，等待写入；末尾同步文件，随后再次检查取消。同步等待期间被取消不会继续提交。
+6. 在同一 JS turn 中核对临时目录项身份并调用原生不覆盖改名。只允许这个原生调用的 `EINVAL` 进入旧复制回退。
+7. 保持输出 FileHandle 打开，核验并清理本次临时路径；随后关闭输出和输入句柄；路径已安全删除或已缺失时才 `await ledger.release(token)`。注销完成或失败已向调用方报告之前，不放行同目标的后一个任务。
+
+账本以固定锁文件上的真实 `flock` 排除另一个活跃 writer。锁文件不被删除或改名，锁句柄保持到 ledger 关闭或进程退出。启动 UUID 不承担判断另一个进程是否死亡的职责。账本更新为串行原子替换，并同步账本文件及账本目录；持久化结果不确定时拒绝后续写入，要求重启处理。
+
+仅 `dev/ino` 不足以证明跨重启归属：独立审查实际复现过旧临时文件删除后，新文件复用相同 inode 的情形。因此新的账本 schema 2 同时要求随机扩展属性标记与 token 一致。恢复时先打开文件、检查 inode 和标记，并在句柄仍持有该 inode 时同步核对目录项并清理。标记不符、标记读取失败、身份改变、未识别记录均保留；旧 schema 不会被当成新协议静默接纳。
+
+私有目录的权限前提仍然必要。JS 中的检查和 `unlink` 不是内核原子 compare-and-unlink，不能抵抗任意外部原生 writer 在检查与删除之间操作同一路径。随机标记防止已测得的普通 inode 重用，不是针对能读取账本并仿造相同标记的攻击者的认证机制。
+
+## 失败语义
+
+| 情形 | 处理 |
 |---|---|
-| 核心错误/身份/取消测试 | JITless 18/18；严格 O0 18/18，均零 skip |
-| 正式独立 preload 接入原 provider | 附件、会话外层与既有锁测试 24/24，零 skip |
-| Linux/Android 分支对照 | 6/6；真实 Linux 硬链接 inode、原 native flock 及非 OHOS `EACCES` 行为 |
-| 启动矩阵 | 7/7：旧环境变量不启用、缺 binding、错误版本、重复安装、真实 linked 启动、Worker 继承 |
-| SIGKILL | 两个实际 provider，各 6 个阶段，共 12 组；详情见下表 |
-| Android 整树比较 | 30,444 个条目、26,871 个普通文件，与 afb5cdd 旧公共链逐块零差异；目录模式和符号链接目标也相同 |
-| OHOS 补丁链 | 17 个已登记补丁重放与幂等性通过；OHOS 成品树回用于 Android 时明确拒绝且不改树 |
+| 持久 reserve 失败 | 不创建临时文件；原错误向上传播 |
+| `wx` 返回 `EEXIST` | 保留既有目录项，只撤销本次预约，换一个候选名 |
+| 创建后 fstat 失败 | 未获得可信身份，保留文件及 reserved 记录，明确报错 |
+| identity/marker 持久化失败 | 不写 payload；本调用仍持有的精确文件可安全清理；注销失败也必须报告 |
+| 当前临时路径被替换 | 不提交、不删除替换者，保留可供检查的记录 |
+| 成功提交后 close / release 失败 | 向调用方报告失败，完整最终文件和源均保留 |
+| 重启发现 identified 路径已缺失 | 清除旧记录，不碰最终路径 |
+| 重启发现 identified 身份和标记都吻合 | 自动删除该临时文件并注销旧记录 |
+| 重启发现 reserved 路径存在 | 保留并报告未解决 |
+| 新临时文件所在文件系统不支持归属标记 | 在首个 payload 写入前明确失败；不降级为不带身份的恢复 |
 
-启动矩阵首轮有一个测试夹具错误：父进程的 `--input-type=module` 被 eval Worker 继承，而夹具错误使用 `require`。原始 6 过 1 败日志保留；改为 ESM 夹具后 7/7。没有借此修改产品实现或放宽预加载断言。
+`EINVAL` 风险回退只限固定原生 renameat2 调用：硬链接、读写、文件同步及 marker 操作的 `EINVAL` 都不会误入这个分支；`EEXIST`、`EACCES`、`EXDEV`、`ENOSYS` 也不被当成不支持而吞掉。旧回退仍重新读取原 source。M3-1c 的性能与一致性评估是独立分项，本包没有偷换成未校验的 temp 路径读取。
 
-| 强杀阶段 | 强杀后 | 再次发布 |
-|---|---|---|
-| 原 helper 首块写完 | 最终文件残留 65,536 字节，源为 196,625 字节 | `EEXIST`，原缺陷保持可复现 |
-| 新协议临时文件首块写完 | 最终文件不存在，已登记临时文件 65,536 字节 | 按 receipt 清理后成功发布完整内容 |
-| 新协议临时文件同步返回 | 最终文件不存在，已登记临时文件完整 | 按 receipt 清理后成功发布完整内容 |
-| 新协议原子改名已完成 | 最终文件完整，临时路径不存在 | `EEXIST`，完整最终文件与源均不变 |
-| 注入原生 `EINVAL`，旧回退首块写完 | 最终文件再次残留 65,536 字节 | `EEXIST`，明确保留回退风险 |
-| 创建临时文件后、取得/登记身份前 | 最终文件不存在，未知空临时文件保留 | 新尝试成功；旧未知临时文件仍保留，自动回收未解决 |
+## 本轮实际验证
 
-12 组脚本仅对真实 provider 源码追加临时导出，不改原辅助函数以便制造结论；新协议组通过同一个候选 JS 核心。已登记组的 receipt 由测试父进程预先创建并持久写入，不能据此声称 production provider 自己已经具有重启账本。`EINVAL` 负对照明确为注入，不能写成 Linux 所在文件系统实际拒绝了这个 flag。
+最终准入由独立复核报告绑定精确补丁哈希。作者在固定 Linux Node、严格 O0 及自有 linked 测试库上的实测如下：
 
-Android 的规范整树摘要仍为 `ef9aa66792594a75bb87d4bd3ed3ddeff63d7f3dd5a11cac9d73955168fa1e36`。这些是固定 Linux 安装依赖树上的目标选择与真实逐字节比较，不是 Android arm64 构建、完整运行时归档、APK/HAP 或设备执行证明。
+| 验证 | 结果 |
+|---|---|
+| 原 30 生产 preload，同新重启 driver | 0 PASS / 2 FAIL；两个 provider 的 65,536 字节旧 temp 在重启后仍存在 |
+| 新生产 preload，两 provider × 六中断阶段 | 12/12；真实 SIGKILL，父进程不提供 receipt、不调用 cleanup |
+| 原发布错误、取消、身份 18 项 + 新账本顺序/失败 10 项 | JITless 28/28；严格 O0 28/28；零 skip |
+| 真实附件/会话外层与锁回归 | 严格 O0 24/24，零 skip |
+| Linux / Android 非 OH 分支对照 | 6/6；原硬链接、native flock 和 EACCES 行为保持 |
+| 真实 Node 启动矩阵 | 18/18；含显式 appdata、坏账本、缺 marker 成员、并发安装、Worker 继承 |
 
-## 文件系统与耐久性待验
+| 强杀点（每个 provider 都实际执行） | 重启恢复与重试 |
+|---|---|
+| reserve 已持久，尚未 open | 路径缺失，清账；重新发布成功 |
+| open 已完成，尚未 identify | 空文件及 reserved 记录保留，报告未解决；新一次发布成功 |
+| identify 已持久，首写尚未开始 | 自动清理已标记空 temp；重新发布成功 |
+| 第一块实际写完 | 自动清理 65,536 字节 temp；重新发布完整 196,625 字节 |
+| 最后一次实际文件同步完成 | 自动清理完整 temp；重新发布成功 |
+| 真实原子提交及 close 完成，尚未 release | 最终文件完整，temp 缺失；清账后重试 `EEXIST`，不覆盖 |
 
-Linux `rename(2)` 文档说明 `RENAME_NOREPLACE` 需要底层文件系统支持；`fsync(2)` 文档明确文件同步不能单独保证目录项持久化，需要目录 fd 同步。来源：[rename(2)](https://man7.org/linux/man-pages/man2/rename.2.html)、[fsync(2)](https://man7.org/linux/man-pages/man2/fsync.2.html)。现有 provider 成功路径中保留了原来的目录同步，但本轮只强杀进程，没有模拟断电、存储故障或文件系统重挂载，不能宣称断电耐久性已经通过。
+驱动仅对两个真实 provider 的副本追加 `publishOhosExclusive` 导出，不改辅助函数。每个孩子都显式导入产品 publication preload。父进程只在已选定的真实操作返回处发送 SIGKILL，并读取状态进行断言；自动恢复发生在第二个孩子运行测试入口之前。断言完成后才移除测试自身的目录。旧证据中“父进程预登记 receipt”的范围仍保留在 30 号原归档，不能反写成该旧版已经具有生产账本。
 
-另一个具体限制来自 OpenHarmony 官方 `OpenHarmony-v6.1-Release` 的 [sharefs/inode.c](https://raw.gitcode.com/openharmony/kernel_linux_6.6/raw/OpenHarmony-v6.1-Release/fs/sharefs/inode.c)：该固定源码的 rename 路径在 `flags` 非零时返回 `-EINVAL`。取得文件的 SHA256 为 `7478c2b95cae359130dde7c283bba3d033c3855963300d463b9b01af3104b111`。这个源码结论不等于已确定真机应用目录挂载 sharefs，也不能由 Linux 成功外推所有 OpenHarmony 目录支持该 flag。
+本包不修改 vendor diff、pins 或两个 provider 的原字节，继续使用 30 的 OH-only 协议 1 接缝。没有为本次纯 OH 源码接线重复宣称新的 Android 整包构建或真机测量；原 30 / M4-7 的 Android DSH 整树逐字节证据仍按原哈希独立保存。
 
-待真机核实：真实应用数据目录的文件系统及 `RENAME_NOREPLACE` 返回值；宿主 linked 模块注册/ABI；真实系统后台杀进程后读者与重试行为；目录同步的设备行为；生产持久登记及未知 orphan 处理策略。未经这些证据，不把整体 M3-1 标为完全恢复通过。
+## O4b 的可复用接缝与边界
 
-## 复跑入口
+账本的 reserve、随机 marker、identify、release、排他 writer 和旧 owner 恢复可供其他临时资源复用，数据中不要求资源名具有某个前缀。但 Git 的实际 Worker 硬取消尚未接入：父线程仍须在创建每个资源前登记，保持 job→token 关系，处理已接受 IO、Worker 退出和 cleanup 的先后关系，并等待清理及注销结束后才放行下一写任务。`recover()` 跳过当前 owner，不能直接用它替代活跃主进程对刚取消 job 的即时收尾。Git 原先 4 过 1 败的硬取消反例没有被本包消除。
 
-先按主交付说明应用 M4-7 目标补丁集合及本后置补丁，再用同包原生构建脚本产生 Linux linked 测试库或真实目标宿主。以下环境变量只是命令中的本地路径示意，不是产品门控：
+## 复跑
+
+先合 30 的原子发布接缝，再合配套 M3-1b 原生与 ledger 分项及本接线增量。用固定 Node 构建配套 Linux linked 库，配置以下绝对路径。`APP_DATA` 必须是专门为此次验证创建、尚未存在的目录；测试结束后只删除这个已知目录。
 
 ```sh
-LD_PRELOAD="$LINKED_LIBRARY" DSH_TEST_PREFIX="$PREFIX" DSH_GO_OHOS_SIM_PLATFORM=openharmony \
+mkdir -m 700 -- "$APP_DATA"
+
+LD_PRELOAD="$LINKED_LIBRARY" "$NODE" --jitless --test \
+  runtime/tests/ohos/publication-atomic.test.mjs \
+  runtime/tests/ohos/publication-ledger-lifecycle.test.mjs
+
+LD_PRELOAD="$LINKED_LIBRARY" DSH_GO_OHOS_SIM_PLATFORM=openharmony \
+  "$NODE" --jitless --import "$SIM_PRELOAD" --test \
+  runtime/tests/ohos/publication-atomic.test.mjs \
+  runtime/tests/ohos/publication-ledger-lifecycle.test.mjs
+
+LD_PRELOAD="$LINKED_LIBRARY" DSH_HOME="$APP_DATA" DSH_TEST_PREFIX="$PREFIX" \
+  DSH_GO_OHOS_SIM_PLATFORM=openharmony \
   "$NODE" --jitless --import "$SIM_PRELOAD" \
   --import ./runtime/ohos/publication/preload.mjs \
   --test --test-isolation=none \
@@ -104,10 +125,17 @@ python3 -B runtime/tests/ohos/publication-startup.py \
   --node "$NODE" --simulation "$SIM_PRELOAD" \
   --linked-lib "$LINKED_LIBRARY" --out /绝对路径/startup.json
 
-"$NODE" --jitless runtime/tests/ohos/publication-kill.mjs \
-  --node "$NODE" --preload "$SIM_PRELOAD" --linked-lib "$LINKED_LIBRARY" \
-  --before-prefix "$BEFORE_PREFIX" --candidate-prefix "$PREFIX" \
-  --out /绝对路径/publication-kill.json
+"$NODE" runtime/tests/ohos/publication-kill.mjs \
+  --node "$NODE" --simulation "$SIM_PRELOAD" \
+  --publication /绝对路径/runtime/ohos/publication \
+  --linked-lib "$LINKED_LIBRARY" --prefix "$PREFIX" \
+  --out /绝对路径/recovery.json
 ```
 
-强杀脚本的父进程负责创建、登记并终止本测试的子进程，因此父进程本身不加载禁止 `child_process` 的 O0 预加载；每个被测子进程都加载严格 O0。脚本最终仅删除自己创建的测试目录及临时导出模块，不扫描应用目录中的未知发布文件。整体交付不附第三方源码或 tarball。
+先失败重放使用同一个新 driver，将 `--publication` 指向 30 冻结版 publication 目录，并加 `--phases mid-copy`。预期退出 1，JSON 中为 0 PASS / 2 FAIL，失败来自实际 temp 残留。不要为了使基线全绿而删除这个断言。
+
+## 仍待验证
+
+OpenHarmony SDK 编译与 ABI、Node/Ark NAPI 符号归属、宿主 linked 注册、实际应用目录的 xattr / flock / RENAME_NOREPLACE 支持、正常宿主 teardown 与真机后台杀进程仍需目标证据。本轮只有 Linux 显式夹具，未将这些项目记为已测通过。
+
+文件 `fsync` 不单独证明目录项的断电耐久性。账本目录同步不能代替临时文件所在目录和最终提交目录的持久性论证；原 provider 的目录同步保留，但本轮没有断电、重挂载或存储故障测量。具体文件系统 flag 支持也不能从 Linux overlay 成功外推：已归档的官方 OpenHarmony 6.1 sharefs 源码对非零 rename flags 返回 EINVAL，真机目录实际挂载何种文件系统仍未知。相关原始来源与哈希保留在 30 的来源记录中。

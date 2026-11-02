@@ -17,7 +17,7 @@ if (strict) {
   assert.throws(() => process.dlopen({}, '/dsh-probe-no-addon.node'), { code: 'ERR_OHOS_SIM_DLOPEN' });
 }
 const binding = process._linkedBinding('dsh_ohos_publication');
-assert.deepEqual(Object.keys(binding), ['renameNoReplace']);
+assert.deepEqual(Object.keys(binding), ['renameNoReplace', 'lockExclusive', 'setOwnershipMarker', 'getOwnershipMarker']);
 assert.equal(process._linkedBinding('dsh_ohos_publication'), binding);
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-linked-publication-'));
 try {
@@ -44,6 +44,9 @@ try {
       ? resolve(result) : reject(new Error(`worker exited ${code}`)));
   });
   assert.equal(workerResult.type, 'function');
+  assert.equal(workerResult.lockType, 'function');
+  assert.equal(workerResult.markerSetType, 'function');
+  assert.equal(workerResult.markerGetType, 'function');
   assert.equal(workerResult.version, process.version);
   assert.equal(workerResult.wasm, typeof WebAssembly);
   assert.equal(workerResult.marker, globalThis[Symbol.for('dsh.go.ohos.sim')] === true);
