@@ -4462,6 +4462,42 @@ class L10nZh extends L10n {
   }
 
   @override
+  String get engineNewChatDefaultsLast => '新对话默认（上次选择）';
+
+  @override
+  String get engineNewChatDefaultsFixed => '新对话默认（固定）';
+
+  @override
+  String get engineNewChatUseLast => '沿用上次';
+
+  @override
+  String get engineNewChatUseFixed => '固定默认';
+
+  @override
+  String get engineNewChatDefaultsHint => '保存在当前主机，只影响新对话的模型和思考深度。权限仍用独立默认，不继承临时会话授权。';
+
+  @override
+  String get engineNewChatDefaultsLegacy => '此引擎仅支持沿用上次选择；不支持固定默认，也无法确认切换时默认值是否保存成功。';
+
+  @override
+  String get engineNewChatDefaultsUnsupported => '此主机没有可编辑的默认模型设置';
+
+  @override
+  String get engineNewChatDefaultsSelectionUnavailable => '此模型或思考深度已不可用，请重新选择。';
+
+  @override
+  String get engineNewChatDefaultsInheritedEffort => '主机基础配置指定了思考深度，不能在这里为无思考模型清除。请先调整主机配置。';
+
+  @override
+  String get engineNewChatDefaultsSaving => '正在保存并确认默认值…';
+
+  @override
+  String get engineNewChatDefaultsUnconfirmed => '没能确认完整默认值，请刷新后检查模型和思考深度。主机基础配置或其他客户端可能已改变它们。';
+
+  @override
+  String get engineModelDefaultSaveFailed => '当前对话的模型已切换，但新对话默认未保存。请到设置 › 模型检查并重试。';
+
+  @override
   String get engineAccountSignedIn => '已登录 DeepSeek 账号';
 
   @override
@@ -6845,6 +6881,12 @@ class L10nZh extends L10n {
   String get fileChatFallback => '对话';
 
   @override
+  String get hostDetailsConnectionType => '连接方式';
+
+  @override
+  String get hostDetailsSshNetworkHint => '通过 SSH 隧道连接。此连接不提供 LAN / P2P 路径检测或延迟测量。';
+
+  @override
   String get hubSessionDetails => '对话详情';
 
   @override
@@ -7320,6 +7362,18 @@ class L10nZh extends L10n {
   String get hubAbout => '关于 DSH Go';
 
   @override
+  String get hubAboutAuthor => 'DSH Go 原作者';
+
+  @override
+  String get hubAboutBilibili => 'B站主页';
+
+  @override
+  String get hubAboutX => 'X 主页';
+
+  @override
+  String get hubAboutGithub => 'GitHub 主页';
+
+  @override
   String get hubAboutNewVersion => '有新版本';
 
   @override
@@ -7367,6 +7421,21 @@ class L10nZh extends L10n {
 
   @override
   String get hubHardwareEnterSendsHint => '开启后，Shift+Enter 换行。屏幕键盘仍换行；Ctrl/⌘+Enter 始终可发送。';
+
+  @override
+  String get hubQuickPanel => '左滑快捷入口';
+
+  @override
+  String get hubQuickPanelSwipe => '左滑打开';
+
+  @override
+  String get hubQuickPanelSwipeHint => '在对话里从右向左滑。代码块、表格这些能横向滚动的内容不受影响。';
+
+  @override
+  String get hubQuickPanelItems => '显示的入口';
+
+  @override
+  String get hubQuickPanelItemsNone => '没有选择，左滑不会打开';
 
   @override
   String get launchScreenTitle => '启动画面';
@@ -13419,6 +13488,27 @@ class L10nZh extends L10n {
   String get remoteNetworkObservedAt => '最近观测';
 
   @override
+  String get stateWorkspaceFilesHint => '已上传到当前工作区的文件：';
+
+  @override
+  String get stateRemoteUploadNameInvalid => '文件名不受主机支持，请去掉特殊字符或缩短后再试';
+
+  @override
+  String get stateRemoteUploadWorkspaceUnavailable => '当前对话没有可写的工作目录';
+
+  @override
+  String get stateRemoteUploadWorkspaceChanged => '工作目录已变化，请确认后重新上传';
+
+  @override
+  String get stateRemoteUploadLimit => '主机拒绝了上传，请检查文件大小或稍后重试';
+
+  @override
+  String get stateRemoteUploadUnsupported => '这台主机不支持文件上传，请更新主机上的 Remote 插件后重连';
+
+  @override
+  String get stateRemoteUploadTooLarge => '文件超过远程上传协议的大小上限';
+
+  @override
   String get riskDontShowAgain => '不再提示';
 
   @override
@@ -13844,6 +13934,9 @@ class L10nZh extends L10n {
 
   @override
   String get searchKwUsageStats => '统计,使用统计,匿名,隐私,数据,改进,遥测,分析';
+
+  @override
+  String get searchKwQuickPanel => '左滑,快捷入口,手势,滑动,目录,自定义目录,快捷,常用入口';
 
   @override
   String get shellDeletePermanently => '永久删除';
@@ -14821,6 +14914,14 @@ class L10nZh extends L10n {
   @override
   String shellChatsArchivedPartial(int count, int failed) {
     return '已归档 $count 个对话，$failed 个没能归档';
+  }
+
+  @override
+  String get shellQuickPanel => '快捷入口';
+
+  @override
+  String shellQuickPanelHint(String path) {
+    return '在「$path」里调整';
   }
 
   @override
@@ -15873,8 +15974,11 @@ class L10nZh extends L10n {
 
   @override
   String stateAttachmentFileLimit(String name) {
-    return '文件「$name」超过 30 MB';
+    return '文件「$name」超过 200 MB';
   }
+
+  @override
+  String get stateAttachmentTotalLimit => '附件总大小超过 400 MB';
 
   @override
   String stateBotFinished(String name) {

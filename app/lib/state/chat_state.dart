@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:dsh_client/dsh_client.dart';
@@ -10,6 +11,7 @@ import 'attachments.dart';
 import 'chat_error_text.dart';
 import 'connection_state.dart';
 import 'hosts_state.dart';
+import 'models_state.dart';
 import 'notify_state.dart' show appForegroundProvider;
 import 'run_pulse.dart';
 import 'sessions_state.dart';
@@ -246,6 +248,7 @@ class ChatState {
     this.loading = true,
     this.loadingOlder = false,
     this.error,
+    this.defaultModelSaveFailed = false,
     this.notice,
     this.connection,
     this.model,
@@ -281,6 +284,11 @@ class ChatState {
   final bool loading;
   final bool loadingOlder;
   final String? error;
+
+  /// The session model changed, but remembering it for new chats failed.
+  /// Independent of transient send/sync errors; only explicit dismissal or a
+  /// later saved/skipped acknowledgement clears it.
+  final bool defaultModelSaveFailed;
 
   /// Something worth knowing that isn't a failure (e.g. images went as files
   /// because the model reads text only). Shown like [error], in info colours.
@@ -346,6 +354,7 @@ class ChatState {
     bool? loadingOlder,
     String? error,
     bool clearError = false,
+    bool? defaultModelSaveFailed,
     String? notice,
     bool clearNotice = false,
     ModelSelection? model,
@@ -367,6 +376,7 @@ class ChatState {
     loading: loading ?? this.loading,
     loadingOlder: loadingOlder ?? this.loadingOlder,
     error: clearError ? null : (error ?? this.error),
+    defaultModelSaveFailed: defaultModelSaveFailed ?? this.defaultModelSaveFailed,
     notice: clearNotice ? null : (notice ?? this.notice),
     connection: connection,
     model: model ?? this.model,
@@ -423,6 +433,7 @@ class ChatController extends Notifier<ChatState> {
   bool _dirty = false;
   ModelSelection? _model;
   Object? _modelChange;
+  bool _defaultModelSaveFailed = false;
   Object? _historyRead;
   List<PendingPrompt> _pending = const [];
 
@@ -517,6 +528,7 @@ class ChatController extends Notifier<ChatState> {
         _transcript.apply(HostRequestCancelledEvent(id));
       }
       _approvalHost = host;
+      _defaultModelSaveFailed = false;
       _approvalScope = Object();
       _autoApprove = false;
       _autoAnswered = const {};
@@ -639,6 +651,7 @@ class ChatController extends Notifier<ChatState> {
     syncing: true,
     commands: _commandList(),
     model: _model,
+    defaultModelSaveFailed: _defaultModelSaveFailed,
     pending: _placePending(),
     autoApprove: _autoApprove,
     autoAnswered: _autoAnswered,
@@ -1122,6 +1135,7 @@ class ChatController extends Notifier<ChatState> {
       loading: false,
       loadingOlder: state.loadingOlder,
       error: freshSnapshot ? null : state.error,
+      defaultModelSaveFailed: _defaultModelSaveFailed,
       notice: freshSnapshot ? null : state.notice,
       connection: _transcript.connectionState,
       model: _model,
@@ -1201,7 +1215,9 @@ class ChatController extends Notifier<ChatState> {
   }
 
   /// Sends [text] with [attachments]; resolves to `false` when it could not be
-  /// delivered. Files are staged first (`fileUploads/upload`), images go inline.
+  /// delivered. Files are staged first (streamed as raw bytes on a Host with
+  /// `/api/session/uploadFileBinary`, else `fileUploads/upload`); images go
+  /// inline.
   ///
   /// While a turn runs, [mode] picks how the message reaches the agent; when
   /// idle every mode just starts a turn.
@@ -1328,43 +1344,46 @@ class ChatController extends Notifier<ChatState> {
   static String _contentKey(String text, List<DraftAttachment> attachments) =>
       [text, for (final a in attachments) a.name].join('\n');
 
-  /// Stages the files among [attachments] (`fileUploads/upload`); images go
-  /// inline with the prompt instead, unless [images] asks for them.
-  Future<List<String>> _stageFiles(
+  /// Stages attachment receipts locally/over SSH, or publishes Remote files
+  /// into the current workspace. Images stay inline unless [images] is set.
+  Future<({List<String> receipts, List<String> paths})> _stageFiles(
     _ChatOperation operation,
     List<DraftAttachment> attachments, {
     bool images = false,
   }) async {
     final receipts = <String>[];
+    final paths = <String>[];
+    final client = operation.client;
     for (final attachment in attachments) {
       if (attachment.isImage != images) continue;
       _requireCurrent(operation);
-      receipts.add(await _upload(operation.client, attachment));
+      try {
+        if (client.supportsEndpoint('fileUploads/upload')) {
+          final receipt = await client.uploadFile(sessionId, attachment.bytes, name: attachment.name);
+          receipts.add(receipt.receiptId);
+        } else {
+          final file = await client.uploadWorkspaceFile(sessionId, attachment.bytes, name: attachment.name);
+          paths.add(file.path);
+        }
+      } catch (e) {
+        throw _UploadFailed(e);
+      }
       _requireCurrent(operation);
     }
-    return receipts;
+    return (receipts: receipts, paths: paths);
   }
 
-  Future<String> _upload(DshClient client, DraftAttachment attachment) async {
-    try {
-      final receipt = await client.uploadFile(sessionId, attachment.bytes, name: attachment.name);
-      return receipt.receiptId;
-    } catch (e) {
-      throw _UploadFailed(e);
-    }
-  }
-
-  /// `session/prompt` with the images of [attachments] inline and [receipts]
-  /// for its staged files. A model that reads text only (V4 Pro) refuses
+  /// `session/prompt` with the images of [attachments] inline and [staged]
+  /// for its uploaded files. A model that reads text only (V4 Pro) refuses
   /// images at admission, recording nothing: the same request goes again
   /// with them staged as files, so the message still lands and tools can
-  /// open them, and the returned notice says so. DSH Remote stages no files,
-  /// so there the refusal stands.
+  /// open them, and the returned notice says so. Remote workspace uploads
+  /// supply paths instead of receipt IDs.
   Future<String?> _deliver(
     _ChatOperation operation,
     String text,
     List<DraftAttachment> attachments,
-    List<String> receipts, {
+    ({List<String> receipts, List<String> paths}) staged, {
     required String requestId,
     required PromptMode mode,
   }) async {
@@ -1373,13 +1392,17 @@ class ChatController extends Notifier<ChatState> {
       for (final a in attachments)
         if (a.isImage) PromptImage.fromBytes(a.bytes, mediaType: a.mediaType!, name: a.name),
     ];
-    Future<void> prompt(List<PromptImage> images, List<String> receipts) {
+    Future<void> prompt(List<PromptImage> images, ({List<String> receipts, List<String> paths}) files) {
       _requireCurrent(operation);
+      final paths = files.paths.map((path) => '- ${jsonEncode(path)}').join('\n');
+      final content = paths.isEmpty
+          ? text
+          : [if (text.isNotEmpty) text, '${appL10n.stateWorkspaceFilesHint}\n$paths'].join('\n\n');
       return client.prompt(
         sessionId,
-        text,
+        content,
         images: images,
-        fileReceiptIds: receipts,
+        fileReceiptIds: files.receipts,
         requestId: requestId,
         mode: mode,
         // No clientTimeZone: DSH needs an IANA name, which Dart can't provide; the
@@ -1388,14 +1411,18 @@ class ChatController extends Notifier<ChatState> {
     }
 
     try {
-      await prompt(images, receipts);
+      await prompt(images, staged);
       return null;
     } on DshRemoteException catch (e) {
-      if (images.isEmpty || !_imagesRefused(e) || !client.supportsEndpoint('fileUploads/upload')) {
+      if (images.isEmpty || !_imagesRefused(e) || !client.supportsFileUpload) {
         rethrow;
       }
       _requireCurrent(operation);
-      await prompt(const [], [...receipts, ...await _stageFiles(operation, attachments, images: true)]);
+      final uploaded = await _stageFiles(operation, attachments, images: true);
+      await prompt(const [], (
+        receipts: [...staged.receipts, ...uploaded.receipts],
+        paths: [...staged.paths, ...uploaded.paths],
+      ));
       return appL10n.stateChatTextOnlyModel;
     }
   }
@@ -1406,7 +1433,7 @@ class ChatController extends Notifier<ChatState> {
   /// The banner for a send that did not go through.
   static String _sendFailure(Object e) => switch (e) {
     _UploadFailed(:final cause) => chatErrorText(cause, action: appL10n.stateAttachmentUploadFailed),
-    // DSH Remote: the images cannot go as files either.
+    // Older Remote Hosts may not support workspace uploads either.
     _ when _imagesRefused(e) => appL10n.stateChatImageModelRequired,
     _ => chatErrorText(e, action: appL10n.stateSendFailed),
   };
@@ -1707,15 +1734,26 @@ class ChatController extends Notifier<ChatState> {
     state = state.copyWith(model: selection);
     try {
       if (!current()) return false;
-      final applied = await client.setModel(
+      final result = await client.setModelResult(
         sessionId,
         provider: selection.provider,
         model: selection.model,
         reasoningEffort: selection.reasoningEffort,
       );
       if (!current()) return false;
-      _model = applied;
-      state = state.copyWith(model: applied);
+      _model = result.selected;
+      switch (result.defaultSave?.status) {
+        case ModelDefaultSaveStatus.failed:
+          _defaultModelSaveFailed = true;
+        case ModelDefaultSaveStatus.saved || ModelDefaultSaveStatus.skipped:
+          _defaultModelSaveFailed = false;
+        case ModelDefaultSaveStatus.unknown || null:
+          break;
+      }
+      state = state.copyWith(model: result.selected, defaultModelSaveFailed: _defaultModelSaveFailed);
+      // Old hosts do not acknowledge persistence; a fresh catalog is still
+      // useful, but is never presented as proof that the default was saved.
+      ref.invalidate(modelCatalogProvider);
       return current();
     } catch (e) {
       if (!current()) return false;
@@ -1734,6 +1772,7 @@ class ChatController extends Notifier<ChatState> {
         loading: state.loading,
         loadingOlder: state.loadingOlder,
         error: chatErrorText(e, action: appL10n.stateChatModelSwitchFailed),
+        defaultModelSaveFailed: _defaultModelSaveFailed,
         connection: state.connection,
         model: previous,
         pending: state.pending,
@@ -1793,6 +1832,11 @@ class ChatController extends Notifier<ChatState> {
   }
 
   void dismissError() => state = state.copyWith(clearError: true);
+
+  void dismissDefaultModelSaveWarning() {
+    _defaultModelSaveFailed = false;
+    state = state.copyWith(defaultModelSaveFailed: false);
+  }
 
   // ---------------------------------------------------------------------------
   // Message actions. DSH 0.2.1 cannot edit, regenerate or rewind a session in
