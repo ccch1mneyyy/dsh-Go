@@ -8,12 +8,14 @@ package io.github.ccch1mneyyy.dsh_app.phone
 data class PhonePolicies(
     val denyPackages: List<String> = SafetyRules.DEFAULT_DENY,
     val confirmEveryWritePackages: List<String> = SafetyRules.DEFAULT_CONFIRM_EVERY_WRITE,
+    val imageFallbackPackages: List<String> = emptyList(),
     val confirmMode: ConfirmMode = ConfirmMode.ASK,
     val unlocks: PhoneUnlocks = PhoneUnlocks(),
 ) {
     fun toMap(): Map<String, Any?> = linkedMapOf(
         "denyPackages" to denyPackages,
         "confirmEveryWritePackages" to confirmEveryWritePackages,
+        "imageFallbackPackages" to imageFallbackPackages,
         "confirmMode" to confirmMode.wire,
         "unlocks" to unlocks.toMap(),
     )
@@ -26,10 +28,11 @@ data class PhonePolicies(
                 return raw.mapNotNull { (it as? String)?.trim()?.takeIf { s -> PACKAGE.matches(s) } }.distinct()
             }
             return PhonePolicies(
-                list("denyPackages", base.denyPackages),
-                list("confirmEveryWritePackages", base.confirmEveryWritePackages),
-                ConfirmMode.fromWire(map?.get("confirmMode") as? String) ?: base.confirmMode,
-                PhoneUnlocks.fromMap(map?.get("unlocks") as? Map<*, *>, base.unlocks),
+                denyPackages = list("denyPackages", base.denyPackages),
+                confirmEveryWritePackages = list("confirmEveryWritePackages", base.confirmEveryWritePackages),
+                imageFallbackPackages = list("imageFallbackPackages", base.imageFallbackPackages),
+                confirmMode = ConfirmMode.fromWire(map?.get("confirmMode") as? String) ?: base.confirmMode,
+                unlocks = PhoneUnlocks.fromMap(map?.get("unlocks") as? Map<*, *>, base.unlocks),
             )
         }
 
@@ -223,6 +226,7 @@ class SafetyGate(
         typed: String? = null,
         submit: Boolean = false,
         point: Pair<Int, Int>? = null,
+        imageFallback: Boolean = false,
     ): Verdict {
         val app = labelOf(pkg, appLabel)
         if (kind == WriteKind.KEY) return Verdict.Allow // back / home / recents / shade: always a way out
@@ -230,7 +234,7 @@ class SafetyGate(
         val lifted = p.unlocks
         if (pkg == ownPackage && !lifted.ownApp) return Verdict.Refuse(OWN_APP, "own-app")
         if (pkg != null && pkg in p.denyPackages) return Verdict.Refuse(denied(app), "deny-list")
-        if (kind == WriteKind.SCROLL) return Verdict.Allow
+        if (kind == WriteKind.SCROLL && !imageFallback) return Verdict.Allow
         if (SafetyRules.isSystemPackage(pkg) && !lifted.systemPages) {
             // l10n:keep agent safety result
             return Verdict.Refuse("系统设置 / 权限 / 安装页（「$app」）只看不动。请 handoff 让用户自己完成。", "system-page")
@@ -239,6 +243,22 @@ class SafetyGate(
         if (secret && !lifted.secretFields) {
             // l10n:keep agent safety result
             return Verdict.Refuse("密码 / 验证码 / 支付框不代填也不代点。请 handoff 让用户输入。", "secret-field")
+        }
+        if (imageFallback) {
+            if (SafetyRules.isSystemPackage(pkg)) return Verdict.Refuse("系统安全页面不能使用截图操作。", "image-fallback-system")
+            if (kind !in setOf(WriteKind.TAP_XY, WriteKind.TYPE, WriteKind.SCROLL) || pkg == null || pkg !in p.imageFallbackPackages) {
+                return Verdict.Refuse("此应用没有开启截图坐标操作。请在手机操控的应用名单中开启后重新看屏幕。", "image-fallback-disabled")
+            }
+            val action = when (kind) {
+                WriteKind.TYPE -> "向已聚焦的输入框追加 ${typed?.length ?: 0} 字"
+                WriteKind.SCROLL -> "滑动当前页面"
+                else -> "点击坐标 (${point?.first}, ${point?.second})"
+            }
+            return Verdict.Confirm(
+                ConfirmRequest("「$app」这一屏没有可读元素。确认按刚才的截图$action？", appLabel = appLabel ?: pkg, packageName = pkg, firstInApp = false, offerTaskWaiver = false),
+                pkg,
+                "image-fallback",
+            )
         }
         // Everything above is a hard rule (or one the person lifted); everything below only asks.
         if (waived(p)) return Verdict.Allow
@@ -295,12 +315,20 @@ class SafetyGate(
         return when (decision) {
             Decision.ALLOW_ONCE -> if (tasks.confirmIfCurrent(owner)) Result.Go("confirmed") else stopped()
             Decision.ALLOW_APP_FOR_TASK -> {
-                val pkg = v.packageName
-                val approved = pkg?.takeUnless { it in policies().confirmEveryWritePackages }
-                if (tasks.confirmIfCurrent(owner, pkg = approved)) Result.Go("confirmed-app") else stopped()
+                if (v.reason == "image-fallback") {
+                    if (tasks.confirmIfCurrent(owner)) Result.Go("confirmed") else stopped()
+                } else {
+                    val pkg = v.packageName
+                    val approved = pkg?.takeUnless { it in policies().confirmEveryWritePackages }
+                    if (tasks.confirmIfCurrent(owner, pkg = approved)) Result.Go("confirmed-app") else stopped()
+                }
             }
             Decision.ALLOW_ALL_FOR_TASK -> {
-                if (tasks.confirmIfCurrent(owner, waiveTask = true)) Result.Go("confirmed-task") else stopped()
+                if (v.reason == "image-fallback") {
+                    if (tasks.confirmIfCurrent(owner)) Result.Go("confirmed") else stopped()
+                } else {
+                    if (tasks.confirmIfCurrent(owner, waiveTask = true)) Result.Go("confirmed-task") else stopped()
+                }
             }
             // l10n:keep agent safety result
             Decision.DENY -> Result.No("用户拒绝了这一步（或 30 秒内没有选择）。不要重试同一个动作；换个做法，或问用户想怎么做。", "denied")

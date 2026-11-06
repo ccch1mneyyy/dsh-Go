@@ -699,7 +699,7 @@ enum PhoneConfirmMode {
   static PhoneConfirmMode parse(Object? wire) => values.firstWhere((m) => m.name == wire, orElse: () => ask);
 }
 
-/// `getPolicies` / `setPolicies`. Only the two lists and [confirmMode] go back
+/// `getPolicies` / `setPolicies`. Only the app lists and [confirmMode] go back
 /// over the wire; [labels] and the defaults are optional extras the native
 /// side may send. [unlocks] never rides along: it changes only through
 /// [PhoneChannel.setUnlock], so a stale copy can't lift or restore a rule.
@@ -707,6 +707,7 @@ class PhonePolicies {
   const PhonePolicies({
     this.denyPackages = const [],
     this.confirmEveryWritePackages = const [],
+    this.imageFallbackPackages = const [],
     this.labels = const {},
     this.defaultDeny = const [],
     this.defaultConfirm = const [],
@@ -720,6 +721,7 @@ class PhonePolicies {
     return PhonePolicies(
       denyPackages: _strings(m['denyPackages']),
       confirmEveryWritePackages: _strings(m['confirmEveryWritePackages']),
+      imageFallbackPackages: _strings(m['imageFallbackPackages']),
       labels: {
         for (final e in _map(m['labels']).entries)
           if (e.key is String && e.value is String) e.key as String: e.value as String,
@@ -737,6 +739,7 @@ class PhonePolicies {
 
   final List<String> denyPackages;
   final List<String> confirmEveryWritePackages;
+  final List<String> imageFallbackPackages;
 
   /// Package → app label, from the native side.
   final Map<String, String> labels;
@@ -753,12 +756,14 @@ class PhonePolicies {
   Map<String, Object?> toWire() => {
     'denyPackages': denyPackages,
     'confirmEveryWritePackages': confirmEveryWritePackages,
+    'imageFallbackPackages': imageFallbackPackages,
     'confirmMode': confirmMode.name,
   };
 
   PhonePolicies withConfirmMode(PhoneConfirmMode mode) => PhonePolicies(
     denyPackages: denyPackages,
     confirmEveryWritePackages: confirmEveryWritePackages,
+    imageFallbackPackages: imageFallbackPackages,
     labels: labels,
     defaultDeny: defaultDeny,
     defaultConfirm: defaultConfirm,
@@ -769,6 +774,7 @@ class PhonePolicies {
   PhonePolicies withUnlock(PhoneUnlock unlock, bool on) => PhonePolicies(
     denyPackages: denyPackages,
     confirmEveryWritePackages: confirmEveryWritePackages,
+    imageFallbackPackages: imageFallbackPackages,
     labels: labels,
     defaultDeny: defaultDeny,
     defaultConfirm: defaultConfirm,
@@ -808,6 +814,9 @@ class PhonePolicies {
     return PhonePolicies(
       denyPackages: deny,
       confirmEveryWritePackages: confirm,
+      imageFallbackPackages: rule == AppRule.deny
+          ? (imageFallbackPackages.where((p) => p != package).toList())
+          : imageFallbackPackages,
       labels: labels,
       defaultDeny: defaultDeny,
       defaultConfirm: defaultConfirm,
@@ -815,6 +824,19 @@ class PhonePolicies {
       unlocks: unlocks,
     );
   }
+
+  PhonePolicies withImageFallback(String package, bool enabled) => PhonePolicies(
+    denyPackages: denyPackages,
+    confirmEveryWritePackages: confirmEveryWritePackages,
+    imageFallbackPackages: enabled
+        ? {...imageFallbackPackages, package}.toList()
+        : imageFallbackPackages.where((p) => p != package).toList(),
+    labels: labels,
+    defaultDeny: defaultDeny,
+    defaultConfirm: defaultConfirm,
+    confirmMode: confirmMode,
+    unlocks: unlocks,
+  );
 }
 
 // ── Action log ───────────────────────────────────────────────────────────────

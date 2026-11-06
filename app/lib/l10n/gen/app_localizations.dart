@@ -16160,6 +16160,30 @@ abstract class L10n {
   /// **'按包名添加'**
   String get phoneAppRulesAddHint;
 
+  /// No description provided for @phoneImageFallbackTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'截图操作'**
+  String get phoneImageFallbackTitle;
+
+  /// No description provided for @phoneImageFallbackHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'无障碍读不到时按截图操作；每次都要你确认'**
+  String get phoneImageFallbackHint;
+
+  /// No description provided for @phoneImageFallbackEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已开启截图操作'**
+  String get phoneImageFallbackEnabled;
+
+  /// No description provided for @phoneImageFallbackRisk.
+  ///
+  /// In zh, this message translates to:
+  /// **'此应用的页面可能读不到控件。开启后，DSH 可根据截图请求点击、滑动或向焦点输入框追加文字，但每一步仍需你单独确认。系统安全页仍禁止；看不清目标或涉及密码、支付时请拒绝。'**
+  String get phoneImageFallbackRisk;
+
   /// No description provided for @phoneSensitiveActionsNote.
   ///
   /// In zh, this message translates to:

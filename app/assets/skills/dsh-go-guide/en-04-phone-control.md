@@ -35,6 +35,12 @@ Go back to a chat and say what you want done. While a task runs:
 
 Alarms, events, maps and sharing don't need the accessibility service.
 
+### Pages without accessible controls
+
+Some apps allow screenshots but expose no controls to accessibility. Enable **Image-based control** for that app in **App rules**; it is off by default. DSH takes a screenshot before requesting a tap or scroll, and asks you to confirm **each action**, even in Always allow mode. An expired screenshot or a changed page or keyboard requires a new screenshot. System security pages remain blocked. Controls on an empty-tree page cannot be classified automatically: decline when the target is unclear or involves passwords or payment.
+
+On Android 13 or later, DSH can also append text to a focused field after tapping it on such a page. This action needs separate confirmation and never sends automatically. When the page exposes no readable text, check the screen yourself before sending.
+
 ## Floating bar
 
 When a task starts, a floating bar appears at the top of the screen. It takes three shapes, and a tap moves between them:

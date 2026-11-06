@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -8767,6 +8766,19 @@ class L10nZh extends L10n {
 
   @override
   String get phoneAppRulesAddHint => '按包名添加';
+
+  @override
+  String get phoneImageFallbackTitle => '截图操作';
+
+  @override
+  String get phoneImageFallbackHint => '无障碍读不到时按截图操作；每次都要你确认';
+
+  @override
+  String get phoneImageFallbackEnabled => '已开启截图操作';
+
+  @override
+  String get phoneImageFallbackRisk =>
+      '此应用的页面可能读不到控件。开启后，DSH 可根据截图请求点击、滑动或向焦点输入框追加文字，但每一步仍需你单独确认。系统安全页仍禁止；看不清目标或涉及密码、支付时请拒绝。';
 
   @override
   String get phoneSensitiveActionsNote => '密码、验证码、付款和系统设置都由你来';

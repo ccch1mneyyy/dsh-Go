@@ -18,6 +18,7 @@ object PhoneToolCatalog {
     const val COLLECT = "collect"
     const val TAP = "tap"
     const val TYPE = "type"
+    const val TYPE_FOCUSED = "type_focused"
     const val SCROLL = "scroll"
     const val KEY = "key"
     const val TAP_XY = "tap_xy"
@@ -203,9 +204,16 @@ object PhoneToolCatalog {
             listOf("screen", "id", "text"),
         ),
         Tool(
+            TYPE_FOCUSED,
+            // l10n:keep agent tool catalog
+            "无障碍树为空时，向截图中已聚焦的输入框追加文字；需 Android 13+、该 App 开启截图操作，并逐次确认。不会自动发送。",
+            linkedMapOf("observation" to str("带截图的主屏屏幕号"), "text" to str("要追加的文字")),
+            listOf("observation", "text"),
+        ),
+        Tool(
             SCROLL,
             // l10n:keep agent tool catalog
-            "滚动，返回新屏幕。id 是要滚动的列表，省略时滚主列表。",
+            "滚动，返回新屏幕。id 是要滚动的列表，省略时滚主列表；空树页面须先 screen 加 image 并启用截图操作，每次确认。",
             linkedMapOf(
                 "screen" to SCREEN_ID,
                 // l10n:keep agent tool catalog
@@ -252,5 +260,5 @@ object PhoneToolCatalog {
     fun listJson(): List<Map<String, Any?>> = tools.map { it.toJson() }
 
     /** Tools that act on a screen through a [PhoneDriver] (need accessibility or the background display). */
-    val SCREEN_TOOLS = setOf(SCREEN, COLLECT, TAP, TYPE, SCROLL, KEY, TAP_XY, HANDOFF)
+    val SCREEN_TOOLS = setOf(SCREEN, COLLECT, TAP, TYPE, TYPE_FOCUSED, SCROLL, KEY, TAP_XY, HANDOFF)
 }

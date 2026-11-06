@@ -123,6 +123,26 @@ class SafetyGateTest {
         assertEquals("refused:no-gate", result.decision)
     }
 
+    @Test fun imageFallbackIsOptInAndAlwaysRequiresOneConfirmation() {
+        val off = SafetyGate({ PhonePolicies(confirmMode = ConfirmMode.ALWAYS) }, PhoneTasks(), { null })
+        assertEquals("image-fallback-disabled", (off.checkWrite(WriteKind.TAP_XY, null, "example.app", null,
+            point = 10 to 20, imageFallback = true) as SafetyGate.Verdict.Refuse).rule)
+        val on = SafetyGate({ PhonePolicies(imageFallbackPackages = listOf("example.app", "com.android.settings"),
+            confirmMode = ConfirmMode.ALWAYS, unlocks = PhoneUnlocks(systemPages = true)) }, PhoneTasks(), { null })
+        val tap = on.checkWrite(WriteKind.TAP_XY, null, "example.app", null,
+            point = 10 to 20, imageFallback = true) as SafetyGate.Verdict.Confirm
+        assertEquals("image-fallback", tap.reason)
+        assertFalse(tap.request.offerTaskWaiver)
+        assertEquals("image-fallback", (on.checkWrite(WriteKind.SCROLL, null, "example.app", null,
+            imageFallback = true) as SafetyGate.Verdict.Confirm).reason)
+        val type = on.checkWrite(WriteKind.TYPE, null, "example.app", null,
+            typed = "private text", imageFallback = true) as SafetyGate.Verdict.Confirm
+        assertFalse(type.request.sentence.contains("private text"))
+        assertEquals("image-fallback-system", (on.checkWrite(WriteKind.TAP_XY, null, "com.android.settings", null,
+            imageFallback = true) as SafetyGate.Verdict.Refuse).rule)
+        assertTrue(PhonePolicies.fromMap(mapOf("imageFallbackPackages" to listOf("example.app"))).imageFallbackPackages.contains("example.app"))
+    }
+
     @Test fun filtersSensitiveImagesWithoutChangingOrdinaryScreens() {
         val gate = SafetyGate({ PhonePolicies() }, PhoneTasks(), { null })
         val plain = ScreenSnapshot("b1", "ordinary", "Example", "example.app", image = byteArrayOf(1, 2), imageMime = "image/png")

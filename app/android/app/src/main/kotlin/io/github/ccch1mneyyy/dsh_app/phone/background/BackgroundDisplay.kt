@@ -146,6 +146,7 @@ class BackgroundDisplay(
                 // 解除限制 › 密码和验证码: the privileged side refuses such inputs unless told so.
                 request.putBoolean(Proto.ALLOW_SECRET, PhoneRegistry.unlocks().secretFields)
             }
+            is PhoneAction.TypeFocused -> return ActionResult(false, "焦点输入只支持主屏；后台屏仍按输入框编号操作")
             is PhoneAction.Scroll -> {
                 request.putString(Proto.OP, Proto.OP_SCROLL)
                 request.putString(Proto.DIR, action.direction.name.lowercase())

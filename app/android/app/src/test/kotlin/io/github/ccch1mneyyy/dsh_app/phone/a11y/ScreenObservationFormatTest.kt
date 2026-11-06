@@ -6,6 +6,16 @@ import org.junit.Test
 class ScreenObservationFormatTest {
     private val frame = Box(0, 0, 400, 800)
 
+    @Test fun imageCoordinatesRequireTheSameEmptyWindowAndKeyboardState() {
+        fun observation(pkg: String, keyboard: Boolean) = ScreenObservation(pkg,
+            listOf(UiWindow(1, WindowKind.APP, pkg, null, frame, UiNode(bounds = frame))),
+            frame, keyboard, true, false, emptyList())
+        val original = observation("example.app", false)
+        assertTrue(observation("example.app", false).reusableImageCoordinates(original))
+        assertFalse(observation("other.app", false).reusableImageCoordinates(original))
+        assertFalse(observation("example.app", true).reusableImageCoordinates(original))
+    }
+
     private fun windows(text: String, focused: Boolean = false, password: Boolean = false, hint: String = "Search"): List<UiWindow> {
         val input = UiNode(className = "android.widget.EditText", hint = hint, text = text, focused = focused,
             editable = true, password = password, bounds = Box(0, 100, 400, 150))

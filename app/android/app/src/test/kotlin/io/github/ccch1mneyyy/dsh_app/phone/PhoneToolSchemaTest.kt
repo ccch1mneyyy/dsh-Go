@@ -58,7 +58,9 @@ class PhoneToolSchemaTest {
         val json = Json.write(PhoneToolCatalog.listJson())
         assertFalse(json.contains("\"minimum\""))
         assertFalse(json.contains("\"maximum\""))
-        assertEquals(13, PhoneToolCatalog.tools.size)
+        assertEquals(14, PhoneToolCatalog.tools.size)
+        val focused = PhoneToolCatalog.tools.single { it.name == PhoneToolCatalog.TYPE_FOCUSED }
+        assertEquals(listOf("observation", "text"), focused.required)
         val tap = PhoneToolCatalog.tools.single { it.name == PhoneToolCatalog.TAP_XY }
         assertEquals(listOf("observation", "x", "y"), tap.required)
         assertEquals(setOf("observation", "x", "y"), tap.properties.keys)

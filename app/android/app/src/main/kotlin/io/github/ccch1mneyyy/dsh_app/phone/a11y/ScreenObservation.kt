@@ -40,4 +40,10 @@ internal class ScreenObservation(
         !unavailable && !previous.unavailable && !incomplete && !previous.incomplete &&
             keyboardShown != null && keyboardShown == previous.keyboardShown &&
             sameContext(previous) && elements == previous.elements
+
+    /** An empty tree cannot prove visual equality, but its app/window and keyboard must stay put. */
+    fun reusableImageCoordinates(previous: ScreenObservation): Boolean =
+        unavailable && previous.unavailable && !incomplete && !previous.incomplete &&
+            keyboardShown != null && keyboardShown == previous.keyboardShown &&
+            sameContext(previous)
 }

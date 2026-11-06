@@ -252,6 +252,19 @@ class PhoneController extends Notifier<PhoneState> {
     return true;
   }
 
+  Future<bool> setImageFallback(String package, bool enabled) async {
+    final current = state.policies;
+    if (current == null || current.ruleFor(package) == AppRule.deny) return false;
+    final next = current.withImageFallback(package, enabled);
+    final ok = await _channel.setPolicies(next);
+    if (!ok || !ref.mounted) return false;
+    state = state.copyWith(
+      policies: next,
+      retained: state.retained.contains(package) ? state.retained : [...state.retained, package],
+    );
+    return true;
+  }
+
   /// 每次都询问 / 本任务免确认 / 始终免确认; false when the native side refused
   /// (nothing changes). Written, it also settles a first-run choice still
   /// pending: the latest word wins.

@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -9226,6 +9225,19 @@ class L10nEn extends L10n {
 
   @override
   String get phoneAppRulesAddHint => 'Add by package name';
+
+  @override
+  String get phoneImageFallbackTitle => 'Image-based control';
+
+  @override
+  String get phoneImageFallbackHint => 'Use screenshots when accessibility is empty; confirm each action';
+
+  @override
+  String get phoneImageFallbackEnabled => 'Image-based control enabled';
+
+  @override
+  String get phoneImageFallbackRisk =>
+      'This app may hide its controls from accessibility. DSH can request taps, scrolls, or text in a focused field based on a screenshot, but you must confirm each action. System security pages remain blocked. Decline if the target is unclear or involves passwords or payment.';
 
   @override
   String get phoneSensitiveActionsNote => 'Passwords, verification codes, payments and system settings are up to you';

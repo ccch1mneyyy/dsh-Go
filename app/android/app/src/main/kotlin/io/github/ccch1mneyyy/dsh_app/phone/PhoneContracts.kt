@@ -83,12 +83,14 @@ sealed interface PhoneAction {
         val submit: Boolean = false,
     ) : PhoneAction
 
-    data class Scroll(override val screenId: String, val elementId: Int?, val direction: Direction) : PhoneAction
+    data class TypeFocused(override val screenId: String, val text: String, val imageFallbackAllowed: Boolean = false) : PhoneAction
+
+    data class Scroll(override val screenId: String, val elementId: Int?, val direction: Direction, val imageFallbackAllowed: Boolean = false) : PhoneAction
 
     data class Key(override val screenId: String, val key: GlobalKey) : PhoneAction
 
     /** Flash only: a point on a numbered screenshot ([screenId] is the observation it came from). Always confirmed. */
-    data class TapXY(override val screenId: String, val x: Int, val y: Int) : PhoneAction
+    data class TapXY(override val screenId: String, val x: Int, val y: Int, val imageFallbackAllowed: Boolean = false) : PhoneAction
 
     enum class Direction { UP, DOWN, LEFT, RIGHT }
 
@@ -135,6 +137,12 @@ interface PhoneDriver {
      * (window, bounds, text); the bridge then refuses and re-observes.
      */
     fun target(screenId: String, elementId: Int): TargetInfo?
+
+    /** True only for a current, image-backed main-screen snapshot with an empty accessibility tree. */
+    fun needsImageFallback(screenId: String): Boolean = false
+
+    /** Prevent coordinate use if the safety gate withheld the screenshot from the model. */
+    fun revokeImage(screenId: String) {}
 
     fun perform(action: PhoneAction): ActionResult
 

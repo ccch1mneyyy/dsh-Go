@@ -45,6 +45,7 @@ List<String> listedPackages(PhoneState state) {
   return {
     ...p.denyPackages,
     ...p.confirmEveryWritePackages,
+    ...p.imageFallbackPackages,
     ...p.defaultDeny,
     ...p.defaultConfirm,
     ...state.retained,
@@ -142,13 +143,14 @@ class _AppRow extends ConsumerWidget {
       subtitle: [
         if (label != package) package,
         if (changed) l10n.phoneAppRuleDefault(fallback.label),
+        if (policies.imageFallbackPackages.contains(package)) l10n.phoneImageFallbackEnabled,
       ].join(' · ').ifEmpty(null),
       onTap: () => _change(context, ref, rule, label),
     );
   }
 
   Future<void> _change(BuildContext context, WidgetRef ref, AppRule current, String label) async {
-    final next = await showAppSheet<AppRule>(
+    final next = await showAppSheet<Object>(
       context,
       builder: (sheet) => SafeArea(
         top: false,
@@ -169,6 +171,18 @@ class _AppRow extends ConsumerWidget {
                         : const SizedBox.square(dimension: 22),
                     onTap: () => Navigator.pop(sheet, rule),
                   ),
+                if (current != AppRule.deny)
+                  ListPageRow(
+                    icon: AppIcons.askFirst,
+                    title: l10n.phoneImageFallbackTitle,
+                    subtitle: l10n.phoneImageFallbackHint,
+                    chevron: false,
+                    trailing: Switch(
+                      value: policies.imageFallbackPackages.contains(package),
+                      onChanged: (enabled) => Navigator.pop(sheet, enabled),
+                    ),
+                    onTap: () => Navigator.pop(sheet, !policies.imageFallbackPackages.contains(package)),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
@@ -176,7 +190,29 @@ class _AppRow extends ConsumerWidget {
         ),
       ),
     );
-    if (next == null || next == current || !context.mounted) return;
+    if (next == null || !context.mounted) return;
+    if (next is bool) {
+      if (next) {
+        final accepted = await showAppDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(l10n.phoneImageFallbackTitle),
+            content: Text(l10n.phoneImageFallbackRisk),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.commonCancel)),
+              FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.commonContinue)),
+            ],
+          ),
+        );
+        if (!context.mounted || accepted != true) return;
+      }
+      final saved = await ref.read(phoneProvider.notifier).setImageFallback(package, next);
+      if (!saved && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.phoneAppRulesSaveFailed)));
+      }
+      return;
+    }
+    if (next is! AppRule || next == current) return;
     if (next.looseness > current.looseness) {
       final ok = await confirmLoosening(context, label: label, from: current);
       if (!ok || !context.mounted) return;

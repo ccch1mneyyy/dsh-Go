@@ -8,6 +8,7 @@ package io.github.ccch1mneyyy.dsh_app.phone.a11y
 import io.github.ccch1mneyyy.dsh_app.i18n.AppStrings
 import io.github.ccch1mneyyy.dsh_app.R
 import android.app.KeyguardManager
+import android.os.Build
 import android.content.Intent
 import android.graphics.Point
 import android.hardware.display.DisplayManager
@@ -17,6 +18,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.Display
 import android.view.accessibility.AccessibilityNodeInfo
+import android.text.InputType
 import io.github.ccch1mneyyy.dsh_app.phone.ActionResult
 import io.github.ccch1mneyyy.dsh_app.phone.Availability
 import io.github.ccch1mneyyy.dsh_app.phone.CollectResult
@@ -78,6 +80,7 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
         val noteKeys: Set<String>,
     ) {
         @Volatile var image: ImageGeometry? = null
+        @Volatile var imageAtUptime: Long = 0
     }
 
     fun close() {
@@ -132,6 +135,7 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
                             bytes = shot.bytes
                             mime = shot.mime
                             snap.image = shot.geometry
+                            snap.imageAtUptime = SystemClock.uptimeMillis()
                             // l10n:keep agent screen result
                             text.append("\n截图上的数字是元素编号；tap_xy 用截图像素（${shot.geometry!!.width}×${shot.geometry.height}）。")
                             // l10n:keep agent screen result
@@ -155,6 +159,14 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
         info(screenId, el)
     }
 
+    override fun needsImageFallback(screenId: String): Boolean = synchronized(lock) {
+        latest?.let { it.id == screenId && it.unreadable && !it.hidden && it.image != null } == true
+    }
+
+    override fun revokeImage(screenId: String) = synchronized(lock) {
+        latest?.takeIf { it.id == screenId }?.image = null
+    }
+
     /** [el] as the core and the gate see it. */
     private fun info(screenId: String, el: ScreenElement) = TargetInfo(
         screenId = screenId, elementId = el.id, role = el.role, label = el.label,
@@ -176,6 +188,7 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
                 is PhoneAction.Key -> key(action, gen)
                 is PhoneAction.Tap -> tap(action, gen)
                 is PhoneAction.Type -> type(action, gen)
+                is PhoneAction.TypeFocused -> typeFocused(action, gen)
                 is PhoneAction.Scroll -> scroll(action, gen)
                 is PhoneAction.TapXY -> tapXY(action, gen)
             }
@@ -395,6 +408,40 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
         } finally { r.cap.recycle() }
     }
 
+    /** The focused editor can exist even when its app exposes no accessibility nodes. */
+    private fun typeFocused(a: PhoneAction.TypeFocused, gen: Long): ActionResult {
+        val snap = latest
+        if (!a.imageFallbackAllowed || snap == null || snap.id != a.screenId || !snap.unreadable || snap.hidden || snap.image == null) {
+            return ActionResult(false, "截图或授权已失效。请重新 screen 加 image。", observeQuiet())
+        }
+        if (Build.VERSION.SDK_INT < 33) return ActionResult(false, "焦点输入需要 Android 13 或更新系统。")
+        if (a.text.isEmpty() || a.text.length > 2_000) return ActionResult(false, "一次请输入 1–2000 字。")
+        if (SystemClock.uptimeMillis() - snap.imageAtUptime > 45_000) return ActionResult(false, "截图已过期，请重新 screen 加 image。", observeQuiet())
+        val cap = capture()
+        try {
+            if (cap.hiddenWindowTitle != null || cap.unreadableWindowTitle == null || cap.packageName != snap.packageName ||
+                !observation(cap).reusableImageCoordinates(snap.observation) || cap.keyboardShown != true) {
+                return ActionResult(false, "当前页面或键盘已变化，没有输入。请重新看屏幕。", toSnapshot(publish(cap, false)))
+            }
+        } finally { cap.recycle() }
+        val input = service.inputMethod ?: return ActionResult(false, "无障碍输入连接不可用。请重新开启 DSH 手机操控服务。")
+        val editor = input.currentInputEditorInfo ?: return ActionResult(false, "没有已聚焦的输入框，请先点击输入框。")
+        if (!input.currentInputStarted || editor.packageName != snap.packageName) return ActionResult(false, "焦点已离开截图中的应用，没有输入。")
+        val kind = editor.inputType and InputType.TYPE_MASK_CLASS
+        val variant = editor.inputType and InputType.TYPE_MASK_VARIATION
+        if (kind != InputType.TYPE_CLASS_TEXT) return ActionResult(false, "当前焦点不是普通文字输入框，没有输入。")
+        val password = (kind == InputType.TYPE_CLASS_TEXT && variant in setOf(
+            InputType.TYPE_TEXT_VARIATION_PASSWORD, InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
+            InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
+        )) || (kind == InputType.TYPE_CLASS_NUMBER && variant == InputType.TYPE_NUMBER_VARIATION_PASSWORD)
+        if (password || SafetyRules.isSecret(editor.hintText?.toString())) return ActionResult(false, "密码或验证码输入框由用户自行填写。")
+        val connection = input.currentInputConnection ?: return ActionResult(false, "焦点输入连接已断开，没有输入。")
+        val before = clock.count
+        try { connection.commitText(a.text, 1, null) }
+        catch (e: Exception) { return ActionResult(false, "输入连接拒绝文字：${e.javaClass.simpleName}。", observeQuiet()) }
+        return after(before, snap, gen, "已向焦点输入框提交 ${a.text.length} 字；没有自动发送。")
+    }
+
     private fun scroll(a: PhoneAction.Scroll, gen: Long): ActionResult {
         val snap = latest
         val dirWord = when (a.direction) {
@@ -414,14 +461,24 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
         if (targetId == null) {
             // l10n:keep agent screen result
             if (snap == null || snap.id != a.screenId) return ActionResult(false, "屏幕编号 ${a.screenId} 已过期，请先看新屏幕再滚动。", observeQuiet())
+            if (snap.unreadable && (!a.imageFallbackAllowed || snap.hidden || snap.image == null ||
+                SystemClock.uptimeMillis() - snap.imageAtUptime > 45_000)) {
+                return ActionResult(false, "截图或授权已过期，请重新 screen 加 image。", observeQuiet())
+            }
             val cap = capture()
             try {
                 // l10n:keep agent screen result
                 if (cap.ownAppInFront && !lifted.ownApp) return ActionResult(false, "这是 DSH 自己的界面，不操作。")
                 // l10n:keep agent screen result
-                if (unavailable(cap)) return ActionResult(false, "这一屏读不到内容（可能受敏感视图策略限制），不盲滑。请 handoff。", toSnapshot(publish(cap, false)))
+                if (cap.hiddenWindowTitle != null || (snap.unreadable && cap.unreadableWindowTitle == null) ||
+                    (!snap.unreadable && unavailable(cap))) {
+                    return ActionResult(false, "当前页面已变化，没有滑动。请重新看屏幕。", toSnapshot(publish(cap, false)))
+                }
                 // l10n:keep agent screen result
-                if (!observation(cap).reusableCoordinates(snap.observation)) return ActionResult(false, "无法确认当前界面仍与上一屏一致，没有滚动。请先看新屏幕。", toSnapshot(publish(cap, false)))
+                val current = observation(cap)
+                val reusable = if (snap.unreadable) current.reusableImageCoordinates(snap.observation)
+                    else current.reusableCoordinates(snap.observation)
+                if (!reusable || cap.packageName != snap.packageName) return ActionResult(false, "无法确认当前界面仍与上一屏一致，没有滚动。请先看新屏幕。", toSnapshot(publish(cap, false)))
                 val screen = cap.screen
                 val before = clock.count
                 val out = actuator.scroll(null, 0, a.direction == PhoneAction.Direction.LEFT || a.direction == PhoneAction.Direction.RIGHT,
@@ -429,7 +486,7 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
                 // l10n:keep agent screen result
                 if (!out.accepted) return ActionResult(false, "没能滚动。", observeQuiet())
                 // l10n:keep agent screen result
-                return after(before, snap, gen, "已提交${dirWord}滑动屏幕。", scrolled = true)
+                return after(before, snap, gen, "已提交${if (snap.unreadable) "截图兜底" else ""}${dirWord}滑动屏幕。", scrolled = true)
             } finally { cap.recycle() }
         }
         val res = resolve(a.screenId, targetId)
@@ -480,19 +537,27 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
         // l10n:keep agent screen result
         if (snap.protectedPage && !lifted.systemPages) return ActionResult(false, "这是系统权限 / 安全相关页面，DSH 不在这里点击。需要的话请用 handoff 交给用户。")
         // l10n:keep agent screen result
-        if (snap.hidden || snap.unreadable) return ActionResult(false, "这一屏读不到内容（可能受敏感视图策略限制），不盲点。请 handoff。", observeQuiet())
+        if (snap.hidden || (snap.unreadable && !a.imageFallbackAllowed)) return ActionResult(false, "这一屏读不到内容（可能受敏感视图策略限制），不盲点。请 handoff。", observeQuiet())
+        if (snap.unreadable && SystemClock.uptimeMillis() - snap.imageAtUptime > 45_000) {
+            return ActionResult(false, "截图已过期，请重新 screen 加 image 再点。", observeQuiet())
+        }
         val cap = capture()
         try {
             // l10n:keep agent screen result
-            if (unavailable(cap)) return ActionResult(false, "这一屏读不到内容（可能受敏感视图策略限制），不盲点。请 handoff。", toSnapshot(publish(cap, false)))
-            // l10n:keep agent screen result
-            if (!observation(cap).reusableCoordinates(snap.observation)) return ActionResult(false, "无法确认当前界面仍与截图一致，没有点击。请重新看屏幕。", toSnapshot(publish(cap, false)))
+            if (cap.hiddenWindowTitle != null || (snap.unreadable && cap.unreadableWindowTitle == null) ||
+                (!snap.unreadable && unavailable(cap))) {
+                return ActionResult(false, "当前页面已变化，没有点击。请重新看屏幕。", toSnapshot(publish(cap, false)))
+            }
+            val current = observation(cap)
+            val reusable = if (snap.unreadable) current.reusableImageCoordinates(snap.observation)
+                else current.reusableCoordinates(snap.observation)
+            if (!reusable || cap.packageName != snap.packageName) return ActionResult(false, "无法确认当前界面仍与截图一致，没有点击。请重新看屏幕。", toSnapshot(publish(cap, false)))
         } finally { cap.recycle() }
         val before = clock.count
         // l10n:keep agent screen result
         if (!actuator.tap(point.first, point.second)) return ActionResult(false, "系统没有接受这次点击。", observeQuiet())
         // l10n:keep agent screen result
-        return after(before, snap, gen, "已提交点击截图上的 (${a.x}, ${a.y})。")
+        return after(before, snap, gen, "已提交${if (snap.unreadable) "截图兜底" else ""}点击 (${a.x}, ${a.y})。")
     }
 
     /** Waits for the UI to settle, reads the new screen (`+` marks) and says whether anything changed. */
@@ -616,7 +681,7 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
         } else if (cap.unreadableWindowTitle != null) {
             val name = cap.unreadableWindowTitle.takeIf { it.isNotBlank() }?.let { "「$it」" } ?: ""
             // l10n:keep agent screen result
-            note("unreadable", "提示：当前无法读取这一屏${name}的有效内容，可能受敏感视图策略限制（Android 14 起密码、支付、验证页会被系统过滤）。读不到也点不了；能看图的模型可以 screen 加 image，否则请 handoff。")
+            note("unreadable", "提示：这一屏${name}没有可读元素。能看图时先 screen 加 image；若用户已为此 App 开启截图坐标操作，可请求逐次确认后点坐标。看不清目标或涉及密码、支付时请 handoff。")
         // l10n:keep agent screen result
         } else if (cap.windows.isEmpty()) note("empty", "提示：读不到前台界面（可能是锁屏、安全页面或系统界面）。")
         val previous = latest?.takeIf { it.packageName == pkg }?.screen?.keys

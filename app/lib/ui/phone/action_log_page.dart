@@ -19,6 +19,7 @@ String phoneToolLabel(String tool) {
     'collect' => appL10n.phoneToolCollect,
     'tap' => appL10n.phoneToolTap,
     'type' => appL10n.phoneToolType,
+    'type_focused' => appL10n.phoneToolType,
     'scroll' => appL10n.phoneToolScroll,
     'key' => appL10n.phoneToolKey,
     'tap_xy' => appL10n.phoneToolTapCoordinates,

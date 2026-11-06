@@ -156,7 +156,7 @@ class PhoneCore(
             PhoneToolCatalog.CLIPBOARD -> clipboard(a)
             PhoneToolCatalog.SCREEN -> screen(a)
             PhoneToolCatalog.COLLECT -> collect(a)
-            PhoneToolCatalog.TAP, PhoneToolCatalog.TYPE, PhoneToolCatalog.SCROLL, PhoneToolCatalog.TAP_XY -> act(name, a, scope)
+            PhoneToolCatalog.TAP, PhoneToolCatalog.TYPE, PhoneToolCatalog.TYPE_FOCUSED, PhoneToolCatalog.SCROLL, PhoneToolCatalog.TAP_XY -> act(name, a, scope)
             PhoneToolCatalog.KEY -> key(a)
             PhoneToolCatalog.HANDOFF -> handoff(a, scope)
             // l10n:keep agent tool result
@@ -374,6 +374,7 @@ class PhoneCore(
         val snap = driver.observe(detail = a.bool("detail") == true, image = a.bool("image") == true)
         tasks.setApp(snap.appLabel)
         val shown = safety.filterScreen(snap)
+        if (shown.image == null) driver.revokeImage(snap.id)
         val refused = shown !== snap
         return Out(
             // l10n:keep agent tool result
@@ -427,7 +428,7 @@ class PhoneCore(
 
     /** tap / type / scroll / tap_xy: route, resolve, gate, perform. */
     private fun act(name: String, a: Args, scope: SerialWorker.Scope): Out {
-        val screenParameter = if (name == PhoneToolCatalog.TAP_XY) "observation" else "screen"
+        val screenParameter = if (name == PhoneToolCatalog.TAP_XY || name == PhoneToolCatalog.TYPE_FOCUSED) "observation" else "screen"
         val sid = a.str(screenParameter)
         val which = when (val r = routeScreenId(sid, screenParameter)) {
             is Either.Left -> return Out(r.value, error = true)
@@ -435,7 +436,7 @@ class PhoneCore(
         }
         sid!!
         val id = a.int("id")
-        val action: PhoneAction
+        var action: PhoneAction
         val kind: WriteKind
         var typed: String? = null
         var submit = false
@@ -460,6 +461,13 @@ class PhoneCore(
                 kind = WriteKind.TYPE
                 // Masked until the input is known not to be a password or code field.
                 summary = secretSummary(sid, id, submit)
+            }
+            PhoneToolCatalog.TYPE_FOCUSED -> {
+                typed = a.text("text") ?: return Out("type_focused 需要 text。", error = true)
+                if (typed.isEmpty() || typed.length > 2_000) return Out("一次请输入 1–2000 字。", error = true)
+                action = PhoneAction.TypeFocused(sid, typed)
+                kind = WriteKind.TYPE
+                summary = "向截图中的焦点输入框追加 ${typed.length} 字"
             }
             PhoneToolCatalog.SCROLL -> {
                 val dir = when (a.str("direction")?.lowercase()) {
@@ -496,7 +504,7 @@ class PhoneCore(
         } else {
             null
         }
-        val secret = kind == WriteKind.TYPE && SafetyRules.isSecretTarget(target)
+        val secret = kind == WriteKind.TYPE && (name == PhoneToolCatalog.TYPE_FOCUSED || SafetyRules.isSecretTarget(target))
         if (kind == WriteKind.TYPE && !secret) {
             summary = ui.get("phone_log_type", "输入 %1\$s#%2\$d（%3\$d 字%4\$s）", sid, id!!, typed!!.length, if (submit) ui.get("phone_log_submit", "，提交") else "") // l10n:keep test default
         }
@@ -504,12 +512,24 @@ class PhoneCore(
         val appLabel = target?.appLabel
         val app = appLabel ?: pkg
         val owner = tasks.activeOwner() ?: return stoppedOut(summary)
-        val verdict = safety.checkWrite(kind, target, pkg, appLabel, typed, submit, point)
+        val imageFallback = (kind == WriteKind.TAP_XY || name == PhoneToolCatalog.TYPE_FOCUSED ||
+            (kind == WriteKind.SCROLL && id == null)) && driver.needsImageFallback(sid)
+        if (name == PhoneToolCatalog.TYPE_FOCUSED && !imageFallback) return Out("此工具只用于主屏无障碍树为空且已取得截图的页面。请重新 screen 加 image。", error = true, summary = summary)
+        val verdict = safety.checkWrite(kind, target, pkg, appLabel, typed, submit, point, imageFallback)
         val decision = when (val r = safety.resolve(verdict, scope)) {
             is SafetyGate.Result.No -> return Out(r.message, error = true, app = app, summary = summary, decision = r.decision)
             is SafetyGate.Result.Go -> r.decision
         }
         if (!tasks.isCurrent(owner) || Thread.currentThread().isInterrupted) return stoppedOut(summary)
+        if (imageFallback) {
+            action = when (val selected = action) {
+                is PhoneAction.TapXY -> selected.copy(imageFallbackAllowed = true)
+                is PhoneAction.TypeFocused -> selected.copy(imageFallbackAllowed = true)
+                is PhoneAction.Scroll -> selected.copy(imageFallbackAllowed = true)
+                else -> selected
+            }
+            summary += " · 截图兜底"
+        }
         tasks.setApp(appLabel ?: pkg)
         say(ui.get("phone_acting", "DSH 正在操作 · %1\$s", statusLine(kind, target, if (secret) SafetyRules.MASK else typed))) // l10n:keep test default
         val res = driver.perform(action)
@@ -642,7 +662,7 @@ class PhoneCore(
         const val HANDOFF_MS = 600_000L
 
         /** Tools whose success means the agent got past whatever refused it before. */
-        private val WRITES = setOf(PhoneToolCatalog.TAP, PhoneToolCatalog.TYPE, PhoneToolCatalog.TAP_XY, PhoneToolCatalog.OPEN)
+        private val WRITES = setOf(PhoneToolCatalog.TAP, PhoneToolCatalog.TYPE, PhoneToolCatalog.TYPE_FOCUSED, PhoneToolCatalog.TAP_XY, PhoneToolCatalog.OPEN)
         private val DONE = setOf("ok", "allowed", "confirmed", "confirmed-app", "confirmed-task")
         const val SETTLE_AFTER_LAUNCH_MS = 1200L
         const val MAX_APPS = 150
