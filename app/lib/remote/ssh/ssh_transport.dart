@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:typed_data';
 
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../l10n/l10n.dart';
 import '../link_status.dart';
@@ -93,6 +93,68 @@ abstract class SshTransport implements RemoteShell {
 
 typedef SshTransportFactory = Future<SshTransport> Function(SshConnectParams params, HostKeyCheck verifyHostKey);
 
+/// Cipher preference used for every connection.
+///
+/// AES-GCM used to come first (dartssh2's own default). PointyCastle's GCM
+/// does its GF(2^128) multiply bit by bit: `gcm.dart:_mult` runs 128 rounds of
+/// three byte-wide passes with no tables, so a single 16-byte block costs
+/// roughly 6k byte operations. On 1.0.4 that one function took 73.6% of the UI
+/// isolate while a long session was streaming, which is what starved frames.
+/// AES-CTR has no such multiply: in the AOT microbenchmark it decrypts 3.1
+/// MiB/s where GCM manages 0.5, so it leads the list.
+///
+/// ChaCha20-Poly1305 is deliberately last. It is the one cipher whose Terrapin
+/// (CVE-2023-48795) prefix truncation works on *every* connection that did not
+/// negotiate strict KEX, and dartssh2 enables strict KEX only when the server
+/// offers it. Putting it after both AES-GCM entries means it is picked only
+/// when the server offers nothing else - i.e. only in the cases where
+/// dartssh2's default order (GCM first) would have picked it too. AES-CTR is
+/// not a practical Terrapin target: that needs a CBC cipher, and CBC is never
+/// offered here (oss-security advisory, 2023-12-18).
+///
+/// This is only a reorder: every cipher dartssh2 enables by default stays in
+/// the list, so a server offering nothing but AES-GCM still negotiates it.
+/// CBC, SHA-1 kex and `none` are never added.
+const sshCipherPreference = <SSHCipherType>[
+  SSHCipherType.aes256ctr,
+  SSHCipherType.aes128ctr,
+  SSHCipherType.aes256gcm,
+  SSHCipherType.aes128gcm,
+  SSHCipherType.chacha20poly1305,
+];
+
+/// `fast` applies [sshCipherPreference]; `legacy` keeps dartssh2's original
+/// order, so one build can compare the two with
+/// `--dart-define=DSH_SSH_CIPHER=legacy`.
+const _sshCipherProfile = String.fromEnvironment('DSH_SSH_CIPHER', defaultValue: 'fast');
+
+/// Throws on anything but `fast` / `legacy`: a typo in the build define should
+/// fail before the socket opens rather than quietly pick a preference.
+SSHAlgorithms sshClientAlgorithms({String profile = _sshCipherProfile}) =>
+    switch (profile) {
+      'fast' => const SSHAlgorithms(cipher: sshCipherPreference),
+      'legacy' => const SSHAlgorithms(),
+      _ => throw ArgumentError.value(profile, 'profile', 'expected fast or legacy'),
+    };
+
+/// `--dart-define=DSH_SSH_TRACE=cipher` in a profile build prints the
+/// negotiated kex, cipher and MAC once per key exchange. Never in release.
+const _sshTrace = String.fromEnvironment('DSH_SSH_TRACE');
+const _traceNegotiation = !kReleaseMode && _sshTrace == 'cipher';
+
+/// Keeps only what a perf A/B needs to read; passing null otherwise keeps
+/// dartssh2's per-packet debug callbacks from costing anything. The library
+/// prints the kex line as `_kexType`, the strict-KEX verdict as `_strictKex`,
+/// and the negotiated algorithms as `...CipherType` / `...MacType`. The last
+/// two lines are what the A/B run reads; `_strictKex` says whether the
+/// Terrapin countermeasure negotiated.
+const _traceKeys = <String>['_kexType', '_strictKex', 'CipherType', 'MacType'];
+
+void _printNegotiation(String? line) {
+  if (line == null) return;
+  if (_traceKeys.any(line.contains)) debugPrint('dsh-ssh $line');
+}
+
 /// dartssh2-backed transport.
 class DartSshTransport implements SshTransport {
   DartSshTransport._(this._client);
@@ -100,6 +162,9 @@ class DartSshTransport implements SshTransport {
   final SSHClient _client;
 
   static Future<SshTransport> connect(SshConnectParams params, HostKeyCheck verifyHostKey) async {
+    // Resolved first so a bad DSH_SSH_CIPHER fails before the socket opens;
+    // throwing later would leave the connection without a close path.
+    final algorithms = sshClientAlgorithms();
     List<SSHKeyPair>? identities;
     if (params.auth == SshAuthMethod.privateKey) {
       identities = await decodePrivateKey(params.secrets.privateKey ?? '', params.secrets.passphrase);
@@ -125,6 +190,8 @@ class DartSshTransport implements SshTransport {
       socket,
       username: params.username,
       identities: identities,
+      algorithms: algorithms,
+      printDebug: _traceNegotiation ? _printNegotiation : null,
       onPasswordRequest: params.auth == SshAuthMethod.password ? () => params.secrets.password : null,
       // Keyboard-interactive servers ask for the same password.
       onUserInfoRequest: params.auth == SshAuthMethod.password
