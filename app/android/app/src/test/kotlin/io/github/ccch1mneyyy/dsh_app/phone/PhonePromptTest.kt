@@ -208,19 +208,24 @@ class PhonePromptTest {
         val call = MainThreadCall { "done" }; call.run(); assertEquals("done", call.await(1))
     }
 
-    @Test fun hardwareStrokeWithAccessibilityFlagStillWorksAfterArming() {
-        assertTrue(PromptInputPolicy.allows(1000, 600, true, false, false, false, true, false))
+    @Test fun aFingerOnARomThatReportsNoDeviceIdStillAuthorizes() {
+        // deviceId is not an input: a finger on an overlay window is accepted even where the ROM
+        // reports 0 / -1 for it, which used to make every press look like an injected stroke.
+        assertTrue(PromptInputPolicy.allows(1000, 600, true, false, false, false, false))
     }
 
     @Test fun injectedAndObscuredTouchesNeverAuthorize() {
-        assertFalse(PromptInputPolicy.allows(1000, 600, true, true, false, false, false, false))
-        assertFalse(PromptInputPolicy.allows(1000, 600, true, false, true, false, false, true))
-        assertFalse(PromptInputPolicy.allows(1000, 600, true, false, false, true, true, false))
+        assertFalse(PromptInputPolicy.allows(1000, 600, true, true, false, false, false))
+        assertFalse(PromptInputPolicy.allows(1000, 600, true, false, true, false, true))
+        assertFalse(PromptInputPolicy.allows(1000, 600, true, false, false, true, false))
     }
 
     @Test fun talkBackExceptionDoesNotBypassArmingOrLifetime() {
-        assertTrue(PromptInputPolicy.allows(1000, 600, true, false, false, true, true, true))
-        assertFalse(PromptInputPolicy.allows(500, 600, true, false, false, true, true, true))
-        assertFalse(PromptInputPolicy.allows(1000, 600, false, false, false, true, true, true))
+        assertTrue(PromptInputPolicy.allows(1000, 600, true, false, false, true, true))
+        assertFalse(PromptInputPolicy.allows(500, 600, true, false, false, true, true))
+        assertFalse(PromptInputPolicy.allows(1000, 600, false, false, false, true, true))
+        assertFalse(PromptInputPolicy.allows(1000, 600, true, false, true, true, true))
     }
+
+
 }
