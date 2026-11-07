@@ -215,6 +215,7 @@ ctx.dshGoPanels.register({
 - **宿主半侧**：
   - 缓存最新一份占用表（按 boot rev）。
   - `GET /dsh-go/v1/inventory` 返回 `{release, bootRev, packages[{name, hasClient, rev}], slots{key: SlotOccupant[]}}`。
+    - 每个 `packages[]` 带 `status`（`loaded` / `failed`），失败时带 `error` 摘要（首行 + 出错位置）；加载器里有但没启动的包（`disabled` / `inactive`）放在 `unavailable[{name, official, status, error?}]`，不进 `packages`，旧版 App 看到的包集合不变（#32）。
   - 同时承载 §4.3 的面板服务。
 - **冷启动**：App 发现 bootRev 变了而占用表还是旧的，就开一个隐藏的「探针岛」加载一次页面，报完即销毁（计入内存预算，§7）。
 - 所有 `/dsh-go/*` 路由都经过 §9 的守卫。App 用已有的 API 鉴权调用。
