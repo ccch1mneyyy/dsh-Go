@@ -20,6 +20,7 @@ import android.view.Window
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -130,16 +131,46 @@ internal object PhonePromptUi {
         val dialog = Dialog(activity)
         return try {
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-            dialog.setContentView(card(activity, p))
+            val promptCard = card(activity, p)
+            dialog.setContentView(promptCard)
             dialog.setCanceledOnTouchOutside(false)
             dialog.setOnCancelListener { if (p.live) p.ticket.dismiss() }
+            // 弹窗不能压在输入框上：先收起输入法，再让窗口不要被 IME 重新推挤 (#409)。
+            activity.getSystemService(InputMethodManager::class.java)
+                ?.hideSoftInputFromWindow(activity.window.decorView.windowToken, 0)
             dialog.window?.apply {
                 setBackgroundDrawableResource(android.R.color.transparent)
                 addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
             }
             dialog.show()
             dialog.window?.setLayout(minOf(activity.resources.displayMetrics.widthPixels - dp(activity, 24), dp(activity, 472)),
                 WindowManager.LayoutParams.WRAP_CONTENT)
+            // 按钮和滚动区会先消费触摸；剩下的卡片表面用来拖动窗口，弹窗不再固定死 (#409)。
+            var downRawX = 0f
+            var downRawY = 0f
+            var startX = 0
+            var startY = 0
+            promptCard.setOnTouchListener { _, event ->
+                val window = dialog.window ?: return@setOnTouchListener false
+                val lp = window.attributes
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        downRawX = event.rawX
+                        downRawY = event.rawY
+                        startX = lp.x
+                        startY = lp.y
+                        true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        lp.x = startX + (event.rawX - downRawX).toInt()
+                        lp.y = startY + (event.rawY - downRawY).toInt()
+                        window.attributes = lp
+                        true
+                    }
+                    else -> false
+                }
+            }
             if (!p.markShown()) { dialog.dismiss(); null } else ({ runCatching { dialog.dismiss() } })
         } catch (_: Exception) {
             runCatching { dialog.dismiss() }
