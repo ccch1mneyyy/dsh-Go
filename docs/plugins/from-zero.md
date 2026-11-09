@@ -392,3 +392,5 @@ JS
 实现细节可对照仓库的[快速开始](quickstart.md)、[主机覆盖](hosts.md)、[自查清单](checklist.md)，以及 SDK 和 [weather 示例](../../examples/plugins/dsh-go-example-weather/)源码。
 
 发布层参考 [DSH 官方 bundle/profile 教程](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.md)。市场条件来自 [dshfind 发现说明](https://github.com/hikariming/dshfind/blob/3ee8543f3ec60792cae0523d4a149cba0d68770c/README.zh-CN.md)及[索引生成器](https://github.com/hikariming/dshfind/blob/3ee8543f3ec60792cae0523d4a149cba0d68770c/scripts/lib/dsh-index.mjs)。
+
+通用质量检查（社区项目，非官方、非认证/排名）：[dsh-plugin-guide](https://github.com/PerryLink/dsh-plugin-guide) 解释 ENTRY / FLOW / BOOST 三层；[dsh-standards](https://github.com/PerryLink/dsh-standards) 提供只读 ENTRY 静态检查（默认不执行插件代码；检查器需要 Node.js ≥ 24.9）。它们不是 dsh-go 的检查项或市场收录条件。
