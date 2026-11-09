@@ -5,13 +5,18 @@ import 'dart:typed_data';
 import 'package:dsh_remote/dsh_remote.dart' as remote;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import 'webrtc_audio.dart';
+
 /// [remote.RemotePeerConnector] over flutter_webrtc (libwebrtc): the
 /// DataChannel that carries DSH Remote's direct path (LAN / P2P / TURN).
-/// Data only — no microphone, camera or audio session is touched.
+/// Data only — no microphone or camera track is ever added — but libwebrtc still
+/// builds an audio device module for the factory, so the first peer connection
+/// pins its usage to media ([ensureWebRtcAudioConfiguration]).
 Future<remote.RemotePeerConnection> flutterPeerConnector(
   List<remote.RemoteIceServer> iceServers,
   remote.RemotePeerHandlers handlers,
 ) async {
+  await ensureWebRtcAudioConfiguration();
   final pc = await createPeerConnection({
     'iceServers': [for (final server in iceServers) server.toJson()],
     'sdpSemantics': 'unified-plan',
