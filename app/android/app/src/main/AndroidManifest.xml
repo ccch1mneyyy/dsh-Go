@@ -221,6 +221,15 @@
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.Material.Light.NoActionBar" />
 
+        <!-- DND gate: focus owner and inert touch receiver on the leased probe display. -->
+        <activity
+            android:name=".phone.background.BackgroundProbeActivity"
+            android:exported="false"
+            android:launchMode="standard"
+            android:taskAffinity="${applicationId}.phone.background"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
         <!-- Quick Settings tile 「新对话」 (tile/NewChatTileService.kt). -->
         <service
             android:name=".tile.NewChatTileService"

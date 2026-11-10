@@ -2,11 +2,17 @@ package io.github.ccch1mneyyy.dsh_app.phone.background
 
 import io.github.ccch1mneyyy.dsh_app.i18n.AppStrings
 import io.github.ccch1mneyyy.dsh_app.R
+import android.app.ActivityManager
+import android.app.ActivityOptions
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.Process
+import android.os.ResultReceiver
 import android.os.SystemClock
 import android.net.ConnectivityManager
 import android.net.Network
@@ -15,10 +21,13 @@ import android.net.NetworkRequest
 import android.provider.Settings
 import io.github.ccch1mneyyy.dsh_app.phone.PhoneControl
 import io.github.ccch1mneyyy.dsh_app.phone.PhoneAppIdentity
+import io.github.ccch1mneyyy.dsh_app.phone.AppVisibility
 import io.github.ccch1mneyyy.dsh_app.phone.a11y.MlKitLocalOcr
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
 import io.github.ccch1mneyyy.dsh_app.phone.PhoneTasks
 
 /**
@@ -1133,6 +1142,62 @@ class BackgroundControl private constructor(context: Context) {
         if (closes("root")) root.disconnect()
     }
 
+    private class ProbeSession {
+        val armed = CountDownLatch(1)
+        val done = CountDownLatch(1)
+        @Volatile var target: InputProbe.Target? = null
+        @Volatile var time = 0L
+        @Volatile var ok = false
+        @Volatile var error: String? = null
+        @Volatile var detail: String? = null
+    }
+
+    /** Launch the gate window from the app's own resumed Activity, not from the privileged process. */
+    private fun startProbeActivity(displayId: Int): ProbeSession? {
+        val session = ProbeSession()
+        val receiver = object : ResultReceiver(Handler(Looper.getMainLooper())) {
+            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+                when (resultCode) {
+                    BackgroundProbeActivity.RESULT_ARMED -> {
+                        session.target = InputProbe.Target(
+                            resultData?.getInt(BackgroundProbeActivity.EXTRA_DISPLAY_ID) ?: 0,
+                            resultData?.getInt(BackgroundProbeActivity.EXTRA_X) ?: 0,
+                            resultData?.getInt(BackgroundProbeActivity.EXTRA_Y) ?: 0,
+                        )
+                        session.time = resultData?.getLong(BackgroundProbeActivity.EXTRA_TIME) ?: 0L
+                        session.armed.countDown()
+                    }
+                    BackgroundProbeActivity.RESULT_OK -> {
+                        session.ok = true
+                        session.done.countDown()
+                    }
+                    BackgroundProbeActivity.RESULT_FAIL -> {
+                        session.error = resultData?.getString(BackgroundProbeActivity.EXTRA_ERROR)
+                        session.detail = resultData?.getString(BackgroundProbeActivity.EXTRA_DETAIL)
+                        session.done.countDown()
+                    }
+                }
+            }
+        }
+        val started = FutureTask<Boolean> {
+            val host = AppVisibility.current() ?: return@FutureTask false
+            if (!AppVisibility.isResumed(host)) return@FutureTask false
+            val intent = Intent(host, BackgroundProbeActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                putExtra(BackgroundProbeActivity.EXTRA_DISPLAY_ID, displayId)
+                putExtra(BackgroundProbeActivity.EXTRA_RECEIVER, receiver)
+            }
+            val manager = host.getSystemService(ActivityManager::class.java)
+            if (!manager.isActivityStartAllowedOnDisplay(host, displayId, intent)) return@FutureTask false
+            runCatching {
+                host.startActivity(intent, ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle())
+            }.isSuccess
+        }
+        Handler(Looper.getMainLooper()).post(started)
+        val launched = runCatching { started.get(2, TimeUnit.SECONDS) }.getOrDefault(false)
+        return if (launched) session else null
+    }
+
     /** Settings owns one outer transport use. The original resource survives a cancelled UI. */
     private fun runGateProbe(selection: PrivilegedKeepState.Ticket, mayStart: () -> Boolean): String? {
         val starterReason = when (mode) {
@@ -1200,15 +1265,43 @@ class BackgroundControl private constructor(context: Context) {
                     reason = AppStrings.get(app, R.string.background_resource_recovery_pending)
                     return@call
                 }
-                val request = Bundle().apply {
-                    putString(Proto.OP, Proto.OP_SELF_CHECK_PROBE)
+                if (!gate.current(probe)) { reason = AppStrings.get(app, R.string.background_selection_cancelled); return@call }
+                val session = startProbeActivity(actualId)
+                val reply = Bundle().apply {
                     putString(Proto.OWNER, call.io.owner)
                     putInt(Proto.SELF_CHECK_PROBE_VERSION, 1)
-                    putInt(Proto.RELEASE_RECEIPT, 1)
                 }
-                if (!gate.current(probe)) { reason = AppStrings.get(app, R.string.background_selection_cancelled); return@call }
-                val reply = OwnerScopeProtocol.execute(peer, call.io.owner, request) {
-                    check(gate.admit(probe) { call.io.checkDispatch() })
+                if (session == null || !session.armed.await(3000, TimeUnit.MILLISECONDS) || session.target == null) {
+                    reply.putBoolean(Proto.OK, false)
+                    reply.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
+                    reply.putString(Proto.INJECT_ERROR, "inputWindowNotReady")
+                } else {
+                    val target = checkNotNull(session.target)
+                    val tap = OwnerScopeProtocol.execute(peer, call.io.owner, Bundle().apply {
+                        putString(Proto.OP, Proto.OP_SELF_CHECK_TAP)
+                        putString(Proto.OWNER, call.io.owner)
+                        putInt(Proto.DISPLAY_ID, target.displayId)
+                        putInt(Proto.X, target.x)
+                        putInt(Proto.Y, target.y)
+                        putLong(Proto.TIME, session.time)
+                    }) {
+                        check(gate.admit(probe) { call.io.checkDispatch() })
+                    }
+                    if (tap.get(Proto.OK) != true) {
+                        reply.putBoolean(Proto.OK, false)
+                        reply.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
+                        reply.putString(Proto.INJECT_ERROR, tap.getString(Proto.ERROR) ?: "inputApiUnavailable")
+                    } else if (session.done.await(1000, TimeUnit.MILLISECONDS) && session.ok) {
+                        reply.putBoolean(Proto.OK, true)
+                        reply.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
+                        reply.putBoolean(Proto.INJECT_OK, true)
+                    } else {
+                        reply.putBoolean(Proto.OK, false)
+                        reply.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
+                        reply.putBoolean(Proto.INJECT_OK, false)
+                        reply.putString(Proto.INJECT_ERROR, session.error ?: "inputUnconfirmed")
+                        session.detail?.let { reply.putString(Proto.ERROR_DETAIL, it) }
+                    }
                 }
                 when (val result = gate.updateStrict(probe, call.io.owner, reply.get(Proto.OWNER),
                     reply.get(Proto.SELF_CHECK_PROBE_VERSION), reply.get(Proto.OK),

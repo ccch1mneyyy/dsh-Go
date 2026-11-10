@@ -13,7 +13,11 @@ internal class RecoveryPlatform {
     fun birth(peer: String): ResourceRecovery.Birth {
         val boot = ResourceRecovery.uuid(File("/proc/sys/kernel/random/boot_id").readText().trim())
             ?: throw ResourceRecovery.Failure("recoveryUnavailable")
-        val ns = Os.stat("/proc/self/ns/pid")
+        // ColorOS 16 does not expose /proc/self/ns/pid, and its adb shell domain
+        // denies stats on /proc/self/ns/mnt. The process directory is stable for
+        // the lifetime of a privileged server and still distinguishes a new peer.
+        val ns = runCatching { Os.stat("/proc/self/ns/pid") }
+            .getOrElse { runCatching { Os.stat("/proc/self/ns/mnt") }.getOrElse { Os.stat("/proc/self") } }
         val pid = Process.myPid(); val uid = Process.myUid()
         if (pid <= 0 || uid < 0 || ns.st_ino <= 0) throw ResourceRecovery.Failure("recoveryUnavailable")
         return ResourceRecovery.Birth(peer, boot, pid, uid, ns.st_dev, ns.st_ino)
