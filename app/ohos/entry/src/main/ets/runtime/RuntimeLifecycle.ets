@@ -39,6 +39,12 @@ export class RuntimeLifecycle {
   private observation: HostLifecycleObservation | null = null;
   private retry: number | null = null;
   private retryDelay: number = 1000;
+  // Once a host observation has been acknowledged by the engine, the engine is
+  // hosted. The engine closes redundant control POSTs for an already-hosted
+  // revision (socket_closed_no_headers / timeout), so those retries must not
+  // keep flipping `failure` back to non-null or re-toast. A genuine failure on a
+  // fresh session (engine restart -> new token) resets this flag below.
+  private hosted: boolean = false;
 
   constructor(transport: LifecycleTransport, permission: () => string, changed: () => void = (): void => {},
     received: (ack: HostLifecycleAck) => void = (_ack: HostLifecycleAck): void => {}) {
@@ -56,7 +62,7 @@ export class RuntimeLifecycle {
     this.resetRetry();
     this.generation++; this.transport.cancel();
     this.baseUrl = baseUrl; this.token = token; this.requested = -1; this.acknowledged = -1;
-    this.failure = null; this.push();
+    this.failure = null; this.hosted = false; this.push();
     if (baseUrl === null) this.changed();
   }
 
@@ -88,20 +94,26 @@ export class RuntimeLifecycle {
     this.requested = revision; this.transport.cancel();
     this.transport.send(this.baseUrl, this.token, this.observation).then((ack: HostLifecycleAck): void => {
       if (this.generation === generation && this.revision === revision) {
-        this.acknowledged = revision; this.failure = null;
+        this.acknowledged = revision; this.failure = null; this.hosted = true;
         try { this.received(ack); }
         catch (_) { this.failure = 'ohos_lifecycle_native'; }
         this.changed();
       }
     }, (error: Error): void => {
       if (this.generation === generation && this.revision === revision) {
-        this.failure = error instanceof LifecycleFailure ? error.code : 'ohos_lifecycle_unavailable';
+        // If the engine is already hosted, redundant control POSTs are closed by
+        // the engine (socket_closed_no_headers / timeout). Those must not keep
+        // the error state / toast alive; still retry quietly to detect a real
+        // engine death (e.g. after a token rotation handled by runtime()).
+        if (!this.hosted) {
+          this.failure = error instanceof LifecycleFailure ? error.code : 'ohos_lifecycle_unavailable';
+        }
         // Retry only this idempotent host observation, never a tool or prompt.
         this.retry = setTimeout((): void => {
           this.retry = null; this.requested = -1; this.push();
         }, this.retryDelay);
         this.retryDelay = Math.min(this.retryDelay * 2, 30000);
-        this.changed();
+        if (!this.hosted) this.changed();
       }
     });
   }

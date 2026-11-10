@@ -90,10 +90,12 @@ export default class EntryAbility extends FlutterAbility {
     flutterEngine.getPlugins()?.add(new AppLinksPlugin())
     super.configureFlutterEngine(flutterEngine)
     flutterEngine.getPlugins()?.add(new ConnectivityPlugin())
+    // 必须先于其余 dsh 插件挂载 RuntimePlugin：它在 onAttachedToEngine 内设诊断 sink，
+    // 其余插件的启动期探针（如 attachment.attached）才不会被静默吞掉。
+    flutterEngine.getPlugins()?.add(new RuntimePlugin())
     GeneratedPluginRegistrant.registerWith(flutterEngine)
     flutterEngine.getPlugins()?.add(new SecretsPlugin())
     flutterEngine.getPlugins()?.add(new AttachmentFilesPlugin())
-    flutterEngine.getPlugins()?.add(new RuntimePlugin())
     flutterEngine.getPlugins()?.add(new FilesMediaPlugin())
     flutterEngine.getPlugins()?.add(new WebFilesPlugin())
     flutterEngine.getPlugins()?.add(new IslandsPlugin())

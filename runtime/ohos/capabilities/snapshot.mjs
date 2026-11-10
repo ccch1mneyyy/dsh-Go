@@ -30,9 +30,26 @@ export function runtimeCapabilities(ctx, bootId) {
   const bundled = Array.isArray(bundles) && bundles.length > 0 && loader !== undefined &&
     [...loader.entries()].some(entry => !entry.disabled && entry.fiber?.state === 2 &&
       typeof entry.options.name === 'string' && entry.options.name.startsWith('@deepseek-ai/'));
-  const marketInstall = process.platform === 'openharmony' &&
-    globalThis[Symbol.for('dsh.go.ohos.plugins')] !== undefined && ctx.get('pluginManager') !== undefined;
+  // ctx.get(name) is strict by default: it hides a service whose providing
+  // fiber has not reached the active state yet. The first capabilities GET can
+  // land while the profile is still starting, and the client caches the answer
+  // for the lifetime of a connection. Reporting that transient state as
+  // "unsupported" permanently disables plugin installation in the UI, so read
+  // non-strictly and keep the answer unknown until both the pure-JS install
+  // backend and its Cordis owner are present.
+  const pluginBackend = globalThis[Symbol.for('dsh.go.ohos.plugins')];
+  const pluginManager = ctx.get('pluginManager', false);
+  const marketInstall = process.platform === 'openharmony'
+    ? pluginBackend === undefined ? false
+      : pluginManager === undefined ? undefined
+      : true
+    : false;
   const commands = subprocess?.commands;
+  globalThis[Symbol.for('dsh.go.ohos.linkProbe')]?.('capabilities.snapshot', {
+    platform: process.platform, bundled, pluginBackend: pluginBackend === undefined ? 'MISSING' : 'present',
+    pluginManager: pluginManager === undefined ? 'MISSING' : 'present', marketInstall,
+    startedBundles: Array.isArray(bundles) ? bundles.length : 'none', loader: loader === undefined ? 'MISSING' : 'present',
+  });
   return {
     v: 1, bootId, platform: process.platform, arch: process.arch,
     nodeVersion: process.versions.node, simulated: globalThis[Symbol.for('dsh.go.ohos.sim')] === true,

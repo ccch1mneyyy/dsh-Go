@@ -5,6 +5,7 @@ import {
   MethodCall, MethodChannel, MethodResult
 } from '@ohos/flutter_ohos';
 import { AttachmentFileBatch, AttachmentFileRequest, AttachmentFileRetired } from './AttachmentFileStore';
+import { emitDiagnostic } from '../runtime/DiagnosticSink';
 
 class AttachmentPickPending {
   readonly request: AttachmentFileRequest;
@@ -54,6 +55,7 @@ export default class AttachmentFilesPlugin implements FlutterPlugin, AbilityAwar
   onAttachedToEngine(binding: FlutterPluginBinding): void {
     this.retire(); this.channel?.setMethodCallHandler(null);
     this.engine = binding; this.ability = null;
+    emitDiagnostic('attachment.attached ' + JSON.stringify({ channel: 'dsh/attachment-files' }));
     this.ready = AttachmentFileBatch.initialize(binding.getApplicationContext().cacheDir)
       .catch((): void => cleanupWarning());
     this.channel = new MethodChannel(binding.getBinaryMessenger(), 'dsh/attachment-files');
@@ -83,6 +85,7 @@ export default class AttachmentFilesPlugin implements FlutterPlugin, AbilityAwar
   onAttachedToAbility(binding: AbilityPluginBinding): void {
     if (this.ability !== binding) this.retire();
     this.ability = binding;
+    emitDiagnostic('attachment.ability ' + JSON.stringify({ attached: true }));
   }
   onDetachedFromAbility(): void { this.retire(); this.ability = null; }
 
@@ -112,6 +115,7 @@ export default class AttachmentFilesPlugin implements FlutterPlugin, AbilityAwar
     }, (error: Error): void => {
       // Dart has already released ownership and may never return this owner.
       // Retain only the unfinished batch; cleanup failure cannot strand admission.
+      emitDiagnostic('attachment.cleanup ' + JSON.stringify({ message: error.message }));
       deferredCleanup.add(request.batch);
       if (this.pending === request) this.pending = null;
       if (activePick === request) activePick = null;
@@ -125,9 +129,9 @@ export default class AttachmentFilesPlugin implements FlutterPlugin, AbilityAwar
     const options = AttachmentFileRequest.parse(call.args as Map<string, Object | null> | null);
     const ability = this.ability;
     const engine = this.engine;
-    if (options === null) { result.error('ohos_attachment_arguments', 'Invalid attachment selection', null); return; }
-    if (ability === null || engine === null) { result.error('ohos_attachment_detached', 'Attachment picker unavailable', null); return; }
-    if (activePick !== null) { result.error('ohos_attachment_busy', 'Another attachment selection is still active', null); return; }
+    if (options === null) { emitDiagnostic('attachment.args ' + JSON.stringify({ reason: 'ohos_attachment_arguments' })); result.error('ohos_attachment_arguments', 'Invalid attachment selection', null); return; }
+    if (ability === null || engine === null) { emitDiagnostic('attachment.detached ' + JSON.stringify({ ability: ability === null, engine: engine === null })); result.error('ohos_attachment_detached', 'Attachment picker unavailable', null); return; }
+    if (activePick !== null) { emitDiagnostic('attachment.busy ' + JSON.stringify({ owner: activePick.request.owner })); result.error('ohos_attachment_busy', 'Another attachment selection is still active', null); return; }
     if (cleanupRetry === null && deferredCleanup.size !== 0) {
       cleanupRetry = retryCleanup(Array.from(deferredCleanup)).finally((): void => { cleanupRetry = null; });
     }
@@ -152,7 +156,12 @@ export default class AttachmentFilesPlugin implements FlutterPlugin, AbilityAwar
       pending.responded = true;
       pending.result.success(entries.map(entry => entry.toMap()));
       pending.delivered = entries.length !== 0;
+      emitDiagnostic('attachment.picked ' + JSON.stringify({ count: entries.length }));
     } catch (error) {
+      let detail = 'unknown';
+      if (error instanceof Error) detail = error.message;
+      else if (typeof error === 'string') detail = error;
+      emitDiagnostic('attachment.run ' + JSON.stringify({ kind: error instanceof AttachmentFileRetired ? 'retired' : 'error', message: detail }));
       if (!pending.responded) {
         pending.responded = true;
         if (error instanceof AttachmentFileRetired) pending.result.success([]);

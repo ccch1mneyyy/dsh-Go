@@ -56,9 +56,29 @@ async function download(node, path, options, budget) {
   }
 }
 
-function checkManifest(expected, actual) {
+// npm registry metadata normalizes `bin` in two ways the published tarball
+// does not: (1) a string `bin` becomes an object keyed by the package's own
+// unscoped name; (2) each path value drops a leading `./`. Both forms address
+// exactly the same command/file, so compare their normalized shape. Every
+// other field stays a strict equality check against tampering, and a genuinely
+// different bin path still fails the comparison after normalization.
+export function normalizedBin(bin, name) {
+  if (bin === undefined || bin === null) return bin;
+  const unscoped = name.startsWith('@') ? name.slice(name.indexOf('/') + 1) : name;
+  const entries = typeof bin === 'string' ? { [unscoped]: bin } : bin;
+  if (typeof entries !== 'object' || Array.isArray(entries)) return entries;
+  const normalized = {};
+  for (const [key, value] of Object.entries(entries)) {
+    normalized[key] = typeof value === 'string' ? value.replace(/^(\.\/)+/, '') : value;
+  }
+  return normalized;
+}
+
+export function checkManifest(expected, actual) {
   for (const field of manifestFields) {
-    if (!isDeepStrictEqual(expected[field], actual[field]))
+    const b = field === 'bin' ? normalizedBin(expected[field], expected.name) : expected[field];
+    const a = field === 'bin' ? normalizedBin(actual[field], actual.name) : actual[field];
+    if (!isDeepStrictEqual(b, a))
       throw registryError(`${expected.name}: archive manifest differs from locked ${field}`);
   }
 }
@@ -124,6 +144,7 @@ export async function runProfileOperation(context, args, options) {
       const generation = tx.newGeneration();
       const directories = new Map();
       const budget = { downloaded: 0, expanded: 0 };
+      const bundleNames = new Set();
       for (const [index, node] of graph.nodes.entries()) {
         options.signal?.throwIfAborted();
         await emit(`Downloading ${node.id}\n`, 'stdout');
@@ -132,6 +153,9 @@ export async function runProfileOperation(context, args, options) {
         const extracted = await extractPackage({ archivePath, integrity: node.integrity,
           stagingRoot: generation, name: node.name, version: node.version, signal: options.signal });
         checkManifest(node.manifest, extracted.manifest);
+        // The tarball manifest is authoritative for dsh.bundle declarations;
+        // the registry view is deliberately trimmed by resolveGraph().
+        if (extracted.manifest?.dsh?.bundle !== undefined) bundleNames.add(node.name);
         await rm(archivePath);
         const destination = join(generation, `package-${index}`, 'node_modules', node.name);
         await directory(dirname(destination));
@@ -147,8 +171,24 @@ export async function runProfileOperation(context, args, options) {
       const root = graph.nodes.find(node => node.id === graph.root);
       tx.publish(root.name, directories.get(root.id));
       Object.defineProperty(dependencies, root.name, { value: root.version, enumerable: true, configurable: true });
-      tx.writeManifest({ ...manifest, dependencies });
-      await emit(`Saved ${root.id}; activation remains subject to host validation.\n`, 'stdout');
+      // The OHOS backend replaces pnpm, so the native post-install
+      // reconcileProfilePlugins() step never runs. Only writing `dependencies`
+      // leaves the package in the profile manifest but absent from
+      // `dsh.profile.bundles`, which is the ONLY list loadProfileDirectory()
+      // reads when starting plugin layers: installed plugins never start.
+      // Activate packages that declare a real Cordis bundle here, inside the
+      // same profile write transaction, preserving ordering and other fields.
+      const probe = globalThis[Symbol.for('dsh.go.ohos.linkProbe')];
+      const declaredBundles = bundleNames;
+      const previous = Array.isArray(manifest.dsh?.profile?.bundles) ? [...manifest.dsh.profile.bundles] : [];
+      const bundles = [...previous];
+      for (const name of declaredBundles) if (!bundles.includes(name)) bundles.push(name);
+      const next = { ...manifest, dependencies,
+        dsh: { ...manifest.dsh, profile: { ...manifest.dsh?.profile, bundles } } };
+      tx.writeManifest(next);
+      probe?.('plugins.activate', { installed: root.name, declaredBundles: [...declaredBundles],
+        previousBundles: previous, bundles, changed: previous.length !== bundles.length });
+      await emit(`Saved ${root.id}; activated ${declaredBundles.size} bundle(s).\n`, 'stdout');
     }
     return { exitCode: 0, output: output.toString('utf8'), truncated, logPath };
   } catch (error) {

@@ -1,5 +1,9 @@
 import { isMainThread, getEnvironmentData, setEnvironmentData, workerData } from 'node:worker_threads';
 
+const probe = globalThis[Symbol.for('dsh.go.ohos.linkProbe')];
+probe?.('plugins.preload.begin', { platform: process.platform, isMainThread,
+  internalProtocol: workerData?.dshOhosVirtualProcess?.protocol ?? workerData?.dshOhosNodeScript?.protocol ?? null });
+
 if (process.platform === 'openharmony') {
   const internal = !isMainThread && (workerData?.dshOhosVirtualProcess?.protocol === 1 ||
     workerData?.dshOhosNodeScript?.protocol === 1);
@@ -11,8 +15,14 @@ if (process.platform === 'openharmony') {
     installPluginResolution();
   }
   if (isMainThread) {
-    const { createPluginBackend } = await import('./backend.mjs');
-    globalThis[Symbol.for('dsh.go.ohos.plugins')] ??= createPluginBackend();
+    try {
+      const { createPluginBackend } = await import('./backend.mjs');
+      globalThis[Symbol.for('dsh.go.ohos.plugins')] ??= createPluginBackend();
+      probe?.('plugins.backend', { registered: true,
+        keys: Object.keys(globalThis[Symbol.for('dsh.go.ohos.plugins')]) });
+    } catch (error) {
+      probe?.('plugins.backend', { registered: false, code: error?.code ?? null, message: error?.message ?? null });
+    }
   } else {
     const profileKey = '@deepseek-ai/dsh-app-boot/profile-resolution';
     // Only the internal provider constructors select these protocols. They

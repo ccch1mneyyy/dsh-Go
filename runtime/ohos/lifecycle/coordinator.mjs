@@ -384,7 +384,15 @@ export class BoundaryCoordinator {
     // This authenticated HTTP call is only a wake-up/correlation hint. Neither
     // its foreground flag nor its revision is authority over native facts.
     this.#refreshNative();
-    return Promise.resolve(this.#hostControl).then(() => hostOnly ? this.#hostStatus() : this.status());
+    // The ack carries status; it must never wait indefinitely on a pause/resume
+    // journal write. The phone transport gives up after 3s and reports the whole
+    // engine as unsynced, so answer inside that window and let the control finish.
+    const control = Promise.resolve(this.#hostControl).then(() => true, () => true);
+    const bounded = new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(false), 1200);
+      timer.unref?.();
+    });
+    return Promise.race([control, bounded]).then(() => (hostOnly ? this.#hostStatus() : this.status()));
   }
   pause() {
     this.#check();

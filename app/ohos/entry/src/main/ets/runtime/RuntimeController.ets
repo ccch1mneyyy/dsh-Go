@@ -19,6 +19,7 @@ import { PersistedRuntimeLog } from './PersistedRuntimeLog';
 import { TransientTaskOwner } from './TransientTaskOwner';
 import { RuntimeLifecycle, HostLifecycleAck } from './RuntimeLifecycle';
 import { OhosLifecycleTransport } from './OhosLifecycleTransport';
+import { setDiagnosticSink } from './DiagnosticSink';
 import { LinuxControl, LinuxRunRequest } from './LinuxControl';
 import type { LinuxProxyConfiguration } from './LinuxControl';
 import { agentReminderAccess, backgroundComputePermission } from './BackgroundCompute';
@@ -145,6 +146,7 @@ export class RuntimeController {
       (): void => this.lifecycleChanged(),
       (ack: HostLifecycleAck): void => this.taskOwner?.acknowledge(ack));
     this.lifecycle.observe(RuntimeController.foreground);
+    setDiagnosticSink((text: string): void => this.logNote('[DSH-DIAG] ' + text));
     this.paths = new RuntimePaths(context.filesDir);
     this.runtimeGeneration = nativeHostState().consumed ? 1 : 0;
     this.managedSkills = new ManagedSkillService(this.paths.guestRoot, (scope: ManagedSkillScope): boolean => {
@@ -363,6 +365,7 @@ export class RuntimeController {
   private lifecycleChanged(): void {
     const error = this.lifecycle.failureCode();
     if (error !== null && error !== this.lastLifecycleError) {
+      this.logNote('[DSH-DIAG] lifecycle.failed ' + JSON.stringify({ code: error }));
       this.emit(new Map<string, Object | null>([['type', 'notice'], ['text', LIFECYCLE_NOTICE]]));
     }
     this.lastLifecycleError = error;

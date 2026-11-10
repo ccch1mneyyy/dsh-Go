@@ -297,6 +297,54 @@ export function recoverProfile(dir) {
     removeFile(path);
   }
   refuseLegacyLinks(dir, root);
+  // Retroactive activation for profiles written by an earlier OHOS build that
+  // recorded installed bundles only in `dependencies` (never in
+  // `dsh.profile.bundles`). loadProfileDirectory() reads ONLY `dsh.profile.bundles`
+  // to start plugin layers, so such bundles never started. The native
+  // reconcileProfilePlugins() step that fills this list is bypassed by the OHOS
+  // installer, and an HAP upgrade does not re-run any install. Recover here, at
+  // engine boot (before the manifest is read), so already-installed plugins of a
+  // v9->v10 upgrade start without a reinstall. Idempotent and never removes a
+  // bundle; safe to run on every recoverProfile call.
+  if (process.platform === 'openharmony') reconcileBundlesAtBoot(dir);
+}
+
+// Add every installed package that declares a real Cordis bundle to
+// `dsh.profile.bundles`, preserving order and other manifest fields. Uses the
+// store's own active.json resolution so it agrees with what the installer
+// published. Never throws into boot: any failure is reported through the probe.
+const bootReconciled = new Set();
+function reconcileBundlesAtBoot(dir) {
+  // recoverProfile() runs on every plugin-view / bundle-list call, and this scan
+  // reads every installed package.json. On the phone that is ~250 synchronous
+  // reads per call on the engine's only thread, which starves both the loopback
+  // lifecycle exchange and the plugin RPC that asked for the list. Installs go
+  // through the store, which writes the bundle list itself, so one scan per
+  // engine process is enough; a failed scan is retried on the next call.
+  if (bootReconciled.has(dir)) return;
+  bootReconciled.add(dir);
+  try {
+    const manifestPath = join(dir, 'package.json');
+    const before = regularBytes(manifestPath);
+    if (before === null) return;
+    const manifest = JSON.parse(before);
+    const previous = Array.isArray(manifest?.dsh?.profile?.bundles) ? [...manifest.dsh.profile.bundles] : [];
+    const bundles = new Set(previous);
+    let added = 0;
+    for (const { name, realPath } of profilePackageRoots(dir)) {
+      const pkgPath = join(realPath, 'package.json');
+      const bytes = regularBytes(pkgPath);
+      if (bytes === null) continue;
+      let pkg;
+      try { pkg = JSON.parse(bytes); } catch { continue; }
+      if (pkg?.dsh?.bundle !== undefined && !bundles.has(name)) { bundles.add(name); added++; }
+    }
+    if (added === 0) return;
+    const next = { ...manifest, dsh: { ...manifest.dsh, profile: { ...manifest.dsh?.profile, bundles: [...bundles] } } };
+    writeAtomic(manifestPath, `${JSON.stringify(next, null, 2)}\n`);
+  } catch (error) {
+    bootReconciled.delete(dir);
+  }
 }
 
 export function transactionFor(dir) {

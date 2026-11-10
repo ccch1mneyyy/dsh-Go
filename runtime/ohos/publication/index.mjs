@@ -1,6 +1,6 @@
 import nodeVersion from '../node-version.json' with { type: 'json' };
 import { isMainThread } from 'node:worker_threads';
-import { realpath, stat } from 'node:fs/promises';
+import { link, open, realpath, stat } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { isAbsolute, join, parse } from 'node:path';
 import { createAtomicPublisher } from './atomic.mjs';
@@ -25,6 +25,117 @@ export function borrowInstalledOwnership() {
       { code: 'ERR_OHOS_OWNERSHIP_UNAVAILABLE' });
   }
   return installedOwnership;
+}
+
+// Some OpenHarmony builds reject renameat2, flock, xattr or hard links inside
+// the app-data filesystem. The atomic core already falls back to an exclusive
+// copy for a proven EINVAL; this is the outer guard for any other native
+// capability failure so an attachment upload can still be published. It keeps
+// the same no-clobber contract: link first, then an exclusive ('wx') copy, and
+// never removes or replaces an existing target.
+const fallbackPublications = new Map();
+const fallbackLinkCodes = new Set([
+  'EACCES', 'EPERM', 'EXDEV', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS',
+  'EINVAL', 'EMLINK', 'EROFS', 'ENOTDIR',
+]);
+export async function exclusiveCopyFallback(source, target, fs = { link, open }) {
+  const probe = globalThis[Symbol.for('dsh.go.ohos.linkProbe')];
+  const previous = fallbackPublications.get(target);
+  let release;
+  const completed = new Promise(resolve => { release = resolve; });
+  fallbackPublications.set(target, completed);
+  if (previous) await previous;
+  try {
+    try {
+      await fs.link(source, target);
+      probe?.('publication.publish', { target, method: 'link-fallback', ok: true });
+      return { method: 'link-fallback' };
+    } catch (error) {
+      probe?.('publication.link', { target, code: error?.code ?? null, message: error?.message ?? null });
+      // EEXIST is a benign publication race: the target already holds the exact
+      // bytes (the caller verifies its digest). Never overwrite it.
+      if (error?.code === 'EEXIST') throw error;
+      if (!fallbackLinkCodes.has(error?.code)) throw error;
+    }
+    const input = await fs.open(source, 'r');
+    try {
+      const output = await fs.open(target, 'wx', 0o600);
+      try {
+        const buffer = Buffer.allocUnsafe(65536);
+        for (;;) {
+          const { bytesRead } = await input.read(buffer, 0, buffer.length, null);
+          if (bytesRead === 0) break;
+          await output.writeFile(buffer.subarray(0, bytesRead));
+        }
+        // Directory/file fsync is not available on every OHOS app-data view.
+        // The copy is already durable enough for the upload path; a rejected
+        // sync must not turn a successful write into a failed attachment.
+        try { await output.sync(); }
+        catch (error) { probe?.('publication.sync', { target, code: error?.code ?? null, ignored: true }); }
+      } finally { await output.close(); }
+    } finally { await input.close(); }
+    probe?.('publication.publish', { target, method: 'exclusive-copy-fallback', ok: true });
+    return { method: 'exclusive-copy-fallback' };
+  } catch (error) {
+    probe?.('publication.publish', { target, ok: false, code: error?.code ?? null, message: error?.message ?? null });
+    throw error;
+  } finally {
+    release();
+    if (fallbackPublications.get(target) === completed) fallbackPublications.delete(target);
+  }
+}
+
+// The attachment store reaches publication through
+// globalThis[Symbol.for('dsh.go.ohos.publication')] and rejects the upload
+// with ATTACHMENT_WRITE_FAILED when that service is absent. The native
+// installPublication() has many preconditions (exact Node version, a linked
+// binding with five operations, a valid DSH_HOME, a recoverable ownership
+// ledger, renameat2 support); on some OpenHarmony builds one of them fails
+// and the whole atomic service is never registered. Register a pure-JS
+// fallback with the same protocolVersion/publish contract in that case so an
+// attachment can still be published. `publish` reuses exclusiveCopyFallback,
+// i.e. an exclusive, no-clobber link-then-'wx'-copy that needs no native
+// capability. This covers the whole "publication service missing" failure
+// class; when the native service is present we never replace it.
+export function installFallbackPublication(reason, warn = true) {
+  const existing = globalThis[publicationSymbol];
+  if (existing?.protocolVersion === 1 && typeof existing.publish === 'function') {
+    return { installed: false, reason: 'native-service-present' };
+  }
+  const service = Object.freeze({
+    protocolVersion: 1,
+    atomic: 'unsupported',
+    systemVersion: undefined,
+    get pendingCount() { return fallbackPublications.size; },
+    publish(source, target, options = {}) {
+      return exclusiveCopyFallback(source, target, options?.fs);
+    },
+    publishAtomic(source, target, options = {}) {
+      // No durable ledger is available in fallback mode; keep the exclusive
+      // no-clobber contract rather than pretending atomicity.
+      return exclusiveCopyFallback(source, target, options?.fs);
+    },
+  });
+  try {
+    Object.defineProperty(globalThis, publicationSymbol, {
+      value: service, configurable: false, enumerable: false, writable: false,
+    });
+  } catch (cause) {
+    // A non-configurable placeholder must not abort engine startup. Report it
+    // and let the existing service (if any) stand; publishOhosExclusive will
+    // validate it on first use.
+    if (warn) process.emitWarning(
+      `OpenHarmony publication fallback could not register: ${cause?.message ?? cause}`,
+      { code: 'OHOS_PUBLICATION_FALLBACK_REGISTER_FAILED' });
+    return { installed: false, reason: 'register-failed' };
+  }
+  if (warn) {
+    process.emitWarning(
+      `OpenHarmony native publication unavailable (${String(reason?.code ?? reason?.message ?? reason)}); ` +
+      'using pure-JS exclusive-copy publication for attachments.',
+      { code: 'OHOS_PUBLICATION_PURE_JS_FALLBACK' });
+  }
+  return { installed: true, fallback: true, protocolVersion: 1 };
 }
 
 export async function installPublication() {
@@ -90,7 +201,7 @@ export async function installPublication() {
         { code: 'OHOS_PUBLICATION_RECOVERY_UNRESOLVED' });
     }
     let fallbackWarningIssued = false;
-    const publish = createAtomicPublisher({
+    const atomicPublish = createAtomicPublisher({
       renameNoReplace: binding.renameNoReplace,
       ledger,
       atomicFuse,
@@ -104,6 +215,21 @@ export async function installPublication() {
           { code: 'OHOS_PUBLICATION_NONATOMIC_FALLBACK' });
       },
     });
+    const publish = async (source, target, options = {}) => {
+      try {
+        return await atomicPublish(source, target, options);
+      } catch (error) {
+        // EEXIST is a benign publication race: the caller verifies the existing
+        // target's digest, so never overwrite it. Explicit atomic callers keep
+        // the strict failure and their durability contract stays intact.
+        if (error?.code === 'EEXIST' || options?.requireAtomic === true) throw error;
+        process.emitWarning(
+          `OpenHarmony atomic publication failed (${error?.code ?? 'unknown'}); using exclusive copy fallback: ${error?.message ?? error}`,
+          { code: 'OHOS_PUBLICATION_EXCLUSIVE_COPY_FALLBACK' });
+        return exclusiveCopyFallback(source, target, options?.fs);
+      }
+    };
+    Object.defineProperty(publish, 'pendingCount', { get: () => atomicPublish.pendingCount });
     const service = Object.freeze({
       protocolVersion: 1,
       recovery: 'durable ledger; unidentified or replaced entries are preserved',
