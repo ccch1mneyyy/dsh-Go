@@ -1,10 +1,7 @@
 package io.github.ccch1mneyyy.dsh_app.phone.background
 
 import android.app.Activity
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.hardware.display.DisplayManager
 import android.os.Bundle
 import android.os.ResultReceiver
@@ -25,12 +22,6 @@ class BackgroundProbeActivity : Activity() {
     private var displayId = -1
     private var probe: InputProbe? = null
     private var started = false
-
-    private val finishReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            finish()
-        }
-    }
 
     private class ProbeView(context: Context) : View(context) {
         var onReady: ((Int, Int) -> Unit)? = null
@@ -70,7 +61,6 @@ class BackgroundProbeActivity : Activity() {
             probe?.accept(displayId, event.downTime, event.actionMasked, event.rawX, event.rawY)
         }
         setContentView(view)
-        registerReceiver(finishReceiver, IntentFilter(ACTION_FINISH))
     }
 
     private fun startProbe() {
@@ -114,14 +104,6 @@ class BackgroundProbeActivity : Activity() {
         finish()
     }
 
-    override fun onDestroy() {
-        try {
-            unregisterReceiver(finishReceiver)
-        } catch (_: Exception) {
-        }
-        super.onDestroy()
-    }
-
     companion object {
         const val EXTRA_RECEIVER = "io.github.ccch1mneyyy.dsh_app.extra.PROBE_RECEIVER"
         const val EXTRA_DISPLAY_ID = "io.github.ccch1mneyyy.dsh_app.extra.PROBE_DISPLAY_ID"
@@ -130,13 +112,8 @@ class BackgroundProbeActivity : Activity() {
         const val EXTRA_TIME = "io.github.ccch1mneyyy.dsh_app.extra.PROBE_TIME"
         const val EXTRA_ERROR = "io.github.ccch1mneyyy.dsh_app.extra.PROBE_ERROR"
         const val EXTRA_DETAIL = "io.github.ccch1mneyyy.dsh_app.extra.PROBE_DETAIL"
-        const val ACTION_FINISH = "io.github.ccch1mneyyy.dsh_app.action.FINISH_PROBE"
         const val RESULT_ARMED = 1
         const val RESULT_OK = 2
         const val RESULT_FAIL = 3
-
-        fun finish(context: Context) {
-            context.sendBroadcast(Intent(ACTION_FINISH).setPackage(context.packageName))
-        }
     }
 }

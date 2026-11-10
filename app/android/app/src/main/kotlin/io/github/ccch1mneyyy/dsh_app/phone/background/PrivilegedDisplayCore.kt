@@ -171,7 +171,8 @@ class PrivilegedDisplayCore internal constructor(
                 return response
             }
             if (op == Proto.OP_SELF_CHECK_TAP) {
-                val ownerId = request.get(Proto.OWNER) as? String ?: throw Fault("invalidArguments")
+                val ownerId = SelfCheckTapRequest.owner(request.keySet(), request::get)
+                    ?: throw Fault("invalidArguments")
                 if (owner != ownerId || !selfCheckOwner) throw Fault("identityChanged")
                 val current = display ?: throw Fault("displayMissing")
                 if (request.getInt(Proto.DISPLAY_ID, -1) != current.display.displayId)
