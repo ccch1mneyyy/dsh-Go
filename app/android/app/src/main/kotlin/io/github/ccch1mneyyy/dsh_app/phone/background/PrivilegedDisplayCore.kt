@@ -172,7 +172,10 @@ class PrivilegedDisplayCore internal constructor(
             }
             if (op == Proto.OP_SELF_CHECK_TAP) {
                 val ownerId = request.get(Proto.OWNER) as? String ?: throw Fault("invalidArguments")
-                if (owner != ownerId || display == null) throw Fault("identityChanged")
+                if (owner != ownerId || !selfCheckOwner) throw Fault("identityChanged")
+                val current = display ?: throw Fault("displayMissing")
+                if (request.getInt(Proto.DISPLAY_ID, -1) != current.display.displayId)
+                    throw Fault("displayTargetChanged")
                 val x = request.getInt(Proto.X, -1)
                 val y = request.getInt(Proto.Y, -1)
                 val time = request.getLong(Proto.TIME, 0L)
@@ -183,7 +186,6 @@ class PrivilegedDisplayCore internal constructor(
                 response.putString(Proto.OWNER, ownerId)
                 response.putInt(Proto.SELF_CHECK_PROBE_VERSION, 1)
                 response.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
-                response.putBoolean(Proto.INJECT_OK, true)
                 return response
             }
             if (op == Proto.OP_COLLECT_SYSTEM_IME) {

@@ -1267,41 +1267,34 @@ class BackgroundControl private constructor(context: Context) {
                 }
                 if (!gate.current(probe)) { reason = AppStrings.get(app, R.string.background_selection_cancelled); return@call }
                 val session = startProbeActivity(actualId)
-                val reply = Bundle().apply {
-                    putString(Proto.OWNER, call.io.owner)
-                    putInt(Proto.SELF_CHECK_PROBE_VERSION, 1)
-                }
                 if (session == null || !session.armed.await(3000, TimeUnit.MILLISECONDS) || session.target == null) {
-                    reply.putBoolean(Proto.OK, false)
-                    reply.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
-                    reply.putString(Proto.INJECT_ERROR, "inputWindowNotReady")
+                    reason = failed(R.string.background_input_window_not_ready, peer)
+                    return@call
+                }
+                val target = checkNotNull(session.target)
+                val tap = OwnerScopeProtocol.execute(peer, call.io.owner, Bundle().apply {
+                    putString(Proto.OP, Proto.OP_SELF_CHECK_TAP)
+                    putString(Proto.OWNER, call.io.owner)
+                    putInt(Proto.DISPLAY_ID, target.displayId)
+                    putInt(Proto.X, target.x)
+                    putInt(Proto.Y, target.y)
+                    putLong(Proto.TIME, session.time)
+                }) {
+                    check(gate.admit(probe) { call.io.checkDispatch() })
+                }
+                if (tap.get(Proto.OK) != true) {
+                    reason = failed(R.string.background_no_response, peer)
+                    return@call
+                }
+                val reply = Bundle(tap)
+                if (session.done.await(1000, TimeUnit.MILLISECONDS) && session.ok) {
+                    reply.putBoolean(Proto.OK, true)
+                    reply.putBoolean(Proto.INJECT_OK, true)
                 } else {
-                    val target = checkNotNull(session.target)
-                    val tap = OwnerScopeProtocol.execute(peer, call.io.owner, Bundle().apply {
-                        putString(Proto.OP, Proto.OP_SELF_CHECK_TAP)
-                        putString(Proto.OWNER, call.io.owner)
-                        putInt(Proto.DISPLAY_ID, target.displayId)
-                        putInt(Proto.X, target.x)
-                        putInt(Proto.Y, target.y)
-                        putLong(Proto.TIME, session.time)
-                    }) {
-                        check(gate.admit(probe) { call.io.checkDispatch() })
-                    }
-                    if (tap.get(Proto.OK) != true) {
-                        reply.putBoolean(Proto.OK, false)
-                        reply.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
-                        reply.putString(Proto.INJECT_ERROR, tap.getString(Proto.ERROR) ?: "inputApiUnavailable")
-                    } else if (session.done.await(1000, TimeUnit.MILLISECONDS) && session.ok) {
-                        reply.putBoolean(Proto.OK, true)
-                        reply.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
-                        reply.putBoolean(Proto.INJECT_OK, true)
-                    } else {
-                        reply.putBoolean(Proto.OK, false)
-                        reply.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
-                        reply.putBoolean(Proto.INJECT_OK, false)
-                        reply.putString(Proto.INJECT_ERROR, session.error ?: "inputUnconfirmed")
-                        session.detail?.let { reply.putString(Proto.ERROR_DETAIL, it) }
-                    }
+                    reply.putBoolean(Proto.OK, false)
+                    reply.putBoolean(Proto.INJECT_OK, false)
+                    reply.putString(Proto.INJECT_ERROR, session.error ?: "inputUnconfirmed")
+                    session.detail?.let { reply.putString(Proto.ERROR_DETAIL, it) }
                 }
                 when (val result = gate.updateStrict(probe, call.io.owner, reply.get(Proto.OWNER),
                     reply.get(Proto.SELF_CHECK_PROBE_VERSION), reply.get(Proto.OK),
