@@ -164,6 +164,8 @@ const double _fontSize = 15.0;
 
 class _ComposerState extends State<Composer> with SingleTickerProviderStateMixin {
   Duration? _lastEscape;
+  // Keep the editor and its input connection when the footer changes the layout.
+  final _fieldKey = GlobalKey();
 
   // One value for everything that moves when the composer opens: the corners, the text's
   // width, the height, the keys and the footer's fade. One motion, not several in step.
@@ -424,6 +426,7 @@ class _ComposerState extends State<Composer> with SingleTickerProviderStateMixin
                     child: KeyedSubtree(key: ValueKey(dictating), child: leading),
                   );
             final field = Focus(
+              key: _fieldKey,
               canRequestFocus: false,
               skipTraversal: true,
               onKeyEvent: _hardwareKey,
