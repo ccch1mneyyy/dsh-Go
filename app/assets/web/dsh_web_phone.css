@@ -94,6 +94,14 @@ body > [class*="_overlay"] {
 :root[data-dsh-app-layout="drawer"] [data-slot="root"] > [class*="_frame"]:not([data-sidebar-drawer]) > [class*="_rightbarCol"] {
   grid-column: 3 !important;
 }
+/* DSH 0.2.2's own drawer: the sidebar is out of the grid (see above), but the
+   center column keeps the official `grid-column: 2`, and that track measures
+   0 wide — the conversation renders with a full box and zero width, so the
+   page is blank below the header. Span the whole row like the app's drawer. */
+:root[data-dsh-app-layout="drawer"] [data-slot="root"] > [class*="_frame"][data-sidebar-drawer] > [class*="_centerCol"] {
+  grid-column: 1 / -1 !important;
+  min-width: 0 !important;
+}
 
 /* The drawer is the app's (data-dsh-app-drawer on the frame, set by
    dsh_web_phone.js); the official sidebar stays expanded inside it, so
