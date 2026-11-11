@@ -73,4 +73,19 @@ void main() {
     final settings = css.substring(css.indexOf('settings as a full-screen sheet'), css.indexOf('Desktop layout:'));
     expect(RegExp(r':root\[data-dsh-app-layout="drawer"\](?!:not\(:has\(\[data-sidebar-drawer\]\)\))').hasMatch(settings), false);
   });
+
+  test('the conversation spans the row when the official drawer owns the grid', () {
+    final css = File('assets/web/dsh_web_phone.css').readAsStringSync();
+    // Below 768px DSH 0.2.2 keeps the center column in `grid-column: 2` while
+    // its drawer takes the sidebar out of the grid; that track measures 0 wide
+    // and the conversation renders with zero width (blank page under the
+    // header). Both drawers must span the row.
+    for (final frame in ['[class*="_frame"][data-sidebar-drawer]', '[class*="_frame"]:not([data-sidebar-drawer])']) {
+      expect(
+        css,
+        contains(':root[data-dsh-app-layout="drawer"] [data-slot="root"] > $frame > [class*="_centerCol"]'),
+        reason: 'the conversation column collapses to 0 wide without this',
+      );
+    }
+  });
 }
