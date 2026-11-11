@@ -16,6 +16,84 @@ String stripAnsi(String input) => input.replaceAll(_osc, '').replaceAll(_csi, ''
 /// 文本里有没有 ANSI 转义(没有就走纯文本快路径)。
 bool hasAnsi(String input) => input.contains('\x1B');
 
+/// 去掉 OSC 序列,留下 SGR 着色。
+String stripOsc(String input) => input.replaceAll(_osc, '');
+
+/// 一个 CSI 转义最长也就这么多(38;2;r;g;b 加终结字节)。
+const _csiSpan = 24;
+
+/// 一个 OSC 序列(超链接的地址在里面)往后最多找这么远的终结符。
+const _oscSpan = 4096;
+
+/// [index] 落在一个转义序列中间时,序列的 (起点, 终点后一位);否则 null。
+/// 截断长文本时用:序列要么整个留下,要么整个不要。
+(int, int)? ansiEscapeAround(String text, int index) {
+  if (index <= 0 || index >= text.length) return null;
+  final esc = text.lastIndexOf('\x1B', index - 1);
+  if (esc < 0 || esc + 1 >= text.length) return null;
+  final kind = text.codeUnitAt(esc + 1);
+  if (kind == 0x5D) {
+    // OSC:到 BEL 或 ST(ESC \)才算完,中间的字母不是终结符。
+    final limit = esc + _oscSpan < text.length ? esc + _oscSpan : text.length;
+    for (var i = esc + 2; i < limit; i++) {
+      final c = text.codeUnitAt(i);
+      if (c == 0x07) return i >= index ? (esc, i + 1) : null;
+      if (c == 0x1B) {
+        final st = i + 1 < text.length && text.codeUnitAt(i + 1) == 0x5C;
+        final end = st ? i + 2 : i;
+        return end > index ? (esc, end) : null;
+      }
+    }
+    return null;
+  }
+  // ST 的那个 ESC:[index] 夹在 ESC 和 \ 之间。
+  if (kind == 0x5C) return index == esc + 1 ? (esc, esc + 2) : null;
+  if (kind != 0x5B || index - esc > _csiSpan) return null;
+  for (var i = esc + 2; i < text.length && i - esc <= _csiSpan; i++) {
+    final c = text.codeUnitAt(i);
+    final letter = (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A);
+    if (letter) return i >= index ? (esc, i + 1) : null;
+  }
+  return (esc, index);
+}
+
+/// 顺着文本走一遍 SGR 序列,记住「到这里为止还生效的那些」。
+///
+/// 把一段着色文本从中间切开单独渲染时(截断后的尾部、全文页的每一行),
+/// 在这一段前面补上 [prefix],颜色就和连着渲染时一样。只看转义序列,
+/// 不建 TextSpan,代价按序列个数算,和文本长度无关。
+class SgrCarry {
+  final _active = <String>[];
+  String? _prefix = '';
+
+  /// 途中遇到的 CSI 序列(着色和非着色的)一共占了多少字。
+  int escapeChars = 0;
+
+  /// 最多带这么多条:状态只有前景、背景和三个字形开关,最近的这些足够重建。
+  static const _maxActive = 48;
+
+  /// 走过 [source] 的 [start, end)。
+  void advance(String source, int start, int end) {
+    for (var i = source.indexOf('\x1B', start); i >= 0 && i < end; i = source.indexOf('\x1B', i + 1)) {
+      final m = _csi.matchAsPrefix(source, i);
+      if (m == null || m.end > end) continue;
+      escapeChars += m.end - m.start;
+      if (m[2] != 'm') continue;
+      final params = m[1]!;
+      final reset = params.isEmpty || params == '0';
+      if (reset || params.startsWith('0;')) _active.clear();
+      if (!reset) {
+        if (_active.length == _maxActive) _active.removeAt(0);
+        _active.add(m[0]!);
+      }
+      _prefix = null;
+    }
+  }
+
+  /// 补在后面一段文本前的序列;没有生效的着色时是空串。
+  String get prefix => _prefix ??= _active.join();
+}
+
 class _SgrState {
   Color? fg;
   Color? bg;
@@ -44,20 +122,8 @@ class _SgrState {
 TextSpan parseAnsi(String input, TextStyle base, List<Color> ansi16) {
   final source = input.replaceAll(_osc, '');
   if (!hasAnsi(source)) return TextSpan(text: source, style: base);
-  return _parseSgr(source, base, ansi16, _SgrState());
-}
-
-/// 按行解析:每行一个 TextSpan,颜色状态跨行延续(一段红字跨了三行,三行
-/// 都是红的)。给按行虚拟化的全文页用;[input] 不含 ANSI 时调用方直接按行
-/// 切原文更省。
-List<TextSpan> parseAnsiLines(String input, TextStyle base, List<Color> ansi16) {
-  final sgr = _SgrState();
-  return [for (final line in input.replaceAll(_osc, '').split('\n')) _parseSgr(line, base, ansi16, sgr)];
-}
-
-/// 从 [sgr] 的当前状态接着解析 [source](已去掉 OSC),并把状态留在 [sgr] 里。
-TextSpan _parseSgr(String source, TextStyle base, List<Color> ansi16, _SgrState sgr) {
   final children = <TextSpan>[];
+  final sgr = _SgrState();
   var last = 0;
   void flushText(int end) {
     if (end > last) {

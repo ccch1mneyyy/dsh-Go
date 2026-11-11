@@ -26,6 +26,7 @@ class ClippedText {
     this.tail,
     this.hiddenLines = 0,
     this.hiddenChars = 0,
+    this.tailSgr = '',
   });
 
   final String head;
@@ -35,6 +36,10 @@ class ClippedText {
   /// 中间没显示的整行数;长行被拦腰截断时可能是 0,这时看 [hiddenChars]。
   final int hiddenLines;
   final int hiddenChars;
+
+  /// 尾部开头处还生效的着色序列(开头或中间起的一段红字延续到了尾部):
+  /// 渲染尾部时补在前面,颜色才不会丢。不按 ANSI 解析时是空串。
+  final String tailSgr;
 
   bool get clipped => tail != null;
 }
@@ -47,33 +52,18 @@ int _newlines(String text, int start, int end) {
   return count;
 }
 
-/// 一个 ANSI 转义最长也就这么多(38;2;r;g;b 加终结字节)。
-const _escapeSpan = 24;
-
-/// [index] 落在一个转义序列里时,序列的 (起点, 终点后一位);否则 null。
-(int, int)? _escapeAround(String text, int index) {
-  final esc = index == 0 ? -1 : text.lastIndexOf('\x1B', index - 1);
-  if (esc < 0 || index - esc > _escapeSpan) return null;
-  for (var i = esc + 2; i < text.length && i - esc <= _escapeSpan; i++) {
-    final c = text.codeUnitAt(i);
-    final letter = (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A);
-    if (letter) return i >= index ? (esc, i + 1) : null;
-  }
-  return (esc, index);
-}
-
 bool _splitsSurrogate(String text, int index) =>
     index > 0 && index < text.length && (text.codeUnitAt(index - 1) & 0xFC00) == 0xD800;
 
 /// 头部的结束位置往前收:不拆代理对,不拆转义序列。
 int _cutBefore(String text, int index) {
-  if (_escapeAround(text, index) case (final start, _)) index = start;
+  if (ansiEscapeAround(text, index) case (final start, _)) index = start;
   return _splitsSurrogate(text, index) ? index - 1 : index;
 }
 
 /// 尾部的起始位置往后放:同上。
 int _cutAfter(String text, int index) {
-  if (_escapeAround(text, index) case (_, final end)) index = end;
+  if (ansiEscapeAround(text, index) case (_, final end)) index = end;
   return _splitsSurrogate(text, index) ? index + 1 : index;
 }
 
@@ -83,6 +73,7 @@ ClippedText clipLongText(
   int maxChars = kClipMaxChars,
   int headLines = kClipHeadLines,
   int tailLines = kClipTailLines,
+  bool ansi = false,
 }) {
   final totalLines = _newlines(text, 0, text.length) + 1;
   if (text.length <= maxChars && totalLines <= headLines + tailLines) {
@@ -115,6 +106,7 @@ ClippedText clipLongText(
     totalLines: totalLines,
     hiddenLines: _newlines(text, headEnd, tailStart),
     hiddenChars: tailStart - headEnd,
+    tailSgr: ansi && hasAnsi(text) ? (SgrCarry()..advance(text, 0, tailStart)).prefix : '',
   );
 }
 
@@ -159,7 +151,7 @@ class _LongTextWellState extends State<LongTextWell> {
 
   ClippedText get _clipped {
     if (_clip == null || _clippedFrom != widget.text) {
-      final clip = _clip = clipLongText(widget.text);
+      final clip = _clip = clipLongText(widget.text, ansi: widget.ansi);
       _clippedFrom = widget.text;
       _chars = !clip.clipped
           ? 0
@@ -201,7 +193,7 @@ class _LongTextWellState extends State<LongTextWell> {
         children: [
           if (clip.head.isNotEmpty) _text(clip.head, first: true),
           _Gap(clip: clip, onTap: _openAll),
-          _text(tail, first: clip.head.isEmpty),
+          _text(clip.tailSgr + tail, first: clip.head.isEmpty),
         ],
       );
     } else {

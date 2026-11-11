@@ -78,19 +78,52 @@ void main() {
       expect(emoji.head.runes.every((r) => r == 0x1F600), isTrue);
       expect(emoji.tail!.runes.every((r) => r == 0x1F600), isTrue);
     });
+
+    test('a cut never lands inside a hyperlink (OSC) sequence', () {
+      // The letters of the address are not the end of the sequence: BEL or ST is.
+      for (final end in ['\x07', '\x1B\\']) {
+        final link = '\x1B]8;;https://example.com/a/long/path/to/somewhere$end';
+        final clip = clipLongText('${link}x' * 6000);
+        expect(stripAnsi(clip.head), matches(RegExp(r'^x*$')));
+        expect(stripAnsi(clip.tail!), matches(RegExp(r'^x*$')));
+      }
+    });
+
+    test('the tail carries the colour that was on where it starts', () {
+      final middle = _numbered(3000);
+      // Set in the head and never reset; set in the hidden middle; reset before the tail.
+      expect(clipLongText('\x1B[31m$middle', ansi: true).tailSgr, '\x1B[31m');
+      expect(clipLongText('$middle\n\x1B[1;32mgreen\n$middle', ansi: true).tailSgr, '\x1B[1;32m');
+      expect(clipLongText('\x1B[31mred\x1B[0m\n$middle', ansi: true).tailSgr, isEmpty);
+      // Text that is not parsed as ANSI is left alone.
+      expect(clipLongText('\x1B[31m$middle').tailSgr, isEmpty);
+    });
   });
 
-  test('parseAnsiLines carries a colour over line breaks', () {
-    const base = TextStyle(color: Color(0xFF000000));
-    final palette = [for (var i = 0; i < 16; i++) Color(0xFF000000 + i * 16)];
-    final lines = parseAnsiLines('plain\n\x1B[31mred\nstill red\x1B[0m\nplain again', base, palette);
-    Color? colourOf(int line) => (lines[line].children!.first as TextSpan).style!.color;
-    expect(lines, hasLength(4));
-    expect(lines.map((l) => l.toPlainText()), ['plain', 'red', 'still red', 'plain again']);
-    expect(colourOf(0), base.color);
-    expect(colourOf(1), palette[1]);
-    expect(colourOf(2), palette[1]);
-    expect(colourOf(3), base.color);
+  group('SgrCarry', () {
+    test('keeps what is still in effect and drops what a reset ended', () {
+      const text = 'a\x1B[31mb\x1B[1mc\x1B[0md\x1B[0;34me\x1B[2Kf';
+      final carry = SgrCarry();
+      expect(carry.prefix, isEmpty);
+      carry.advance(text, 0, text.indexOf('c'));
+      expect(carry.prefix, '\x1B[31m\x1B[1m');
+      carry.advance(text, text.indexOf('c'), text.indexOf('d'));
+      expect(carry.prefix, isEmpty);
+      carry.advance(text, text.indexOf('d'), text.length);
+      // A reset that also sets a colour stays; a non-colour sequence is not carried.
+      expect(carry.prefix, '\x1B[0;34m');
+      expect(carry.escapeChars, text.length - 'abcdef'.length);
+    });
+
+    test('replaying the prefix gives the colours of parsing in one go', () {
+      const base = TextStyle(color: Color(0xFF000000));
+      final palette = [for (var i = 0; i < 16; i++) Color(0xFF000000 + i * 16)];
+      const text = 'plain\n\x1B[31mred\nstill red\x1B[0m\nplain again';
+      final carry = SgrCarry()..advance(text, 0, text.indexOf('still'));
+      final row = parseAnsi('${carry.prefix}still red', base, palette);
+      expect(row.toPlainText(), 'still red');
+      expect((row.children!.single as TextSpan).style!.color, palette[1]);
+    });
   });
 
   testWidgets('ordinary output has no clip marker and no view-all bar', (tester) async {
@@ -187,9 +220,36 @@ void main() {
     await tester.pump();
     expect(find.text('failed', findRichText: true), findsOneWidget);
     expect(find.textContaining('\x1B', findRichText: true), findsNothing);
+    // The red set on the second line is still on for the third, which is its own row.
+    Color? colourOf(String row) {
+      final span = tester.widget<RichText>(find.text(row, findRichText: true)).text;
+      Color? colour;
+      span.visitChildren((s) {
+        if (s is TextSpan && s.text == row) colour = s.style?.color;
+        return colour == null;
+      });
+      return colour;
+    }
+
+    expect(colourOf('failed'), isNotNull);
+    expect(colourOf('here'), colourOf('failed'));
+    expect(colourOf('ok'), isNot(colourOf('failed')));
+    // Characters counted without the colour codes.
+    expect(find.text('共 3 行 · 14 字'), findsOneWidget);
     await tester.tap(find.byTooltip('复制全文'));
     await tester.pump();
     expect(copied, 'ok\nfailed\nhere');
     await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('the full page splits an enormous coloured line too, colour kept', (tester) async {
+    final text = '\x1B[31m${'ab\x1B[1mcd' * 20000}';
+    await tester.pumpWidget(testApp(OutputPage(title: '输出', text: text, ansi: true)));
+    await tester.pump();
+    final rows = tester.widgetList<RichText>(find.byType(RichText)).map((w) => w.text.toPlainText()).toList();
+    final body = rows.where((r) => RegExp(r'^(ab|cd)').hasMatch(r)).toList();
+    expect(body, isNotEmpty);
+    // No row is the whole line, and no escape sequence was cut in half.
+    expect(body.every((r) => r.length <= 4000 && RegExp(r'^[abcd]+$').hasMatch(r)), isTrue);
   });
 }

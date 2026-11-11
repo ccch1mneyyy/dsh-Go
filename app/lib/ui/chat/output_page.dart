@@ -49,7 +49,8 @@ class OutputPage extends StatefulWidget {
   State<OutputPage> createState() => _OutputPageState();
 }
 
-/// 每段在原文里的 [起, 止)(不含行尾换行)。长行按 [_maxRowChars] 再切。
+/// 每段在原文里的 [起, 止)(不含行尾换行)。长行按 [_maxRowChars] 再切,
+/// 不拆代理对,也不拆转义序列。
 List<int> _rowBounds(String text) {
   final bounds = <int>[];
   var start = 0;
@@ -59,7 +60,7 @@ List<int> _rowBounds(String text) {
     var from = start;
     while (end - from > _maxRowChars) {
       var cut = from + _maxRowChars;
-      // 不拆代理对。
+      if (ansiEscapeAround(text, cut) case (final escape, _) when escape > from) cut = escape;
       if ((text.codeUnitAt(cut - 1) & 0xFC00) == 0xD800) cut--;
       bounds
         ..add(from)
@@ -77,18 +78,33 @@ List<int> _rowBounds(String text) {
 class _OutputPageState extends State<OutputPage> {
   final _controller = ScrollController(keepScrollOffset: false);
 
-  /// 着色的行(有 ANSI 时)。颜色状态跨行,所以一次解析完。
-  List<TextSpan>? _spans;
-  List<Color>? _spansPalette;
-  TextStyle? _spansStyle;
-
-  /// 不着色时每段的边界,段的文字用到时才切出来。
-  late final List<int> _bounds = _rowBounds(widget.text);
   late final bool _coloured = widget.ansi && hasAnsi(widget.text);
+
+  /// 排版用的文本:着色时先去掉 OSC(标题、超链接),只留颜色序列。
+  late final String _source = _coloured ? stripOsc(widget.text) : widget.text;
+
+  /// 每段的边界;段的文字用到时才切出来、才解析颜色。
+  late final List<int> _bounds = _rowBounds(_source);
+
+  /// 着色时,每段开头还生效的颜色序列(只记非空的):一段红字跨了三行,
+  /// 后两行各自解析时要先补上那个红。只扫一遍转义序列,不建 TextSpan。
+  late final Map<int, String> _carried = _carry();
+  int _escapeChars = 0;
+
   late final int _lines = '\n'.allMatches(widget.text).length + 1;
 
-  /// 字数不算颜色控制符。
-  late final int _chars = _coloured ? stripAnsi(widget.text).length : widget.text.length;
+  Map<int, String> _carry() {
+    if (!_coloured) return const {};
+    final carried = <int, String>{};
+    final carry = SgrCarry();
+    for (var row = 0; row * 2 < _bounds.length; row++) {
+      final prefix = carry.prefix;
+      if (prefix.isNotEmpty) carried[row] = prefix;
+      carry.advance(_source, _bounds[row * 2], _bounds[row * 2 + 1]);
+    }
+    _escapeChars = carry.escapeChars;
+    return carried;
+  }
 
   /// 从末尾往回排(列表反向)。列表按需建行、行高不定,要滚到很远的地方只能
   /// 把途中每一行都排一遍,几万行就卡死了;所以「跳到末尾」不滚,而是换成
@@ -124,21 +140,17 @@ class _OutputPageState extends State<OutputPage> {
     final padding = MediaQuery.paddingOf(context);
     final style = AppType.mono(size: 12.5, color: widget.color ?? dsh.codeWellFg, height: 1.55);
 
-    final int rows;
-    final InlineSpan Function(int) rowAt;
-    if (_coloured) {
-      if (_spans == null || !identical(_spansPalette, dsh.ansi) || _spansStyle != style) {
-        _spans = parseAnsiLines(widget.text, style, dsh.ansi);
-        _spansPalette = dsh.ansi;
-        _spansStyle = style;
-      }
-      final spans = _spans!;
-      rows = spans.length;
-      rowAt = (i) => spans[i];
-    } else {
-      final text = widget.text;
-      rows = _bounds.length ~/ 2;
-      rowAt = (i) => TextSpan(text: text.substring(_bounds[i * 2], _bounds[i * 2 + 1]));
+    final source = _source;
+    final carried = _carried;
+    final palette = dsh.ansi;
+    final rows = _bounds.length ~/ 2;
+    // 字数不算颜色控制符。
+    final chars = source.length - _escapeChars;
+    InlineSpan rowAt(int i) {
+      final text = source.substring(_bounds[i * 2], _bounds[i * 2 + 1]);
+      if (!_coloured) return TextSpan(text: text);
+      final prefix = carried[i];
+      return parseAnsi(prefix == null ? text : prefix + text, style, palette);
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -178,7 +190,7 @@ class _OutputPageState extends State<OutputPage> {
                                   l10n.chatOutputSummary(
                                     _lines,
                                     formatCount(context, _lines),
-                                    formatCount(context, _chars),
+                                    formatCount(context, chars),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
