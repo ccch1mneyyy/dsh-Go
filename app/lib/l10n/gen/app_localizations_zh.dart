@@ -2786,6 +2786,50 @@ class L10nZh extends L10n {
   String get botsPetAlways => '一直显示';
 
   @override
+  String get botsPetOverlayShows => '悬浮窗里显示';
+
+  @override
+  String get botsPetOverlayPixel => '像素宠物';
+
+  @override
+  String get botsPetOverlayCompanion => '小屋里的她';
+
+  @override
+  String botsPetOverlayCompanionNamed(String name) {
+    return '小屋里的$name';
+  }
+
+  @override
+  String get botsPetOverlayNoPack => '先去伙伴小屋里请一位角色';
+
+  @override
+  String get botsPetOverlayPackBroken => '角色包不完整，去伙伴小屋里重新导入';
+
+  @override
+  String get botsPetOverlayUnavailable => '这台手机暂时请不出她';
+
+  @override
+  String get botsPetOverlayCompanionHint => '点一下和她互动，连点两下打开对话。比像素宠物更耗电，熄屏和隐藏时会停下来';
+
+  @override
+  String get botsPetOverlayLoading => '正在请她出来…';
+
+  @override
+  String get botsPetOverlayFallback => '她没能出来，先由像素宠物顶班';
+
+  @override
+  String get botsPetOverlayFraming => '取景';
+
+  @override
+  String get botsPetOverlayFramingFull => '全身';
+
+  @override
+  String get botsPetOverlayFramingHalf => '半身';
+
+  @override
+  String get botsPetOverlayFramingHint => '换取景会重新加载她';
+
+  @override
   String get botsPetSwitchDisabled => '开关点不动';
 
   @override
@@ -4513,6 +4557,38 @@ class L10nZh extends L10n {
   String get chatNoDetails => '暂无详情';
 
   @override
+  String chatOutputHiddenLines(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '中间省略 $shown 行');
+    return '$_temp0';
+  }
+
+  @override
+  String chatOutputHiddenChars(String count) {
+    return '中间省略 $count 字';
+  }
+
+  @override
+  String chatOutputSummary(int count, String lines, String chars) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '共 $lines 行');
+    return '$_temp0 · $chars 字';
+  }
+
+  @override
+  String get chatOutputViewAll => '查看全部';
+
+  @override
+  String get chatOutputCopyAll => '复制全文';
+
+  @override
+  String get chatOutputCopied => '已复制全文';
+
+  @override
+  String get chatOutputToEnd => '跳到末尾';
+
+  @override
+  String get chatOutputToStart => '回到开头';
+
+  @override
   String get chatErrApiKey => 'API Key 无效或已过期';
 
   @override
@@ -4927,6 +5003,9 @@ class L10nZh extends L10n {
   }
 
   @override
+  String get companionFailedBodyPlain => '她刚才没加载出来。先重试，还不行再重新导入素材包。';
+
+  @override
   String get companionPackBroken => '这个文件打不开，可能不是素材包或已经损坏。';
 
   @override
@@ -5032,6 +5111,15 @@ class L10nZh extends L10n {
 
   @override
   String get companionTease3 => '你是不是很闲？';
+
+  @override
+  String get companionShake1 => '哇啊，别摇啦！';
+
+  @override
+  String get companionShake2 => '头好晕……水都晃起来了。';
+
+  @override
+  String get companionShake3 => '再摇我要吐泡泡了！';
 
   @override
   String get companionStatusIdle => '在发呆';
@@ -12295,6 +12383,24 @@ class L10nZh extends L10n {
   String get plugInputGestureRequired => '该效果需要用户点按';
 
   @override
+  String get seamsTitle => 'App 内界面';
+
+  @override
+  String get seamsOverlay => '聊天页浮层';
+
+  @override
+  String get seamsOverlayNote => '常驻聊天区域，内存紧张时自动让位';
+
+  @override
+  String get seamsSidebarPage => '侧栏入口';
+
+  @override
+  String get seamsSettingsPage => '插件设置页';
+
+  @override
+  String get seamsDetailPage => '插件详情扩展';
+
+  @override
   String get pluginsOperationHostChanged => '主机已切换，未执行';
 
   @override
@@ -13962,6 +14068,55 @@ class L10nZh extends L10n {
   String get readListFailed => '未更新 · 上次结果';
 
   @override
+  String get remoteDshMode => '实例管理';
+
+  @override
+  String get remoteManaged => '托管启动';
+
+  @override
+  String get remoteAttachOnly => '只连接';
+
+  @override
+  String get remoteManagedHelp => '自动启动或复用 App 托管的 DSH；不会自动替换存活但无法复用的实例。';
+
+  @override
+  String get remoteAttachOnlyHelp => '只转发到远端 127.0.0.1 的固定端口；不启动、停止或重启 DSH。';
+
+  @override
+  String get remoteDshPort => '远端 DSH 端口';
+
+  @override
+  String get remoteDshToken => 'DSH 登录令牌';
+
+  @override
+  String get remoteDshTokenHelp => '填写既有实例启动链接中的 token，仅保存在这台手机的安全存储中。';
+
+  @override
+  String get remoteAttachWorkingDirectoryHelp => '既有实例不执行目录探测；请填写远端绝对路径，留空使用 DSH 默认目录。';
+
+  @override
+  String get remoteSshCompression => 'SSH 压缩';
+
+  @override
+  String get remoteSshCompressionHelp => '默认开启；与服务器协商认证后压缩，不支持时使用未压缩传输。';
+
+  @override
+  String get remoteRestartManaged => '重启托管 DSH';
+
+  @override
+  String get remoteRestartManagedWarning => '这会停止 App 记录的远端 DSH 并重新启动，可能中断其他客户端和进行中的对话。确认没有其他人在使用后再继续。普通测试连接不会执行此操作。';
+
+  @override
+  String get remoteErrSharedInstance =>
+      '远端托管 DSH 仍在运行，但启动命令不同或缺少有效启动日志。为保护共享实例，未自动重启；请检查配置，改用“只连接”，或在编辑主机中明确选择“重启托管 DSH”。';
+
+  @override
+  String get remoteErrAttachSettings => '请填写有效的远端 DSH 端口和登录令牌';
+
+  @override
+  String get remoteDshAttached => '已连接既有 DSH';
+
+  @override
   String get remoteStartupSection => '启动';
 
   @override
@@ -14131,7 +14286,7 @@ class L10nZh extends L10n {
   String get remoteDshStarted => '已在远端启动 DSH';
 
   @override
-  String get remoteErrDshTokenRejected => '远端 DSH 拒绝了登录令牌';
+  String get remoteErrDshTokenRejected => '远端 DSH 拒绝了登录令牌，未自动重启；请检查令牌，或在编辑主机中明确重启托管实例';
 
   @override
   String get remoteErrDshSignIn => '没能登录远端 DSH';
@@ -15907,6 +16062,12 @@ class L10nZh extends L10n {
   String get searchKwPetDisplayWhen => '宠物显示,显示时机';
 
   @override
+  String get searchKwPetOverlayShows => '悬浮伙伴,小屋里的她,像素宠物,Live2D';
+
+  @override
+  String get searchKwPetOverlayFraming => '取景,全身,半身';
+
+  @override
   String get searchKwBlur => '模糊,毛玻璃,玻璃';
 
   @override
@@ -16176,7 +16337,7 @@ class L10nZh extends L10n {
 
   @override
   String get shellDeleteWarning =>
-      '将从此主机永久删除所选对话记录，无法撤销，与归档不同。\n\n工作目录、生成的文件、分叉对话、共享附件和已发布的云端分享都会保留。云端分享需另行删除。主机会拒绝删除仍有任务或关联工作的对话。';
+      '将从此主机永久删除所选对话记录，无法撤销，与归档不同。\n\n工作目录、生成的文件、分叉对话、共享附件和已发布的云端分享都会保留。云端分享需另行删除。子代理对话会随所选对话一起删除。运行中或有定时任务的对话会被主机拒绝。';
 
   @override
   String get shellDeleteOwnerChanged => '主机或连接已变化。请取消后重新发起删除，原确认不再有效。';
@@ -16198,7 +16359,7 @@ class L10nZh extends L10n {
   String get shellDeleteRunning => '请先停止运行中的工作；主机还会检查活动任务和定时任务。';
 
   @override
-  String get shellDeleteRelated => '此对话有关联的子代理工作，主机为保护它们拒绝删除。';
+  String get shellDeleteRelated => '此对话仍有关联的定时任务，主机为保护它们拒绝删除。';
 
   @override
   String get shellDeleteWriterHeld => '其他进程正在使用此对话，请先在该进程中关闭后重试。';
