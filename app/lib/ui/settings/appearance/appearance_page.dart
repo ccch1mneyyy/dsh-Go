@@ -245,6 +245,55 @@ class _ModeTile extends StatelessWidget {
             curve: AppMotion.std,
             builder: (context, t, _) => CustomPaint(painter: _PhonePainter(t), size: Size.infinite),
           );
+    final content = Column(
+      children: [
+        AspectRatio(
+          aspectRatio: 0.8,
+          child: CustomPaint(
+            foregroundPainter: _RingPainter(
+              color: scheme.primary.withValues(alpha: selected ? 1 : 0),
+              width: ring,
+              radius: AppShape.md + ring + gap,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(room),
+              child: ClipRSuperellipse(
+                key: ValueKey('theme-mode-$label'),
+                borderRadius: AppShape.radiusMd,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (light != null) preview(light),
+                    if (dark != null)
+                      ClipRect(clipper: light == null ? null : const _RightHalf(), child: preview(dark)),
+                    // Edge of the preview: a hairline, like a card.
+                    DecoratedBox(
+                      decoration: ShapeDecoration(
+                        shape: RoundedSuperellipseBorder(
+                          borderRadius: AppShape.radiusMd,
+                          side: BorderSide(color: scheme.outlineVariant, width: 0.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: PickerGrid.labelGap - room),
+        // A narrow column at a large text size: the name shrinks to fit
+        // rather than losing its end.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: AnimatedDefaultTextStyle(
+            duration: quick,
+            style: PickerGrid.labelStyle(context, selected: selected),
+            child: Text(label, textAlign: TextAlign.center, maxLines: 1),
+          ),
+        ),
+      ],
+    );
     return Semantics(
       button: true,
       enabled: enabled,
@@ -254,58 +303,7 @@ class _ModeTile extends StatelessWidget {
       child: Pressable(
         onTap: onTap,
         enabled: enabled,
-        child: Opacity(
-          opacity: enabled ? 1 : 0.5,
-          child: Column(
-            children: [
-              AspectRatio(
-                aspectRatio: 0.8,
-                child: CustomPaint(
-                  foregroundPainter: _RingPainter(
-                    color: scheme.primary.withValues(alpha: selected ? 1 : 0),
-                    width: ring,
-                    radius: AppShape.md + ring + gap,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(room),
-                    child: ClipRSuperellipse(
-                      key: ValueKey('theme-mode-$label'),
-                      borderRadius: AppShape.radiusMd,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          if (light != null) preview(light),
-                          if (dark != null)
-                            ClipRect(clipper: light == null ? null : const _RightHalf(), child: preview(dark)),
-                          // Edge of the preview: a hairline, like a card.
-                          DecoratedBox(
-                            decoration: ShapeDecoration(
-                              shape: RoundedSuperellipseBorder(
-                                borderRadius: AppShape.radiusMd,
-                                side: BorderSide(color: scheme.outlineVariant, width: 0.5),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: PickerGrid.labelGap - room),
-              // A narrow column at a large text size: the name shrinks to fit
-              // rather than losing its end.
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: AnimatedDefaultTextStyle(
-                  duration: quick,
-                  style: PickerGrid.labelStyle(context, selected: selected),
-                  child: Text(label, textAlign: TextAlign.center, maxLines: 1),
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: enabled ? content : Opacity(opacity: 0.5, child: content),
       ),
     );
   }
