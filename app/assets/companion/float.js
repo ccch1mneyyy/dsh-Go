@@ -6,7 +6,10 @@
   class FrameGate {
     constructor() { this.last = -Infinity; }
     take(time) {
-      if (!Number.isFinite(time) || time - this.last < 1000 / 30) return false;
+      // The 2ms slack is for rAF jitter: on 60, 90 and 120 Hz a 30 fps frame is a whole
+      // number of refreshes, and a timestamp a hair early would otherwise skip to the next
+      // one and land at 20–24 fps. Same allowance as the room's render loop.
+      if (!Number.isFinite(time) || time - this.last < 1000 / 30 - 2) return false;
       this.last = time;
       return true;
     }

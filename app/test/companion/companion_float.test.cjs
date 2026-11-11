@@ -15,11 +15,19 @@ for (const hz of [60, 90, 120]) test(`30 fps ceiling at ${hz} Hz, including long
     const time = i * 1000 / hz + (i > hz * 5 ? 10000 : 0);
     if (gate.take(time)) drawn.push(time);
   }
-  for (let i = 1; i < drawn.length; i++) assert.ok(drawn[i] - drawn[i - 1] >= 1000 / 30);
+  for (let i = 1; i < drawn.length; i++) assert.ok(drawn[i] - drawn[i - 1] >= 1000 / 30 - 2);
   assert.ok(drawn.length <= 301);
   assert.equal(gate.take(NaN), false);
   assert.equal(gate.take(Infinity), false);
   assert.equal(gate.take(0), false);
+});
+
+for (const hz of [60, 90, 120]) test(`jittered ${hz} Hz timestamps still reach 30 fps, not 20`, () => {
+  const gate = new FrameGate();
+  let drawn = 0;
+  // Five seconds of vsync timestamps that wobble by up to 0.4 ms either way.
+  for (let i = 0; i < hz * 5; i++) if (gate.take(i * 1000 / hz + 0.4 * Math.sin(i * 12.9898))) drawn++;
+  assert.ok(drawn >= 148 && drawn <= 151, `${drawn} frames in 5 s`);
 });
 
 test('alpha bounds use drawn pixels, top-left coordinates and exclusive edges', () => {
