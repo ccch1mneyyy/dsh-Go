@@ -5156,6 +5156,90 @@ abstract class L10n {
   /// **'一直显示'**
   String get botsPetAlways;
 
+  /// No description provided for @botsPetOverlayShows.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮窗里显示'**
+  String get botsPetOverlayShows;
+
+  /// No description provided for @botsPetOverlayPixel.
+  ///
+  /// In zh, this message translates to:
+  /// **'像素宠物'**
+  String get botsPetOverlayPixel;
+
+  /// No description provided for @botsPetOverlayCompanion.
+  ///
+  /// In zh, this message translates to:
+  /// **'小屋里的她'**
+  String get botsPetOverlayCompanion;
+
+  /// No description provided for @botsPetOverlayCompanionNamed.
+  ///
+  /// In zh, this message translates to:
+  /// **'小屋里的{name}'**
+  String botsPetOverlayCompanionNamed(String name);
+
+  /// No description provided for @botsPetOverlayNoPack.
+  ///
+  /// In zh, this message translates to:
+  /// **'先去伙伴小屋里请一位角色'**
+  String get botsPetOverlayNoPack;
+
+  /// No description provided for @botsPetOverlayPackBroken.
+  ///
+  /// In zh, this message translates to:
+  /// **'角色包不完整，去伙伴小屋里重新导入'**
+  String get botsPetOverlayPackBroken;
+
+  /// No description provided for @botsPetOverlayUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'这台手机暂时请不出她'**
+  String get botsPetOverlayUnavailable;
+
+  /// No description provided for @botsPetOverlayCompanionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点一下和她互动，连点两下打开对话。比像素宠物更耗电，熄屏和隐藏时会停下来'**
+  String get botsPetOverlayCompanionHint;
+
+  /// No description provided for @botsPetOverlayLoading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在请她出来…'**
+  String get botsPetOverlayLoading;
+
+  /// No description provided for @botsPetOverlayFallback.
+  ///
+  /// In zh, this message translates to:
+  /// **'她没能出来，先由像素宠物顶班'**
+  String get botsPetOverlayFallback;
+
+  /// No description provided for @botsPetOverlayFraming.
+  ///
+  /// In zh, this message translates to:
+  /// **'取景'**
+  String get botsPetOverlayFraming;
+
+  /// No description provided for @botsPetOverlayFramingFull.
+  ///
+  /// In zh, this message translates to:
+  /// **'全身'**
+  String get botsPetOverlayFramingFull;
+
+  /// No description provided for @botsPetOverlayFramingHalf.
+  ///
+  /// In zh, this message translates to:
+  /// **'半身'**
+  String get botsPetOverlayFramingHalf;
+
+  /// No description provided for @botsPetOverlayFramingHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'换取景会重新加载她'**
+  String get botsPetOverlayFramingHint;
+
   /// No description provided for @botsPetSwitchDisabled.
   ///
   /// In zh, this message translates to:
@@ -8393,7 +8477,7 @@ abstract class L10n {
   /// No description provided for @chatErrContextLength.
   ///
   /// In zh, this message translates to:
-  /// **'对话太长，发送 /compact 压缩后再试'**
+  /// **'对话太长。若 /compact 也失败，请新建对话或换模型'**
   String get chatErrContextLength;
 
   /// No description provided for @chatErrModelUnavailable.
@@ -9134,6 +9218,12 @@ abstract class L10n {
   /// **'这台手机上加载失败了（{reason}）。可以重新导入素材包再试一次。'**
   String companionFailedBody(String reason);
 
+  /// No description provided for @companionFailedBodyPlain.
+  ///
+  /// In zh, this message translates to:
+  /// **'她刚才没加载出来。先重试，还不行再重新导入素材包。'**
+  String get companionFailedBodyPlain;
+
   /// No description provided for @companionPackBroken.
   ///
   /// In zh, this message translates to:
@@ -9343,6 +9433,24 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'你是不是很闲？'**
   String get companionTease3;
+
+  /// No description provided for @companionShake1.
+  ///
+  /// In zh, this message translates to:
+  /// **'哇啊，别摇啦！'**
+  String get companionShake1;
+
+  /// No description provided for @companionShake2.
+  ///
+  /// In zh, this message translates to:
+  /// **'头好晕……水都晃起来了。'**
+  String get companionShake2;
+
+  /// No description provided for @companionShake3.
+  ///
+  /// In zh, this message translates to:
+  /// **'再摇我要吐泡泡了！'**
+  String get companionShake3;
 
   /// No description provided for @companionStatusIdle.
   ///
@@ -11251,6 +11359,12 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'网页版发送'**
   String get engineGeneralWebSending;
+
+  /// No description provided for @engineGeneralWebOnlyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这组设置仅影响当前主机的网页版，不改变原生聊天。'**
+  String get engineGeneralWebOnlyHint;
 
   /// No description provided for @engineGeneralData.
   ///
@@ -22676,6 +22790,42 @@ abstract class L10n {
   /// **'该效果需要用户点按'**
   String get plugInputGestureRequired;
 
+  /// No description provided for @seamsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'App 内界面'**
+  String get seamsTitle;
+
+  /// No description provided for @seamsOverlay.
+  ///
+  /// In zh, this message translates to:
+  /// **'聊天页浮层'**
+  String get seamsOverlay;
+
+  /// No description provided for @seamsOverlayNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'常驻聊天区域，内存紧张时自动让位'**
+  String get seamsOverlayNote;
+
+  /// No description provided for @seamsSidebarPage.
+  ///
+  /// In zh, this message translates to:
+  /// **'侧栏入口'**
+  String get seamsSidebarPage;
+
+  /// No description provided for @seamsSettingsPage.
+  ///
+  /// In zh, this message translates to:
+  /// **'插件设置页'**
+  String get seamsSettingsPage;
+
+  /// No description provided for @seamsDetailPage.
+  ///
+  /// In zh, this message translates to:
+  /// **'插件详情扩展'**
+  String get seamsDetailPage;
+
   /// No description provided for @pluginsOperationHostChanged.
   ///
   /// In zh, this message translates to:
@@ -27047,8 +27197,14 @@ abstract class L10n {
   /// No description provided for @remoteSelfHostedSignInHelp.
   ///
   /// In zh, this message translates to:
-  /// **'用邮箱和密码登录自己部署的 liguobao/ds-harness-remote'**
+  /// **'填写服务器地址，可用邮箱密码登录，也可先使用此服务器再选择其他登录方式。'**
   String get remoteSelfHostedSignInHelp;
+
+  /// No description provided for @remoteUseServer.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用此服务器'**
+  String get remoteUseServer;
 
   /// No description provided for @remoteServerAddress.
   ///
@@ -29221,6 +29377,18 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'宠物显示,显示时机'**
   String get searchKwPetDisplayWhen;
+
+  /// No description provided for @searchKwPetOverlayShows.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮伙伴,小屋里的她,像素宠物,Live2D'**
+  String get searchKwPetOverlayShows;
+
+  /// No description provided for @searchKwPetOverlayFraming.
+  ///
+  /// In zh, this message translates to:
+  /// **'取景,全身,半身'**
+  String get searchKwPetOverlayFraming;
 
   /// No description provided for @searchKwBlur.
   ///

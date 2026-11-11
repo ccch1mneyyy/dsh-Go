@@ -2959,6 +2959,51 @@ class L10nEn extends L10n {
   String get botsPetAlways => 'Always';
 
   @override
+  String get botsPetOverlayShows => 'Show in the floating window';
+
+  @override
+  String get botsPetOverlayPixel => 'Pixel pet';
+
+  @override
+  String get botsPetOverlayCompanion => 'Room companion';
+
+  @override
+  String botsPetOverlayCompanionNamed(String name) {
+    return '$name from the Room';
+  }
+
+  @override
+  String get botsPetOverlayNoPack => 'Invite a character in the Companion Room first';
+
+  @override
+  String get botsPetOverlayPackBroken => 'The character pack is incomplete. Import it again in the Companion Room';
+
+  @override
+  String get botsPetOverlayUnavailable => 'This phone can\'t show your companion right now';
+
+  @override
+  String get botsPetOverlayCompanionHint =>
+      'Tap to play with her, tap twice to open the chat. Uses more battery than the pixel pet. It stops when the screen is off or the window is hidden';
+
+  @override
+  String get botsPetOverlayLoading => 'Bringing your companion out…';
+
+  @override
+  String get botsPetOverlayFallback => 'Your companion couldn\'t come out. The pixel pet is filling in';
+
+  @override
+  String get botsPetOverlayFraming => 'Framing';
+
+  @override
+  String get botsPetOverlayFramingFull => 'Full body';
+
+  @override
+  String get botsPetOverlayFramingHalf => 'Half body';
+
+  @override
+  String get botsPetOverlayFramingHint => 'Changing the framing reloads the character';
+
+  @override
   String get botsPetSwitchDisabled => 'Switch disabled';
 
   @override
@@ -4850,7 +4895,7 @@ class L10nEn extends L10n {
   String get chatErrRateLimit => 'Too many requests. Try again later.';
 
   @override
-  String get chatErrContextLength => 'Chat too long. Send /compact, then try again.';
+  String get chatErrContextLength => 'Chat too long. If /compact fails, try a new chat or model.';
 
   @override
   String get chatErrModelUnavailable => 'Model service temporarily unavailable';
@@ -5281,6 +5326,10 @@ class L10nEn extends L10n {
   }
 
   @override
+  String get companionFailedBodyPlain =>
+      'Your companion didn\'t load just now. Try again first; if that doesn\'t help, import the asset pack again.';
+
+  @override
   String get companionPackBroken => 'This file can\'t be opened. It may not be an asset pack, or it may be damaged.';
 
   @override
@@ -5388,6 +5437,15 @@ class L10nEn extends L10n {
 
   @override
   String get companionTease3 => 'Don\'t you have anything better to do?';
+
+  @override
+  String get companionShake1 => 'Whoa, stop shaking!';
+
+  @override
+  String get companionShake2 => 'I\'m so dizzy… the water\'s sloshing everywhere.';
+
+  @override
+  String get companionShake3 => 'Keep that up and I\'ll start blowing bubbles!';
 
   @override
   String get companionStatusIdle => 'Daydreaming';
@@ -6397,6 +6455,9 @@ class L10nEn extends L10n {
 
   @override
   String get engineGeneralWebSending => 'Web sending';
+
+  @override
+  String get engineGeneralWebOnlyHint => 'These settings only affect this host’s web app, not native chat.';
 
   @override
   String get engineGeneralData => 'Data';
@@ -12975,6 +13036,24 @@ class L10nEn extends L10n {
   String get plugInputGestureRequired => 'This effect requires a user tap';
 
   @override
+  String get seamsTitle => 'In-app interface';
+
+  @override
+  String get seamsOverlay => 'Chat overlay';
+
+  @override
+  String get seamsOverlayNote => 'Stays over the chat and yields when memory is tight';
+
+  @override
+  String get seamsSidebarPage => 'Sidebar entry';
+
+  @override
+  String get seamsSettingsPage => 'Plugin settings page';
+
+  @override
+  String get seamsDetailPage => 'Plugin detail extension';
+
+  @override
   String get pluginsOperationHostChanged => 'Host changed — nothing was done';
 
   @override
@@ -15566,7 +15645,11 @@ class L10nEn extends L10n {
   String get remoteSelfHostedServer => 'Self-hosted server';
 
   @override
-  String get remoteSelfHostedSignInHelp => 'Sign in to your own liguobao/ds-harness-remote with email and password';
+  String get remoteSelfHostedSignInHelp =>
+      'Enter your server address. Sign in with email and password, or use this server to choose another sign-in method.';
+
+  @override
+  String get remoteUseServer => 'Use this server';
 
   @override
   String get remoteServerAddress => 'Server address';
@@ -16826,6 +16909,12 @@ class L10nEn extends L10n {
 
   @override
   String get searchKwPetDisplayWhen => 'pet display,when to show';
+
+  @override
+  String get searchKwPetOverlayShows => 'floating companion,room companion,pixel pet,live2d';
+
+  @override
+  String get searchKwPetOverlayFraming => 'framing,full body,half body';
 
   @override
   String get searchKwBlur => 'blur,glass,frosted';
