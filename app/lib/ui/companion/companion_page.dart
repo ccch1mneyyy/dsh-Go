@@ -104,6 +104,10 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
   CompanionPackStore? _store;
   CompanionCharacter _character = const CompanionCharacter();
   _Phase _phase = _Phase.checking;
+
+  /// Counts entries into the stage phase. It keys the stage, so coming back after a failure
+  /// or a new pack always builds a fresh one: a retired stage has no server and never restarts.
+  int _stageRun = 0;
   String? _failure;
 
   /// The failed screen offers 重试: her pack is still on the phone.
@@ -2356,6 +2360,7 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
         _character = character;
         _failure = null;
         _stageReady = false;
+        _stageRun++;
         _phase = _Phase.stage;
       });
     } on CompanionPackException catch (error) {
@@ -2394,6 +2399,7 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
       _character = character;
       _failure = null;
       _stageReady = false;
+      _stageRun++;
       _phase = _Phase.stage;
     });
   }
@@ -3023,7 +3029,7 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
               child: ExcludeSemantics(
                 child:
                     widget.stageBuilder?.call(_stage, events) ??
-                    CompanionStage(store: store, controller: _stage, events: events),
+                    CompanionStage(key: ValueKey(_stageRun), store: store, controller: _stage, events: events),
               ),
             ),
           if ((showStage && !_stageReady) || (_phase == _Phase.setup && _arriving))
