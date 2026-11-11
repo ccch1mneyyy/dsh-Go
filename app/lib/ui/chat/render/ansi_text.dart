@@ -44,8 +44,20 @@ class _SgrState {
 TextSpan parseAnsi(String input, TextStyle base, List<Color> ansi16) {
   final source = input.replaceAll(_osc, '');
   if (!hasAnsi(source)) return TextSpan(text: source, style: base);
-  final children = <TextSpan>[];
+  return _parseSgr(source, base, ansi16, _SgrState());
+}
+
+/// 按行解析:每行一个 TextSpan,颜色状态跨行延续(一段红字跨了三行,三行
+/// 都是红的)。给按行虚拟化的全文页用;[input] 不含 ANSI 时调用方直接按行
+/// 切原文更省。
+List<TextSpan> parseAnsiLines(String input, TextStyle base, List<Color> ansi16) {
   final sgr = _SgrState();
+  return [for (final line in input.replaceAll(_osc, '').split('\n')) _parseSgr(line, base, ansi16, sgr)];
+}
+
+/// 从 [sgr] 的当前状态接着解析 [source](已去掉 OSC),并把状态留在 [sgr] 里。
+TextSpan _parseSgr(String source, TextStyle base, List<Color> ansi16, _SgrState sgr) {
+  final children = <TextSpan>[];
   var last = 0;
   void flushText(int end) {
     if (end > last) {
