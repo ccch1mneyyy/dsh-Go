@@ -214,6 +214,7 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
     private val longPress = Runnable {
         if (touching && !dragging) {
             longPressed = true
+            taps.clear()
             performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             listener.onLongPress(lastX, lastY)
         }
@@ -246,6 +247,7 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
                 val dy = event.rawY - downY
                 if (!dragging && !longPressed && (abs(dx) > slop || abs(dy) > slop)) {
                     dragging = true
+                    taps.clear()
                     removeCallbacks(longPress)
                     listener.onDragStart()
                 }
@@ -264,7 +266,7 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
                         // Left and right halves split at the body's centre line (anchor.x), not the window's.
                         val left = event.x + frame.left < if (size != null) width / 2f else
                             (sprites?.let { (it.pack.anchorX - it.window.x) * it.screenScale } ?: (width / 2f))
-                        if (taps.second(event.eventTime, event.rawX, event.rawY)) listener.onTap(left)
+                        if (taps.second(event.downTime, event.eventTime, event.rawX, event.rawY)) listener.onTap(left)
                         else if (size == null) listener.onPoke(left, 0.5f, 0.5f)
                         else listener.onPoke(
                             left,
@@ -295,6 +297,7 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
     fun cancelInteraction() = cancelGesture()
 
     private fun cancelGesture() {
+        taps.clear()
         val held = touching && longPressed
         val dragged = touching && dragging
         reset()

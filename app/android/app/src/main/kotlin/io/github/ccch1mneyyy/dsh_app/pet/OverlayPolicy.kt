@@ -285,13 +285,19 @@ internal class PetTaps(private val timeoutMs: Long, private val slop: Float) {
     private var x = 0f
     private var y = 0f
 
-    /** Whether the tap at ([tapX], [tapY]) is the second of a pair. */
-    fun second(timeMs: Long, tapX: Float, tapY: Float): Boolean {
-        val paired = waiting && timeMs - at in 0..timeoutMs && hypot(tapX - x, tapY - y) <= slop
+    /**
+     * Whether the tap pressed at [downMs] and released at [upMs] on ([tapX], [tapY]) is the second
+     * of a pair. As the platform's double tap: the wait runs from one release to the next press.
+     */
+    fun second(downMs: Long, upMs: Long, tapX: Float, tapY: Float): Boolean {
+        val paired = waiting && downMs - at in 0..timeoutMs && hypot(tapX - x, tapY - y) <= slop
         waiting = !paired
-        at = timeMs; x = tapX; y = tapY
+        at = upMs; x = tapX; y = tapY
         return paired
     }
+
+    /** A drag, a long press or a cancelled touch came in between: the next tap starts over. */
+    fun clear() { waiting = false }
 }
 
 /**
