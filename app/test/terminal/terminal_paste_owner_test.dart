@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:dsh_app/state/terminal_state.dart';
+import 'package:dsh_app/ui/terminal/terminal_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xterm/xterm.dart' show TerminalView;
@@ -106,5 +109,36 @@ void main() {
     clipboard.complete({'text': 'clipboard text'});
     await settleTerminal(tester);
     expect(previous.written, isEmpty);
+  });
+
+  testWidgets('a same-frame reconnect does not receive an earlier clipboard reply', (tester) async {
+    final backend = FakeTerminalBackend(terminals: [infoJson('a')]);
+    final clipboard = await beginPaste(tester, backend);
+    final previous = backend.attachOf('a');
+    final first = tester.widget<TerminalView>(find.byType(TerminalView)).terminal;
+    final screen = tester.widget<TerminalScreen>(find.byType(TerminalScreen));
+    final container = ProviderScope.containerOf(tester.element(find.byType(TerminalScreen)));
+
+    previous.lose();
+    await tester.idle();
+    backend.reconnects.add(null);
+    await tester.idle();
+
+    expect(backend.attaches, hasLength(2));
+    final current = container.read(terminalWorkspaceProvider(screen.sessionId)).selected!;
+    expect(current.phase, TerminalPhase.live);
+    expect(current.writable, isTrue);
+    expect(current.terminal, isNot(same(first)), reason: 'the workspace has consumed the new attachment snapshot');
+    expect(
+      tester.widget<TerminalView>(find.byType(TerminalView)).terminal,
+      same(first),
+      reason: 'no frame has rebuilt the terminal widget',
+    );
+    expect(tester.takeException(), isNull);
+
+    clipboard.complete({'text': 'stale clipboard frame probe'});
+    await tester.idle();
+    expect(previous.written, isEmpty);
+    expect(backend.attachOf('a').written, isEmpty);
   });
 }
