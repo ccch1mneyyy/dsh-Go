@@ -54,11 +54,31 @@ const _escapeLookBack = 4096;
   // ST 的那个 ESC:[index] 夹在 ESC 和 \ 之间。
   if (kind == 0x5C) return index == esc + 1 ? (esc, esc + 2) : null;
   if (kind != 0x5B) return null;
-  // CSI:参数多长都算(前景加背景的真彩色有三十多个字),到终结字母为止。
-  final csi = _csi.matchAsPrefix(text, esc);
-  if (csi != null) return csi.end > index ? (esc, csi.end) : null;
-  // 没写完的 CSI(文本到此为止,或者参数里混进了别的):从 ESC 起都不要。
-  return (esc, index);
+  final (params, end) = _csiAt(text, esc);
+  if (end > 0) return end > index ? (esc, end) : null;
+  // 没写完的 CSI(文本到此为止):[index] 还在它的参数里,从 ESC 起都不要。
+  return params >= index ? (esc, index) : null;
+}
+
+/// 认作一个整体的 CSI 最长这么多。前景加背景的真彩色也就三十多个字;
+/// 再长的(ESC[ 后面跟着几兆数字)不是着色,当普通文字,免得在它身上
+/// 反复做和它一样长的匹配。
+const _csiMax = 4000;
+
+/// [esc] 处的 `ESC[`:参数到哪为止,以及整个序列的终点后一位(没有终结
+/// 字母、或者超过 [_csiMax] 时是 -1)。
+(int, int) _csiAt(String text, int esc) {
+  var i = esc + 2;
+  final limit = esc + _csiMax < text.length ? esc + _csiMax : text.length;
+  while (i < limit) {
+    final c = text.codeUnitAt(i);
+    if (!((c >= 0x30 && c <= 0x39) || c == 0x3B || c == 0x3F)) break;
+    i++;
+  }
+  if (i >= limit) return (i, -1);
+  final c = text.codeUnitAt(i);
+  final letter = (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A);
+  return (i, letter ? i + 1 : -1);
 }
 
 /// 顺着一段文本往后走,记住「到这里为止还生效的着色」。
@@ -90,14 +110,16 @@ class SgrCarry {
     while (true) {
       if (_next == -2) _next = source.indexOf('\x1B', _from);
       if (_next < 0 || _next >= end) return;
-      final m = _csi.matchAsPrefix(source, _next);
+      final esc = _next;
+      final csi = esc + 1 < source.length && source.codeUnitAt(esc + 1) == 0x5B;
+      final (params, stop) = csi ? _csiAt(source, esc) : (esc, -1);
       // 跨过了 [end] 的序列留给下一次。
-      if (m != null && m.end > end) return;
-      _from = _next + 1;
+      if (stop > end) return;
+      _from = esc + 1;
       _next = -2;
-      if (m == null) continue;
-      escapeChars += m.end - m.start;
-      if (m[2] == 'm') _apply(m[1]!);
+      if (stop < 0) continue;
+      escapeChars += stop - esc;
+      if (source.codeUnitAt(params) == 0x6D) _apply(source.substring(esc + 2, params));
     }
   }
 

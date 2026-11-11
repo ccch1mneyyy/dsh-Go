@@ -306,5 +306,12 @@ void main() {
     await tester.pumpWidget(testApp(OutputPage(key: UniqueKey(), title: '输出', text: oneLine, ansi: true)));
     await tester.pump();
     expect(find.text('共 1 行 · 8,000,000 字'), findsOneWidget);
+
+    // Megabytes of digits after ESC[ are not a colour: plain text, in bounded rows.
+    final runaway = '\x1B[${'1;' * 2000000}m tail';
+    await tester.pumpWidget(testApp(OutputPage(key: UniqueKey(), title: '输出', text: runaway, ansi: true)));
+    await tester.pump();
+    final rows = tester.widgetList<RichText>(find.byType(RichText)).map((w) => w.text.toPlainText().length);
+    expect(rows.every((length) => length <= 4000), isTrue);
   }, timeout: const Timeout(Duration(seconds: 60)));
 }
