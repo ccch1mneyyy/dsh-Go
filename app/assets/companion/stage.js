@@ -764,6 +764,7 @@
 
   let character = {};
   let emotions = DEFAULT_EMOTIONS;
+  let authored = { emotions: {}, actions: {} };
   // adapter.json beside character.json: what the person's AI worked out for
   // this model (companion_adapt.dart checks it before it's written).
   let adapter = null;
@@ -782,9 +783,14 @@
 
   /** character.json, the rules' findings, then the adapter: the latest word wins. */
   function applyCharacter() {
-    const authoredEmotions = { ...(character.emotions ?? {}), ...(adapter?.emotions ?? {}) };
-    emotions = FLOAT ? { calm: {}, ...authoredEmotions } : mergeEmotions(authoredEmotions);
-    actions = { ...(FLOAT ? {} : ACTIONS), ...(character.actions ?? {}), ...(adapter?.actions ?? {}) };
+    // What the character itself says, kept apart: a pet state in the float window only
+    // wears what was authored for it, while a tap there reacts as it does in the room.
+    authored = {
+      emotions: { ...(character.emotions ?? {}), ...(adapter?.emotions ?? {}) },
+      actions: { ...(character.actions ?? {}), ...(adapter?.actions ?? {}) },
+    };
+    emotions = mergeEmotions(authored.emotions);
+    actions = { ...ACTIONS, ...authored.actions };
     if (Array.isArray(adapter?.zones) && adapter.zones.length) {
       zones = adapter.zones;
       zonesFrom = 'adapter';
@@ -1877,7 +1883,7 @@
     }
     if (state === floatState) return;
     floatState = state;
-    const effect = window.CompanionFloat.stateEffect(state, emotions, actions);
+    const effect = window.CompanionFloat.stateEffect(state, authored.emotions, authored.actions);
     life.actions.clear();
     model.stopMotions();
     life.mood = effect.mood;

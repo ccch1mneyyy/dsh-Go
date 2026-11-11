@@ -83,7 +83,7 @@ function stage(float = true, fetcher, devices = {}) {
   canvas.getContext = () => gl;
   const model = { release() { releases++; if (devices.releaseError) throw new Error('synthetic release failure'); }, stopMotions() {}, startExpression() {},
     tick() {}, draw() { draws++; }, setRenderTargetSize() {}, moving: false, masks: null,
-    expressions: new Map(), motions: new Map(),
+    expressions: new Map(), motions: new Map(), hitZones: [], tailIds: [],
     getRenderer: () => ({ setModelColor() {} }),
     core: { getDrawableCount: () => 0 },
   };
@@ -115,7 +115,8 @@ function stage(float = true, fetcher, devices = {}) {
   globalThis.harness = { boot, render,
     texture(url) { return loadTexture(gl, url, []); },
     install(m, g) { model = m; gl = g; },
-    mappings(e, a) { emotions = e; actions = a; },
+    mappings(e, a) { emotions = e; actions = a; authored = { emotions: e, actions: a }; },
+    character(c) { character = c; adapter = null; applyCharacter(); },
     actionStart(name) { return life.actions.get(name)?.start; },
     relax(now) { relaxEmotion(now); },
     state() { return { mood: life.mood, emotion: life.emotion, actions: [...life.actions.keys()], disposed: floatDisposed }; }
@@ -184,6 +185,18 @@ test('a native tap plays the room reaction, then gives her face back to the pet 
   assert.equal(s.api.state().emotion, 'happy', 'back to the attention face, not calm');
   s.api.relax(1e9);
   assert.equal(s.api.state().emotion, 'happy', 'the state face has no deadline');
+});
+
+test('a character with nothing authored still reacts to a tap, and wears no state it was not given', () => {
+  const s = stage(); s.install();
+  s.api.character({});
+  s.command({ type: 'petState', state: 'attention' });
+  assert.deepEqual(copy(s.api.state()), { mood: 'idle', emotion: 'calm', actions: [], disposed: false });
+  s.command({ type: 'tap', x: 0.5, y: 0.5 });
+  assert.equal(s.api.state().emotion, 'surprised');
+  assert.deepEqual(copy(s.api.state().actions), ['duck']);
+  s.api.relax(1e6);
+  assert.equal(s.api.state().emotion, 'calm');
 });
 
 test('native reduced-motion updates stop gestures without replacing the page or replaying a state', () => {
