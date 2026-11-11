@@ -103,27 +103,67 @@ void main() {
   group('SgrCarry', () {
     test('keeps what is still in effect and drops what a reset ended', () {
       const text = 'a\x1B[31mb\x1B[1mc\x1B[0md\x1B[0;34me\x1B[2Kf';
-      final carry = SgrCarry();
+      final carry = SgrCarry(text);
       expect(carry.prefix, isEmpty);
-      carry.advance(text, 0, text.indexOf('c'));
-      expect(carry.prefix, '\x1B[31m\x1B[1m');
-      carry.advance(text, text.indexOf('c'), text.indexOf('d'));
+      carry.advanceTo(text.indexOf('c'));
+      expect(carry.prefix, '\x1B[1;31m');
+      carry.advanceTo(text.indexOf('d'));
       expect(carry.prefix, isEmpty);
-      carry.advance(text, text.indexOf('d'), text.length);
-      // A reset that also sets a colour stays; a non-colour sequence is not carried.
-      expect(carry.prefix, '\x1B[0;34m');
+      carry.advanceTo(text.length);
+      // A reset that also sets a colour leaves the colour; a non-colour sequence is not carried.
+      expect(carry.prefix, '\x1B[34m');
       expect(carry.escapeChars, text.length - 'abcdef'.length);
     });
 
     test('replaying the prefix gives the colours of parsing in one go', () {
       const base = TextStyle(color: Color(0xFF000000));
       final palette = [for (var i = 0; i < 16; i++) Color(0xFF000000 + i * 16)];
-      const text = 'plain\n\x1B[31mred\nstill red\x1B[0m\nplain again';
-      final carry = SgrCarry()..advance(text, 0, text.indexOf('still'));
-      final row = parseAnsi('${carry.prefix}still red', base, palette);
-      expect(row.toPlainText(), 'still red');
-      expect((row.children!.single as TextSpan).style!.color, palette[1]);
+      Map<String, Object?> styleOf(TextSpan span) {
+        final s = (span.children!.last as TextSpan).style!;
+        return {
+          'fg': s.color,
+          'bg': s.backgroundColor,
+          'weight': s.fontWeight,
+          'italic': s.fontStyle,
+          'line': s.decoration,
+        };
+      }
+
+      // Each of these leaves some state on; "X" is then rendered both ways.
+      for (final before in [
+        '\x1B[31m',
+        '\x1B[1;3;4m\x1B[22m',
+        '\x1B[38;5;208m\x1B[48;2;1;2;3m',
+        '\x1B[31m\x1B[39m\x1B[44m',
+        '\x1B[38;2;255;255;255;48;2;10;20;30m',
+        '\x1B[38;5;999m\x1B[92m\x1B[38;5m',
+        '\x1B[0;1;35m\x1B[m\x1B[4m',
+      ]) {
+        final carry = SgrCarry('${before}X')..advanceTo(before.length);
+        expect(
+          styleOf(parseAnsi('${carry.prefix}X', base, palette)),
+          styleOf(parseAnsi('${before}X', base, palette)),
+          reason: before.replaceAll('\x1B', 'ESC'),
+        );
+      }
     });
+
+    test('a colour set once survives any number of later attribute changes', () {
+      final text = '\x1B[31m${'\x1B[1mx\x1B[22my' * 500}';
+      final carry = SgrCarry(text)..advanceTo(text.length);
+      expect(carry.prefix, '\x1B[31m');
+    });
+  });
+
+  test('a long colour sequence counts as one escape wherever the cut lands', () {
+    const sequence = '\x1B[38;2;255;255;255;48;2;255;255;255m';
+    const text = 'ab${sequence}cd';
+    expect(sequence.length, greaterThan(24));
+    for (var i = 3; i < 2 + sequence.length; i++) {
+      expect(ansiEscapeAround(text, i), (2, 2 + sequence.length), reason: 'at $i');
+    }
+    expect(ansiEscapeAround(text, 2), isNull);
+    expect(ansiEscapeAround(text, 2 + sequence.length), isNull);
   });
 
   testWidgets('ordinary output has no clip marker and no view-all bar', (tester) async {
@@ -252,4 +292,19 @@ void main() {
     // No row is the whole line, and no escape sequence was cut in half.
     expect(body.every((r) => r.length <= 4000 && RegExp(r'^[abcd]+$').hasMatch(r)), isTrue);
   });
+
+  // Preparing the rows is one pass over the text. Done once per row or per cut
+  // (which is what a search to the end of the text, or back to its start, amounts
+  // to) these sizes would take minutes rather than a moment.
+  testWidgets('opening the full page stays one pass over a huge output', (tester) async {
+    final sparse = '\x1B[31monce\n${'plain line\n' * 300000}end';
+    await tester.pumpWidget(testApp(OutputPage(title: '输出', text: sparse, ansi: true)));
+    await tester.pump();
+    expect(find.text('共 300,002 行 · 3,300,008 字'), findsOneWidget);
+
+    final oneLine = '\x1B[32m${'x' * 8000000}';
+    await tester.pumpWidget(testApp(OutputPage(key: UniqueKey(), title: '输出', text: oneLine, ansi: true)));
+    await tester.pump();
+    expect(find.text('共 1 行 · 8,000,000 字'), findsOneWidget);
+  }, timeout: const Timeout(Duration(seconds: 60)));
 }

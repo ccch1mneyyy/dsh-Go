@@ -51,7 +51,7 @@ class OutputPage extends StatefulWidget {
 
 /// 每段在原文里的 [起, 止)(不含行尾换行)。长行按 [_maxRowChars] 再切,
 /// 不拆代理对,也不拆转义序列。
-List<int> _rowBounds(String text) {
+List<int> _rowBounds(String text, {required bool ansi}) {
   final bounds = <int>[];
   var start = 0;
   while (true) {
@@ -60,7 +60,9 @@ List<int> _rowBounds(String text) {
     var from = start;
     while (end - from > _maxRowChars) {
       var cut = from + _maxRowChars;
-      if (ansiEscapeAround(text, cut) case (final escape, _) when escape > from) cut = escape;
+      if (ansi) {
+        if (ansiEscapeAround(text, cut) case (final escape, _) when escape > from) cut = escape;
+      }
       if ((text.codeUnitAt(cut - 1) & 0xFC00) == 0xD800) cut--;
       bounds
         ..add(from)
@@ -84,7 +86,7 @@ class _OutputPageState extends State<OutputPage> {
   late final String _source = _coloured ? stripOsc(widget.text) : widget.text;
 
   /// 每段的边界;段的文字用到时才切出来、才解析颜色。
-  late final List<int> _bounds = _rowBounds(_source);
+  late final List<int> _bounds = _rowBounds(_source, ansi: _coloured);
 
   /// 着色时,每段开头还生效的颜色序列(只记非空的):一段红字跨了三行,
   /// 后两行各自解析时要先补上那个红。只扫一遍转义序列,不建 TextSpan。
@@ -96,11 +98,11 @@ class _OutputPageState extends State<OutputPage> {
   Map<int, String> _carry() {
     if (!_coloured) return const {};
     final carried = <int, String>{};
-    final carry = SgrCarry();
+    final carry = SgrCarry(_source);
     for (var row = 0; row * 2 < _bounds.length; row++) {
       final prefix = carry.prefix;
       if (prefix.isNotEmpty) carried[row] = prefix;
-      carry.advance(_source, _bounds[row * 2], _bounds[row * 2 + 1]);
+      carry.advanceTo(_bounds[row * 2 + 1]);
     }
     _escapeChars = carry.escapeChars;
     return carried;

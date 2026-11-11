@@ -106,7 +106,7 @@ ClippedText clipLongText(
     totalLines: totalLines,
     hiddenLines: _newlines(text, headEnd, tailStart),
     hiddenChars: tailStart - headEnd,
-    tailSgr: ansi && hasAnsi(text) ? (SgrCarry()..advance(text, 0, tailStart)).prefix : '',
+    tailSgr: ansi && hasAnsi(text) ? (SgrCarry(text)..advanceTo(tailStart)).prefix : '',
   );
 }
 
