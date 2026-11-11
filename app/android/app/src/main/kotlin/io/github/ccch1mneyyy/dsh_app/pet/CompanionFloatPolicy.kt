@@ -3,6 +3,7 @@ package io.github.ccch1mneyyy.dsh_app.pet
 import java.net.URI
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 /** The page is an app-owned, per-launch loopback capability, never a remote URL. */
@@ -46,6 +47,22 @@ internal class CompanionFloatRecovery {
         selection == null || fallback -> Failure.IGNORE
         !retried -> { retried = true; Failure.RETRY }
         else -> { fallback = true; Failure.FALLBACK }
+    }
+}
+
+/** A tap plays with her; a second one soon after, close by, opens the app instead. */
+internal class CompanionFloatTaps(private val timeoutMs: Long, private val slop: Float) {
+    private var waiting = false
+    private var at = 0L
+    private var x = 0f
+    private var y = 0f
+
+    /** Whether the tap at ([tapX], [tapY]) is the second of a pair. */
+    fun second(timeMs: Long, tapX: Float, tapY: Float): Boolean {
+        val paired = waiting && timeMs - at in 0..timeoutMs && hypot(tapX - x, tapY - y) <= slop
+        waiting = !paired
+        at = timeMs; x = tapX; y = tapY
+        return paired
     }
 }
 

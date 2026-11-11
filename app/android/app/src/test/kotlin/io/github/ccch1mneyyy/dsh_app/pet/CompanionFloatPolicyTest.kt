@@ -37,6 +37,17 @@ class CompanionFloatPolicyTest {
         assertEquals(CompanionFloatRecovery.Failure.RETRY, policy.failed())
     }
 
+    @Test fun aTapPlaysAndOnlyAQuickNearbySecondOneOpensTheApp() {
+        val taps = CompanionFloatTaps(timeoutMs = 300, slop = 100f)
+        assertFalse(taps.second(1_000, 50f, 50f))
+        assertTrue(taps.second(1_300, 120f, 50f))
+        // The pair is spent: a third tap starts over rather than opening again.
+        assertFalse(taps.second(1_400, 120f, 50f))
+        assertFalse("too late", taps.second(1_701, 120f, 50f))
+        assertFalse("too far", taps.second(1_800, 120f, 151f))
+        assertTrue(taps.second(1_900, 120f, 151f))
+    }
+
     @Test fun everyKnownHiddenOrPowerGateStopsTheRendererWithoutChangingPixelPolicy() {
         fun allowed(selected: Boolean = true, fallback: Boolean = false, shown: Boolean = true,
             interactive: Boolean = true, systemShown: Boolean = true, capturing: Boolean = false,

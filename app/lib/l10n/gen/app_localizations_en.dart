@@ -2983,7 +2983,7 @@ class L10nEn extends L10n {
 
   @override
   String get botsPetOverlayCompanionHint =>
-      'Uses more battery than the pixel pet. It stops when the screen is off or the window is hidden';
+      'Tap to play with her, tap twice to open the chat. Uses more battery than the pixel pet. It stops when the screen is off or the window is hidden';
 
   @override
   String get botsPetOverlayLoading => 'Bringing your companion out…';

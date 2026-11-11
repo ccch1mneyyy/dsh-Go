@@ -1136,6 +1136,14 @@ internal object PetOverlay {
             open(push?.sessionId, push?.host, null)
         }
 
+        override fun onCompanionTap(x: Float, y: Float) {
+            if (!alive(ticket)) return
+            machine.onTouch(now())
+            if (dimmed) evaluate()
+            dismissMenu()
+            companionView?.tap(x, y)
+        }
+
         override fun onLongPress(rawX: Float?, rawY: Float?) {
             if (!alive(ticket)) return
             machine.onTouch(now())

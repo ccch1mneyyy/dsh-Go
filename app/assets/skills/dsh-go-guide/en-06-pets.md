@@ -33,6 +33,8 @@ Floating pet: tap to open the chat that needs you most (approvals and questions 
 
 The floating window can show the companion from the Companion room instead: with **Show outside the app** on, choose **Room companion** under **Show in the floating window** (**Pixel pet** by default; if you gave her a name, the option shows it). You need a character in the Companion room first; until then the option can't be chosen. She uses more battery than the pixel pet, and stops when the screen is off or the window is hidden. If this phone can't show her, the window goes back to the pixel pet. Once she is chosen, **Framing** below offers **Full body** or **Half body**.
 
+While she is in the floating window, one tap plays with her: her head, face and body each get a different reaction, and her eyes go to where you tapped. Tap twice to open the chat. Dragging and touch and hold work as they do for the pixel pet.
+
 On Android 13 and later, if the switch still won't turn on after visiting system settings, **Switch disabled** appears on the pet page. Tap it for brand-specific steps to **Allow restricted settings**.
 
 ## Action wheel and screenshot questions

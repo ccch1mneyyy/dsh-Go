@@ -29,6 +29,7 @@ import kotlin.math.roundToInt
  *
  * Touch, on the body ([PetFrames.hit]): drag moves the window, a tap opens the conversation, a
  * long press opens the menu. A touch that starts elsewhere in a grown window does nothing.
+ * With the companion shown, one tap plays with her and two in a row open the conversation.
  */
 @SuppressLint("ViewConstructor")
 internal class PetView(context: Context, private val listener: Listener) : FrameLayout(context) {
@@ -44,6 +45,9 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
         fun onDragEnd(velocityX: Float)
         fun onDragCancel()
         fun onTap(leftHalf: Boolean)
+
+        /** One tap on the companion, in 0–1 of her viewport. */
+        fun onCompanionTap(x: Float, y: Float)
         fun onLongPress(rawX: Float?, rawY: Float?)
         fun onMenuMove(rawX: Float, rawY: Float)
         fun onMenuEnd(rawX: Float, rawY: Float, cancelled: Boolean)
@@ -202,6 +206,10 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
     private var lastX = 0f
     private var lastY = 0f
     private var tracker: VelocityTracker? = null
+    private val companionTaps = CompanionFloatTaps(
+        ViewConfiguration.getDoubleTapTimeout().toLong(),
+        ViewConfiguration.get(context).scaledDoubleTapSlop.toFloat(),
+    )
     private val longPress = Runnable {
         if (touching && !dragging) {
             longPressed = true
@@ -250,11 +258,19 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
                 when {
                     longPressed -> listener.onMenuEnd(event.rawX, event.rawY, false)
                     dragging -> listener.onDragEnd(velocity())
-                    // Left and right halves split at the body's centre line (anchor.x), not the window's.
-                    !longPressed -> listener.onTap(
-                        event.x + frame.left < if (companionGeometry != null) width / 2f else
-                            (sprites?.let { (it.pack.anchorX - it.window.x) * it.screenScale } ?: (width / 2f)),
-                    )
+                    else -> {
+                        val size = companionGeometry
+                        if (size != null && !companionTaps.second(event.eventTime, event.rawX, event.rawY)) {
+                            listener.onCompanionTap(
+                                (event.x + companionBounds.left) / size.width,
+                                (event.y + companionBounds.top) / size.height,
+                            )
+                        } else listener.onTap(
+                            // Left and right halves split at the body's centre line (anchor.x), not the window's.
+                            event.x + frame.left < if (size != null) width / 2f else
+                                (sprites?.let { (it.pack.anchorX - it.window.x) * it.screenScale } ?: (width / 2f)),
+                        )
+                    }
                 }
                 reset()
             }

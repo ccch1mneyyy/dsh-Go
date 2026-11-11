@@ -5201,7 +5201,7 @@ abstract class L10n {
   /// No description provided for @botsPetOverlayCompanionHint.
   ///
   /// In zh, this message translates to:
-  /// **'比像素宠物更耗电，熄屏和隐藏时会停下来'**
+  /// **'点一下和她互动，连点两下打开对话。比像素宠物更耗电，熄屏和隐藏时会停下来'**
   String get botsPetOverlayCompanionHint;
 
   /// No description provided for @botsPetOverlayLoading.

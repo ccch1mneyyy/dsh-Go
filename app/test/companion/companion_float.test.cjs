@@ -116,6 +116,7 @@ function stage(float = true, fetcher, devices = {}) {
     install(m, g) { model = m; gl = g; },
     mappings(e, a) { emotions = e; actions = a; },
     actionStart(name) { return life.actions.get(name)?.start; },
+    relax(now) { relaxEmotion(now); },
     state() { return { mood: life.mood, emotion: life.emotion, actions: [...life.actions.keys()], disposed: floatDisposed }; }
   };
 })();`), context, { timeout: 1000 });
@@ -133,8 +134,9 @@ test('real float render path has a hard ceiling, reports buffer bounds and no ro
   assert.ok(s.counts().draws <= 31);
   assert.equal(s.counts().reads, s.counts().draws);
   assert.equal(s.posts.length, 1, 'unchanged bounds need no new native geometry');
-  assert.deepEqual(s.posts[0], { type: 'floatBounds', width: 5, height: 4,
-    bounds: { left: 1, top: 2, right: 2, bottom: 3 } });
+  // The 5×4 CSS canvas on a 3× screen: the buffer is drawn at device density.
+  assert.deepEqual(s.posts[0], { type: 'floatBounds', width: 15, height: 12,
+    bounds: { left: 1, top: 10, right: 2, bottom: 11 } });
   assert.equal(s.canvasEvents.has('pointerdown'), false);
   s.command({ type: 'pause' });
   assert.equal(s.frames.size, 0);
@@ -159,6 +161,27 @@ test('float native state accepts only its own command and does not replay an unc
   assert.equal(s.api.state().mood, 'idle');
   s.command({ type: 'petState', state: 'thinking' });
   assert.deepEqual(copy(s.api.state()), { mood: 'idle', emotion: 'calm', actions: [], disposed: false });
+});
+
+test('a native tap plays the room reaction, then gives her face back to the pet state', () => {
+  const s = stage(); s.install();
+  s.api.mappings({ calm: {}, happy: {}, shy: {}, surprised: {}, confused: {} },
+    { nod: { ms: 100, tracks: {} }, nodSmall: { ms: 100, tracks: {} }, recoil: { ms: 100, tracks: {} },
+      duck: { ms: 100, tracks: {} }, tilt: { ms: 100, tracks: {} } });
+  s.command({ type: 'petState', state: 'attention' });
+  s.command({ type: 'tap', x: NaN, y: 0.5 });
+  assert.deepEqual(copy(s.api.state()), { mood: 'idle', emotion: 'happy', actions: ['nod'], disposed: false });
+  // Dead centre of the viewport is her body: surprised, and she ducks.
+  s.command({ type: 'tap', x: 0.5, y: 0.5 });
+  assert.equal(s.api.state().emotion, 'surprised');
+  assert.ok(s.api.state().actions.includes('duck'));
+  assert.deepEqual(s.posts.at(-1), { type: 'touch', zone: 'body', kind: 'tap' });
+  s.api.relax(1499);
+  assert.equal(s.api.state().emotion, 'surprised');
+  s.api.relax(1501);
+  assert.equal(s.api.state().emotion, 'happy', 'back to the attention face, not calm');
+  s.api.relax(1e9);
+  assert.equal(s.api.state().emotion, 'happy', 'the state face has no deadline');
 });
 
 test('native reduced-motion updates stop gestures without replacing the page or replaying a state', () => {

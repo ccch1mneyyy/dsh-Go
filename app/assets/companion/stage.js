@@ -26,7 +26,9 @@
   const SHADERS = `${PACK}runtime/shaders/`;
   const MAX_TEXTURE = Number(query.get('maxTexture')) || 4096;
   let REDUCED = query.get('reduceMotion') === '1';
-  const DPR_CAP = FLOAT ? 1 : 2;
+  // Float draws at the screen's own density: its viewport is at most 640 view px tall, and a
+  // 1x buffer stretched over a 3x screen reads as out of focus.
+  const DPR_CAP = FLOAT ? 4 : 2;
   // Clip masks: the renderer packs them into textures of four channels, at
   // most 36 different masks in one texture, 32 each when there are several.
   // A model that needs more (a detailed one: 49 for 大肥鱼 4096) gets more
@@ -877,6 +879,13 @@
     if (changed && model && !own && !FLOAT) emotionMark(name);
   }
 
+  /** Emotions relax on their own: to calm in the room, to the pet state's in the float window. */
+  function relaxEmotion(now) {
+    if (!life.emotionUntil || now <= life.emotionUntil) return;
+    if (FLOAT) setEmotion(floatEmotion, Infinity);
+    else setEmotion('calm');
+  }
+
   /** A few notes, one after another, while she hums. */
   function humNotes(count) {
     const epoch = transientEpoch;
@@ -1019,7 +1028,7 @@
       life.sleep = ease(life.sleep, life.mood === 'sleeping' ? 1 : 0, 1.6, dt);
 
       // Emotions relax on their own.
-      if (life.emotionUntil && now > life.emotionUntil) setEmotion('calm');
+      relaxEmotion(now);
 
       const [gx, gy] = gazeTarget(now);
       const eyeX = life.eye.x.step(gx, dt);
@@ -1840,6 +1849,8 @@
   let floatPixels = null;
   let floatBoundsKey = '';
   let floatState = null;
+  let floatEmotion = 'calm';
+  let floatGazeUntil = 0;
 
   function setFloatState(state, reduced) {
     if (typeof reduced === 'boolean' && reduced !== REDUCED) {
@@ -1855,6 +1866,7 @@
     life.actions.clear();
     model.stopMotions();
     life.mood = effect.mood;
+    floatEmotion = effect.emotion;
     setEmotion(effect.emotion, Infinity);
     if (effect.action) playAction(effect.action);
   }
@@ -1867,6 +1879,7 @@
       const dt = clamp((ts - last) / 1000, 0.001, 0.05);
       last = ts;
       resize();
+      if (floatGazeUntil && ts > floatGazeUntil) { floatGazeUntil = 0; life.pointer = null; }
       model.tick(dt, animate);
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
@@ -1874,8 +1887,8 @@
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       model.draw(projection(), [0, 0, canvas.width, canvas.height]);
-      // Read in this draw task; preserveDrawingBuffer is unnecessary. Float
-      // uses CSS-resolution pixels and a fixed, small native viewport.
+      // Read in this draw task; preserveDrawingBuffer is unnecessary. The native
+      // viewport is fixed and small, so the buffer stays small at device density.
       const length = canvas.width * canvas.height * 4;
       if (floatPixels?.length !== length) floatPixels = new Uint8Array(length);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1887,6 +1900,19 @@
       drawn++;
       if (ts - fpsAt >= 1000) { fps = drawn * 1000 / (ts - fpsAt); drawn = 0; fpsAt = ts; }
     } catch (_) { floatFailed('companion_render_failed'); }
+  }
+
+  /** A tap from the native window, in 0–1 of the viewport: the room's tap, without its marks. */
+  function floatTap(x, y) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = rect.left + clamp(x, 0, 1) * rect.width;
+    const clientY = rect.top + clamp(y, 0, 1) * rect.height;
+    const point = toModel(clientX, clientY);
+    // Her eyes stay on where the finger was for a moment.
+    life.pointer = toGaze(clientX, clientY);
+    floatGazeUntil = performance.now() + 700;
+    tap(zoneAt(point.x, point.y) ?? 'body', clientX);
   }
 
   function releaseFloat() {
@@ -2144,6 +2170,7 @@
           last = performance.now();
           frame = requestAnimationFrame(render);
         } else if (!floatDisposed && model && message?.type === 'petState') setFloatState(message.state, message.reduceMotion);
+        else if (!floatDisposed && model && message?.type === 'tap') floatTap(message.x, message.y);
         return;
       }
       const run = commands[message?.type];
