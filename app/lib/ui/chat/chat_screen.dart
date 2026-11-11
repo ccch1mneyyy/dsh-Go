@@ -195,21 +195,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
   late final VoiceInputActiveController _voiceFlag;
   final _focus = FocusNode();
 
-  // A dismissal belongs to this slash draft, until its leading slash is removed.
-  bool _slashDismissed = false;
+  // Keep this slash draft closed until it leaves slash input or starts again at "/".
+  String? _dismissedSlashText;
   double? _keyboardInset;
   final _composerGroup = Object();
 
   void _resetSlashDismissal() {
-    if (parseSlashInput(_input.text) == null) _slashDismissed = false;
+    final dismissed = _dismissedSlashText;
+    if (dismissed == null) return;
+    final text = _input.text;
+    final newSlash = text.trim() == '/' && dismissed.trim() != '/';
+    _dismissedSlashText = parseSlashInput(text) == null || newSlash ? null : text;
   }
 
   void _dismissSlashPalette() {
-    if (_slashDismissed || parseSlashInput(_input.text) == null) return;
-    setState(() => _slashDismissed = true);
+    if (_dismissedSlashText != null || parseSlashInput(_input.text) == null) return;
+    setState(() => _dismissedSlashText = _input.text);
   }
 
-  PaletteContent? _slashContent(List<SlashCommand> commands) => _slashDismissed
+  PaletteContent? _slashContent(List<SlashCommand> commands) => _dismissedSlashText != null
       ? null
       : PaletteContent.of(
           commands,
@@ -328,7 +332,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     _composerToastWait?.cancel();
     if (_voice.active) unawaited(_voice.cancel());
     _mentions.dismiss();
-    _slashDismissed = false;
+    _dismissedSlashText = null;
     _saveDraft();
     _draftKey = key;
     _spoken = null;

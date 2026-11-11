@@ -177,4 +177,44 @@ void main() {
     expect(find.byType(SlashPalette), findsOneWidget);
     expect(harness.controllers['s1']!.cancels, 0);
   });
+
+  testWidgets('typing a new slash over a selected dismissed draft reopens the palette', (tester) async {
+    final harness = await mount(tester);
+    await enter(tester, '/permission ');
+    expect(find.byType(SlashPalette), findsOneWidget);
+    await tester.tapAt(const Offset(195, 350));
+    await pumpFrames(tester, 3);
+    expect(find.byType(SlashPalette), findsNothing);
+    final controller = input(tester);
+    expect(controller.text, '/permission ');
+
+    await tester.tap(composerInput);
+    await pumpFrames(tester, 3);
+    tester.testTextInput.updateEditingValue(
+      TextEditingValue(
+        text: controller.text,
+        selection: TextSelection(baseOffset: 0, extentOffset: controller.text.length),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(SlashPalette), findsNothing);
+    tester.testTextInput.updateEditingValue(
+      const TextEditingValue(text: '/', selection: TextSelection.collapsed(offset: 1)),
+    );
+    await pumpFrames(tester, 3);
+    expect(controller.text, '/');
+    expect(find.byType(SlashPalette), findsOneWidget);
+
+    // Dismissing this new slash still survives caret and whitespace edits.
+    await tester.tapAt(const Offset(195, 350));
+    await pumpFrames(tester, 3);
+    expect(find.byType(SlashPalette), findsNothing);
+    controller.selection = const TextSelection.collapsed(offset: 0);
+    await tester.pump();
+    expect(find.byType(SlashPalette), findsNothing);
+    await enter(tester, '/ \t');
+    expect(find.byType(SlashPalette), findsNothing);
+    expect(harness.controllers['s1']!.commandLines, isEmpty);
+    expect(harness.controllers['s1']!.sent, isEmpty);
+  });
 }
