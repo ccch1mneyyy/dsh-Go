@@ -5156,6 +5156,90 @@ abstract class L10n {
   /// **'一直显示'**
   String get botsPetAlways;
 
+  /// No description provided for @botsPetOverlayShows.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮窗里显示'**
+  String get botsPetOverlayShows;
+
+  /// No description provided for @botsPetOverlayPixel.
+  ///
+  /// In zh, this message translates to:
+  /// **'像素宠物'**
+  String get botsPetOverlayPixel;
+
+  /// No description provided for @botsPetOverlayCompanion.
+  ///
+  /// In zh, this message translates to:
+  /// **'小屋里的她'**
+  String get botsPetOverlayCompanion;
+
+  /// No description provided for @botsPetOverlayCompanionNamed.
+  ///
+  /// In zh, this message translates to:
+  /// **'小屋里的{name}'**
+  String botsPetOverlayCompanionNamed(String name);
+
+  /// No description provided for @botsPetOverlayNoPack.
+  ///
+  /// In zh, this message translates to:
+  /// **'先去伙伴小屋里请一位角色'**
+  String get botsPetOverlayNoPack;
+
+  /// No description provided for @botsPetOverlayPackBroken.
+  ///
+  /// In zh, this message translates to:
+  /// **'角色包不完整，去伙伴小屋里重新导入'**
+  String get botsPetOverlayPackBroken;
+
+  /// No description provided for @botsPetOverlayUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'这台手机暂时请不出她'**
+  String get botsPetOverlayUnavailable;
+
+  /// No description provided for @botsPetOverlayCompanionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点一下和她互动，连点两下打开对话。比像素宠物更耗电，熄屏和隐藏时会停下来'**
+  String get botsPetOverlayCompanionHint;
+
+  /// No description provided for @botsPetOverlayLoading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在请她出来…'**
+  String get botsPetOverlayLoading;
+
+  /// No description provided for @botsPetOverlayFallback.
+  ///
+  /// In zh, this message translates to:
+  /// **'她没能出来，先由像素宠物顶班'**
+  String get botsPetOverlayFallback;
+
+  /// No description provided for @botsPetOverlayFraming.
+  ///
+  /// In zh, this message translates to:
+  /// **'取景'**
+  String get botsPetOverlayFraming;
+
+  /// No description provided for @botsPetOverlayFramingFull.
+  ///
+  /// In zh, this message translates to:
+  /// **'全身'**
+  String get botsPetOverlayFramingFull;
+
+  /// No description provided for @botsPetOverlayFramingHalf.
+  ///
+  /// In zh, this message translates to:
+  /// **'半身'**
+  String get botsPetOverlayFramingHalf;
+
+  /// No description provided for @botsPetOverlayFramingHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'换取景会重新加载她'**
+  String get botsPetOverlayFramingHint;
+
   /// No description provided for @botsPetSwitchDisabled.
   ///
   /// In zh, this message translates to:
@@ -8318,6 +8402,54 @@ abstract class L10n {
   /// **'暂无详情'**
   String get chatNoDetails;
 
+  /// No description provided for @chatOutputHiddenLines.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count, plural, other{中间省略 {shown} 行}}'**
+  String chatOutputHiddenLines(int count, String shown);
+
+  /// No description provided for @chatOutputHiddenChars.
+  ///
+  /// In zh, this message translates to:
+  /// **'中间省略 {count} 字'**
+  String chatOutputHiddenChars(String count);
+
+  /// No description provided for @chatOutputSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count, plural, other{共 {lines} 行}} · {chars} 字'**
+  String chatOutputSummary(int count, String lines, String chars);
+
+  /// No description provided for @chatOutputViewAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看全部'**
+  String get chatOutputViewAll;
+
+  /// No description provided for @chatOutputCopyAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制全文'**
+  String get chatOutputCopyAll;
+
+  /// No description provided for @chatOutputCopied.
+  ///
+  /// In zh, this message translates to:
+  /// **'已复制全文'**
+  String get chatOutputCopied;
+
+  /// No description provided for @chatOutputToEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'跳到末尾'**
+  String get chatOutputToEnd;
+
+  /// No description provided for @chatOutputToStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'回到开头'**
+  String get chatOutputToStart;
+
   /// No description provided for @chatErrApiKey.
   ///
   /// In zh, this message translates to:
@@ -8345,7 +8477,7 @@ abstract class L10n {
   /// No description provided for @chatErrContextLength.
   ///
   /// In zh, this message translates to:
-  /// **'对话太长，发送 /compact 压缩后再试'**
+  /// **'对话太长。若 /compact 也失败，请新建对话或换模型'**
   String get chatErrContextLength;
 
   /// No description provided for @chatErrModelUnavailable.
@@ -9086,6 +9218,12 @@ abstract class L10n {
   /// **'这台手机上加载失败了（{reason}）。可以重新导入素材包再试一次。'**
   String companionFailedBody(String reason);
 
+  /// No description provided for @companionFailedBodyPlain.
+  ///
+  /// In zh, this message translates to:
+  /// **'她刚才没加载出来。先重试，还不行再重新导入素材包。'**
+  String get companionFailedBodyPlain;
+
   /// No description provided for @companionPackBroken.
   ///
   /// In zh, this message translates to:
@@ -9295,6 +9433,24 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'你是不是很闲？'**
   String get companionTease3;
+
+  /// No description provided for @companionShake1.
+  ///
+  /// In zh, this message translates to:
+  /// **'哇啊，别摇啦！'**
+  String get companionShake1;
+
+  /// No description provided for @companionShake2.
+  ///
+  /// In zh, this message translates to:
+  /// **'头好晕……水都晃起来了。'**
+  String get companionShake2;
+
+  /// No description provided for @companionShake3.
+  ///
+  /// In zh, this message translates to:
+  /// **'再摇我要吐泡泡了！'**
+  String get companionShake3;
 
   /// No description provided for @companionStatusIdle.
   ///
@@ -11203,6 +11359,12 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'网页版发送'**
   String get engineGeneralWebSending;
+
+  /// No description provided for @engineGeneralWebOnlyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这组设置仅影响当前主机的网页版，不改变原生聊天。'**
+  String get engineGeneralWebOnlyHint;
 
   /// No description provided for @engineGeneralData.
   ///
@@ -22628,6 +22790,42 @@ abstract class L10n {
   /// **'该效果需要用户点按'**
   String get plugInputGestureRequired;
 
+  /// No description provided for @seamsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'App 内界面'**
+  String get seamsTitle;
+
+  /// No description provided for @seamsOverlay.
+  ///
+  /// In zh, this message translates to:
+  /// **'聊天页浮层'**
+  String get seamsOverlay;
+
+  /// No description provided for @seamsOverlayNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'常驻聊天区域，内存紧张时自动让位'**
+  String get seamsOverlayNote;
+
+  /// No description provided for @seamsSidebarPage.
+  ///
+  /// In zh, this message translates to:
+  /// **'侧栏入口'**
+  String get seamsSidebarPage;
+
+  /// No description provided for @seamsSettingsPage.
+  ///
+  /// In zh, this message translates to:
+  /// **'插件设置页'**
+  String get seamsSettingsPage;
+
+  /// No description provided for @seamsDetailPage.
+  ///
+  /// In zh, this message translates to:
+  /// **'插件详情扩展'**
+  String get seamsDetailPage;
+
   /// No description provided for @pluginsOperationHostChanged.
   ///
   /// In zh, this message translates to:
@@ -25544,6 +25742,102 @@ abstract class L10n {
   /// **'未更新 · 上次结果'**
   String get readListFailed;
 
+  /// No description provided for @remoteDshMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'实例管理'**
+  String get remoteDshMode;
+
+  /// No description provided for @remoteManaged.
+  ///
+  /// In zh, this message translates to:
+  /// **'托管启动'**
+  String get remoteManaged;
+
+  /// No description provided for @remoteAttachOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'只连接'**
+  String get remoteAttachOnly;
+
+  /// No description provided for @remoteManagedHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动启动或复用 App 托管的 DSH；不会自动替换存活但无法复用的实例。'**
+  String get remoteManagedHelp;
+
+  /// No description provided for @remoteAttachOnlyHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'只转发到远端 127.0.0.1 的固定端口；不启动、停止或重启 DSH。'**
+  String get remoteAttachOnlyHelp;
+
+  /// No description provided for @remoteDshPort.
+  ///
+  /// In zh, this message translates to:
+  /// **'远端 DSH 端口'**
+  String get remoteDshPort;
+
+  /// No description provided for @remoteDshToken.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH 登录令牌'**
+  String get remoteDshToken;
+
+  /// No description provided for @remoteDshTokenHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'填写既有实例启动链接中的 token，仅保存在这台手机的安全存储中。'**
+  String get remoteDshTokenHelp;
+
+  /// No description provided for @remoteAttachWorkingDirectoryHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'既有实例不执行目录探测；请填写远端绝对路径，留空使用 DSH 默认目录。'**
+  String get remoteAttachWorkingDirectoryHelp;
+
+  /// No description provided for @remoteSshCompression.
+  ///
+  /// In zh, this message translates to:
+  /// **'SSH 压缩'**
+  String get remoteSshCompression;
+
+  /// No description provided for @remoteSshCompressionHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认开启；与服务器协商认证后压缩，不支持时使用未压缩传输。'**
+  String get remoteSshCompressionHelp;
+
+  /// No description provided for @remoteRestartManaged.
+  ///
+  /// In zh, this message translates to:
+  /// **'重启托管 DSH'**
+  String get remoteRestartManaged;
+
+  /// No description provided for @remoteRestartManagedWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'这会停止 App 记录的远端 DSH 并重新启动，可能中断其他客户端和进行中的对话。确认没有其他人在使用后再继续。普通测试连接不会执行此操作。'**
+  String get remoteRestartManagedWarning;
+
+  /// No description provided for @remoteErrSharedInstance.
+  ///
+  /// In zh, this message translates to:
+  /// **'远端托管 DSH 仍在运行，但启动命令不同或缺少有效启动日志。为保护共享实例，未自动重启；请检查配置，改用“只连接”，或在编辑主机中明确选择“重启托管 DSH”。'**
+  String get remoteErrSharedInstance;
+
+  /// No description provided for @remoteErrAttachSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'请填写有效的远端 DSH 端口和登录令牌'**
+  String get remoteErrAttachSettings;
+
+  /// No description provided for @remoteDshAttached.
+  ///
+  /// In zh, this message translates to:
+  /// **'已连接既有 DSH'**
+  String get remoteDshAttached;
+
   /// No description provided for @remoteStartupSection.
   ///
   /// In zh, this message translates to:
@@ -25865,7 +26159,7 @@ abstract class L10n {
   /// No description provided for @remoteErrDshTokenRejected.
   ///
   /// In zh, this message translates to:
-  /// **'远端 DSH 拒绝了登录令牌'**
+  /// **'远端 DSH 拒绝了登录令牌，未自动重启；请检查令牌，或在编辑主机中明确重启托管实例'**
   String get remoteErrDshTokenRejected;
 
   /// No description provided for @remoteErrDshSignIn.
@@ -26903,8 +27197,14 @@ abstract class L10n {
   /// No description provided for @remoteSelfHostedSignInHelp.
   ///
   /// In zh, this message translates to:
-  /// **'用邮箱和密码登录自己部署的 liguobao/ds-harness-remote'**
+  /// **'填写服务器地址，可用邮箱密码登录，也可先使用此服务器再选择其他登录方式。'**
   String get remoteSelfHostedSignInHelp;
+
+  /// No description provided for @remoteUseServer.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用此服务器'**
+  String get remoteUseServer;
 
   /// No description provided for @remoteServerAddress.
   ///
@@ -29077,6 +29377,18 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'宠物显示,显示时机'**
   String get searchKwPetDisplayWhen;
+
+  /// No description provided for @searchKwPetOverlayShows.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮伙伴,小屋里的她,像素宠物,Live2D'**
+  String get searchKwPetOverlayShows;
+
+  /// No description provided for @searchKwPetOverlayFraming.
+  ///
+  /// In zh, this message translates to:
+  /// **'取景,全身,半身'**
+  String get searchKwPetOverlayFraming;
 
   /// No description provided for @searchKwBlur.
   ///

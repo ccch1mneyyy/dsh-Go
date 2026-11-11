@@ -2959,6 +2959,51 @@ class L10nEn extends L10n {
   String get botsPetAlways => 'Always';
 
   @override
+  String get botsPetOverlayShows => 'Show in the floating window';
+
+  @override
+  String get botsPetOverlayPixel => 'Pixel pet';
+
+  @override
+  String get botsPetOverlayCompanion => 'Room companion';
+
+  @override
+  String botsPetOverlayCompanionNamed(String name) {
+    return '$name from the Room';
+  }
+
+  @override
+  String get botsPetOverlayNoPack => 'Invite a character in the Companion Room first';
+
+  @override
+  String get botsPetOverlayPackBroken => 'The character pack is incomplete. Import it again in the Companion Room';
+
+  @override
+  String get botsPetOverlayUnavailable => 'This phone can\'t show your companion right now';
+
+  @override
+  String get botsPetOverlayCompanionHint =>
+      'Tap to play with her, tap twice to open the chat. Uses more battery than the pixel pet. It stops when the screen is off or the window is hidden';
+
+  @override
+  String get botsPetOverlayLoading => 'Bringing your companion out…';
+
+  @override
+  String get botsPetOverlayFallback => 'Your companion couldn\'t come out. The pixel pet is filling in';
+
+  @override
+  String get botsPetOverlayFraming => 'Framing';
+
+  @override
+  String get botsPetOverlayFramingFull => 'Full body';
+
+  @override
+  String get botsPetOverlayFramingHalf => 'Half body';
+
+  @override
+  String get botsPetOverlayFramingHint => 'Changing the framing reloads the character';
+
+  @override
   String get botsPetSwitchDisabled => 'Switch disabled';
 
   @override
@@ -4801,6 +4846,43 @@ class L10nEn extends L10n {
   String get chatNoDetails => 'No details yet';
 
   @override
+  String chatOutputHiddenLines(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown lines hidden',
+      one: '1 line hidden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String chatOutputHiddenChars(String count) {
+    return '$count characters hidden';
+  }
+
+  @override
+  String chatOutputSummary(int count, String lines, String chars) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$lines lines', one: '1 line');
+    return '$_temp0 · $chars characters';
+  }
+
+  @override
+  String get chatOutputViewAll => 'View all';
+
+  @override
+  String get chatOutputCopyAll => 'Copy all';
+
+  @override
+  String get chatOutputCopied => 'Copied the full text';
+
+  @override
+  String get chatOutputToEnd => 'Jump to end';
+
+  @override
+  String get chatOutputToStart => 'Back to top';
+
+  @override
   String get chatErrApiKey => 'API key is invalid or expired';
 
   @override
@@ -4813,7 +4895,7 @@ class L10nEn extends L10n {
   String get chatErrRateLimit => 'Too many requests. Try again later.';
 
   @override
-  String get chatErrContextLength => 'Chat too long. Send /compact, then try again.';
+  String get chatErrContextLength => 'Chat too long. If /compact fails, try a new chat or model.';
 
   @override
   String get chatErrModelUnavailable => 'Model service temporarily unavailable';
@@ -5244,6 +5326,10 @@ class L10nEn extends L10n {
   }
 
   @override
+  String get companionFailedBodyPlain =>
+      'Your companion didn\'t load just now. Try again first; if that doesn\'t help, import the asset pack again.';
+
+  @override
   String get companionPackBroken => 'This file can\'t be opened. It may not be an asset pack, or it may be damaged.';
 
   @override
@@ -5351,6 +5437,15 @@ class L10nEn extends L10n {
 
   @override
   String get companionTease3 => 'Don\'t you have anything better to do?';
+
+  @override
+  String get companionShake1 => 'Whoa, stop shaking!';
+
+  @override
+  String get companionShake2 => 'I\'m so dizzy… the water\'s sloshing everywhere.';
+
+  @override
+  String get companionShake3 => 'Keep that up and I\'ll start blowing bubbles!';
 
   @override
   String get companionStatusIdle => 'Daydreaming';
@@ -6360,6 +6455,9 @@ class L10nEn extends L10n {
 
   @override
   String get engineGeneralWebSending => 'Web sending';
+
+  @override
+  String get engineGeneralWebOnlyHint => 'These settings only affect this host’s web app, not native chat.';
 
   @override
   String get engineGeneralData => 'Data';
@@ -12938,6 +13036,24 @@ class L10nEn extends L10n {
   String get plugInputGestureRequired => 'This effect requires a user tap';
 
   @override
+  String get seamsTitle => 'In-app interface';
+
+  @override
+  String get seamsOverlay => 'Chat overlay';
+
+  @override
+  String get seamsOverlayNote => 'Stays over the chat and yields when memory is tight';
+
+  @override
+  String get seamsSidebarPage => 'Sidebar entry';
+
+  @override
+  String get seamsSettingsPage => 'Plugin settings page';
+
+  @override
+  String get seamsDetailPage => 'Plugin detail extension';
+
+  @override
   String get pluginsOperationHostChanged => 'Host changed — nothing was done';
 
   @override
@@ -14671,6 +14787,61 @@ class L10nEn extends L10n {
   String get readListFailed => 'Not updated · previous results';
 
   @override
+  String get remoteDshMode => 'Instance management';
+
+  @override
+  String get remoteManaged => 'Managed';
+
+  @override
+  String get remoteAttachOnly => 'Attach only';
+
+  @override
+  String get remoteManagedHelp =>
+      'Start or reuse app-managed DSH. A live instance that cannot be reused is never replaced automatically.';
+
+  @override
+  String get remoteAttachOnlyHelp =>
+      'Forward only to a fixed port on remote 127.0.0.1. Never start, stop or restart DSH.';
+
+  @override
+  String get remoteDshPort => 'Remote DSH port';
+
+  @override
+  String get remoteDshToken => 'DSH launch token';
+
+  @override
+  String get remoteDshTokenHelp =>
+      'Enter the token from the existing instance’s launch URL. It stays in secure storage on this phone.';
+
+  @override
+  String get remoteAttachWorkingDirectoryHelp =>
+      'Existing instances are not probed for a home directory. Use a remote absolute path, or leave empty for DSH’s default.';
+
+  @override
+  String get remoteSshCompression => 'SSH compression';
+
+  @override
+  String get remoteSshCompressionHelp =>
+      'On by default. Negotiate compression after authentication; use uncompressed transport if unsupported.';
+
+  @override
+  String get remoteRestartManaged => 'Restart managed DSH';
+
+  @override
+  String get remoteRestartManagedWarning =>
+      'This stops the remote DSH recorded by the app and starts it again. Other clients and active chats may be interrupted. Continue only after checking nobody else is using it. Normal connection tests never do this.';
+
+  @override
+  String get remoteErrSharedInstance =>
+      'Remote managed DSH is still running, but its start command differs or its launch log is missing. To protect shared use, it was not restarted. Check the settings, use Attach only, or explicitly choose Restart managed DSH in Edit host.';
+
+  @override
+  String get remoteErrAttachSettings => 'Enter a valid remote DSH port and launch token';
+
+  @override
+  String get remoteDshAttached => 'Connected to existing DSH';
+
+  @override
   String get remoteStartupSection => 'On launch';
 
   @override
@@ -14841,7 +15012,8 @@ class L10nEn extends L10n {
   String get remoteDshStarted => 'Started DSH on the host';
 
   @override
-  String get remoteErrDshTokenRejected => 'Remote DSH rejected the sign-in token';
+  String get remoteErrDshTokenRejected =>
+      'Remote DSH rejected the token; it was not restarted. Check the token, or explicitly restart the managed instance in Edit host.';
 
   @override
   String get remoteErrDshSignIn => 'Couldn’t sign in to remote DSH';
@@ -15473,7 +15645,11 @@ class L10nEn extends L10n {
   String get remoteSelfHostedServer => 'Self-hosted server';
 
   @override
-  String get remoteSelfHostedSignInHelp => 'Sign in to your own liguobao/ds-harness-remote with email and password';
+  String get remoteSelfHostedSignInHelp =>
+      'Enter your server address. Sign in with email and password, or use this server to choose another sign-in method.';
+
+  @override
+  String get remoteUseServer => 'Use this server';
 
   @override
   String get remoteServerAddress => 'Server address';
@@ -16733,6 +16909,12 @@ class L10nEn extends L10n {
 
   @override
   String get searchKwPetDisplayWhen => 'pet display,when to show';
+
+  @override
+  String get searchKwPetOverlayShows => 'floating companion,room companion,pixel pet,live2d';
+
+  @override
+  String get searchKwPetOverlayFraming => 'framing,full body,half body';
 
   @override
   String get searchKwBlur => 'blur,glass,frosted';
