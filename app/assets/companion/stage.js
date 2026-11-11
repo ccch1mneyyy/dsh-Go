@@ -727,6 +727,8 @@
     head: { x: new Spring(34, 9), y: new Spring(34, 9) },
     body: { x: new Spring(14, 6.5), y: new Spring(14, 6.5) },
     poke: { x: new Spring(70, 7), z: new Spring(70, 7) },
+    // The phone tilting or being shaken: she tips with the water, then finds her balance.
+    sway: new Spring(26, 5),
     hop: new Spring(95, 11),
     face: new Map(),
     actions: new Map(),
@@ -1040,6 +1042,7 @@
 
       const pokeX = life.poke.x.step(0, dt);
       const pokeZ = life.poke.z.step(0, dt);
+      const sway = swayStep(dt);
 
       // Head pat: she leans into the hand and melts a little.
       life.pat = ease(life.pat, life.patting ? 1 : 0, life.patting ? 3.5 : 1.8, dt);
@@ -1058,6 +1061,13 @@
       m.set('ParamBodyAngleX', bodyX * 9 + Math.sin(t * 0.37) * 1.1 * drift);
       m.set('ParamBodyAngleY', bodyY * 7 - asleep * 4);
       m.set('ParamBodyAngleZ', bodyX * -3 + Math.sin(t * 0.41 + 1) * 1.3 * drift);
+      if (sway) {
+        // Her body goes with the water; her head lags behind it.
+        m.add('ParamBodyAngleZ', sway * 8);
+        m.add('ParamBodyAngleX', sway * 4);
+        m.add('ParamAngleZ', sway * 5);
+        m.add('ParamAngleX', sway * -6);
+      }
       if (life.hug > 0.01) {
         // Leaning into the hug, head a little down.
         m.add('ParamAngleZ', life.hug * life.hugSide * 9);
@@ -1421,11 +1431,16 @@
     return life.hop.x * 0.12 + float - home.rest * 0.025;
   }
 
+  /** Where she is sideways: at home, reaching, and carried a little by the water. */
+  function modelShift() {
+    return home.rest * 0.07 + home.reach + life.sway.x * 0.05;
+  }
+
   function projection() {
     const aspect = canvas.height / canvas.width;
     // She floats: a slow lift and drift, on top of any hop.
     const hopY = modelLift();
-    const lean = home.rest * 0.07 + home.reach;
+    const lean = modelShift();
     const m = new Fw.CubismMatrix44();
     const sx = camera.zoom * aspect;
     const sy = camera.zoom;
@@ -1440,7 +1455,7 @@
     const cy = 1 - ((clientY - rect.top) / rect.height) * 2;
     const aspect = canvas.height / canvas.width;
     return {
-      x: cx / (camera.zoom * aspect) + camera.x - (home.rest * 0.07 + home.reach),
+      x: cx / (camera.zoom * aspect) + camera.x - modelShift(),
       y: (cy - modelLift()) / camera.zoom + camera.y,
     };
   }
@@ -1449,7 +1464,7 @@
   function toScreen(x, y) {
     const rect = canvas.getBoundingClientRect();
     const aspect = canvas.height / (canvas.width || 1);
-    const cx = (x - camera.x + home.rest * 0.07 + home.reach) * camera.zoom * aspect;
+    const cx = (x - camera.x + modelShift()) * camera.zoom * aspect;
     const cy = (y - camera.y) * camera.zoom + modelLift();
     return [((cx + 1) / 2) * rect.width, ((1 - cy) / 2) * rect.height];
   }
@@ -1975,6 +1990,48 @@
     tilt.x = clamp((e.gamma - tilt.gamma) / 20, -1, 1);
     tilt.y = clamp((e.beta - tilt.beta) / 20, -1, 1);
   });
+
+  // Moving the phone moves the water she floats in. `devicemotion` gives the push
+  // (gravity already taken out where the phone can); three hard ones close together
+  // are a shake, and that makes her dizzy.
+  const motion = { push: 0, jolts: [], last: 0, shookAt: -Infinity };
+  const JOLT = 14; // m/s²: a deliberate shake, well past walking or setting the phone down.
+  if (!FLOAT) window.addEventListener('devicemotion', (e) => {
+    if (REDUCED || paused || !model) return;
+    const a = e.acceleration?.x != null ? e.acceleration : null;
+    if (!a) return;
+    // Below this it is a hand that isn't quite still.
+    motion.push = Math.abs(a.x) < 1.5 ? 0 : clamp(a.x, -20, 20);
+    const now = performance.now();
+    if (Math.hypot(a.x, a.y ?? 0, a.z ?? 0) < JOLT || now - motion.last < 80) return;
+    motion.last = now;
+    motion.jolts.push(now);
+    while (now - motion.jolts[0] > 900) motion.jolts.shift();
+    if (motion.jolts.length < 3 || now - motion.shookAt < 2600) return;
+    motion.jolts.length = 0;
+    motion.shookAt = now;
+    shaken();
+  });
+
+  /** How far the water has tipped her, about -1.5 to 1.5; zero with reduced motion. */
+  function swayStep(dt) {
+    if (FLOAT || REDUCED) return 0;
+    // The phone goes one way and she is left behind: the push is against the motion.
+    life.sway.v -= motion.push * 3 * dt;
+    motion.push *= Math.max(0, 1 - dt * 12); // A sensor that stops reporting must not push forever.
+    const x = life.sway.step(tilt.x, dt);
+    if (Math.abs(x) > 1.5) { life.sway.x = clamp(x, -1.5, 1.5); life.sway.v = 0; }
+    return life.sway.x;
+  }
+
+  function shaken() {
+    touched();
+    setEmotion('dizzy', 2400);
+    playAction('shake');
+    const [x, y] = headOnScreen();
+    scene.marks.bubbles(x, y - 10, 5);
+    post({ type: 'touch', zone: 'body', kind: 'shake' });
+  }
 
   /** The far water moves a touch less than she does: depth, not a parallax show. */
   function parallax(dt) {

@@ -5439,6 +5439,15 @@ class L10nEn extends L10n {
   String get companionTease3 => 'Don\'t you have anything better to do?';
 
   @override
+  String get companionShake1 => 'Whoa, stop shaking!';
+
+  @override
+  String get companionShake2 => 'I\'m so dizzy… the water\'s sloshing everywhere.';
+
+  @override
+  String get companionShake3 => 'Keep that up and I\'ll start blowing bubbles!';
+
+  @override
   String get companionStatusIdle => 'Daydreaming';
 
   @override

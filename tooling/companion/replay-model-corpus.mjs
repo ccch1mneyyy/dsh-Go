@@ -12,7 +12,7 @@ const DEFAULT_STAGE = fileURLToPath(new URL('../../app/assets/companion/stage.js
 const FIXTURES = new URL('./fixtures/', import.meta.url);
 // Explicitly reviewed stage source. A different stage needs a new explicit pin;
 // recognizing the same method names alone must not silently accept drift.
-export const defaultStageSha256 = 'ef66f47b0abd76ed3311a8b8581b4f755fd27bd1d0aa7e51e81e9faca8841403';
+export const defaultStageSha256 = 'a7ca3814fa3453642b1409f15f024d9e3af2adad9500878a314dbe51a5a1e511';
 export const historicalPins = Object.freeze({
   sourcePatchSha256: 'b680a925e6effca5b0bdb3eb5f201709e79f514dbd1beee35cb3b62ec55f86f7',
   sourceBase: '98d4628746e2a37f09ebfb05530a718622357982',

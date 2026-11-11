@@ -5113,6 +5113,15 @@ class L10nZh extends L10n {
   String get companionTease3 => '你是不是很闲？';
 
   @override
+  String get companionShake1 => '哇啊，别摇啦！';
+
+  @override
+  String get companionShake2 => '头好晕……水都晃起来了。';
+
+  @override
+  String get companionShake3 => '再摇我要吐泡泡了！';
+
+  @override
   String get companionStatusIdle => '在发呆';
 
   @override

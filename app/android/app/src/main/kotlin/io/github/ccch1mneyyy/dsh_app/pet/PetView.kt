@@ -27,9 +27,9 @@ import kotlin.math.roundToInt
  * packs. Software drawn (the window asks for no hardware acceleration): a small view redrawn only
  * when the frame changes.
  *
- * Touch, on the body ([PetFrames.hit]): drag moves the window, a tap opens the conversation, a
- * long press opens the menu. A touch that starts elsewhere in a grown window does nothing.
- * With the companion shown, one tap plays with her and two in a row open the conversation.
+ * Touch, on the body ([PetFrames.hit]): drag moves the window, one tap plays with the pet, two in a
+ * row open the conversation, a long press opens the menu. A touch that starts elsewhere in a grown
+ * window does nothing.
  */
 @SuppressLint("ViewConstructor")
 internal class PetView(context: Context, private val listener: Listener) : FrameLayout(context) {
@@ -44,10 +44,11 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
         fun onDrag(dx: Int, dy: Int)
         fun onDragEnd(velocityX: Float)
         fun onDragCancel()
-        fun onTap(leftHalf: Boolean)
+        /** One tap: play. ([x], [y]) is where, in 0–1 of the companion's viewport when she is shown. */
+        fun onPoke(leftHalf: Boolean, x: Float, y: Float)
 
-        /** One tap on the companion, in 0–1 of her viewport. */
-        fun onCompanionTap(x: Float, y: Float)
+        /** The second tap of a quick pair, or the accessibility click: open the conversation. */
+        fun onTap(leftHalf: Boolean)
         fun onLongPress(rawX: Float?, rawY: Float?)
         fun onMenuMove(rawX: Float, rawY: Float)
         fun onMenuEnd(rawX: Float, rawY: Float, cancelled: Boolean)
@@ -206,7 +207,7 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
     private var lastX = 0f
     private var lastY = 0f
     private var tracker: VelocityTracker? = null
-    private val companionTaps = CompanionFloatTaps(
+    private val taps = PetTaps(
         ViewConfiguration.getDoubleTapTimeout().toLong(),
         ViewConfiguration.get(context).scaledDoubleTapSlop.toFloat(),
     )
@@ -260,15 +261,15 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
                     dragging -> listener.onDragEnd(velocity())
                     else -> {
                         val size = companionGeometry
-                        if (size != null && !companionTaps.second(event.eventTime, event.rawX, event.rawY)) {
-                            listener.onCompanionTap(
-                                (event.x + companionBounds.left) / size.width,
-                                (event.y + companionBounds.top) / size.height,
-                            )
-                        } else listener.onTap(
-                            // Left and right halves split at the body's centre line (anchor.x), not the window's.
-                            event.x + frame.left < if (size != null) width / 2f else
-                                (sprites?.let { (it.pack.anchorX - it.window.x) * it.screenScale } ?: (width / 2f)),
+                        // Left and right halves split at the body's centre line (anchor.x), not the window's.
+                        val left = event.x + frame.left < if (size != null) width / 2f else
+                            (sprites?.let { (it.pack.anchorX - it.window.x) * it.screenScale } ?: (width / 2f))
+                        if (taps.second(event.eventTime, event.rawX, event.rawY)) listener.onTap(left)
+                        else if (size == null) listener.onPoke(left, 0.5f, 0.5f)
+                        else listener.onPoke(
+                            left,
+                            (event.x + companionBounds.left) / size.width,
+                            (event.y + companionBounds.top) / size.height,
                         )
                     }
                 }

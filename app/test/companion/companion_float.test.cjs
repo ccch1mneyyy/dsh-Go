@@ -63,11 +63,11 @@ test('float scene does not allocate a 2D context or seed particles', () => {
 });
 
 function stage(float = true, fetcher, devices = {}) {
-  const canvasEvents = new Map(), documentEvents = new Map();
+  const canvasEvents = new Map(), documentEvents = new Map(), windowEvents = new Map();
   const posts = [], frames = new Map();
   let nextFrame = 1, releases = 0, lost = 0, reads = 0, draws = 0, reloads = 0, initialized = 0, textures = 0;
   let now = 0;
-  const scene = { clear() {}, resize() {}, configure() {}, busy: () => false, step() {}, marks: {} };
+  const scene = { clear() {}, resize() {}, configure() {}, busy: () => false, step() {}, marks: new Proxy({}, { get: () => () => {} }) };
   const element = () => ({ style: {}, classList: { add() {}, remove() {} },
     getBoundingClientRect: () => ({ left: 0, top: 0, width: 5, height: 4 }) });
   const canvas = { ...element(), clientWidth: 5, clientHeight: 4, width: 5, height: 4,
@@ -92,7 +92,8 @@ function stage(float = true, fetcher, devices = {}) {
     CubismFramework: { startUp() { initialized++; }, initialize() {} }, Option: class {} };
   const window = { CubismFw: Fw, CompanionFloat: { FrameGate, opaqueBounds, stateEffect },
     companionScene: float ? null : scene, devicePixelRatio: 3,
-    DshCompanion: { postMessage: value => posts.push(JSON.parse(value)) }, addEventListener() {} };
+    DshCompanion: { postMessage: value => posts.push(JSON.parse(value)) },
+    addEventListener: (name, fn) => windowEvents.set(name, fn) };
   const source = fs.readFileSync(path.join(assets, 'stage.js'), 'utf8');
   // Keep all production methods; replace only the automatic entry point with
   // controllable device boundaries. The boot cancellation test calls boot.
@@ -121,7 +122,8 @@ function stage(float = true, fetcher, devices = {}) {
   };
 })();`), context, { timeout: 1000 });
   return { api: context.harness, command: value => window.stage.command(value),
-    install: () => context.harness.install(model, gl), document, documentEvents, canvasEvents, posts, frames,
+    install: () => context.harness.install(model, gl), document, documentEvents, canvasEvents, windowEvents, posts, frames,
+    at(time) { now = time; },
     render(time) { now = time; context.harness.render(time); },
     next(time) { const [id, fn] = frames.entries().next().value; frames.delete(id); now = time; fn(time); },
     counts: () => ({ releases, lost, reads, draws, reloads, initialized, textures }),
@@ -240,6 +242,26 @@ test('room mode keeps its pointer handlers, pause/resume and context restore beh
   assert.equal(s.counts().releases, 0);
   s.command({ type: 'resume' }); assert.equal(s.frames.size, 1);
   s.canvasEvents.get('webglcontextrestored')(); assert.equal(s.counts().reloads, 1);
+});
+
+test('shaking the phone makes her dizzy once; a bump, a still hand and the float window do not', () => {
+  const s = stage(false); s.install(); s.render(100);
+  s.api.mappings({ calm: {}, dizzy: {} }, { shake: { ms: 100, tracks: {} } });
+  const move = (time, x) => { s.at(time); s.windowEvents.get('devicemotion')({ acceleration: { x, y: 0, z: 0 } }); };
+  move(1000, 16); move(1040, -16); // The second is the same jolt still ringing.
+  move(1200, 3); move(1300, -16);
+  assert.equal(s.api.state().emotion, 'calm', 'two jolts are a bump');
+  move(1500, 16);
+  assert.equal(s.api.state().emotion, 'dizzy');
+  assert.ok(s.api.state().actions.includes('shake'));
+  assert.deepEqual(s.posts.at(-1), { type: 'touch', zone: 'body', kind: 'shake' });
+  const told = s.posts.length;
+  move(1700, -16); move(1900, 16); move(2100, -16);
+  assert.equal(s.posts.length, told, 'still dizzy: no second round straight away');
+  move(6000, 16); move(8000, -16); move(10000, 16);
+  assert.equal(s.posts.length, told, 'jolts far apart are not a shake');
+  s.windowEvents.get('devicemotion')({ acceleration: null });
+  assert.equal(stage().windowEvents.has('devicemotion'), false);
 });
 
 test('dimmed float freezes without disposing; actual hidden state still releases the GL context', () => {

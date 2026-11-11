@@ -9434,6 +9434,24 @@ abstract class L10n {
   /// **'你是不是很闲？'**
   String get companionTease3;
 
+  /// No description provided for @companionShake1.
+  ///
+  /// In zh, this message translates to:
+  /// **'哇啊，别摇啦！'**
+  String get companionShake1;
+
+  /// No description provided for @companionShake2.
+  ///
+  /// In zh, this message translates to:
+  /// **'头好晕……水都晃起来了。'**
+  String get companionShake2;
+
+  /// No description provided for @companionShake3.
+  ///
+  /// In zh, this message translates to:
+  /// **'再摇我要吐泡泡了！'**
+  String get companionShake3;
+
   /// No description provided for @companionStatusIdle.
   ///
   /// In zh, this message translates to:
