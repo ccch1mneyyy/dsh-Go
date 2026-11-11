@@ -70,6 +70,15 @@ it('exposes bytes only after review and serves conditional/Range without leaking
   const catalog = await f.call('/market/workshop.json'); const entry = (await catalog.json() as any).entries[0]; expect(entry.url).toBe(path); expect(entry).not.toHaveProperty('rightsConfirmed');
   expect(f.dl.objects.size).toBe(0);
 });
+it('refuses the admin routes when the configured key is shorter than the share API allows', async () => {
+  for (const key of [undefined, 'short', 'x'.repeat(31)]) {
+    const weak = makeEnv({ ADMIN_KEY: key, BUCKET: new PetBucket() as unknown as R2Bucket });
+    const response = await worker.fetch(new Request(`https://example.org${API}/admin/reports`, {
+      headers: { 'User-Api-Key': 'synthetic-forum-key', ...(key ? { 'X-Admin-Key': key } : {}) },
+    }), weak.env, makeCtx().ctx);
+    expect(response.status).toBe(503);
+  }
+});
 it('records reports, rejects before publication, and allows owner withdrawal while uploads are paused', async () => {
   const f = setup(), item = await f.publish();
   const report = await f.call(API + '/reports', 'POST', { kind: 'pet', id: 'sample', version: '1.0.0', reason: 'Synthetic rights complaint' }); expect(report.status).toBe(201);

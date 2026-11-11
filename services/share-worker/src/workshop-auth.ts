@@ -48,7 +48,8 @@ export async function user(request: Request, env: Env): Promise<Owner> {
   }
 }
 export async function admin(request: Request, env: Env): Promise<void> {
-  need(env.ADMIN_KEY, 'admin_unavailable', 503);
+  // Same floor as the share API's admin path: a short key is a misconfiguration, not a credential.
+  need(env.ADMIN_KEY && env.ADMIN_KEY.length >= 32, 'admin_unavailable', 503);
   const provided = request.headers.get('X-Admin-Key'); need(provided && provided.length <= 4096, 'admin_auth_required', 401);
   const [a, b] = await Promise.all([sha256(provided), sha256(env.ADMIN_KEY)]);
   let different = 0; for (let n = 0; n < a.length; n++) different |= a.charCodeAt(n) ^ b.charCodeAt(n);

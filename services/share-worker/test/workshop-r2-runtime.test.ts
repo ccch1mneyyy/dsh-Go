@@ -12,7 +12,7 @@ it('completes review and withdrawal with local native R2 checksum/CAS/Range', as
     format: 'esm', platform: 'browser', target: 'es2022', external: ['node:zlib', 'cloudflare:workers'] });
   const calls: string[] = []; let redirectForum = false;
   const runtime = new Miniflare(convertV4MiniflareOptions({ modules: true, compatibilityDate: '2026-10-01', compatibilityFlags: ['nodejs_compat'],
-    script: bundle.outputFiles[0]!.text, r2Buckets: ['BUCKET', 'DL'], bindings: { ADMIN_KEY: 'synthetic-admin-key' },
+    script: bundle.outputFiles[0]!.text, r2Buckets: ['BUCKET', 'DL'], bindings: { ADMIN_KEY: 'synthetic-admin-key-0123456789abcdef' },
     outboundService: async request => {
       calls.push(request.url); expect(request.url).toBe('https://forum.dshtui.com/session/current.json');
       expect(request.headers.get('User-Api-Key')).toBe('synthetic-forum-key');
@@ -22,7 +22,7 @@ it('completes review and withdrawal with local native R2 checksum/CAS/Range', as
   }));
   const call = (path: string, method = 'GET', body?: object | Uint8Array, admin = false, extra = {}) => runtime.dispatchFetch('https://workshop.invalid' + path, {
     method, headers: { 'User-Api-Key': 'synthetic-forum-key', ...(body ? { 'Content-Type': body instanceof Uint8Array ? 'application/zip' : 'application/json' } : {}),
-      ...(admin ? { 'X-Admin-Key': 'synthetic-admin-key' } : {}), ...extra }, ...(body ? { body: body instanceof Uint8Array ? body : JSON.stringify(body) } : {}),
+      ...(admin ? { 'X-Admin-Key': 'synthetic-admin-key-0123456789abcdef' } : {}), ...extra }, ...(body ? { body: body instanceof Uint8Array ? body : JSON.stringify(body) } : {}),
   });
   try {
     const bytes = pet(), meta = metaFor(bytes), base = '/api/workshop/v1';
