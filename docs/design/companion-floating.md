@@ -9,13 +9,13 @@
 
 Application context 的 WebView、窗口硬件加速和透明 WebGL 是有官方接口支持的候选方案；并未证明 Android 8–16 所有厂商组合都成立。非 Activity context 不提供部分 Activity 功能，本舞台不使用 JS 对话框/自动填充。实际 isHardwareAccelerated 为假即进入一次恢复/像素回退。[A1–A3] 系统强制隐藏 overlay 是否及时送达可见性回调，仍须设备证据，不能据此承诺未知隐藏期间一定释放。
 
-**完整功能目前有一个已证实的本机接线阻塞：伙伴小屋尚未保护其 WebView renderer 退出。** 小屋后台只暂停 JS，实例仍可能与悬浮窗共享 renderer；Android 要求每个受影响实例分别处理退出。锁定 webview_flutter_android 4.14.1 的原生 WebViewClientImpl 没有覆盖该回调，不能靠浮动实例返回 true 保护另一实例。[A4、A5] 下述“小屋接线合同”闭环前，完整崩溃恢复保证标为 BLOCKED。不能把它写成仅差真机确认。
+伙伴小屋与悬浮窗可能共享 renderer：小屋后台只暂停 JS，Android 要求每个受影响实例分别处理退出，而锁定 webview_flutter_android 4.14.1 的原生 WebViewClientImpl 没有覆盖该回调，不能靠浮动实例返回 true 保护另一实例。[A4、A5] 小屋的 WebView 在加载前由 IslandPlatform.attach 接管并核对确认，renderer 退出和换包时自行收拾，见后文“小屋与页面接线”。这部分只在假 WebView 平台上跑过 Dart 测试；“小屋→Home→浮动”下 renderer 故障后宿主存活仍须设备证据，不能写成已验证。
 
 ## 选择、能力与错误
 
 PetPrefs 保存 pet.overlay_renderer（pixel / companion）及 pet.overlay_framing（一个 JSON，zoom 和 y 同时写入）。旧值或未知模式为 pixel；zoom 须有限且在 (0,4]，y 在 [-1,1]。默认 zoom=0.9、y=0，是可配置的工程取景值，不是可用性测量结论。
 
-设置只加一个现有 SettingsSwitchTile。读取相同 application-support/companion 目录，用 unavailableReason 检查固定 runtime 聚合摘要、角色入口、引用和 moc 头版本；不自动下载，不把检查成功当作 Core/GPU 已运行。未安装或不完整时不可选；已经选中时仍允许关闭。
+设置在 PetOverlaySettingsSection 里加两行，都是与「显示时机」相同的 SettingsSegmentTile。「悬浮窗里显示」两段：像素宠物 / 小屋里的她（companionNameProvider 有名字时写名字）。读取相同 application-support/companion 目录，用 unavailableReason 检查固定 runtime 聚合摘要、角色入口、引用和 moc 头版本；不自动下载，不把检查成功当作 Core/GPU 已运行。未安装或不完整时整条不可选，副标题按三类说明原因：没有角色包（companion_runtime_missing）、角色包不完整或运行库不对（其余完整性码）、其他（存储、通道、原生、本地服务及未知码）；已经选中时仍允许切回像素。选中后副标题依次是加载中、原因、回退、耗电说明。「取景」只在选中伙伴时出现，两段写入 PetOverlayFraming 的预设：全身 zoom=0.9、y=0，半身 zoom=1.8、y=0.5；半身由舞台投影推出（模型高 2、以 0 为中心，屏幕 y=(模型 y−floatY)×floatZoom），未在设备上调过。原生报告 companionFallback 时，副标题后跟一个「重试」，调 CompanionFloatController.retry()：会话对同一选择重走 _refresh，原生收到新页面即开始新的故障周期。
 
 CompanionFloatSession 按选择代与 store revision 丢弃迟到的检查/页面。像素默认不解析包、不开 socket、不创建 WebView。选择期间页面由随机令牌的 CompanionServer 提供；Dart 向原有平台通道发送 configureCompanion(page, notice)，关闭发送 page=null。确认只表示原生接纳，不表示首帧已显示。原生状态增加 companionRendering、companionFallback、companionProblem；未选择时不改变原来的像素状态 map。
 
@@ -70,16 +70,14 @@ PetView 父层截获手势，WebView 不聚焦、不参与单击/长按/拖动�
 
 **不承诺保活收益。** 此功能复用已有服务与窗口；没有“加一个窗口提高后台存活”的保证。
 
-## 需要本机做的：小屋与页面接线
+## 小屋与页面接线
 
-1. 在 app/lib/ui/companion/companion_stage.dart 设置 navigation delegate 后、首次 load 前，用现有 IslandPlatform.attach/guard 保护当前 Android WebView id，并核对 attach 的布尔确认。WebViewGuard.attach 的 void 完成不能证明 attach 成功；不需要升级插件。
-2. renderer 故障只处理当前实例/代；撤销 ready、timeout、JS 回调，移出 WebViewWidget 后销毁捕获的旧 id，关闭该实例 server。异步闭包不能读取已被新 controller 替换的可变 id；旧 start 在各 await 后核对代。复用现有宽广播 guard 时明确其行为，不额外消费 float 预算。
-3. 小屋的活跃 reader 同样注册 store.beforeChanges，移除/销毁自己的 WebView 并关闭 server 后才允许替换包；hook 内不进入 store 队列。安装/删除过程中旧读者不能继续持有或读取被替换目录。
-4. 小屋按既有错误/重开流程创建新实例，不能 reload 已死亡实例。仅后台 pause 或“通常不共存”不能取代每个受影响实例的 guard；前后台切换有异步交错。
-5. 补准确中英文产品文案：“悬浮窗里显示：像素宠物 / 小屋里的她”、不可用原因、一次像素回退提示；当前最小设置复用现有文案，不在本波改 l10n 生成源。取景的更完整 UI 归本机，偏好接口已提供。
-6. 按项目要求用 Dart formatter、analyzer、全量 CI 和受影响 golden 完成验证；不手改生成物。若舞台 corpus 的固定摘要检查受影响，由本机按原工具重录、审核，不把缺 Core 的 mock 当 corpus 实跑。
-
-以上生命周期 UI 文件不在本波获准的“最小设置/入口”改动范围，因此列合同，不通过搬文件绕开限制。
+1. CompanionStage（app/lib/ui/companion/companion_stage.dart）在设置 navigation delegate 后、首次 load 前，用 WebViewGuard.identifierOf 取 Android WebView id，直接调 IslandPlatform.attach 并核对布尔确认；为假则以 guard 失败，不加载、不显示。WebViewGuard.attach 的 void 完成不能证明 attach 成功，所以不经它；不需要升级插件。只在 Android 上要求守护：其他平台的 attach 恒为假，而那里的控制器同样带 webViewIdentifier，一律要求会让小屋在那里打不开。
+2. 舞台订阅 IslandPlatform.events 的 IslandRendererGone。所有 WebView 共享 renderer，任何实例的报告都算自己的，但只在本实例已守护后处理，不消费 float 的故障预算。收拾由 _retire 完成：代计数加一，撤销 timeout 与 controller 的 ready/WebView，移出 WebViewWidget，等 CompanionServer.close，再报失败。旧 start 在各阶段的 await 之后核对代，旧页面的 JS 消息和加载错误按代丢弃。旧 id 的 destroy 排在移出 widget 的那一帧之后，不等待。
+3. 舞台在 _start 开头、起 CompanionServer 之前注册 store.beforeChanges，hook 即 _retire，不进入 store 队列。注册早于 server，是为了不留“server 已起、hook 未挂”的空窗；被换包抢先的 start 在 server 起来后发现代已过期，关掉它并放弃。dispose 不立即注销 hook，等 server 关完再注销：CompanionPage._removePack 先切到 setup（舞台随即卸载）再调 remove，立即注销会让目录变更跑在 server 关闭之前。hook 内不等 destroy：App 不可见时没有帧，在 store 队列里等一帧会把队列挂住；读者合同由 server 关闭满足，WebView 只经它读包。
+4. 被 _retire 的舞台不再加载。CompanionPage 收到失败后进入失败页，舞台离开树，回到 stage 阶段时建的是新实例。失败页除原来的导入外，在角色包仍在时提供「重试」（_retryStage）。renderer 退出与换包这两种原因不显示给用户，用不带原因的说明，原因只进 debug 日志；其他原因照旧显示。页面不在 stage 阶段时忽略舞台的失败回调，移除角色包时 hook 报的失败不会把 setup 页翻成失败页。_removePack 捕获 companion_readers_busy 等失败：角色包保留，setup 页显示提示。
+5. 小屋开着时由同根的另一个 store 换包，小屋进失败页，需重试或重新进入；页面不随 revision 自动重建。仅后台 pause 或“通常不共存”不能取代每个受影响实例的 guard；前后台切换有异步交错。
+6. 按项目要求用 Dart formatter、analyzer、全量 CI 和受影响 golden 完成验证；不手改生成物。若舞台 corpus 的固定摘要检查受影响，按原工具重录、审核，不把缺 Core 的 mock 当 corpus 实跑。
 
 ## 模拟清单与定论方法
 

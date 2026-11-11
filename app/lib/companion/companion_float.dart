@@ -86,6 +86,12 @@ class CompanionFloatSession {
     await _refresh();
   }
 
+  /// The same choice on a new page: the native owner counts faults per page,
+  /// so one that fell back to pixels tries again.
+  Future<void> retry() async {
+    if (!_closed && _options.enabled) await _refresh();
+  }
+
   bool _current(int generation, [int? revision]) => !_closed &&
       _generation == generation && (revision == null || _store?.revision == revision);
 
@@ -250,10 +256,15 @@ final companionFloatProvider = NotifierProvider<CompanionFloatController, Compan
     CompanionFloatController.new);
 
 class CompanionFloatController extends Notifier<CompanionFloatState> {
+  late CompanionFloatSession _session;
+
+  /// See [CompanionFloatSession.retry].
+  Future<void> retry() => _session.retry();
+
   @override
   CompanionFloatState build() {
     final channel = ref.read(petOverlayChannelProvider);
-    final session = CompanionFloatSession(
+    final session = _session = CompanionFloatSession(
       loadStore: () => ref.read(companionFloatStoreProvider)(),
       startPage: (store, options) async {
         final server = await CompanionServer.start(rootBundle, store.pack);
@@ -261,7 +272,7 @@ class CompanionFloatController extends Notifier<CompanionFloatState> {
       },
       configure: (page) async {
         await channel.configureCompanion(
-            page: page, notice: page == null ? null : appL10n.companionFailedTitle);
+            page: page, notice: page == null ? null : appL10n.botsPetOverlayFallback);
       },
       changed: (value) { if (ref.mounted) state = value; },
     );

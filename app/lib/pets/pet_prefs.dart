@@ -26,6 +26,27 @@ enum PetOverlayRenderer {
   static PetOverlayRenderer fromName(String? value) => values.asNameMap()[value] ?? pixel;
 }
 
+/// 「取景」 for the companion in the overlay, as the stage reads `floatZoom`
+/// and `floatY` (app/assets/companion/stage.js): her model stands 2 tall
+/// around 0, the camera looks at `y` and magnifies by `zoom`.
+enum PetOverlayFraming {
+  /// The whole of her, with a little room around ([PetPrefs]' defaults).
+  full(zoom: 0.9, y: 0),
+
+  /// Twice as close and looking half-way up: her upper half fills what the
+  /// whole of her did. A first guess from the numbers above, not tuned on a phone.
+  half(zoom: 1.8, y: 0.5);
+
+  const PetOverlayFraming({required this.zoom, required this.y});
+
+  final double zoom;
+  final double y;
+
+  /// The preset [prefs] holds; anything else (set some other way) reads as [full].
+  static PetOverlayFraming of(PetPrefs prefs) =>
+      prefs.floatZoom == half.zoom && prefs.floatY == half.y ? half : full;
+}
+
 @immutable
 class PetPrefs {
   const PetPrefs({

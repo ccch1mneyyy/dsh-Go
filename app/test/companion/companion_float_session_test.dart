@@ -146,6 +146,19 @@ void main() {
     expect(h.states.last.configured, isTrue);
   });
 
+  test('retry takes the old page back from native, closes it, and hands over a new one', () async {
+    await h.session.select(selected);
+    h.log.clear();
+    await h.session.retry();
+    expect(h.log, ['clear', 'close:start', 'close:end', 'check', 'open', 'configure', 'configured']);
+    expect(h.states.last.configured, isTrue);
+  });
+
+  test('retry asks for nothing while pixels are selected', () async {
+    await h.session.retry();
+    expect(h.log, isEmpty);
+  });
+
   test('reopening settings retries the real provider path after a terminal factory failure', () async {
     var failing = true;
     var calls = 0;

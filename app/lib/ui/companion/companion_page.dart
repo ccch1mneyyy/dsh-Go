@@ -105,6 +105,9 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
   CompanionCharacter _character = const CompanionCharacter();
   _Phase _phase = _Phase.checking;
   String? _failure;
+
+  /// The failed screen offers 重试: her pack is still on the phone.
+  bool _failedWithPack = false;
   bool _stageReady = false;
   bool _greetingPending = true;
   bool _installing = false;
@@ -2374,9 +2377,32 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
     }
   }
 
+  /// The stage failed: whether trying again makes sense is the pack's to say.
+  Future<void> _checkRetry() async {
+    final here = await _store?.installed() ?? false;
+    if (mounted && _phase == _Phase.failed) setState(() => _failedWithPack = here);
+  }
+
+  /// 重试 on the failed screen: a new stage (the failed one left the tree), for
+  /// whoever is in the pack now.
+  Future<void> _retryStage() async {
+    final store = _store;
+    if (store == null) return;
+    final character = await store.character();
+    if (!mounted || _phase != _Phase.failed) return;
+    setState(() {
+      _character = character;
+      _failure = null;
+      _stageReady = false;
+      _phase = _Phase.stage;
+    });
+  }
+
   /// Why she couldn't load, in words: a model too new for the runtime says so.
   String _loadFailureText(L10n l10n) {
     final why = _failure ?? '';
+    // The stage's own reasons for leaving are not the person's to read.
+    if (why == companionStageRendererGone || why == companionStagePackChanged) return l10n.companionFailedBodyPlain;
     final version = RegExp(r'moc-version (\d+)/(\d+)').firstMatch(why);
     if (version != null) return l10n.companionFailedMocVersion(version[1]!, version[2]!);
     return l10n.companionFailedBody(why);
@@ -2881,7 +2907,15 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
       _probe = null;
     });
     _syncSignals();
-    await _store?.remove();
+    try {
+      await _store?.remove();
+    } on CompanionPackException catch (error) {
+      // Something still reads her files (a floating window that wouldn't let
+      // go): they stay, and the setup screen says so.
+      if (mounted) setState(() => _installError = _problemText(error.problem));
+    } on Object {
+      if (mounted) setState(() => _installError = context.l10n.companionPackStorage);
+    }
   }
 
   // ── Build ────────────────────────────────────────────────────────────────
@@ -2957,12 +2991,15 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
     final events = CompanionStageEvents(
       onReady: _onReady,
       onFailed: (why) {
-        if (!mounted) return;
+        // A stage already on its way out (her pack being removed) has no say.
+        if (!mounted || _phase != _Phase.stage) return;
         setState(() {
           _phase = _Phase.failed;
           _failure = why;
+          _failedWithPack = false;
         });
         _syncSignals();
+        unawaited(_checkRetry());
       },
       onTouch: _onTouch,
       onWake: () => _say(l10n.companionWake),
@@ -3011,6 +3048,8 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
               busy: _installing,
               error: _installError,
               onAction: _import,
+              secondary: _failedWithPack ? l10n.commonRetry : null,
+              onSecondary: () => unawaited(_retryStage()),
             ),
           Positioned(
             top: padding.top + 8,
