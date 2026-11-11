@@ -1,11 +1,14 @@
 // 宠物设置's 「App 外显示」 group and the overlay flavour of the restricted-settings
 // guide (docs/design/pets.md §6.4, §8).
 
+import 'package:dsh_app/companion/companion_float.dart';
+import 'package:dsh_app/pets/pet_prefs.dart';
 import 'package:dsh_app/ui/common/risk_notice.dart';
 import 'package:dsh_app/ui/pets/overlay_settings_tile.dart';
 import 'package:dsh_app/ui/phone/restricted_settings_guide.dart';
 import 'package:dsh_app/ui/settings/settings_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,11 +20,19 @@ Widget _page() => const Scaffold(
   body: SafeArea(child: SingleChildScrollView(child: PetOverlaySettingsSection())),
 );
 
-Future<void> _pump(WidgetTester tester, {Brightness brightness = Brightness.light, double height = 520}) async {
+class _QuietFloatController extends CompanionFloatController {
+  @override CompanionFloatState build() => const CompanionFloatState();
+}
+
+Future<void> _pump(WidgetTester tester, {Brightness brightness = Brightness.light, double height = 520,
+  String? companionProblem = 'companion_runtime_missing'}) async {
   tester.view.devicePixelRatio = 2;
   tester.view.physicalSize = Size(390, height) * 2;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(goldenApp(home: _page(), brightness: brightness));
+  await tester.pumpWidget(goldenApp(home: _page(), brightness: brightness, overrides: [
+    companionFloatAvailabilityProvider.overrideWith((ref) => Stream.value(companionProblem)),
+    companionFloatProvider.overrideWith(_QuietFloatController.new),
+  ]));
   await settlePhone(tester);
 }
 
@@ -69,6 +80,31 @@ void main() {
     await tester.tap(find.text('一直显示'));
     await settlePhone(tester);
     expect(native.alwaysShow, isTrue);
+  });
+
+  testWidgets('missing companion content explains the disabled choice without downloading', (tester) async {
+    final native = FakeOverlayNative(permission: 'granted', enabled: true)..install();
+    await _pump(tester);
+    final row = tester.widget<SettingsSwitchTile>(find.byKey(const ValueKey('pet-overlay-companion')));
+    expect(row.value, isFalse);
+    expect(row.onChanged, isNull);
+    expect(find.textContaining('手机上还没有运行库'), findsOneWidget);
+    expect(native.methods, isNot(contains('configureCompanion')));
+  });
+
+  testWidgets('complete local content offers an explicit renderer choice and a way back', (tester) async {
+    FakeOverlayNative(permission: 'granted', enabled: true).install();
+    await _pump(tester, companionProblem: null);
+    final setting = find.byKey(const ValueKey('pet-overlay-companion'));
+    final container = ProviderScope.containerOf(tester.element(setting));
+    final row = tester.widget<SettingsSwitchTile>(setting);
+    expect(row.onChanged, isNotNull);
+    row.onChanged!(true);
+    await settlePhone(tester);
+    expect(container.read(petPrefsProvider).overlayRenderer, PetOverlayRenderer.companion);
+    tester.widget<SettingsSwitchTile>(setting).onChanged!(false);
+    await settlePhone(tester);
+    expect(container.read(petPrefsProvider).overlayRenderer, PetOverlayRenderer.pixel);
   });
 
   testWidgets('refused: back off, 「未授权」, then the restricted-settings guide', (tester) async {

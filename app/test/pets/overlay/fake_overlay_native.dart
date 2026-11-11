@@ -66,6 +66,8 @@ class FakeOverlayNative {
         return status;
       case 'status' || 'permissionStatus':
         return status;
+      case 'configureCompanion':
+        return status;
       case 'requestPermission' || 'openAppDetails':
         return opens;
     }
