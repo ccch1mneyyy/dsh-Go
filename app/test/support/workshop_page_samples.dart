@@ -9,6 +9,8 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dsh_app/forum/discourse_client.dart' show ForumCredentials;
 import 'package:dsh_app/forum/forum_auth.dart';
@@ -17,6 +19,7 @@ import 'package:dsh_app/state/workshop_catalog_state.dart';
 import 'package:dsh_app/state/workshop_dependencies.dart';
 import 'package:dsh_app/state/workshop_install_state.dart';
 import 'package:dsh_app/state/workshop_installed_state.dart';
+import 'package:dsh_app/state/workshop_preferences.dart';
 import 'package:dsh_app/state/workshop_publication.dart';
 import 'package:dsh_app/state/workshop_publish_sources.dart';
 import 'package:dsh_app/state/workshop_publish_state.dart';
@@ -24,6 +27,7 @@ import 'package:dsh_app/state/workshop_report_state.dart';
 import 'package:dsh_app/state/workshop_submissions_state.dart';
 import 'package:dsh_app/workshop/workshop_client.dart';
 import 'package:dsh_app/workshop/workshop_models.dart';
+import 'package:dsh_app/workshop/workshop_preview.dart';
 import 'package:dsh_app/workshop/workshop_receipt.dart';
 import 'package:dsh_app/workshop/workshop_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,12 +38,14 @@ import '../state/workshop_publish_test_support.dart';
 import '../state/workshop_state_support.dart';
 import '../workshop/support.dart' show workshopCaps;
 
+part 'workshop_preview_samples.dart';
 part 'workshop_browse_samples.dart';
 part 'workshop_install_samples.dart';
 part 'workshop_installed_samples.dart';
 part 'workshop_access_samples.dart';
 part 'workshop_publish_samples.dart';
 part 'workshop_personal_samples.dart';
+part 'workshop_recovery_samples.dart';
 
 /// All names and attribution are synthetic layout data, not real publications.
 /// Long names are still legal metadata (at most 120 Unicode code points).

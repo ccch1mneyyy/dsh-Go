@@ -58,6 +58,14 @@ Companion 槽位的列表读取将预期的收据、存储和恢复错误经既�
 
 工坊伙伴包只有 character，必须先有本机钉死摘要的 runtime；缺失返回 `workshop_runtime_missing`，本层不自动下载。来自工坊的角色经现有安装器及完整性门；原有的本地导入仍保留其调用方式。
 
+### 本机诊断分类与移除结果
+
+`workshopPackageValidationCodes` 是公开的 `const Set<String>`，分类的是经过既有映射的包格式、内容、路径、尺寸和兼容性诊断。调用方只在明确的本机诊断载体上使用 `.contains(code)`，例如已装行的本机 issue；不能凭相同字符串鉴别来源，也不能混用远端 `unavailable`。未列出的码继续走原 fallback。收据、存储、缺 runtime、导出目标、预览和目录可用性问题仍分别处理。
+
+集合命中不表示列表已经完整扫描模型或图片，不等于文件永久损坏，也不授予卸载权限。可信收据附带本机 issue 时仍用原收据围栏卸载；只有 issue、没有可信收据的行仍不能调用实际删除。不得用集合成员关系替换 `canUninstall` 或扩大列表的检查深度。
+
+`WorkshopInstalledController.acknowledgeRemoval()` 是同步 `bool`：controller 已 disposed 时返回 false；否则读取当前 state，只将 `succeeded` / `failed` 的 removal 换为默认 idle，并清除该 removal 的 target / error / refreshError。`idle` / `removing` 返回 false。列表、加载和目录诊断保持原值；它不执行 I/O，不重试卸载，不读取或改变共享 mutation 门，也不以门空闲为前提，门仍由原操作释放。页面接线时应在用户明确收起结果的动作里调用，不随刷新自动确认。本节记录数据层接口，不表示当前页面已经接入这些新动作。
+
 ## 伙伴完整性与换包门
 
 `CompanionPackStore.unavailableReason()` 返回 `Future<String?>`，null 表示文件完整性门通过。稳定原因有：
@@ -126,6 +134,25 @@ Worker 目标、credential、capabilities 和投稿 owner 响应共用 `workshop
 举报没有投稿创建的 requestId 幂等合同，也没有作者侧举报查询接口。举报结果未知时不得自动按「肯定失败」重复发送。客户端本身不自动重试这些写操作。撤回与举报在暂停新投稿时仍可调用。App 不保存管理员 Key，不实现运维审核页。
 
 User API Key 的本地格式门与 Worker 一致，为 1–512 个可见 ASCII 字符。本人列表允许 100 条合法多字节记录，所以该接口单独采用 8 MiB 有界响应门（与 Worker 状态对象上限一致）；其他普通 JSON 请求仍限 1 MiB。最大页不是无界读流。
+
+### 本机待结算记录的恢复能力
+
+恢复由可选的 `WorkshopPendingRecoveryStore` 能力提供；`workshopPendingRecoveryProvider` 只从同一个 preferences 实例取得该能力，原偏好接口不变。未实现能力的存储仍可用于原流程，但恢复请求会在 `recoveryError` 给出 `workshop_recovery_unsupported`。`canRequestPendingAbandonment` 只说明当前状态允许请求，不保证存储支持或读取成功：非 working 时，无 result 分支要求有 pending，或首次 pending 检查未完成且有 preferenceError；有 result 分支要求同时有 pending 和 preferenceError。
+
+`WorkshopPublishController.requestPendingAbandonment()` 返回 **`Future<void>`**，不返回 offer。调用方应 await，再检查页面仍 mounted、session 未变，然后从**当前 state**读取 `abandonOffer`；没有 offer 就不能确认清理。请求只读取本机恢复版本，受理新的读取时先使旧 offer 失效。offer 只带公开的 worker / forum / forumUserId 和 `range`，不带 Key、文件路径、坏记录原文或其中声称的投稿 ID。
+
+确认必须先展示 offer 的来源、账号、范围与本机恢复线索丢失的风险。`currentAccount` 仅清对应来源与账号的本机 pending 记录；`allLocalAccounts` 明确清整个本机 pending 容器，可能包含其他账号的续传线索，不能从不可读内容虚构数量或标题。用户明确确认后，调用 `confirmPendingAbandonment(offer)`，交回当前 state 中的**同一对象**；该方法也是 `Future<void>`，完成后以当前状态判断结果。working 时不受理；旧 offer 被拒绝，存储层还重读并核对绑定版本，不能用旧确认清除新记录。若前次写入实际成功后才报错，重试确认目标 scope 已不存在（全范围则 key 已不存在）时，可只完成本机收尾而不再写入；变化后目标仍存在则须重新读取、展示并确认。只读到了错误、或只显示过一个通用确认框，都不构成清理授权。
+
+两种成功分支按是否已有经核对的 `result` 区分，不按错误码名称猜远端结果：
+
+| 确认时的状态 | 条件清除成功后的本机状态 |
+| --- | --- |
+| 没有 result | 清除待结算意图、prepared 和进度，保留表单文字，rightsConfirmed 重置为 false，回 idle；冷恢复时 source 仍可能为空，需重选来源，不自动 POST。 |
+| 已有 result，且 pending 收尾被 preferenceError 阻塞 | 保留同一 result、意图和原 prepared 展示，回 complete、hasPending=false；不把已知结果改写成未知，也不丢掉原请求号映射。只有 rejected / withdrawn 的原合同才允许随后显式 `startNewSubmission()`；pending / approved 不因此获得另发许可。 |
+
+恢复只放下或修复本机续传线索，不撤回或删除服务器投稿；服务器可能已有 draft / pending。请求号映射与凭据披露记录不随此清除，改 metadata、换图或重导出产生不同 ZIP 后仍可能获得新请求号，不能承诺没有重复投稿。偏好读取或写入失败放在独立的 `recoveryError`，不把原 unknown 或已知 result 改写为另一种服务器结论；`workshop_confirmation_stale` 使旧 offer 失效。条件清除成功后，已持有的合法私有 lease 若清理失败，沿原 `cleanupError` / `retryCleanup` 处理，不复活已清的 journal；没有合法 lease 时不按坏记录的路径删除文件。
+
+默认偏好实现与原 pending 方法共用同一 Dart isolate 的静态队列，比对读取到的类型及精确存储值，不是跨进程 CAS。账号切换会阻止旧请求结果回填新 session；已经受理并进入偏好队列的确认仍可能按旧 offer 的目标和版本完成本机写入，不能把切换账号说成撤销这次确认。原 `canDiscardUnsentSubmission` 仍只用于整个已知历史均未派发的轻量退出，与上述知情放下分开。本节是数据层合同；以下页面现状尚未接入这些恢复动作。
 
 ## 页面
 
