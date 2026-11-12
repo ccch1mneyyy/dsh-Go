@@ -125,5 +125,15 @@
   "workshopErrorBusy": "上一步还没结束，稍等。",
   "workshopErrorCancelled": "已取消。",
   "workshopErrorUnknownResult": "不确定有没有成功。先刷新看看，别急着重试。",
-  "workshopErrorGeneric": "没有成功，稍后再试。"
+  "workshopErrorGeneric": "没有成功，稍后再试。",
+  "workshopDisclosureTitle": "让工坊核对你的论坛身份",
+  "workshopDisclosureLead": "投稿、管理自己的投稿和举报，工坊都要先知道你是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。",
+  "workshopDisclosureWorker": "收到凭据的工坊",
+  "workshopDisclosureForum": "核对身份的论坛",
+  "workshopDisclosureUse": "投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。",
+  "workshopDisclosureKept": "本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。",
+  "workshopDisclosureStale": "地址刚刚有变化，请按现在显示的重新确认。",
+  "workshopDisclosureAccept": "同意并继续",
+  "workshopDisclosureDecline": "暂不",
+  "workshopDisclosureUnsaved": "这次同意已经生效，但没能记在本机，下次可能再问一遍。"
 }

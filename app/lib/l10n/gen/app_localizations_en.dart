@@ -22255,6 +22255,40 @@ class L10nEn extends L10n {
   String get workshopErrorGeneric => 'That didn\'t work. Try again later.';
 
   @override
+  String get workshopDisclosureTitle => 'Let the Workshop confirm who you are';
+
+  @override
+  String get workshopDisclosureLead =>
+      'To submit, manage your submissions or report something, the Workshop needs to know who you are. To find out, your forum sign-in credential (a User API Key) is sent to the Workshop service below, which asks the forum which account it belongs to.';
+
+  @override
+  String get workshopDisclosureWorker => 'Workshop that receives the credential';
+
+  @override
+  String get workshopDisclosureForum => 'Forum that confirms who you are';
+
+  @override
+  String get workshopDisclosureUse =>
+      'It is sent when you submit, view or withdraw your submissions, or report something. The Workshop only uses it to confirm your identity with the forum and does not keep it.';
+
+  @override
+  String get workshopDisclosureKept =>
+      'This phone only remembers that you agreed to these two addresses, with no extra copy of the credential. If either changes, you\'ll be asked again.';
+
+  @override
+  String get workshopDisclosureStale => 'The addresses just changed. Please confirm the ones shown now.';
+
+  @override
+  String get workshopDisclosureAccept => 'Agree and continue';
+
+  @override
+  String get workshopDisclosureDecline => 'Not now';
+
+  @override
+  String get workshopDisclosureUnsaved =>
+      'Your consent counts for now, but it couldn\'t be saved on this phone. You may be asked again.';
+
+  @override
   String get workshopInstalledEmptyTitle => 'Nothing from the Workshop yet';
 
   @override
@@ -22405,21 +22439,6 @@ class L10nEn extends L10n {
 
   @override
   String get workshopMineConsentAction => 'See details';
-
-  @override
-  String get workshopMineDisclosureTitle => 'Let the workshop check your forum identity?';
-
-  @override
-  String workshopMineDisclosureMessage(String worker, String forum) {
-    return 'The workshop service $worker will receive your forum account\'s User API Key and pass it to $forum to check who you are. This happens whenever you view, withdraw or report.';
-  }
-
-  @override
-  String get workshopMineDisclosureAgree => 'Agree';
-
-  @override
-  String get workshopMineDisclosureUnsaved =>
-      'Agreed, but it couldn\'t be saved on this phone. You may be asked again.';
 
   @override
   String get workshopMineEmptyTitle => 'No submissions yet';
@@ -22625,40 +22644,6 @@ class L10nEn extends L10n {
 
   @override
   String get workshopPublishWaitingPrevious => 'The previous step is still finishing.';
-
-  @override
-  String get workshopPublishConsentUnsaved =>
-      'Your consent counts for now, but it couldn\'t be saved on this phone. You may be asked again.';
-
-  @override
-  String get workshopPublishDisclosureTitle => 'One thing to confirm before you submit';
-
-  @override
-  String get workshopPublishDisclosureLead =>
-      'The Workshop needs to know who is submitting. To find out, your forum sign-in credential (a User API Key) is sent to the Workshop service below, which asks the forum which account it belongs to.';
-
-  @override
-  String get workshopPublishDisclosureWorker => 'Workshop that receives the credential';
-
-  @override
-  String get workshopPublishDisclosureForum => 'Forum that confirms who you are';
-
-  @override
-  String get workshopPublishDisclosureUse =>
-      'It is sent when you submit, view or withdraw your submissions, or report something. The Workshop only uses it to confirm your identity with the forum and does not keep it.';
-
-  @override
-  String get workshopPublishDisclosureKept =>
-      'This phone only remembers that you agreed to these two addresses, with no extra copy of the credential. If either changes, you\'ll be asked again.';
-
-  @override
-  String get workshopPublishDisclosureStale => 'The addresses just changed. Please confirm the ones shown now.';
-
-  @override
-  String get workshopPublishDisclosureAccept => 'Agree and continue';
-
-  @override
-  String get workshopPublishDisclosureDecline => 'Not now';
 
   @override
   String get workshopPublishChooseTitle => 'Choose what to submit';

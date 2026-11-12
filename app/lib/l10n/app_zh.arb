@@ -13373,6 +13373,16 @@
   "workshopErrorCancelled": "已取消。",
   "workshopErrorUnknownResult": "不确定有没有成功。先刷新看看，别急着重试。",
   "workshopErrorGeneric": "没有成功，稍后再试。",
+  "workshopDisclosureTitle": "让工坊核对你的论坛身份",
+  "workshopDisclosureLead": "投稿、管理自己的投稿和举报，工坊都要先知道你是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。",
+  "workshopDisclosureWorker": "收到凭据的工坊",
+  "workshopDisclosureForum": "核对身份的论坛",
+  "workshopDisclosureUse": "投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。",
+  "workshopDisclosureKept": "本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。",
+  "workshopDisclosureStale": "地址刚刚有变化，请按现在显示的重新确认。",
+  "workshopDisclosureAccept": "同意并继续",
+  "workshopDisclosureDecline": "暂不",
+  "workshopDisclosureUnsaved": "这次同意已经生效，但没能记在本机，下次可能再问一遍。",
   "workshopInstalledEmptyTitle": "还没有从工坊装过东西",
   "workshopInstalledEmptyMessage": "在「发现」里装上的宠物和伙伴会列在这里。",
   "workshopInstalledEmptyAction": "去发现",
@@ -13434,20 +13444,6 @@
   "workshopMineConsentTitle": "还差一步确认",
   "workshopMineConsentMessage": "工坊要用你的论坛登录凭据核对身份，同意后才能看到自己的投稿。",
   "workshopMineConsentAction": "查看说明",
-  "workshopMineDisclosureTitle": "让工坊核对你的论坛身份？",
-  "workshopMineDisclosureMessage": "工坊服务 {worker} 会收到你论坛账号的 User API Key，并交给 {forum} 核对你是谁。查看投稿、撤回和举报时都会这样做。",
-  "@workshopMineDisclosureMessage": {
-    "placeholders": {
-      "worker": {
-        "type": "String"
-      },
-      "forum": {
-        "type": "String"
-      }
-    }
-  },
-  "workshopMineDisclosureAgree": "同意",
-  "workshopMineDisclosureUnsaved": "已同意，但没能记在本机，下次可能还会再问。",
   "workshopMineEmptyTitle": "还没有投稿",
   "workshopMineEmptyMessage": "做了宠物或伙伴的话，可以发上来给大家用。",
   "workshopMineEmptyFiltered": "没有这类投稿",
@@ -13546,16 +13542,6 @@
   "workshopPublishCheckFailedTitle": "没能读出上一次投稿的记录",
   "workshopPublishCheckLocked": "为了不重复投稿，读出来之前不能开始新的。",
   "workshopPublishWaitingPrevious": "上一个操作还没结束，稍等。",
-  "workshopPublishConsentUnsaved": "这次同意已经生效，但没能记在本机，下次可能再问一遍。",
-  "workshopPublishDisclosureTitle": "投稿前，先确认一件事",
-  "workshopPublishDisclosureLead": "工坊需要知道投稿的人是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。",
-  "workshopPublishDisclosureWorker": "收到凭据的工坊",
-  "workshopPublishDisclosureForum": "核对身份的论坛",
-  "workshopPublishDisclosureUse": "投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。",
-  "workshopPublishDisclosureKept": "本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。",
-  "workshopPublishDisclosureStale": "地址刚刚有变化，请按现在显示的重新确认。",
-  "workshopPublishDisclosureAccept": "同意并继续",
-  "workshopPublishDisclosureDecline": "暂不",
   "workshopPublishChooseTitle": "选一个要投稿的",
   "workshopPublishCompanionCurrent": "现在的伙伴",
   "workshopPublishSourcesEmptyTitle": "还没有可以投稿的",

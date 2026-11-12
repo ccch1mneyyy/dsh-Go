@@ -21081,6 +21081,36 @@ class L10nZh extends L10n {
   String get workshopErrorGeneric => '没有成功，稍后再试。';
 
   @override
+  String get workshopDisclosureTitle => '让工坊核对你的论坛身份';
+
+  @override
+  String get workshopDisclosureLead => '投稿、管理自己的投稿和举报，工坊都要先知道你是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。';
+
+  @override
+  String get workshopDisclosureWorker => '收到凭据的工坊';
+
+  @override
+  String get workshopDisclosureForum => '核对身份的论坛';
+
+  @override
+  String get workshopDisclosureUse => '投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。';
+
+  @override
+  String get workshopDisclosureKept => '本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。';
+
+  @override
+  String get workshopDisclosureStale => '地址刚刚有变化，请按现在显示的重新确认。';
+
+  @override
+  String get workshopDisclosureAccept => '同意并继续';
+
+  @override
+  String get workshopDisclosureDecline => '暂不';
+
+  @override
+  String get workshopDisclosureUnsaved => '这次同意已经生效，但没能记在本机，下次可能再问一遍。';
+
+  @override
   String get workshopInstalledEmptyTitle => '还没有从工坊装过东西';
 
   @override
@@ -21224,20 +21254,6 @@ class L10nZh extends L10n {
 
   @override
   String get workshopMineConsentAction => '查看说明';
-
-  @override
-  String get workshopMineDisclosureTitle => '让工坊核对你的论坛身份？';
-
-  @override
-  String workshopMineDisclosureMessage(String worker, String forum) {
-    return '工坊服务 $worker 会收到你论坛账号的 User API Key，并交给 $forum 核对你是谁。查看投稿、撤回和举报时都会这样做。';
-  }
-
-  @override
-  String get workshopMineDisclosureAgree => '同意';
-
-  @override
-  String get workshopMineDisclosureUnsaved => '已同意，但没能记在本机，下次可能还会再问。';
 
   @override
   String get workshopMineEmptyTitle => '还没有投稿';
@@ -21438,36 +21454,6 @@ class L10nZh extends L10n {
 
   @override
   String get workshopPublishWaitingPrevious => '上一个操作还没结束，稍等。';
-
-  @override
-  String get workshopPublishConsentUnsaved => '这次同意已经生效，但没能记在本机，下次可能再问一遍。';
-
-  @override
-  String get workshopPublishDisclosureTitle => '投稿前，先确认一件事';
-
-  @override
-  String get workshopPublishDisclosureLead => '工坊需要知道投稿的人是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。';
-
-  @override
-  String get workshopPublishDisclosureWorker => '收到凭据的工坊';
-
-  @override
-  String get workshopPublishDisclosureForum => '核对身份的论坛';
-
-  @override
-  String get workshopPublishDisclosureUse => '投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。';
-
-  @override
-  String get workshopPublishDisclosureKept => '本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。';
-
-  @override
-  String get workshopPublishDisclosureStale => '地址刚刚有变化，请按现在显示的重新确认。';
-
-  @override
-  String get workshopPublishDisclosureAccept => '同意并继续';
-
-  @override
-  String get workshopPublishDisclosureDecline => '暂不';
 
   @override
   String get workshopPublishChooseTitle => '选一个要投稿的';

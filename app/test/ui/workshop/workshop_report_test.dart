@@ -119,8 +119,9 @@ void main() {
 
     await tester.tap(find.text(zh.workshopMineConsentAction));
     await settle(tester);
-    expect(find.text(zh.workshopMineDisclosureMessage('workshop.example', 'forum.example')), findsOneWidget);
-    await tester.tap(find.text(zh.workshopMineDisclosureAgree));
+    expect(find.text('workshop.example'), findsOneWidget);
+    expect(find.text('forum.example'), findsOneWidget);
+    await tester.tap(find.text(zh.workshopDisclosureAccept));
     await settle(tester);
 
     expect(world.preferences.writes, 1);

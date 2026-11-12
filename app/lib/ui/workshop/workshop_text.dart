@@ -77,3 +77,7 @@ String workshopKindText(L10n l10n, String kind) => switch (kind) {
   'companion' => l10n.workshopKindCompanion,
   _ => kind,
 };
+
+/// The address as the person would recognise it: the host, with its port
+/// when it has one.
+String workshopHostText(Uri origin) => origin.hasPort ? '${origin.host}:${origin.port}' : origin.host;

@@ -71,18 +71,20 @@ void main() {
 
     await tester.tap(find.text(zh.workshopMineConsentAction));
     await settle(tester);
-    expect(find.text(zh.workshopMineDisclosureMessage('workshop.example', 'forum.example')), findsOneWidget);
+    expect(find.text(zh.workshopDisclosureTitle), findsOneWidget);
+    expect(find.text('workshop.example'), findsOneWidget);
+    expect(find.text('forum.example'), findsOneWidget);
     expect(world.preferences.writes, 0);
 
-    // 取消什么都不记。
-    await tester.tap(find.text(zh.commonCancel));
+    // 「暂不」什么都不记。
+    await tester.tap(find.text(zh.workshopDisclosureDecline));
     await settle(tester);
     expect(world.preferences.writes, 0);
     expect(world.client.pages, isEmpty);
 
     await tester.tap(find.text(zh.workshopMineConsentAction));
     await settle(tester);
-    await tester.tap(find.text(zh.workshopMineDisclosureAgree));
+    await tester.tap(find.text(zh.workshopDisclosureAccept));
     await settle(tester);
     expect(world.preferences.writes, 1);
     expect(world.client.pages, hasLength(1));
@@ -97,10 +99,10 @@ void main() {
 
     await tester.tap(find.text(zh.workshopMineConsentAction));
     await settle(tester);
-    await tester.tap(find.text(zh.workshopMineDisclosureAgree));
+    await tester.tap(find.text(zh.workshopDisclosureAccept));
     await tester.pump();
     await tester.pump();
-    expect(find.text(zh.workshopMineDisclosureUnsaved), findsOneWidget);
+    expect(find.text(zh.workshopDisclosureUnsaved), findsOneWidget);
     await settle(tester);
     expect(world.client.pages, hasLength(1));
     expectNoCodes(tester);

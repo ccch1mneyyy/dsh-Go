@@ -4,7 +4,7 @@
 //
 // Signing in stays the forum's (its account sheet). The agreement is asked
 // here because both pages need it and neither can send the person to the
-// other; what is confirmed is the very object the dialog showed
+// other; what is confirmed is the very object the sheet showed
 // (workshopAccessProvider, contract §6).
 
 import 'dart:async';
@@ -14,11 +14,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
 import '../../state/workshop_auth_state.dart';
-import '../common/app_dialog.dart';
 import '../common/brief_notice.dart';
 import '../common/empty_view.dart';
 import '../forum/forum_account_sheet.dart';
 import '../theme/app_icons.dart';
+import 'workshop_disclosure.dart';
 import 'workshop_text.dart';
 
 /// Where the person is on the way to acting as their forum account.
@@ -106,7 +106,7 @@ class WorkshopAuthorGateView extends ConsumerWidget {
 
 /// Shows which workshop receives the forum credential and which forum it is
 /// checked with, and records the answer. The object confirmed is the one the
-/// dialog showed; if the account or the workshop changed meanwhile, the state
+/// sheet showed; if the account or the workshop changed meanwhile, the state
 /// layer refuses it and the gate says so.
 Future<void> confirmWorkshopDisclosure(BuildContext context, WidgetRef ref) async {
   final l10n = context.l10n;
@@ -115,24 +115,14 @@ Future<void> confirmWorkshopDisclosure(BuildContext context, WidgetRef ref) asyn
     showBriefNotice(context, l10n.workshopErrorBusy);
     return;
   }
-  final agreed = await showAppDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(l10n.workshopMineDisclosureTitle),
-      content: Text(l10n.workshopMineDisclosureMessage(offered.worker.authority, offered.forum.authority)),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.commonCancel)),
-        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.workshopMineDisclosureAgree)),
-      ],
-    ),
-  );
-  if (agreed != true || !context.mounted) return;
-  await ref.read(workshopAccessProvider.notifier).confirmDisclosure(offered);
+  final agreed = await showWorkshopDisclosureSheet(context, offered);
+  if (agreed == null || !context.mounted) return;
+  await ref.read(workshopAccessProvider.notifier).confirmDisclosure(agreed);
   if (!context.mounted) return;
   // Agreed for now, but not written down: say so instead of promising that
   // the question won't come back.
   final access = ref.read(workshopAccessProvider);
   if (access.disclosureAccepted && access.preferenceError != null) {
-    showBriefNotice(context, l10n.workshopMineDisclosureUnsaved);
+    showBriefNotice(context, l10n.workshopDisclosureUnsaved);
   }
 }

@@ -189,7 +189,7 @@ void main() {
       final world = _World()..preferences.accepted.clear();
       await _open(tester, world);
 
-      expect(find.text('投稿前，先确认一件事'), findsOneWidget);
+      expect(find.text('让工坊核对你的论坛身份'), findsOneWidget);
       expect(find.textContaining('User API Key'), findsOneWidget);
       expect(find.text(authWorker.host), findsOneWidget);
       expect(find.text(authForum.host), findsOneWidget);

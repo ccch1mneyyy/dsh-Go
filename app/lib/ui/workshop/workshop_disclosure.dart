@@ -1,24 +1,49 @@
-// 首次凭据说明: what leaves the phone when the person submits, shown before
-// anything is sent (docs/design/workshop-app.md「投稿与凭据」).
+// 凭据说明: what leaves the phone when the person acts as their forum account
+// (投稿, 我的投稿, 举报), shown before anything is sent
+// (docs/design/workshop-app.md「投稿与凭据」).
 //
-// The workshop checks who is submitting by receiving the forum sign-in
-// credential (a Discourse User API Key) and asking the forum whose it is. The
-// two addresses on screen are the ones in the offer the state layer made; the
+// The workshop checks who is asking by receiving the forum sign-in credential
+// (a Discourse User API Key) and asking the forum whose it is. The two
+// addresses on screen are the ones in the offer the state layer made; the
 // very same offer object goes back with 「同意并继续」, so a consent can never
 // land on an address the person did not see.
+//
+// One view, two places: the publish page shows it as a step of its own, the
+// other pages raise it as a sheet ([showWorkshopDisclosureSheet]).
 
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
 import '../../state/workshop_auth_state.dart';
+import '../common/app_sheet.dart';
 import '../common/list_page_row.dart';
 import '../theme/app_icons.dart';
 import '../theme/theme.dart';
-import 'workshop_publish_text.dart';
+import 'workshop_text.dart';
 import 'workshop_widgets.dart';
 
-class WorkshopPublishDisclosure extends StatelessWidget {
-  const WorkshopPublishDisclosure({
+/// The disclosure as a sheet. Completes with the offer the person agreed to
+/// (the object that was on screen), or null when they did not.
+Future<WorkshopDisclosure?> showWorkshopDisclosureSheet(BuildContext context, WorkshopDisclosure offer) {
+  return showAppSheet<WorkshopDisclosure>(
+    context,
+    isScrollControlled: true,
+    builder: (context) => SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: WorkshopDisclosureView(
+          offer: offer,
+          onAccept: (offer) => Navigator.of(context).pop(offer),
+          onDecline: () => Navigator.of(context).pop(),
+        ),
+      ),
+    ),
+  );
+}
+
+class WorkshopDisclosureView extends StatelessWidget {
+  const WorkshopDisclosureView({
     super.key,
     required this.offer,
     required this.onAccept,
@@ -60,20 +85,20 @@ class WorkshopPublishDisclosure extends StatelessWidget {
               const SizedBox(height: 16),
               Semantics(
                 header: true,
-                child: Text(l10n.workshopPublishDisclosureTitle, style: theme.textTheme.titleLarge),
+                child: Text(l10n.workshopDisclosureTitle, style: theme.textTheme.titleLarge),
               ),
               const SizedBox(height: 8),
-              Text(l10n.workshopPublishDisclosureLead, style: body),
+              Text(l10n.workshopDisclosureLead, style: body),
             ],
           ),
         ),
         const SizedBox(height: 16),
         if (stale)
-          WorkshopNote(l10n.workshopPublishDisclosureStale, tone: WorkshopNoteTone.warning),
+          WorkshopNote(l10n.workshopDisclosureStale, tone: WorkshopNoteTone.warning),
         ListPageCard(
           children: [
-            _Party(label: l10n.workshopPublishDisclosureWorker, host: workshopHostText(offer.worker)),
-            _Party(label: l10n.workshopPublishDisclosureForum, host: workshopHostText(offer.forum)),
+            _Party(label: l10n.workshopDisclosureWorker, host: workshopHostText(offer.worker)),
+            _Party(label: l10n.workshopDisclosureForum, host: workshopHostText(offer.forum)),
           ],
         ),
         Padding(
@@ -81,10 +106,10 @@ class WorkshopPublishDisclosure extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.workshopPublishDisclosureUse, style: body),
+              Text(l10n.workshopDisclosureUse, style: body),
               const SizedBox(height: 8),
               Text(
-                l10n.workshopPublishDisclosureKept,
+                l10n.workshopDisclosureKept,
                 style: theme.textTheme.bodySmall?.copyWith(color: colors.textTertiary, height: 1.5),
               ),
             ],
@@ -98,13 +123,13 @@ class WorkshopPublishDisclosure extends StatelessWidget {
               FilledButton(
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                 onPressed: () => onAccept(offer),
-                child: Text(l10n.workshopPublishDisclosureAccept),
+                child: Text(l10n.workshopDisclosureAccept),
               ),
               const SizedBox(height: 4),
               TextButton(
                 style: TextButton.styleFrom(minimumSize: const Size.fromHeight(44)),
                 onPressed: onDecline,
-                child: Text(l10n.workshopPublishDisclosureDecline),
+                child: Text(l10n.workshopDisclosureDecline),
               ),
             ],
           ),

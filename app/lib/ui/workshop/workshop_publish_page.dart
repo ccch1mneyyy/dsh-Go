@@ -36,7 +36,7 @@ import '../forum/forum_account_sheet.dart' show showForumAccountSheet;
 import '../settings/settings_widgets.dart' show SettingsSection;
 import '../theme/app_icons.dart';
 import '../theme/theme.dart';
-import 'workshop_publish_disclosure.dart';
+import 'workshop_disclosure.dart';
 import 'workshop_publish_form.dart';
 import 'workshop_publish_text.dart';
 import 'workshop_text.dart';
@@ -250,7 +250,7 @@ class _WorkshopPublishPageState extends ConsumerState<WorkshopPublishPage> {
           !access.disclosureSaved &&
           !access.savingDisclosure &&
           access.preferenceError != null)
-        WorkshopNote(l10n.workshopPublishConsentUnsaved),
+        WorkshopNote(l10n.workshopDisclosureUnsaved),
     ];
 
     switch (_stepOf(access, publish)) {
@@ -288,7 +288,7 @@ class _WorkshopPublishPageState extends ConsumerState<WorkshopPublishPage> {
       case _Step.disclosure:
         return WorkshopPublishFrame(
           children: [
-            WorkshopPublishDisclosure(
+            WorkshopDisclosureView(
               offer: access.disclosure!,
               stale: access.error?.code == 'workshop_confirmation_stale',
               onAccept: (offer) => unawaited(ref.read(workshopAccessProvider.notifier).confirmDisclosure(offer)),

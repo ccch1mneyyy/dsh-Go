@@ -6,20 +6,6 @@
   "workshopMineConsentTitle": "还差一步确认",
   "workshopMineConsentMessage": "工坊要用你的论坛登录凭据核对身份，同意后才能看到自己的投稿。",
   "workshopMineConsentAction": "查看说明",
-  "workshopMineDisclosureTitle": "让工坊核对你的论坛身份？",
-  "workshopMineDisclosureMessage": "工坊服务 {worker} 会收到你论坛账号的 User API Key，并交给 {forum} 核对你是谁。查看投稿、撤回和举报时都会这样做。",
-  "@workshopMineDisclosureMessage": {
-    "placeholders": {
-      "worker": {
-        "type": "String"
-      },
-      "forum": {
-        "type": "String"
-      }
-    }
-  },
-  "workshopMineDisclosureAgree": "同意",
-  "workshopMineDisclosureUnsaved": "已同意，但没能记在本机，下次可能还会再问。",
   "workshopMineEmptyTitle": "还没有投稿",
   "workshopMineEmptyMessage": "做了宠物或伙伴的话，可以发上来给大家用。",
   "workshopMineEmptyFiltered": "没有这类投稿",

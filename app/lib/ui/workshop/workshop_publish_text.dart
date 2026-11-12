@@ -88,10 +88,6 @@ WorkshopException? workshopPublishFailure(WorkshopPublishState state) {
   return error;
 }
 
-/// The address as the person would recognise it: the host, with its port
-/// when it has one.
-String workshopHostText(Uri origin) => origin.hasPort ? '${origin.host}:${origin.port}' : origin.host;
-
 /// An SPDX id as written; the one that is not a public licence gets words.
 String workshopLicenseText(L10n l10n, String license) =>
     license == 'LicenseRef-Author-Permission' ? l10n.workshopPublishLicenseAuthor : license;

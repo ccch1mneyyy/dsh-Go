@@ -6,20 +6,6 @@
   "workshopMineConsentTitle": "One more step",
   "workshopMineConsentMessage": "The workshop checks who you are with your forum sign-in. Agree to that to see your submissions.",
   "workshopMineConsentAction": "See details",
-  "workshopMineDisclosureTitle": "Let the workshop check your forum identity?",
-  "workshopMineDisclosureMessage": "The workshop service {worker} will receive your forum account's User API Key and pass it to {forum} to check who you are. This happens whenever you view, withdraw or report.",
-  "@workshopMineDisclosureMessage": {
-    "placeholders": {
-      "worker": {
-        "type": "String"
-      },
-      "forum": {
-        "type": "String"
-      }
-    }
-  },
-  "workshopMineDisclosureAgree": "Agree",
-  "workshopMineDisclosureUnsaved": "Agreed, but it couldn't be saved on this phone. You may be asked again.",
   "workshopMineEmptyTitle": "No submissions yet",
   "workshopMineEmptyMessage": "Made a pet or a companion? Send it in for others to use.",
   "workshopMineEmptyFiltered": "Nothing with this status",

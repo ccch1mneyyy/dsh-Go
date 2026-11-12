@@ -38306,6 +38306,66 @@ abstract class L10n {
   /// **'没有成功，稍后再试。'**
   String get workshopErrorGeneric;
 
+  /// No description provided for @workshopDisclosureTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'让工坊核对你的论坛身份'**
+  String get workshopDisclosureTitle;
+
+  /// No description provided for @workshopDisclosureLead.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿、管理自己的投稿和举报，工坊都要先知道你是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。'**
+  String get workshopDisclosureLead;
+
+  /// No description provided for @workshopDisclosureWorker.
+  ///
+  /// In zh, this message translates to:
+  /// **'收到凭据的工坊'**
+  String get workshopDisclosureWorker;
+
+  /// No description provided for @workshopDisclosureForum.
+  ///
+  /// In zh, this message translates to:
+  /// **'核对身份的论坛'**
+  String get workshopDisclosureForum;
+
+  /// No description provided for @workshopDisclosureUse.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。'**
+  String get workshopDisclosureUse;
+
+  /// No description provided for @workshopDisclosureKept.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。'**
+  String get workshopDisclosureKept;
+
+  /// No description provided for @workshopDisclosureStale.
+  ///
+  /// In zh, this message translates to:
+  /// **'地址刚刚有变化，请按现在显示的重新确认。'**
+  String get workshopDisclosureStale;
+
+  /// No description provided for @workshopDisclosureAccept.
+  ///
+  /// In zh, this message translates to:
+  /// **'同意并继续'**
+  String get workshopDisclosureAccept;
+
+  /// No description provided for @workshopDisclosureDecline.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂不'**
+  String get workshopDisclosureDecline;
+
+  /// No description provided for @workshopDisclosureUnsaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'这次同意已经生效，但没能记在本机，下次可能再问一遍。'**
+  String get workshopDisclosureUnsaved;
+
   /// No description provided for @workshopInstalledEmptyTitle.
   ///
   /// In zh, this message translates to:
@@ -38587,30 +38647,6 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'查看说明'**
   String get workshopMineConsentAction;
-
-  /// No description provided for @workshopMineDisclosureTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'让工坊核对你的论坛身份？'**
-  String get workshopMineDisclosureTitle;
-
-  /// No description provided for @workshopMineDisclosureMessage.
-  ///
-  /// In zh, this message translates to:
-  /// **'工坊服务 {worker} 会收到你论坛账号的 User API Key，并交给 {forum} 核对你是谁。查看投稿、撤回和举报时都会这样做。'**
-  String workshopMineDisclosureMessage(String worker, String forum);
-
-  /// No description provided for @workshopMineDisclosureAgree.
-  ///
-  /// In zh, this message translates to:
-  /// **'同意'**
-  String get workshopMineDisclosureAgree;
-
-  /// No description provided for @workshopMineDisclosureUnsaved.
-  ///
-  /// In zh, this message translates to:
-  /// **'已同意，但没能记在本机，下次可能还会再问。'**
-  String get workshopMineDisclosureUnsaved;
 
   /// No description provided for @workshopMineEmptyTitle.
   ///
@@ -38995,66 +39031,6 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'上一个操作还没结束，稍等。'**
   String get workshopPublishWaitingPrevious;
-
-  /// No description provided for @workshopPublishConsentUnsaved.
-  ///
-  /// In zh, this message translates to:
-  /// **'这次同意已经生效，但没能记在本机，下次可能再问一遍。'**
-  String get workshopPublishConsentUnsaved;
-
-  /// No description provided for @workshopPublishDisclosureTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'投稿前，先确认一件事'**
-  String get workshopPublishDisclosureTitle;
-
-  /// No description provided for @workshopPublishDisclosureLead.
-  ///
-  /// In zh, this message translates to:
-  /// **'工坊需要知道投稿的人是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。'**
-  String get workshopPublishDisclosureLead;
-
-  /// No description provided for @workshopPublishDisclosureWorker.
-  ///
-  /// In zh, this message translates to:
-  /// **'收到凭据的工坊'**
-  String get workshopPublishDisclosureWorker;
-
-  /// No description provided for @workshopPublishDisclosureForum.
-  ///
-  /// In zh, this message translates to:
-  /// **'核对身份的论坛'**
-  String get workshopPublishDisclosureForum;
-
-  /// No description provided for @workshopPublishDisclosureUse.
-  ///
-  /// In zh, this message translates to:
-  /// **'投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。'**
-  String get workshopPublishDisclosureUse;
-
-  /// No description provided for @workshopPublishDisclosureKept.
-  ///
-  /// In zh, this message translates to:
-  /// **'本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。'**
-  String get workshopPublishDisclosureKept;
-
-  /// No description provided for @workshopPublishDisclosureStale.
-  ///
-  /// In zh, this message translates to:
-  /// **'地址刚刚有变化，请按现在显示的重新确认。'**
-  String get workshopPublishDisclosureStale;
-
-  /// No description provided for @workshopPublishDisclosureAccept.
-  ///
-  /// In zh, this message translates to:
-  /// **'同意并继续'**
-  String get workshopPublishDisclosureAccept;
-
-  /// No description provided for @workshopPublishDisclosureDecline.
-  ///
-  /// In zh, this message translates to:
-  /// **'暂不'**
-  String get workshopPublishDisclosureDecline;
 
   /// No description provided for @workshopPublishChooseTitle.
   ///
