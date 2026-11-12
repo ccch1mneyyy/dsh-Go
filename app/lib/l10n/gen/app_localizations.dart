@@ -38306,6 +38306,246 @@ abstract class L10n {
   /// **'没有成功，稍后再试。'**
   String get workshopErrorGeneric;
 
+  /// No description provided for @workshopInstalledEmptyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有从工坊装过东西'**
+  String get workshopInstalledEmptyTitle;
+
+  /// No description provided for @workshopInstalledEmptyMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'在「发现」里装上的宠物和伙伴会列在这里。'**
+  String get workshopInstalledEmptyMessage;
+
+  /// No description provided for @workshopInstalledEmptyAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'去发现'**
+  String get workshopInstalledEmptyAction;
+
+  /// No description provided for @workshopInstalledLoadFailedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'读不出已安装的内容'**
+  String get workshopInstalledLoadFailedTitle;
+
+  /// No description provided for @workshopInstalledLoadStale.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能重新读取，显示的是上一次的。'**
+  String get workshopInstalledLoadStale;
+
+  /// No description provided for @workshopInstalledCatalogStale.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新和撤回的信息可能不是最新的。'**
+  String get workshopInstalledCatalogStale;
+
+  /// No description provided for @workshopInstalledCatalogUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时查不到更新和撤回的信息。'**
+  String get workshopInstalledCatalogUnknown;
+
+  /// No description provided for @workshopInstalledStatusUpdate.
+  ///
+  /// In zh, this message translates to:
+  /// **'有更新'**
+  String get workshopInstalledStatusUpdate;
+
+  /// No description provided for @workshopInstalledStatusWithdrawn.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个版本已被撤回'**
+  String get workshopInstalledStatusWithdrawn;
+
+  /// No description provided for @workshopInstalledStatusOtherOrigin.
+  ///
+  /// In zh, this message translates to:
+  /// **'来自别的工坊'**
+  String get workshopInstalledStatusOtherOrigin;
+
+  /// No description provided for @workshopInstalledStatusNotListed.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊里现在找不到它'**
+  String get workshopInstalledStatusNotListed;
+
+  /// No description provided for @workshopInstalledStatusCompanionOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'伙伴类作品暂时关闭'**
+  String get workshopInstalledStatusCompanionOff;
+
+  /// No description provided for @workshopInstalledStatusRewritten.
+  ///
+  /// In zh, this message translates to:
+  /// **'和工坊里的同一版本不一致'**
+  String get workshopInstalledStatusRewritten;
+
+  /// No description provided for @workshopInstalledStatusRemoving.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在卸载…'**
+  String get workshopInstalledStatusRemoving;
+
+  /// No description provided for @workshopInstalledStatusRemoveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能卸载'**
+  String get workshopInstalledStatusRemoveFailed;
+
+  /// No description provided for @workshopInstalledStatusRemoved.
+  ///
+  /// In zh, this message translates to:
+  /// **'已卸载'**
+  String get workshopInstalledStatusRemoved;
+
+  /// No description provided for @workshopInstalledIssueBroken.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个包损坏了'**
+  String get workshopInstalledIssueBroken;
+
+  /// No description provided for @workshopInstalledIssueUnreadable.
+  ///
+  /// In zh, this message translates to:
+  /// **'读不出这个包'**
+  String get workshopInstalledIssueUnreadable;
+
+  /// No description provided for @workshopInstalledIssueRecord.
+  ///
+  /// In zh, this message translates to:
+  /// **'安装记录对不上'**
+  String get workshopInstalledIssueRecord;
+
+  /// No description provided for @workshopInstalledIssueOther.
+  ///
+  /// In zh, this message translates to:
+  /// **'这一项有问题'**
+  String get workshopInstalledIssueOther;
+
+  /// No description provided for @workshopInstalledNoteBroken.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个包损坏了，可能用不了。'**
+  String get workshopInstalledNoteBroken;
+
+  /// No description provided for @workshopInstalledNoteUnreadable.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能读出这个包的文件。'**
+  String get workshopInstalledNoteUnreadable;
+
+  /// No description provided for @workshopInstalledNoteRecord.
+  ///
+  /// In zh, this message translates to:
+  /// **'它的安装记录对不上。'**
+  String get workshopInstalledNoteRecord;
+
+  /// No description provided for @workshopInstalledNoteOther.
+  ///
+  /// In zh, this message translates to:
+  /// **'这一项有问题，读不出更多信息。'**
+  String get workshopInstalledNoteOther;
+
+  /// No description provided for @workshopInstalledNoteUntrusted.
+  ///
+  /// In zh, this message translates to:
+  /// **'安装记录不可信，没法从这里卸载它。'**
+  String get workshopInstalledNoteUntrusted;
+
+  /// No description provided for @workshopInstalledNoteOtherOrigin.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是从别的工坊装的，这里查不到它的更新。'**
+  String get workshopInstalledNoteOtherOrigin;
+
+  /// No description provided for @workshopInstalledNoteNotListed.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊里现在找不到它，本机的这一份不受影响。'**
+  String get workshopInstalledNoteNotListed;
+
+  /// No description provided for @workshopInstalledNoteRewritten.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊里同一版本的内容和本机的不一样，本机的这一份没有改动。'**
+  String get workshopInstalledNoteRewritten;
+
+  /// No description provided for @workshopInstalledNoteMinApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊里现在的版本需要更新 App 才能安装。'**
+  String get workshopInstalledNoteMinApp;
+
+  /// No description provided for @workshopInstalledNoteUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊里现在的版本暂时不能安装。'**
+  String get workshopInstalledNoteUnavailable;
+
+  /// No description provided for @workshopInstalledNoteGone.
+  ///
+  /// In zh, this message translates to:
+  /// **'这一项已经不在本机了。'**
+  String get workshopInstalledNoteGone;
+
+  /// No description provided for @workshopInstalledRemoveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能卸载。{reason}'**
+  String workshopInstalledRemoveFailed(String reason);
+
+  /// No description provided for @workshopInstalledFactKind.
+  ///
+  /// In zh, this message translates to:
+  /// **'类型'**
+  String get workshopInstalledFactKind;
+
+  /// No description provided for @workshopInstalledFactId.
+  ///
+  /// In zh, this message translates to:
+  /// **'作品 ID'**
+  String get workshopInstalledFactId;
+
+  /// No description provided for @workshopInstalledFactOrigin.
+  ///
+  /// In zh, this message translates to:
+  /// **'来自'**
+  String get workshopInstalledFactOrigin;
+
+  /// No description provided for @workshopInstalledFactLocalId.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机标识'**
+  String get workshopInstalledFactLocalId;
+
+  /// No description provided for @workshopInstalledRemoveTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'卸载「{title}」？'**
+  String workshopInstalledRemoveTitle(String title);
+
+  /// No description provided for @workshopInstalledRemoveMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'会删掉这台手机上的这一份，删了找不回来。'**
+  String get workshopInstalledRemoveMessage;
+
+  /// No description provided for @workshopInstalledRemoveNoReinstall.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊里现在找不到它，卸载后可能装不回来。'**
+  String get workshopInstalledRemoveNoReinstall;
+
+  /// No description provided for @workshopInstalledRemovedRefreshIssue.
+  ///
+  /// In zh, this message translates to:
+  /// **'已卸载，但列表没能刷新，重新进来就能看到。'**
+  String get workshopInstalledRemovedRefreshIssue;
+
   /// No description provided for @workspaceRecoveryTitle.
   ///
   /// In zh, this message translates to:
