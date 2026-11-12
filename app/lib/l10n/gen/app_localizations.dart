@@ -39380,6 +39380,18 @@ abstract class L10n {
   /// **'这份投稿的内容已经定下，暂时不能修改，也不能换成别的。问题解决后可以接着交。'**
   String get workshopPublishPendingLocked;
 
+  /// No description provided for @workshopPublishPendingUnsent.
+  ///
+  /// In zh, this message translates to:
+  /// **'这次还没有发出去。问题解决后可以接着交，也可以回去修改资料或换一个来投。'**
+  String get workshopPublishPendingUnsent;
+
+  /// No description provided for @workshopPublishEditUnsent.
+  ///
+  /// In zh, this message translates to:
+  /// **'回去修改'**
+  String get workshopPublishEditUnsent;
+
   /// No description provided for @workshopPublishUnknownTitle.
   ///
   /// In zh, this message translates to:

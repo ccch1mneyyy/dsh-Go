@@ -21632,6 +21632,12 @@ class L10nZh extends L10n {
   String get workshopPublishPendingLocked => '这份投稿的内容已经定下，暂时不能修改，也不能换成别的。问题解决后可以接着交。';
 
   @override
+  String get workshopPublishPendingUnsent => '这次还没有发出去。问题解决后可以接着交，也可以回去修改资料或换一个来投。';
+
+  @override
+  String get workshopPublishEditUnsent => '回去修改';
+
+  @override
   String get workshopPublishUnknownTitle => '不确定有没有交上去';
 
   @override

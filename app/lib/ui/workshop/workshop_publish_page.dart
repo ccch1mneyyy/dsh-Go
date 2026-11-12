@@ -219,6 +219,19 @@ class _WorkshopPublishPageState extends ConsumerState<WorkshopPublishPage> {
     if (mounted) workshopPublishNoticeDeclined(context, ref.read(workshopPublishProvider), before);
   }
 
+  /// Nothing of this submission has left the phone (the state layer knows it
+  /// was refused before it was sent): let go of it and return to the form,
+  /// with what was typed. Asks nothing of the workshop.
+  Future<void> _editUnsent() async {
+    await ref.read(workshopPublishProvider.notifier).discardUnsentSubmission();
+    if (!mounted || ref.read(workshopPublishProvider).hasPending) return;
+    setState(() {
+      _seed = null;
+      _editing = true;
+      _formEpoch++;
+    });
+  }
+
   Future<void> _sendAgain() async {
     final before = ref.read(workshopPublishProvider);
     final kind = before.result?.metadata.kind;
@@ -334,6 +347,7 @@ class _WorkshopPublishPageState extends ConsumerState<WorkshopPublishPage> {
           notes: notes,
           asked: _rechecks > 0,
           onResume: () => unawaited(_resume()),
+          onEdit: () => unawaited(_editUnsent()),
           onTick: () => workshopPublishTickRights(context, ref),
         );
       case _Step.sources:
@@ -595,6 +609,7 @@ class _Unfinished extends StatelessWidget {
     required this.notes,
     required this.asked,
     required this.onResume,
+    required this.onEdit,
     required this.onTick,
   });
 
@@ -604,6 +619,10 @@ class _Unfinished extends StatelessWidget {
   /// This visit already asked about the unknown result at least once.
   final bool asked;
   final VoidCallback onResume;
+
+  /// Back to the form. Only offered while the state layer says this
+  /// submission was never sent.
+  final VoidCallback onEdit;
   final VoidCallback onTick;
 
   @override
@@ -611,6 +630,7 @@ class _Unfinished extends StatelessWidget {
     final l10n = context.l10n;
     final failure = workshopPublishFailure(publish);
     final unknown = failure?.resultUnknown ?? false;
+    final unsent = publish.canDiscardUnsentSubmission && !unknown;
     final unsaved = publish.preferenceError != null;
     final rightsError = workshopFieldErrorText(l10n, publish.fieldErrors[PublishField.rights]);
     return WorkshopPublishFrame(
@@ -633,6 +653,8 @@ class _Unfinished extends StatelessWidget {
             title: unknown ? l10n.workshopPublishUnknownTitle : l10n.workshopPublishPendingTitle,
             message: unknown
                 ? l10n.workshopPublishUnknownMessage
+                : unsent
+                ? l10n.workshopPublishPendingUnsent
                 : failure == null && !unsaved
                 ? l10n.workshopPublishPendingMessage
                 : l10n.workshopPublishPendingLocked,
@@ -649,6 +671,18 @@ class _Unfinished extends StatelessWidget {
         // been taken back, going on needs it again.
         if (!publish.input.rightsConfirmed)
           WorkshopPublishRights(ticked: false, onTap: publish.working ? null : onTick, error: rightsError),
+        if (unsent)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                style: TextButton.styleFrom(minimumSize: const Size(48, 44)),
+                onPressed: onEdit,
+                child: Text(l10n.workshopPublishEditUnsent),
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -22826,6 +22826,13 @@ class L10nEn extends L10n {
       'Its details are fixed for now: they can\'t be edited or swapped for something else. Once the problem is solved you can continue.';
 
   @override
+  String get workshopPublishPendingUnsent =>
+      'This one hasn\'t been sent yet. You can continue once the problem is solved, or go back to edit it or pick something else.';
+
+  @override
+  String get workshopPublishEditUnsent => 'Go back and edit';
+
+  @override
   String get workshopPublishUnknownTitle => 'Not sure whether it was sent';
 
   @override

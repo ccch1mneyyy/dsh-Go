@@ -6548,6 +6548,8 @@
   "workshopPublishPendingTitle": "One submission isn't finished",
   "workshopPublishPendingMessage": "It didn't finish last time. Continuing sends the same content on, without creating a second one.",
   "workshopPublishPendingLocked": "Its details are fixed for now: they can't be edited or swapped for something else. Once the problem is solved you can continue.",
+  "workshopPublishPendingUnsent": "This one hasn't been sent yet. You can continue once the problem is solved, or go back to edit it or pick something else.",
+  "workshopPublishEditUnsent": "Go back and edit",
   "workshopPublishUnknownTitle": "Not sure whether it was sent",
   "workshopPublishUnknownMessage": "The Workshop didn't answer, so the result isn't known. Checking asks again about the same submission: if it arrived it isn't repeated, and if it didn't it carries on.",
   "workshopPublishContinue": "Continue",

@@ -595,6 +595,32 @@ void main() {
       expect(find.text('已交给工坊，等待审核'), findsOneWidget);
     });
 
+    testWidgets('known not to have been sent: 「回去修改」 returns to the form with what was typed', (tester) async {
+      final world = _World();
+      world.client.creating = (_) async =>
+          throw const WorkshopException('workshop_upload_disabled', mutationNotSent: true);
+      await _open(tester, world);
+      await _toReview(tester);
+      await tester.tap(find.widgetWithText(FilledButton, '投稿'));
+      await _settle(tester);
+
+      expect(find.text('有一份投稿还没结束'), findsOneWidget);
+      expect(find.textContaining('这次还没有发出去'), findsOneWidget);
+      expect(find.textContaining('暂时不能修改'), findsNothing);
+      expect(find.widgetWithText(FilledButton, '继续投稿'), findsOneWidget);
+      _expectWords(tester);
+
+      await _tapVisible(tester, find.text('回去修改'));
+      final publish = _container(tester).read(workshopPublishProvider);
+      expect(publish.hasPending, isFalse);
+      expect(world.client.creates, hasLength(1));
+      expect(world.client.uploads, isEmpty);
+      // The form again, with the details as they were typed.
+      expect(find.text('下一步'), findsOneWidget);
+      expect(tester.widget<TextField>(_field('id')).controller!.text, 'cat');
+      expect(find.text('有一份投稿还没结束'), findsNothing);
+    });
+
     testWidgets('a rejected one can be sent again, with the tick taken back', (tester) async {
       final world = _World();
       world.client.creating = (call) async =>
