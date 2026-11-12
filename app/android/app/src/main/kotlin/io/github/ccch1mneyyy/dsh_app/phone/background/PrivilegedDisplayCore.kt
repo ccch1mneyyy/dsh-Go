@@ -154,7 +154,7 @@ class PrivilegedDisplayCore internal constructor(
         val response = Bundle()
         val op = request.getString(Proto.OP)
         var targetReply = SelfCheckTargetRequest.Step.entries.any { it.op == op } || request.containsKey(Proto.SELF_CHECK_TARGET_C2_VERSION)
-        var selfCheckReply = op == Proto.OP_SELF_CHECK_PROBE
+        var selfCheckReply = op == Proto.OP_SELF_CHECK_PROBE || op == Proto.OP_SELF_CHECK_TAP
         try {
             if (!BackgroundAfterVisual.validRequest(op, request.containsKey(Proto.AFTER_LOCAL_VISUAL),
                     request.get(Proto.AFTER_LOCAL_VISUAL))) throw Fault("invalidArguments")
@@ -184,6 +184,25 @@ class PrivilegedDisplayCore internal constructor(
                         response.putInt(Proto.SELF_CHECK_TARGET_C2_VERSION, 1)
                     }
                 }
+                return response
+            }
+            if (op == Proto.OP_SELF_CHECK_TAP) {
+                val ownerId = SelfCheckTapRequest.owner(request.keySet(), request::get)
+                    ?: throw Fault("invalidArguments")
+                if (owner != ownerId || !selfCheckOwner) throw Fault("identityChanged")
+                val current = display ?: throw Fault("displayMissing")
+                if (request.getInt(Proto.DISPLAY_ID, -1) != current.display.displayId)
+                    throw Fault("displayTargetChanged")
+                val x = request.getInt(Proto.X, -1)
+                val y = request.getInt(Proto.Y, -1)
+                val time = request.getLong(Proto.TIME, 0L)
+                if (x < 0 || y < 0 || time <= 0) throw Fault("invalidArguments")
+                sendMotion(MotionEvent.ACTION_DOWN, x, y, time, waitForFinish = false)
+                sendMotion(MotionEvent.ACTION_UP, x, y, time, waitForFinish = false)
+                response.putBoolean(Proto.OK, true)
+                response.putString(Proto.OWNER, ownerId)
+                response.putInt(Proto.SELF_CHECK_PROBE_VERSION, 1)
+                response.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
                 return response
             }
             if (op == Proto.OP_COLLECT_SYSTEM_IME) {

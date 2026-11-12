@@ -224,6 +224,15 @@
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|uiMode"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
+        <!-- DND gate: app-hosted focus owner and inert touch receiver on the leased probe display. -->
+        <activity
+            android:name=".phone.background.BackgroundProbeHostActivity"
+            android:exported="false"
+            android:launchMode="standard"
+            android:taskAffinity="${applicationId}.phone.background"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
         <!-- Local self-check only: App UID starts this fixed inert target on its leased display. -->
         <activity
             android:name=".phone.selfcheck.PhoneSelfCheckTargetActivity"

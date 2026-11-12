@@ -23,6 +23,7 @@ import java.util.UUID
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.TimeUnit
 
 /**
  * One local diagnostic, with the same registry and original physical peer as phone tasks.
@@ -271,11 +272,19 @@ internal class PhoneSelfCheck(
                 if (!mayStart(run)) { cancelFromWorker(run); return@call }
                 // Empty allocation is not a Presentation/input result. Only this second op can supply those facts.
                 update(run, Stage.INPUT_PROBE, State.RUNNING, false)
+                val session = background.startProbeActivity(id, run.host())
+                if (session == null || !session.armed.await(3000, TimeUnit.MILLISECONDS) || session.target == null) {
+                    update(run, Stage.INPUT_PROBE, State.UNKNOWN, false, Reason.WINDOW_NOT_READY)
+                    return@call
+                }
+                val target = checkNotNull(session.target)
                 val request = Bundle().apply {
-                    putString(Proto.OP, Proto.OP_SELF_CHECK_PROBE)
+                    putString(Proto.OP, Proto.OP_SELF_CHECK_TAP)
                     putString(Proto.OWNER, run.io.owner)
-                    putInt(Proto.RELEASE_RECEIPT, 1)
-                    putInt(Proto.SELF_CHECK_PROBE_VERSION, 1)
+                    putInt(Proto.DISPLAY_ID, target.displayId)
+                    putInt(Proto.X, target.x)
+                    putInt(Proto.Y, target.y)
+                    putLong(Proto.TIME, session.time)
                 }
                 val beginStarted = clock()
                 val reply = OwnerScopeProtocol.execute(peer, run.io.owner, request) {
@@ -284,11 +293,20 @@ internal class PhoneSelfCheck(
                         verifyEntered = true
                     })
                 }
+                if (reply.get(Proto.OK) != true) {
+                    update(run, Stage.INPUT_PROBE, State.UNKNOWN, true, Reason.INPUT_API_UNAVAILABLE)
+                    return@call
+                }
+                if (!session.done.await(1000, TimeUnit.MILLISECONDS) || !session.ok) {
+                    update(run, Stage.INPUT_PROBE, State.UNKNOWN, true,
+                        Reason.fromWire(session.error ?: "inputUnconfirmed"))
+                    return@call
+                }
                 synchronized(lock) {
                     run.report.acceptProbe(run.io.owner, reply.get(Proto.OWNER),
                         reply.get(Proto.SELF_CHECK_PROBE_VERSION), reply.get(Proto.OK),
-                        reply.get(Proto.SELF_CHECK_DISPLAY_READY), reply.get(Proto.INJECT_OK),
-                        reply.get(Proto.ERROR), reply.get(Proto.INJECT_ERROR), clock() - beginStarted)
+                        reply.get(Proto.SELF_CHECK_DISPLAY_READY), true,
+                        reply.get(Proto.ERROR), null, clock() - beginStarted)
                 }
                 changed()
             }

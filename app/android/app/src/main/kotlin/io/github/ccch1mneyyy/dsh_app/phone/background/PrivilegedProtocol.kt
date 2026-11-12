@@ -80,6 +80,7 @@ object Proto {
 
     const val OP_PROBE = "probe"
     const val OP_SELF_CHECK_PROBE = "selfCheckProbe"
+    const val OP_SELF_CHECK_TAP = "selfCheckTap"
     const val SELF_CHECK_PROBE_VERSION = "selfCheckProbeVersion"
     const val SELF_CHECK_DISPLAY_READY = "selfCheckDisplayReady"
     const val OP_SELF_CHECK_TARGET_CREATE = "selfCheckTargetCreate"
@@ -126,6 +127,7 @@ object Proto {
     const val GESTURE = "gesture"
     const val X = "x"
     const val Y = "y"
+    const val TIME = "time"
     const val X2 = "x2"
     const val Y2 = "y2"
     const val DURATION_MS = "durationMs"

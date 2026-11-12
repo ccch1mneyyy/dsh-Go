@@ -38,6 +38,7 @@ object AppVisibility : Application.ActivityLifecycleCallbacks {
 
     val visible: Boolean get() = resumed.get() > 0
     fun isResumed(activity: Activity): Boolean = synchronized(resumedActivities) { activity in resumedActivities }
+    fun current(): Activity? = synchronized(resumedActivities) { resumedActivities.firstOrNull() }
 
     fun register(app: Application) {
         if (registered) return
