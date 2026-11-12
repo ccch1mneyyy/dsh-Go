@@ -91,9 +91,17 @@ class _WorkshopReportSheetState extends ConsumerState<WorkshopReportSheet> {
       return;
     }
     setState(() => _edited = false);
+    final notifier = ref.read(workshopReportProvider.notifier);
+    // A report about something else that ended while this sheet was up is
+    // over: this one starts anew. An unknown one is never cleared this way.
+    final last = ref.read(workshopReportProvider);
+    if (!_mine(last.attempt) &&
+        (last.phase == WorkshopReportPhase.succeeded || last.phase == WorkshopReportPhase.failed)) {
+      notifier.beginNewOperation();
+    }
     // The outcome is read from the state (see [_onChanged]); the bool only
     // says whether this try was taken.
-    final accepted = await ref.read(workshopReportProvider.notifier).submit(widget.entry, _reason.text);
+    final accepted = await notifier.submit(widget.entry, _reason.text);
     if (mounted && !accepted) showBriefNotice(context, l10n.workshopErrorBusy);
   }
 

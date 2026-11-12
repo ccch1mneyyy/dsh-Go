@@ -362,7 +362,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_inSheet('这个包损坏了，可能用不了。'), findsOneWidget);
-      expect(_inSheet('你装的这个版本已经被撤回。它还能用，但不会再有更新，建议卸载。'), findsOneWidget);
+      expect(_inSheet('你装的这个版本已经被撤回。它还能用；有新版本就更新，没有的话建议卸载。'), findsOneWidget);
       expect(_sheetUninstall, findsOneWidget);
       _expectNoRawText();
     });
@@ -537,7 +537,7 @@ void main() {
       expect(find.text('还没有从工坊装过东西'), findsOneWidget);
     });
 
-    testWidgets('succeeded but the list could not refresh: still a success, and says so', (tester) async {
+    testWidgets('succeeded but something else did not catch up: still a success, and says so', (tester) async {
       final local = stateInstalled();
       final bench = await _pump(
         tester,
@@ -558,7 +558,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('已卸载，但列表没能刷新，重新进来就能看到。'), findsOneWidget);
+      expect(find.text('已卸载，但有些地方没能跟着更新，重新打开 App 就好。'), findsOneWidget);
       expect(find.textContaining('没能卸载'), findsNothing);
       // The stale row says it is gone and offers nothing more.
       expect(find.text('已卸载'), findsOneWidget);
@@ -585,7 +585,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('已卸载，但列表没能刷新，重新进来就能看到。'), findsOneWidget);
+      expect(find.text('已卸载，但列表没能刷新，下拉刷新一下。'), findsOneWidget);
     });
 
     testWidgets('failed: the row keeps saying so and its sheet says why, in words', (tester) async {

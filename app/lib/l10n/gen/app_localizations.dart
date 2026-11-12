@@ -38039,7 +38039,7 @@ abstract class L10n {
   /// No description provided for @workshopInstalledWithdrawn.
   ///
   /// In zh, this message translates to:
-  /// **'你装的这个版本已经被撤回。它还能用，但不会再有更新，建议卸载。'**
+  /// **'你装的这个版本已经被撤回。它还能用；有新版本就更新，没有的话建议卸载。'**
   String get workshopInstalledWithdrawn;
 
   /// No description provided for @workshopPhasePreparing.
@@ -38552,6 +38552,12 @@ abstract class L10n {
   /// **'这一项已经不在本机了。'**
   String get workshopInstalledNoteGone;
 
+  /// No description provided for @workshopInstalledNoteUnread.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时读不到本机的安装记录，下面是刚才看到的状态。'**
+  String get workshopInstalledNoteUnread;
+
   /// No description provided for @workshopInstalledRemoveFailed.
   ///
   /// In zh, this message translates to:
@@ -38603,8 +38609,14 @@ abstract class L10n {
   /// No description provided for @workshopInstalledRemovedRefreshIssue.
   ///
   /// In zh, this message translates to:
-  /// **'已卸载，但列表没能刷新，重新进来就能看到。'**
+  /// **'已卸载，但列表没能刷新，下拉刷新一下。'**
   String get workshopInstalledRemovedRefreshIssue;
+
+  /// No description provided for @workshopInstalledRemovedLocalIssue.
+  ///
+  /// In zh, this message translates to:
+  /// **'已卸载，但有些地方没能跟着更新，重新打开 App 就好。'**
+  String get workshopInstalledRemovedLocalIssue;
 
   /// No description provided for @workshopMinePublish.
   ///

@@ -585,7 +585,10 @@ class _Result extends StatelessWidget {
             l10n.workshopPublishRecordKept,
             tone: WorkshopNoteTone.warning,
             actionLabel: l10n.commonRetry,
-            onAction: busy ? null : onClearRecord,
+            // With the record still there, clearing it is what failed. With
+            // it gone, what failed was letting go of the old request for a
+            // new submission: that is the step to try again.
+            onAction: busy ? null : (publish.hasPending || !again ? onClearRecord : onSendAgain),
           ),
         if (publish.cleanupError != null)
           WorkshopNote(

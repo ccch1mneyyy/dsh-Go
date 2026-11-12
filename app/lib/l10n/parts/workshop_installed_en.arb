@@ -30,6 +30,7 @@
   "workshopInstalledNoteMinApp": "The version now in the Workshop needs a newer app.",
   "workshopInstalledNoteUnavailable": "The version now in the Workshop can't be installed right now.",
   "workshopInstalledNoteGone": "This item is no longer on this phone.",
+  "workshopInstalledNoteUnread": "The install records on this phone can't be read right now. This is what was there a moment ago.",
   "workshopInstalledRemoveFailed": "Couldn't uninstall. {reason}",
   "@workshopInstalledRemoveFailed": {
     "placeholders": {
@@ -52,5 +53,6 @@
   },
   "workshopInstalledRemoveMessage": "This deletes the copy on this phone. It can't be undone.",
   "workshopInstalledRemoveNoReinstall": "The Workshop doesn't list it right now, so you may not be able to get it back.",
-  "workshopInstalledRemovedRefreshIssue": "Uninstalled, but the list couldn't refresh. Open this page again to see it."
+  "workshopInstalledRemovedRefreshIssue": "Uninstalled, but the list couldn't refresh. Pull down to refresh it.",
+  "workshopInstalledRemovedLocalIssue": "Uninstalled, but some places didn't catch up. Reopen the app to bring them up to date."
 }

@@ -268,21 +268,37 @@ void main() {
     expect(world.client.reports, hasLength(1));
   });
 
-  testWidgets('提交没被接纳：只提示稍等，不当成功，弹层不收', (tester) async {
+  testWidgets('另一条举报还在发时这里发不出去；它结束后这一条照常发，不用重开弹层', (tester) async {
     usePhoneView(tester);
+    final gate = Completer<String>();
     final world = WorkshopPageWorld();
+    world.client.sendReport = (kind, id, version, reason) =>
+        id == _other().metadata.id ? gate.future : Future.value('r-2');
     final container = await _open(tester, world);
+    await tester.enterText(find.byType(TextField), '抄了别人的图');
 
-    // 表单开着时，另一条举报刚好结束：这一次提交不会被接纳。
-    await container.read(workshopReportProvider.notifier).submit(_other(), '别的问题');
+    // 表单开着时，另一条举报还没有结果：按钮停用，什么也不发。
+    unawaited(container.read(workshopReportProvider.notifier).submit(_other(), '别的问题'));
+    await settle(tester);
+    expect(world.client.reports, hasLength(1));
+    expect(find.text(zh.workshopReportSubmit), findsNothing);
+    await tester.tap(find.text(zh.workshopReportSending), warnIfMissed: false);
     await tester.pump();
     expect(world.client.reports, hasLength(1));
 
-    await _send(tester, '抄了别人的图');
-    expect(find.text(zh.workshopErrorBusy), findsOneWidget);
-    expect(find.text(zh.workshopReportDone), findsNothing);
+    // 那一条结束了（成功）：它不是这一项的举报，弹层不收，也不挡这一条。
+    gate.complete('r-1');
+    await settle(tester);
     expect(find.byType(WorkshopReportSheet), findsOneWidget);
-    expect(world.client.reports, hasLength(1));
+    expect(find.text(zh.workshopReportDone), findsNothing);
+
+    await tester.tap(find.text(zh.workshopReportSubmit));
+    await settle(tester);
+    expect(find.text(zh.workshopErrorBusy), findsNothing);
+    expect(world.client.reports, hasLength(2));
+    expect(world.client.reports.last.reason, '抄了别人的图');
+    expect(find.byType(WorkshopReportSheet), findsNothing);
+    await tester.pump(const Duration(seconds: 4));
   });
 
   testWidgets('360dp 宽、字号 1.3：表单和未知说明都不溢出', (tester) async {

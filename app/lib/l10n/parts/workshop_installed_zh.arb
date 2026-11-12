@@ -30,6 +30,7 @@
   "workshopInstalledNoteMinApp": "工坊里现在的版本需要更新 App 才能安装。",
   "workshopInstalledNoteUnavailable": "工坊里现在的版本暂时不能安装。",
   "workshopInstalledNoteGone": "这一项已经不在本机了。",
+  "workshopInstalledNoteUnread": "暂时读不到本机的安装记录，下面是刚才看到的状态。",
   "workshopInstalledRemoveFailed": "没能卸载。{reason}",
   "@workshopInstalledRemoveFailed": {
     "placeholders": {
@@ -52,5 +53,6 @@
   },
   "workshopInstalledRemoveMessage": "会删掉这台手机上的这一份，删了找不回来。",
   "workshopInstalledRemoveNoReinstall": "工坊里现在找不到它，卸载后可能装不回来。",
-  "workshopInstalledRemovedRefreshIssue": "已卸载，但列表没能刷新，重新进来就能看到。"
+  "workshopInstalledRemovedRefreshIssue": "已卸载，但列表没能刷新，下拉刷新一下。",
+  "workshopInstalledRemovedLocalIssue": "已卸载，但有些地方没能跟着更新，重新打开 App 就好。"
 }

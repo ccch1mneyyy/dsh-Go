@@ -64,7 +64,7 @@
       }
     }
   },
-  "workshopInstalledWithdrawn": "你装的这个版本已经被撤回。它还能用，但不会再有更新，建议卸载。",
+  "workshopInstalledWithdrawn": "你装的这个版本已经被撤回。它还能用；有新版本就更新，没有的话建议卸载。",
   "workshopPhasePreparing": "正在准备…",
   "workshopPhaseDownloading": "正在下载",
   "workshopPhaseVerifying": "正在校验…",

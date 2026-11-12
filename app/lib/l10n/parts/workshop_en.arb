@@ -64,7 +64,7 @@
       }
     }
   },
-  "workshopInstalledWithdrawn": "The version you installed has been withdrawn. It still works but won't get updates, so consider removing it.",
+  "workshopInstalledWithdrawn": "The version you installed has been withdrawn. It still works; update if a newer version is listed, otherwise consider removing it.",
   "workshopPhasePreparing": "Getting ready…",
   "workshopPhaseDownloading": "Downloading",
   "workshopPhaseVerifying": "Verifying…",

@@ -56,6 +56,19 @@ class _WorkshopItemSheetState extends ConsumerState<WorkshopItemSheet> {
   /// The replacement request whose dialog is up, so one request asks once.
   WorkshopReplacementRequest? _asking;
 
+  @override
+  void initState() {
+    super.initState();
+    // An install that reached its replacement question while no sheet was up
+    // is still waiting for the answer: ask it now, not after another 获取.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final now = ref.read(workshopInstallProvider);
+      if (!_mine(now) || now.phase != WorkshopInstallPhase.awaitingReplacement) return;
+      if (now.replacement case final request?) unawaited(_askReplace(request));
+    });
+  }
+
   bool _mine(WorkshopInstallState install) => install.entry?.metadata.identity == widget.identity;
 
   Future<void> _install(WorkshopEntry entry) async {

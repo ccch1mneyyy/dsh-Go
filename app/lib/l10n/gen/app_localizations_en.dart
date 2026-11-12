@@ -22110,7 +22110,7 @@ class L10nEn extends L10n {
 
   @override
   String get workshopInstalledWithdrawn =>
-      'The version you installed has been withdrawn. It still works but won\'t get updates, so consider removing it.';
+      'The version you installed has been withdrawn. It still works; update if a newer version is listed, otherwise consider removing it.';
 
   @override
   String get workshopPhasePreparing => 'Getting ready…';
@@ -22386,6 +22386,10 @@ class L10nEn extends L10n {
   String get workshopInstalledNoteGone => 'This item is no longer on this phone.';
 
   @override
+  String get workshopInstalledNoteUnread =>
+      'The install records on this phone can\'t be read right now. This is what was there a moment ago.';
+
+  @override
   String workshopInstalledRemoveFailed(String reason) {
     return 'Couldn\'t uninstall. $reason';
   }
@@ -22416,7 +22420,11 @@ class L10nEn extends L10n {
 
   @override
   String get workshopInstalledRemovedRefreshIssue =>
-      'Uninstalled, but the list couldn\'t refresh. Open this page again to see it.';
+      'Uninstalled, but the list couldn\'t refresh. Pull down to refresh it.';
+
+  @override
+  String get workshopInstalledRemovedLocalIssue =>
+      'Uninstalled, but some places didn\'t catch up. Reopen the app to bring them up to date.';
 
   @override
   String get workshopMinePublish => 'Submit';

@@ -20942,7 +20942,7 @@ class L10nZh extends L10n {
   }
 
   @override
-  String get workshopInstalledWithdrawn => '你装的这个版本已经被撤回。它还能用，但不会再有更新，建议卸载。';
+  String get workshopInstalledWithdrawn => '你装的这个版本已经被撤回。它还能用；有新版本就更新，没有的话建议卸载。';
 
   @override
   String get workshopPhasePreparing => '正在准备…';
@@ -21204,6 +21204,9 @@ class L10nZh extends L10n {
   String get workshopInstalledNoteGone => '这一项已经不在本机了。';
 
   @override
+  String get workshopInstalledNoteUnread => '暂时读不到本机的安装记录，下面是刚才看到的状态。';
+
+  @override
   String workshopInstalledRemoveFailed(String reason) {
     return '没能卸载。$reason';
   }
@@ -21232,7 +21235,10 @@ class L10nZh extends L10n {
   String get workshopInstalledRemoveNoReinstall => '工坊里现在找不到它，卸载后可能装不回来。';
 
   @override
-  String get workshopInstalledRemovedRefreshIssue => '已卸载，但列表没能刷新，重新进来就能看到。';
+  String get workshopInstalledRemovedRefreshIssue => '已卸载，但列表没能刷新，下拉刷新一下。';
+
+  @override
+  String get workshopInstalledRemovedLocalIssue => '已卸载，但有些地方没能跟着更新，重新打开 App 就好。';
 
   @override
   String get workshopMinePublish => '投稿';

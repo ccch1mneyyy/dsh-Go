@@ -383,6 +383,20 @@ void main() {
       expect(find.text('写成 1.0.0 这样的版本号'), findsNothing);
     });
 
+    testWidgets('a line break typed or pasted into the description becomes a space', (tester) async {
+      final world = _World();
+      await _open(tester, world);
+      await _fillForm(tester);
+      await tester.enterText(_field('description'), '一只猫\n会打哈欠');
+      await tester.pump();
+      expect(tester.widget<TextField>(_field('description')).controller!.text, '一只猫 会打哈欠');
+
+      await tester.tap(find.text('下一步'));
+      await _settle(tester);
+      expect(world.events, contains('prepare'));
+      _expectWords(tester);
+    });
+
     testWidgets('leaving with unsent edits asks first', (tester) async {
       final world = _World();
       await _open(tester, world);

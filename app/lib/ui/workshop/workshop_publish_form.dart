@@ -10,6 +10,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
@@ -149,7 +150,14 @@ class WorkshopPublishSourceList extends ConsumerWidget {
               actionLabel: l10n.workshopRefresh,
               onAction: reload,
             ),
-            if (issues.containsKey('all') || issues.containsKey('pet')) ...[const SizedBox(height: 20), ...notes],
+            // "No companion here" is what the empty state already says; a
+            // companion that could not be read is a reason worth showing.
+            if (issues.containsKey('all') ||
+                issues.containsKey('pet') ||
+                (issues['companion'] != null && issues['companion']!.code != 'workshop_companion_unavailable')) ...[
+              const SizedBox(height: 20),
+              ...notes,
+            ],
           ],
         ),
       );
@@ -293,6 +301,8 @@ class _WorkshopPublishFormState extends ConsumerState<WorkshopPublishForm> {
         if (allowed.contains(license)) license,
     ];
   }
+
+  static final _lineBreaks = RegExp(r'[\u0000-\u001f]');
 
   /// What the fields say now. The rights tick is not part of the form: it is
   /// given on the next step, for the packed result.
@@ -536,6 +546,12 @@ class _WorkshopPublishFormState extends ConsumerState<WorkshopPublishForm> {
                             controller: _description,
                             minLines: 3,
                             maxLines: 6,
+                            // One paragraph: the workshop takes no line breaks,
+                            // so Enter ends the field and a pasted break
+                            // becomes a space.
+                            keyboardType: TextInputType.text,
+                            textInputAction: TextInputAction.done,
+                            inputFormatters: [FilteringTextInputFormatter.deny(_lineBreaks, replacementString: ' ')],
                             onChanged: (_) => _edited(PublishField.description),
                             decoration: decoration(PublishField.description),
                           ),
@@ -561,6 +577,17 @@ class _WorkshopPublishFormState extends ConsumerState<WorkshopPublishForm> {
             ),
           ),
           if (failure != null) WorkshopNote(workshopPublishErrorText(l10n, failure), tone: WorkshopNoteTone.danger),
+          // Files of an earlier try that could not be cleared stop the next
+          // pack; say so here, with the way to clear them.
+          if (publish.cleanupError != null)
+            WorkshopNote(
+              l10n.workshopPublishLeftovers,
+              tone: WorkshopNoteTone.warning,
+              actionLabel: l10n.commonRetry,
+              onAction: publish.working
+                  ? null
+                  : () => unawaited(ref.read(workshopPublishProvider.notifier).retryCleanup()),
+            ),
         ],
       ),
     );

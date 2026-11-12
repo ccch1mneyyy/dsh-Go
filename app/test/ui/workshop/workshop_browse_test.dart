@@ -308,6 +308,24 @@ void main() {
     expect(identical(install.declined.single, second), isTrue);
   });
 
+  testWidgets('a replacement question already waiting is asked when the sheet opens', (tester) async {
+    final cat = entry();
+    final request = FakeRequest(cat);
+    final (_, install) = await pump(
+      tester,
+      catalog([WorkshopItemState(entry: cat)]),
+      install: WorkshopInstallState(phase: WorkshopInstallPhase.awaitingReplacement, entry: cat, replacement: request),
+    );
+    await tester.tap(find.text('小猫'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('覆盖本机已有的？'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, '覆盖'));
+    await tester.pumpAndSettle();
+    expect(identical(install.confirmed.single, request), isTrue);
+    expect(install.installs, isEmpty);
+  });
+
   testWidgets('a failure is said in words under the button, never as a code', (tester) async {
     final cat = entry();
     final (_, install) = await pump(tester, catalog([WorkshopItemState(entry: cat)]));

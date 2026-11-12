@@ -220,8 +220,11 @@ class WorkshopInstalledSheet extends ConsumerWidget {
     final listed = state.rows.where((r) => r.local.localId == opened.local.localId).firstOrNull;
     final row = listed ?? opened;
     final removal = workshopInstalledRemovalOf(row, state.removal);
+    // The list is being read, or could not be: a row missing from it says
+    // nothing about the phone, so what was opened stays, with its actions.
+    final unread = listed == null && (state.loading || state.loadError != null);
     // Removed while the sheet was up, or removed with the list not yet re-read.
-    final gone = listed == null || removal == WorkshopRemovalPhase.succeeded;
+    final gone = (listed == null && !unread) || removal == WorkshopRemovalPhase.succeeded;
     final local = row.local;
     final title = workshopInstalledTitle(row, locale);
     final update = row.updateAvailable == true ? row.publicEntry : null;
@@ -233,6 +236,8 @@ class WorkshopInstalledSheet extends ConsumerWidget {
       if (gone)
         WorkshopNote(l10n.workshopInstalledNoteGone, padding: notePadding)
       else ...[
+        if (unread)
+          WorkshopNote(l10n.workshopInstalledNoteUnread, tone: WorkshopNoteTone.warning, padding: notePadding),
         if (removal == WorkshopRemovalPhase.failed)
           WorkshopNote(
             l10n.workshopInstalledRemoveFailed(workshopErrorLine(l10n, state.removal.error ?? '')),

@@ -79,11 +79,16 @@ class _WorkshopInstalledSliverState extends ConsumerState<WorkshopInstalledSlive
     switch (now.phase) {
       case WorkshopRemovalPhase.succeeded:
         // The files are gone either way. A list that could not be read again
-        // keeps its own error (loadError) apart from the removal's.
-        final unrefreshed = now.refreshError != null || ref.read(workshopInstalledProvider).loadError != null;
+        // keeps its own error (loadError); the removal's refreshError may
+        // also be about the pet on screen, which a pull here does not mend.
+        final listOld = ref.read(workshopInstalledProvider).loadError != null;
         showBriefNotice(
           context,
-          unrefreshed ? l10n.workshopInstalledRemovedRefreshIssue : l10n.workshopInstalledStatusRemoved,
+          listOld
+              ? l10n.workshopInstalledRemovedRefreshIssue
+              : now.refreshError != null
+              ? l10n.workshopInstalledRemovedLocalIssue
+              : l10n.workshopInstalledStatusRemoved,
         );
       case WorkshopRemovalPhase.failed:
         // The row keeps saying so, and its sheet says why.

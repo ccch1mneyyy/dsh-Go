@@ -79,5 +79,9 @@ String workshopKindText(L10n l10n, String kind) => switch (kind) {
 };
 
 /// The address as the person would recognise it: the host, with its port
-/// when it has one.
-String workshopHostText(Uri origin) => origin.hasPort ? '${origin.host}:${origin.port}' : origin.host;
+/// when it has one. An IPv6 host keeps its brackets, so the port cannot be
+/// read as part of the address.
+String workshopHostText(Uri origin) {
+  final host = origin.host.contains(':') ? '[${origin.host}]' : origin.host;
+  return origin.hasPort ? '$host:${origin.port}' : host;
+}
