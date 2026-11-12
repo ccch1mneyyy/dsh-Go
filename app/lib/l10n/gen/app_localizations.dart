@@ -38618,6 +38618,12 @@ abstract class L10n {
   /// **'已卸载，但有些地方没能跟着更新，重新打开 App 就好。'**
   String get workshopInstalledRemovedLocalIssue;
 
+  /// No description provided for @workshopInstalledDismissFailure.
+  ///
+  /// In zh, this message translates to:
+  /// **'知道了'**
+  String get workshopInstalledDismissFailure;
+
   /// No description provided for @workshopMinePublish.
   ///
   /// In zh, this message translates to:

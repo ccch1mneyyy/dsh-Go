@@ -13439,6 +13439,7 @@
   "workshopInstalledRemoveNoReinstall": "工坊里现在找不到它，卸载后可能装不回来。",
   "workshopInstalledRemovedRefreshIssue": "已卸载，但列表没能刷新，下拉刷新一下。",
   "workshopInstalledRemovedLocalIssue": "已卸载，但有些地方没能跟着更新，重新打开 App 就好。",
+  "workshopInstalledDismissFailure": "知道了",
   "workshopMinePublish": "投稿",
   "workshopMinePublishHint": "审核通过后出现在「发现」里",
   "workshopMineSignInTitle": "投稿记在论坛账号上",

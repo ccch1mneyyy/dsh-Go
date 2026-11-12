@@ -58,6 +58,12 @@ class _WorkshopScreenState extends ConsumerState<WorkshopScreen> {
           await ref.read(workshopCatalogProvider.notifier).refresh();
           if (!mounted) return;
           await ref.read(workshopInstalledProvider.notifier).refresh();
+          if (!mounted) return;
+          // The pull read the phone again. If that worked, what the rows say
+          // is current and the last uninstall's result has nothing to add.
+          if (ref.read(workshopInstalledProvider).loadError == null) {
+            ref.read(workshopInstalledProvider.notifier).acknowledgeRemoval();
+          }
         case WorkshopTab.mine:
           await refreshWorkshopMine(ref);
       }

@@ -21241,6 +21241,9 @@ class L10nZh extends L10n {
   String get workshopInstalledRemovedLocalIssue => '已卸载，但有些地方没能跟着更新，重新打开 App 就好。';
 
   @override
+  String get workshopInstalledDismissFailure => '知道了';
+
+  @override
   String get workshopMinePublish => '投稿';
 
   @override

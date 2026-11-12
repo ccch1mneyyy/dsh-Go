@@ -22428,6 +22428,9 @@ class L10nEn extends L10n {
       'Uninstalled, but some places didn\'t catch up. Reopen the app to bring them up to date.';
 
   @override
+  String get workshopInstalledDismissFailure => 'Got it';
+
+  @override
   String get workshopMinePublish => 'Submit';
 
   @override
