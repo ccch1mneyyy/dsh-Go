@@ -8,9 +8,10 @@ import { record } from './pet-catalog';
 import { readBounded, storedAsset } from './pet-market-io';
 import { admin, enabled, features, forumOrigin, jsonBody, limitBurst, quota, user } from './workshop-auth';
 import { WORKSHOP_ADMIN_HTML, WORKSHOP_ADMIN_SCRIPT } from './workshop-admin-page';
-import { assetUrl, blobKey, encoder, EXPANDED_CAP, id, KINDS, kind, LICENSES, MEMBER_CAP, metadata, releaseId,
-  requireWorkshop as need, sha256, validVersion, text, UPLOAD_CAP, WorkshopError, type SubmissionMeta } from './workshop-common';
+import { assetUrl, blobKey, encoder, EXPANDED_CAP, id, KINDS, kind, LICENSES, MEMBER_CAP, metadata, PREVIEW_CONTRACT, previewKey, releaseId,
+  requireWorkshop as need, sha256, validVersion, text, UPLOAD_CAP, WorkshopError, type PublicPreview, type SubmissionMeta } from './workshop-common';
 import { validatePack } from './workshop-pack';
+import { checkPreviewRequest, derivePreview, validatePublicPng } from './workshop-preview';
 import { emptyInspection, inspectPack, inspectionPage, readPreview } from './workshop-inspection';
 import { approve, audit, catalog, commitState, editState, loadState, resolveReport, sameOwner, STATUSES, withdrawRelease, withdrawSubmission,
   type Owner, type Report, type Snapshot, type State, type Submission } from './workshop-state';
@@ -93,6 +94,34 @@ async function putBlob(env: Env, meta: SubmissionMeta, bytes: Uint8Array): Promi
   const stored = result ?? await env.BUCKET.head(blobKey(meta.sha256));
   need(storedAsset(stored, { ...meta, url: assetUrl(meta) }), 'storage_unavailable', 503);
 }
+async function putPreview(env: Env, preview: PublicPreview, bytes: Uint8Array): Promise<void> {
+  const result = await env.BUCKET.put(previewKey(preview.sha256), bytes, {
+    onlyIf: new Headers({ 'If-None-Match': '*' }), sha256: preview.sha256,
+    httpMetadata: { contentType: 'image/png', cacheControl: 'private, no-store' },
+  });
+  const stored = result ?? await env.BUCKET.head(previewKey(preview.sha256));
+  need(storedAsset(stored, { ...preview, url: preview.path }), 'storage_unavailable', 503);
+}
+async function previewBytes(env: Env, preview: PublicPreview): Promise<Uint8Array> {
+  const object = await env.BUCKET.get(previewKey(preview.sha256));
+  if (!storedAsset(object, { ...preview, url: preview.path }) || !object?.body) {
+    void object?.body?.cancel().catch(() => {}); throw new WorkshopError('storage_unavailable', 503);
+  }
+  const bytes = await readBounded(object.body, preview.size);
+  need(bytes.length === preview.size && await sha256(bytes) === preview.sha256, 'storage_unavailable', 503); return bytes;
+}
+async function servePreview(request: Request, env: Env, preview: PublicPreview): Promise<Response> {
+  let bytes: Uint8Array | null = null;
+  if (request.method === 'HEAD') {
+    need(storedAsset(await env.BUCKET.head(previewKey(preview.sha256)), { ...preview, url: preview.path }), 'storage_unavailable', 503);
+  } else bytes = await previewBytes(env, preview);
+  // Images have no Range/304 protocol. Authorization precedes storage even
+  // when clients send conditional headers; the body is always this exact PNG.
+  return new Response(bytes, { headers: { ...COMMON,
+    'Content-Type': 'image/png', 'Content-Length': String(preview.size), 'Cache-Control': 'private, no-store',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'; sandbox",
+  } });
+}
 async function serveBlob(request: Request, env: Env, ctx: Ctx, meta: SubmissionMeta): Promise<Response> {
   const asset = { ...meta, url: assetUrl(meta) };
   const checked = <T extends R2Object | null>(object: T): T => {
@@ -130,6 +159,14 @@ async function publicRoute(request: Request, env: Env, ctx: Ctx, url: URL): Prom
     const headers = { ...COMMON, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-cache, must-revalidate', ETag: tag };
     if (matchesEtag(request.headers.get('If-None-Match'), tag)) return new Response(null, { status: 304, headers });
     return new Response(request.method === 'HEAD' ? null : body, { headers: { ...headers, 'Content-Length': String(encoder.encode(body).length) } });
+  }
+  if (/^\/market\/workshop\/(pet|companion)\/[^/]+\/[^/]+\/[a-f0-9]{64}\/preview\/[a-f0-9]{64}\.png$/.test(url.pathname)) {
+    const state = snapshot.state, submission = state.current.map(sid => find(state, sid)).find(s => s.preview?.path === url.pathname);
+    need(submission?.status === 'approved' && submission.preview, 'not_found', 404);
+    const key = releaseId(submission.metadata), release = state.releases.find(r => releaseId(r) === key);
+    need(release && release.sha256 === submission.metadata.sha256 && release.size === submission.metadata.size &&
+      !state.withdrawn.some(w => releaseId(w) === key), 'not_found', 404);
+    return servePreview(request, env, submission.preview);
   }
   const match = /^\/market\/workshop\/(pet|companion)\/([^/]+)\/([^/]+)\/([a-f0-9]{64})\.zip$/.exec(url.pathname);
   need(match, 'not_found', 404);
@@ -185,14 +222,22 @@ async function userRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promis
     let bytes = await readCapped(request, UPLOAD_CAP); need(bytes, 'body_too_large', 413);
     need(bytes.length === existing.metadata.size, 'size_mismatch', 422); need(await sha256(bytes) === existing.metadata.sha256, 'sha_mismatch', 422);
     if (existing.status === 'pending') return json(200, { submission: existing });
+    // The opt-in dimensions/byte gate runs before any image inflate. Full
+    // archive validation still precedes deriving and registering the image.
+    checkPreviewRequest(bytes, existing.metadata);
     const validation = validatePack(bytes, existing.metadata, MAX_MOC_VERSION);
+    let preview = await derivePreview(bytes, existing.metadata);
     await putBlob(env, existing.metadata, bytes); bytes = null;
+    const descriptor = preview?.descriptor;
+    if (preview) await putPreview(env, preview.descriptor, preview.bytes);
+    preview = undefined;
     // Re-read after validation and the private blob write. A concurrent owner
     // withdrawal/review cannot be overwritten by a stale draft snapshot.
     const previous = await loadState(env), state = editState(previous), submission = find(state, sid, owner), now = new Date().toISOString();
     if (submission.status === 'pending') return json(200, { submission });
     need(submission.status === 'draft', 'submission_state', 409);
     submission.status = 'pending'; submission.submittedAt = now; submission.updatedAt = now; submission.validation = validation;
+    if (descriptor) submission.preview = descriptor;
     audit(state, now, { action: 'submit', actor: owner, submissionId: sid }); await commitState(env, previous, state, now);
     return json(200, { submission });
   }
@@ -248,7 +293,7 @@ async function adminRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promi
     audit(state, now, { action: 'withdraw', actor: 'admin', releaseId: releaseId(release), reason: explanation });
     await commitState(env, previous, state, now); return json(200, { withdrawn });
   }
-  const match = /^\/submissions\/([a-f0-9]{32})(?:\/(archive|review|withdraw|preview))?$/.exec(path); need(match, 'not_found', 404);
+  const match = /^\/submissions\/([a-f0-9]{32})(?:\/(archive|review|withdraw|preview|public-preview))?$/.exec(path); need(match, 'not_found', 404);
   const sid = match[1]!;
   if (!match[2]) {
     method(request, 'GET'); await limitBurst(request, env, false); const paging = inspectionPage(url), detail = await submissionDetail(env, sid);
@@ -263,6 +308,12 @@ async function adminRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promi
       'Content-Type': preview.info.mediaType, 'Content-Length': String(preview.bytes.length),
       'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'; sandbox",
     } });
+  }
+  if (match[2] === 'public-preview') {
+    method(request, 'GET', 'HEAD'); await limitBurst(request, env, false);
+    need(url.search === '', 'bad_query');
+    const submission = find((await loadState(env)).state, sid); need(submission.submittedAt && submission.preview, 'not_found', 404);
+    return servePreview(request, env, submission.preview);
   }
   if (match[2] === 'archive') {
     method(request, 'GET', 'HEAD'); const submission = find((await loadState(env)).state, sid);
@@ -285,6 +336,10 @@ async function adminRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promi
   if (body.decision === 'approve') {
     enabled(env, initial.metadata.kind);
     validation = validatePack(await blobBytes(env, initial.metadata), initial.metadata, MAX_MOC_VERSION);
+    if (initial.preview) {
+      const info = validatePublicPng(await previewBytes(env, initial.preview));
+      need(info.width === initial.preview.width && info.height === initial.preview.height, 'storage_unavailable', 503);
+    }
   }
   const previous = await loadState(env), state = editState(previous), submission = find(state, sid), now = new Date().toISOString();
   need(submission.status === 'pending', 'submission_state', 409);
@@ -305,7 +360,7 @@ export async function workshop(request: Request, env: Env, ctx: Ctx): Promise<Re
     if (url.pathname.startsWith('/market/')) return await publicRoute(request, env, ctx, url);
     if (url.pathname === `${API}/capabilities`) {
       method(request, 'GET'); return json(200, { schema: 1, features: features(env), kinds: KINDS, licenses: LICENSES,
-        forumOrigin: forumOrigin(env), maxMocVersion: MAX_MOC_VERSION,
+        forumOrigin: forumOrigin(env), maxMocVersion: MAX_MOC_VERSION, preview: PREVIEW_CONTRACT,
         limits: { archiveBytes: UPLOAD_CAP, expandedBytes: EXPANDED_CAP, companionMemberBytes: MEMBER_CAP, companionEntries: 1000, petEntries: 256 } });
     }
     need(url.pathname.startsWith(API + '/'), 'not_found', 404);
