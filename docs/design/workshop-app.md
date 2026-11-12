@@ -64,7 +64,7 @@ Companion 槽位的列表读取将预期的收据、存储和恢复错误经既�
 
 集合命中不表示列表已经完整扫描模型或图片，不等于文件永久损坏，也不授予卸载权限。可信收据附带本机 issue 时仍用原收据围栏卸载；只有 issue、没有可信收据的行仍不能调用实际删除。不得用集合成员关系替换 `canUninstall` 或扩大列表的检查深度。
 
-`WorkshopInstalledController.acknowledgeRemoval()` 是同步 `bool`：controller 已 disposed 时返回 false；否则读取当前 state，只将 `succeeded` / `failed` 的 removal 换为默认 idle，并清除该 removal 的 target / error / refreshError。`idle` / `removing` 返回 false。列表、加载和目录诊断保持原值；它不执行 I/O，不重试卸载，不读取或改变共享 mutation 门，也不以门空闲为前提，门仍由原操作释放。页面接线时应在用户明确收起结果的动作里调用，不随刷新自动确认。本节记录数据层接口，不表示当前页面已经接入这些新动作。
+`WorkshopInstalledController.acknowledgeRemoval()` 是同步 `bool`：controller 已 disposed 时返回 false；否则读取当前 state，只将 `succeeded` / `failed` 的 removal 换为默认 idle，并清除该 removal 的 target / error / refreshError。`idle` / `removing` 返回 false。列表、加载和目录诊断保持原值；它不执行 I/O，不重试卸载，不读取或改变共享 mutation 门，也不以门空闲为前提，门仍由原操作释放。不要在监听器里同步调用。页面在用户明确收起的动作里调用它，下拉刷新在本机列表重读成功、且结果仍是刷新开始时那一个时也调用（见「页面」一节）。
 
 ## 伙伴完整性与换包门
 
@@ -152,7 +152,7 @@ User API Key 的本地格式门与 Worker 一致，为 1–512 个可见 ASCII �
 
 恢复只放下或修复本机续传线索，不撤回或删除服务器投稿；服务器可能已有 draft / pending。请求号映射与凭据披露记录不随此清除，改 metadata、换图或重导出产生不同 ZIP 后仍可能获得新请求号，不能承诺没有重复投稿。偏好读取或写入失败放在独立的 `recoveryError`，不把原 unknown 或已知 result 改写为另一种服务器结论；`workshop_confirmation_stale` 使旧 offer 失效。条件清除成功后，已持有的合法私有 lease 若清理失败，沿原 `cleanupError` / `retryCleanup` 处理，不复活已清的 journal；没有合法 lease 时不按坏记录的路径删除文件。
 
-默认偏好实现与原 pending 方法共用同一 Dart isolate 的静态队列，比对读取到的类型及精确存储值，不是跨进程 CAS。账号切换会阻止旧请求结果回填新 session；已经受理并进入偏好队列的确认仍可能按旧 offer 的目标和版本完成本机写入，不能把切换账号说成撤销这次确认。原 `canDiscardUnsentSubmission` 仍只用于整个已知历史均未派发的轻量退出，与上述知情放下分开。本节是数据层合同；以下页面现状尚未接入这些恢复动作。
+默认偏好实现与原 pending 方法共用同一 Dart isolate 的静态队列，比对读取到的类型及精确存储值，不是跨进程 CAS。账号切换会阻止旧请求结果回填新 session；已经受理并进入偏好队列的确认仍可能按旧 offer 的目标和版本完成本机写入，不能把切换账号说成撤销这次确认。原 `canDiscardUnsentSubmission` 仍只用于整个已知历史均未派发的轻量退出，与上述知情放下分开。页面怎么接见「页面」一节。
 
 ## 页面
 
@@ -164,7 +164,7 @@ User API Key 的本地格式门与 Worker 一致，为 1–512 个可见 ASCII �
 - 已安装（`workshop_installed.dart`、`workshop_installed_sheet.dart`）：列表来自本机记录，目录只往行上加「有更新」「已撤回」之类的状态，不决定某一行在不在。离线、没有配置工坊、作品下架后列表照旧。下拉刷新先读目录，再让本机行取目录带来的变化。卸载的结果从控制器的移除状态读，不看调用的返回值。
 - 我的投稿（`workshop_mine.dart`、`workshop_mine_sheet.dart`）：本人投稿及审核状态，撤回要写原因并二次确认。撤回结果未知时只提供「查询结果」，查到确实没撤回才允许再撤一次。
 
-投稿页（`workshop_publish_page.dart`、`workshop_publish_form.dart`）是一个随状态换步骤的表单页，顺序为：工坊暂不收稿 → 登录论坛 → 凭据说明 → 有没有没交完的投稿 → 选来源 → 填资料 → 查看打好的包并勾选权利声明 → 发送 → 结果。没交完的投稿总是先于新投稿显示；结果未知时只能就同一个请求再问一次，页面上没有办法另发一份顶替它。只有一种情况可以放下没交完的投稿回到表单：状态层确认创建请求从未发出（`canDiscardUnsentSubmission`）。这时页面提供「回去修改」，只清本机记录，不向工坊发任何请求；之前可能发出过、或是重启后恢复出来的投稿没有这个选项。
+投稿页（`workshop_publish_page.dart`、`workshop_publish_form.dart`）是一个随状态换步骤的表单页，顺序为：工坊暂不收稿 → 登录论坛 → 凭据说明 → 有没有没交完的投稿 → 选来源 → 填资料 → 查看打好的包并勾选权利声明 → 发送 → 结果。没交完的投稿总是先于新投稿显示；结果未知时只能就同一个请求再问一次，页面上没有办法另发一份顶替它。只有一种情况可以放下没交完的投稿回到表单：状态层确认创建请求从未发出（`canDiscardUnsentSubmission`）。这时页面提供「回去修改」，只清本机记录，不向工坊发任何请求；之前可能发出过、或是重启后恢复出来的投稿没有这个选项；它们在本机记录用不了时可以走下面的「放下用不了的本机记录」。
 
 举报（`workshop_report_sheet.dart`）从详情弹层进入。举报没有幂等合同，结果未知时页面如实说明，不替用户重发。
 

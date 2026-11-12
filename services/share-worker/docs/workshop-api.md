@@ -76,7 +76,7 @@ App 在确认账号与 Worker 目标后发送断言；不能因为已读取 capa
 
 `metadata` 是上面的完整对象。`status` 枚举为 draft / pending / approved / rejected / withdrawn。
 
-- pending 增加 `submittedAt` 与 `validation`（`validator`、`files`、`expandedBytes`，以及 `sheets?` 或 `mocVersions?`）；声明公开预览时还增加已登记 `preview`。
+- pending 增加 `submittedAt` 与 `validation`（`validator`、`files`、`expandedBytes`，以及 `sheets?` 或 `mocVersions?`）；声明公开预览时还增加已登记 `preview`。例外：没有预览功能的 Worker 接过包的投稿会声明了 `previewSource` 却没有 `preview`，按无图处理，客户端不要据此判记录非法。
 - approved / rejected 增加 `review: {at, decision, reason}`。
 - withdrawn 增加 `withdrawal: {at, reason}`。
 - 可选键不存在时省略。

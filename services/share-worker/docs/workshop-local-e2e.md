@@ -10,7 +10,7 @@
 node services/share-worker/scripts/workshop-e2e.mjs
 ```
 
-或在 `services/share-worker/` 运行 `node scripts/workshop-e2e.mjs`。需要锁文件对应的 Worker `node_modules`、支持 `module.registerHooks` 与 `stripTypeScriptTypes` 的 Node（项目所用 Node 22.19 及以后版本）、PATH 中的 Flutter，以及 App 已完成的正常依赖准备。命令不安装工具或包。
+或在 `services/share-worker/` 运行 `node scripts/workshop-e2e.mjs`。需要锁文件对应的 Worker `node_modules`、支持 `module.registerHooks` 与 `stripTypeScriptTypes` 的 `transform` 模式的 Node（项目所用 Node 22.19 及以后、26 之前；Worker 源码用了构造函数参数属性，单纯去类型不够，Node 不支持时报 `node_type_transform_unavailable`）、PATH 中的 Flutter，以及 App 已完成的正常依赖准备。命令不安装工具或包。
 
 入口先调用已有 `scripts/build-site.mjs`，所以正常构建使用的 `site/build/share/c.html` 等输入必须已准备好；缺少时按既有构建说明补齐。入口不另造替代页面。普通 `public/`、`src/generated/` 输出遵循原构建流程；演练结束只删除自己新建的临时配置、密钥与 R2／KV 目录。
 

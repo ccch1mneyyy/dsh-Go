@@ -154,6 +154,18 @@ export async function removeTemporaryStorage(directory, { remove = rm, wait = de
   }
 }
 
+/// The Worker sources use parameter properties, which plain type stripping
+/// rejects, so the transform mode is needed. A Node without it is named as
+/// such instead of failing on the first fixture.
+function stripTransform(code) {
+  try {
+    return stripTypeScriptTypes(code, { mode: 'transform' });
+  } catch (error) {
+    if (error?.code === 'ERR_INVALID_ARG_VALUE') check(false, 'node_type_transform_unavailable');
+    throw error;
+  }
+}
+
 export async function rehearsalFixtures(worker) {
   // Only resolve/strip the repository's local TS fixture graph. This does not
   // replace fetch, Worker auth, R2, or an API response.
@@ -168,7 +180,7 @@ export async function rehearsalFixtures(worker) {
     },
     load(url, context, next) {
       if (inRoot(url) && url.endsWith('.ts')) {
-        return { format: 'module', source: stripTypeScriptTypes(readFileSync(fileURLToPath(url), 'utf8'), { mode: 'transform' }), shortCircuit: true };
+        return { format: 'module', source: stripTransform(readFileSync(fileURLToPath(url), 'utf8')), shortCircuit: true };
       }
       return next(url, context);
     },

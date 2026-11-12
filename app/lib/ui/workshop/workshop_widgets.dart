@@ -142,7 +142,8 @@ class WorkshopPreviewPanel extends ConsumerWidget {
             child: WorkshopPreviewImage(
               uri: uri,
               kind: entry.metadata.kind,
-              fallback: const SizedBox.shrink(),
+              // Not an empty frame: the same square the list shows, larger.
+              fallback: Center(child: WorkshopAvatar(entry.metadata, size: 72)),
               cacheExtent: (height * MediaQuery.devicePixelRatioOf(context)).ceil(),
             ),
           ),

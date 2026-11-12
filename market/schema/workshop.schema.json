@@ -30,7 +30,7 @@
     "entry": {
       "type": "object", "additionalProperties": false,
       "required": ["kind", "id", "version", "minApp", "title", "author", "license", "source", "url", "sha256", "size", "blockedVersions"],
-      "dependentRequired": {"preview": ["previewSource"], "previewSource": ["preview"]},
+      "dependentRequired": {"preview": ["previewSource"]},
       "allOf": [
         {"if": {"properties": {"kind": {"const": "pet"}}}, "then": {"properties": {"previewSource": {"const": "pet-idle"}}}},
         {"if": {"properties": {"kind": {"const": "companion"}}}, "then": {"properties": {"previewSource": {"const": "companion-preview"}}}}

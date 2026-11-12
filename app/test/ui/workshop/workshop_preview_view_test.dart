@@ -92,6 +92,14 @@ void main() {
     expect(find.byType(PluginAvatar), findsOneWidget);
   });
 
+  testWidgets('a detail picture that cannot be had shows the letter square, not an empty frame', (tester) async {
+    await _pump(tester, WorkshopPreviewPanel(workshopSamplePreviewEntry()));
+
+    expect(find.byType(PluginAvatar), findsOneWidget);
+    expect(tester.getSize(find.byType(PluginAvatar)), const Size(72, 72));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the detail panel shows the picture at a size to judge it by, or is not there at all', (tester) async {
     final entry = workshopSamplePreviewEntry();
     await _pump(tester, WorkshopPreviewPanel(entry));

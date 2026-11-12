@@ -179,7 +179,8 @@ async function publicRoute(request: Request, env: Env, ctx: Ctx, url: URL): Prom
     return new Response(request.method === 'HEAD' ? null : body, { headers: { ...headers, 'Content-Length': String(encoder.encode(body).length) } });
   }
   if (picture) {
-    const state = snapshot.state, submission = state.current.map(sid => find(state, sid)).find(s => s.preview?.path === url.pathname);
+    const state = snapshot.state, byId = new Map(state.submissions.map(s => [s.submissionId, s]));
+    const submission = state.current.map(sid => byId.get(sid)).find(s => s?.preview?.path === url.pathname);
     need(submission?.status === 'approved' && submission.preview, 'not_found', 404);
     const key = releaseId(submission.metadata), release = state.releases.find(r => releaseId(r) === key);
     need(release && release.sha256 === submission.metadata.sha256 && release.size === submission.metadata.size &&
