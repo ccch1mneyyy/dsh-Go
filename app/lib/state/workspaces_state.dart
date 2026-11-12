@@ -86,6 +86,7 @@ class WorkspacesController extends Notifier<WorkspacesState> {
   final Set<String> _removed = {};
   DshClient? _client;
   ReadListIdentity? _identity;
+  int _pinRequestSeq = 0;
 
   @override
   WorkspacesState build() {
@@ -112,6 +113,7 @@ class WorkspacesController extends Notifier<WorkspacesState> {
   void _onFrame(WorkspaceUpdate update) {
     final full = update is WorkspaceBaseline ? update : workspaceReplaceFrame(update);
     if (full != null) {
+      _pinRequestSeq++;
       _rows
         ..clear()
         ..addEntries(full.workspaces.map((w) => MapEntry(w.workspaceId, w)));
@@ -127,6 +129,7 @@ class WorkspacesController extends Notifier<WorkspacesState> {
       case WorkspaceOrder(:final workspaceIds):
         _order = List.of(workspaceIds);
       case WorkspacePinnedUpdate(:final pinnedSessionIds):
+        _pinRequestSeq++;
         return _emit(pinned: pinnedSessionIds);
       case WorkspaceArchivedUpdate(:final archivedSessionIds):
         return _emit(archived: archivedSessionIds);
@@ -208,14 +211,16 @@ class WorkspacesController extends Notifier<WorkspacesState> {
 
   Future<void> pinSession(String sessionId) async {
     final r = ref;
+    final request = ++_pinRequestSeq;
     final pinned = await _requireClient.pinSession(sessionId);
-    if (r.mounted) _emit(pinned: pinned);
+    if (r.mounted && request == _pinRequestSeq) _emit(pinned: pinned);
   }
 
   Future<void> unpinSession(String sessionId) async {
     final r = ref;
+    final request = ++_pinRequestSeq;
     final pinned = await _requireClient.unpinSession(sessionId);
-    if (r.mounted) _emit(pinned: pinned);
+    if (r.mounted && request == _pinRequestSeq) _emit(pinned: pinned);
   }
 }
 

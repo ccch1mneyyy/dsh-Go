@@ -1,0 +1,38 @@
+{
+  "phase": "old",
+  "steps": [
+    {
+      "name": "pubget",
+      "cwd": "/workspace/scratch/8efd0e96159e/wt-workspace-pins/app",
+      "command": [
+        "/workspace/scratch/8efd0e96159e/toolchain/run-flutter",
+        "pub",
+        "get",
+        "--offline",
+        "--enforce-lockfile"
+      ],
+      "started": "2026-11-12T02:19:19.461306+00:00",
+      "finished": "2026-11-12T02:19:22.539956+00:00",
+      "exit": 0
+    },
+    {
+      "name": "old",
+      "cwd": "/workspace/scratch/8efd0e96159e/wt-workspace-pins/app",
+      "command": [
+        "/workspace/scratch/8efd0e96159e/toolchain/run-flutter",
+        "test",
+        "--no-pub",
+        "--concurrency=1",
+        "--reporter=expanded",
+        "test/workspace/workspace_pin_echo_test.dart"
+      ],
+      "started": "2026-11-12T02:19:22.540052+00:00",
+      "finished": "2026-11-12T02:20:17.639109+00:00",
+      "exit": 1
+    }
+  ],
+  "lock_before": "5a9c565a36c433cca5278ca1108ec5f735ed59e2c978f99539dd071b900a023d",
+  "lock_after": "5a9c565a36c433cca5278ca1108ec5f735ed59e2c978f99539dd071b900a023d",
+  "test_sha256": "4694a13e67627ee5722f77729d4c0234d82fa20cecd566095f125332e389681f",
+  "source_sha256": "40bc5329d000001c188d28a1f85a4d6bdace03908225b7003212f7477cff1974"
+}

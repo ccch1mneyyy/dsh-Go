@@ -1,0 +1,38 @@
+00:00 +0: loading /workspace/scratch/8efd0e96159e/wt-workspace-pins/app/test/workspace/workspace_pin_echo_test.dart
+00:00 +0: late unpin echo preserves a newer pushed pin set
+00:00 +0 -1: late unpin echo preserves a newer pushed pin set [E]
+  Expected: ['second']
+    Actual: []
+     Which: at location [0] is [] which shorter than expected
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/workspace/workspace_pin_echo_test.dart 107:5   main.<fn>
+  
+00:00 +0 -1: overlapping pin echoes retain the latest request when replies reverse
+00:00 +0 -2: overlapping pin echoes retain the latest request when replies reverse [E]
+  Expected: ['second', 'first']
+    Actual: ['first']
+     Which: at location [0] is 'first' instead of 'second'
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/workspace/workspace_pin_echo_test.dart 127:5   main.<fn>
+  
+00:00 +0 -2: a full replace pin set supersedes an old pin echo
+00:00 +0 -3: a full replace pin set supersedes an old pin echo [E]
+  Expected: ['second']
+    Actual: ['first']
+     Which: at location [0] is 'first' instead of 'second'
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/workspace/workspace_pin_echo_test.dart 149:5   main.<fn>
+  
+00:00 +0 -3: workspace and archive frames keep a valid pin or unpin unary reply
+00:00 +1 -3: Some tests failed.
+
+Failing tests:
+  /workspace/scratch/8efd0e96159e/wt-workspace-pins/app/test/workspace/workspace_pin_echo_test.dart: a full replace pin set supersedes an old pin echo
+  /workspace/scratch/8efd0e96159e/wt-workspace-pins/app/test/workspace/workspace_pin_echo_test.dart: late unpin echo preserves a newer pushed pin set
+  /workspace/scratch/8efd0e96159e/wt-workspace-pins/app/test/workspace/workspace_pin_echo_test.dart: overlapping pin echoes retain the latest request when replies reverse
