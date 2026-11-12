@@ -21081,6 +21081,130 @@ class L10nZh extends L10n {
   String get workshopErrorGeneric => '没有成功，稍后再试。';
 
   @override
+  String get workshopInstalledEmptyTitle => '还没有从工坊装过东西';
+
+  @override
+  String get workshopInstalledEmptyMessage => '在「发现」里装上的宠物和伙伴会列在这里。';
+
+  @override
+  String get workshopInstalledEmptyAction => '去发现';
+
+  @override
+  String get workshopInstalledLoadFailedTitle => '读不出已安装的内容';
+
+  @override
+  String get workshopInstalledLoadStale => '没能重新读取，显示的是上一次的。';
+
+  @override
+  String get workshopInstalledCatalogStale => '更新和撤回的信息可能不是最新的。';
+
+  @override
+  String get workshopInstalledCatalogUnknown => '暂时查不到更新和撤回的信息。';
+
+  @override
+  String get workshopInstalledStatusUpdate => '有更新';
+
+  @override
+  String get workshopInstalledStatusWithdrawn => '这个版本已被撤回';
+
+  @override
+  String get workshopInstalledStatusOtherOrigin => '来自别的工坊';
+
+  @override
+  String get workshopInstalledStatusNotListed => '工坊里现在找不到它';
+
+  @override
+  String get workshopInstalledStatusCompanionOff => '伙伴类作品暂时关闭';
+
+  @override
+  String get workshopInstalledStatusRewritten => '和工坊里的同一版本不一致';
+
+  @override
+  String get workshopInstalledStatusRemoving => '正在卸载…';
+
+  @override
+  String get workshopInstalledStatusRemoveFailed => '没能卸载';
+
+  @override
+  String get workshopInstalledStatusRemoved => '已卸载';
+
+  @override
+  String get workshopInstalledIssueBroken => '这个包损坏了';
+
+  @override
+  String get workshopInstalledIssueUnreadable => '读不出这个包';
+
+  @override
+  String get workshopInstalledIssueRecord => '安装记录对不上';
+
+  @override
+  String get workshopInstalledIssueOther => '这一项有问题';
+
+  @override
+  String get workshopInstalledNoteBroken => '这个包损坏了，可能用不了。';
+
+  @override
+  String get workshopInstalledNoteUnreadable => '没能读出这个包的文件。';
+
+  @override
+  String get workshopInstalledNoteRecord => '它的安装记录对不上。';
+
+  @override
+  String get workshopInstalledNoteOther => '这一项有问题，读不出更多信息。';
+
+  @override
+  String get workshopInstalledNoteUntrusted => '安装记录不可信，没法从这里卸载它。';
+
+  @override
+  String get workshopInstalledNoteOtherOrigin => '这是从别的工坊装的，这里查不到它的更新。';
+
+  @override
+  String get workshopInstalledNoteNotListed => '工坊里现在找不到它，本机的这一份不受影响。';
+
+  @override
+  String get workshopInstalledNoteRewritten => '工坊里同一版本的内容和本机的不一样，本机的这一份没有改动。';
+
+  @override
+  String get workshopInstalledNoteMinApp => '工坊里现在的版本需要更新 App 才能安装。';
+
+  @override
+  String get workshopInstalledNoteUnavailable => '工坊里现在的版本暂时不能安装。';
+
+  @override
+  String get workshopInstalledNoteGone => '这一项已经不在本机了。';
+
+  @override
+  String workshopInstalledRemoveFailed(String reason) {
+    return '没能卸载。$reason';
+  }
+
+  @override
+  String get workshopInstalledFactKind => '类型';
+
+  @override
+  String get workshopInstalledFactId => '作品 ID';
+
+  @override
+  String get workshopInstalledFactOrigin => '来自';
+
+  @override
+  String get workshopInstalledFactLocalId => '本机标识';
+
+  @override
+  String workshopInstalledRemoveTitle(String title) {
+    return '卸载「$title」？';
+  }
+
+  @override
+  String get workshopInstalledRemoveMessage => '会删掉这台手机上的这一份，删了找不回来。';
+
+  @override
+  String get workshopInstalledRemoveNoReinstall => '工坊里现在找不到它，卸载后可能装不回来。';
+
+  @override
+  String get workshopInstalledRemovedRefreshIssue => '已卸载，但列表没能刷新，重新进来就能看到。';
+
+  @override
   String get workspaceRecoveryTitle => '工作区索引救援';
 
   @override

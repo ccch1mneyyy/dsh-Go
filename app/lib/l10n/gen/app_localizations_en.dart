@@ -22255,6 +22255,136 @@ class L10nEn extends L10n {
   String get workshopErrorGeneric => 'That didn\'t work. Try again later.';
 
   @override
+  String get workshopInstalledEmptyTitle => 'Nothing from the Workshop yet';
+
+  @override
+  String get workshopInstalledEmptyMessage => 'Pets and companions you get in Browse show up here.';
+
+  @override
+  String get workshopInstalledEmptyAction => 'Browse';
+
+  @override
+  String get workshopInstalledLoadFailedTitle => 'Can\'t read what\'s installed';
+
+  @override
+  String get workshopInstalledLoadStale => 'Couldn\'t read this phone again. Showing the last result.';
+
+  @override
+  String get workshopInstalledCatalogStale => 'Update and withdrawal info may be out of date.';
+
+  @override
+  String get workshopInstalledCatalogUnknown => 'Update and withdrawal info isn\'t available right now.';
+
+  @override
+  String get workshopInstalledStatusUpdate => 'Update available';
+
+  @override
+  String get workshopInstalledStatusWithdrawn => 'This version was withdrawn';
+
+  @override
+  String get workshopInstalledStatusOtherOrigin => 'From a different Workshop';
+
+  @override
+  String get workshopInstalledStatusNotListed => 'Not in the Workshop right now';
+
+  @override
+  String get workshopInstalledStatusCompanionOff => 'Companion items are off for now';
+
+  @override
+  String get workshopInstalledStatusRewritten => 'Differs from the same version in the Workshop';
+
+  @override
+  String get workshopInstalledStatusRemoving => 'Uninstalling…';
+
+  @override
+  String get workshopInstalledStatusRemoveFailed => 'Couldn\'t uninstall';
+
+  @override
+  String get workshopInstalledStatusRemoved => 'Uninstalled';
+
+  @override
+  String get workshopInstalledIssueBroken => 'This pack is damaged';
+
+  @override
+  String get workshopInstalledIssueUnreadable => 'This pack can\'t be read';
+
+  @override
+  String get workshopInstalledIssueRecord => 'Install record doesn\'t match';
+
+  @override
+  String get workshopInstalledIssueOther => 'Something is wrong with this item';
+
+  @override
+  String get workshopInstalledNoteBroken => 'This pack is damaged and may not work.';
+
+  @override
+  String get workshopInstalledNoteUnreadable => 'Couldn\'t read this pack\'s files.';
+
+  @override
+  String get workshopInstalledNoteRecord => 'Its install record doesn\'t match.';
+
+  @override
+  String get workshopInstalledNoteOther => 'Something is wrong with this item, and nothing more can be read.';
+
+  @override
+  String get workshopInstalledNoteUntrusted =>
+      'Its install record can\'t be trusted, so it can\'t be uninstalled from here.';
+
+  @override
+  String get workshopInstalledNoteOtherOrigin =>
+      'This came from a different Workshop, so its updates can\'t be checked here.';
+
+  @override
+  String get workshopInstalledNoteNotListed =>
+      'The Workshop doesn\'t list it right now. The copy on this phone isn\'t affected.';
+
+  @override
+  String get workshopInstalledNoteRewritten =>
+      'The same version in the Workshop has different contents. The copy on this phone wasn\'t changed.';
+
+  @override
+  String get workshopInstalledNoteMinApp => 'The version now in the Workshop needs a newer app.';
+
+  @override
+  String get workshopInstalledNoteUnavailable => 'The version now in the Workshop can\'t be installed right now.';
+
+  @override
+  String get workshopInstalledNoteGone => 'This item is no longer on this phone.';
+
+  @override
+  String workshopInstalledRemoveFailed(String reason) {
+    return 'Couldn\'t uninstall. $reason';
+  }
+
+  @override
+  String get workshopInstalledFactKind => 'Kind';
+
+  @override
+  String get workshopInstalledFactId => 'Item ID';
+
+  @override
+  String get workshopInstalledFactOrigin => 'From';
+
+  @override
+  String get workshopInstalledFactLocalId => 'Local ID';
+
+  @override
+  String workshopInstalledRemoveTitle(String title) {
+    return 'Uninstall \"$title\"?';
+  }
+
+  @override
+  String get workshopInstalledRemoveMessage => 'This deletes the copy on this phone. It can\'t be undone.';
+
+  @override
+  String get workshopInstalledRemoveNoReinstall =>
+      'The Workshop doesn\'t list it right now, so you may not be able to get it back.';
+
+  @override
+  String get workshopInstalledRemovedRefreshIssue =>
+      'Uninstalled, but the list couldn\'t refresh. Open this page again to see it.';
+
+  @override
   String get workspaceRecoveryTitle => 'Workspace index recovery';
 
   @override
