@@ -10,6 +10,7 @@ import 'package:dsh_app/state/workshop_installed_state.dart';
 import 'package:dsh_app/ui/common/empty_view.dart';
 import 'package:dsh_app/ui/theme/theme.dart';
 import 'package:dsh_app/ui/workshop/workshop_installed.dart';
+import 'package:dsh_app/ui/workshop/workshop_screen.dart';
 import 'package:dsh_app/ui/workshop/workshop_installed_sheet.dart';
 import 'package:dsh_app/ui/workshop/workshop_item_sheet.dart';
 import 'package:dsh_app/workshop/workshop_models.dart';
@@ -77,6 +78,7 @@ Future<_Bench> _pump(
   double width = 390,
   double scale = 1,
   Locale locale = const Locale('zh', 'CN'),
+  bool wholePage = false,
 }) async {
   tester.view.devicePixelRatio = 2;
   tester.view.physicalSize = Size(width * 2, 844 * 2);
@@ -99,11 +101,13 @@ Future<_Bench> _pump(
           data: MediaQuery.of(context).copyWith(disableAnimations: true, textScaler: TextScaler.linear(scale)),
           child: child!,
         ),
-        home: Scaffold(
-          body: CustomScrollView(
-            slivers: [WorkshopInstalledSliver(onBrowse: () => bench.browsed++)],
-          ),
-        ),
+        home: wholePage
+            ? const WorkshopScreen(initialTab: WorkshopTab.installed)
+            : Scaffold(
+                body: CustomScrollView(
+                  slivers: [WorkshopInstalledSliver(onBrowse: () => bench.browsed++)],
+                ),
+              ),
       ),
     ),
   );
@@ -621,6 +625,64 @@ void main() {
       expect(_sheetUninstall, findsOneWidget);
       expect(bench.installed.uninstalled, isEmpty);
       _expectNoRawText();
+    });
+
+    testWidgets('a failed uninstall is put away by 「知道了」, and the row says what the phone says again', (tester) async {
+      final local = stateInstalled(kind: 'companion', id: 'she');
+      final bench = await _pump(
+        tester,
+        _list(
+          [_local(local)],
+          removal: WorkshopRemovalState(phase: WorkshopRemovalPhase.failed, target: local, error: 'workshop_readers_busy'),
+        ),
+      );
+      expect(find.text('没能卸载'), findsOneWidget);
+
+      await tester.tap(find.text('she'));
+      await tester.pumpAndSettle();
+      await tester.tap(_inSheet('知道了'));
+      await tester.pumpAndSettle();
+
+      expect(bench.installed.state.removal.phase, WorkshopRemovalPhase.idle);
+      expect(find.textContaining('没能卸载'), findsNothing);
+      // Nothing was removed or read again by putting the result away.
+      expect(bench.installed.uninstalled, isEmpty);
+      expect(bench.installed.refreshes, 0);
+      expect(_sheetUninstall, findsOneWidget);
+    });
+
+    testWidgets('a pull that reads the phone again puts the last result away; one that fails keeps it', (tester) async {
+      final local = stateInstalled();
+      final bench = await _pump(
+        tester,
+        _list([_local(local)], removal: WorkshopRemovalState(phase: WorkshopRemovalPhase.succeeded, target: local)),
+        wholePage: true,
+      );
+      expect(find.text('已卸载'), findsOneWidget);
+
+      // The phone could not be read: the result still has something to say.
+      bench.installed.show(
+        _list(
+          [_local(local)],
+          loadError: 'workshop_storage',
+          removal: WorkshopRemovalState(phase: WorkshopRemovalPhase.succeeded, target: local),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.byTooltip('刷新'));
+      await tester.pumpAndSettle();
+      expect(bench.installed.refreshes, 1);
+      expect(bench.installed.state.removal.phase, WorkshopRemovalPhase.succeeded);
+
+      bench.installed.show(
+        _list(const [], removal: WorkshopRemovalState(phase: WorkshopRemovalPhase.succeeded, target: local)),
+      );
+      await tester.pump();
+      await tester.tap(find.byTooltip('刷新'));
+      await tester.pumpAndSettle();
+      expect(bench.installed.refreshes, 2);
+      expect(bench.catalog.refreshes, 2);
+      expect(bench.installed.state.removal.phase, WorkshopRemovalPhase.idle);
     });
 
     testWidgets('a result that is not this page\'s to announce stays quiet', (tester) async {
