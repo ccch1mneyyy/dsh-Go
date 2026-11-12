@@ -39,7 +39,11 @@ void main() {
     final loaded = out['afterLoad']! as Map<String, Object?>;
     expect(loaded['clicks'], 0, reason: 'expanding it on load makes the whole page inert');
     expect(loaded['attrs'], contains('data-sidebar-collapsed'));
-    expect(out['sheets'], ['@layer dsh-app-touch-defaults;'], reason: 'repeated injection is idempotent');
+    expect(
+      out['sheets'],
+      [startsWith('@layer dsh-app-touch-defaults {')],
+      reason: 'repeated injection is idempotent',
+    );
 
     final steps = (out['steps']! as List).cast<Map<String, Object?>>();
     expect(steps[0]['open'], true);

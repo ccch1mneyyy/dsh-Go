@@ -12,11 +12,13 @@
 // is one transform on the compositor.
 (function () {
   if (window.__dshApp) return;
-  // Declare the display-default layer before the page's styles, including
-  // already loaded named layers. Its rules stay in dsh_web_phone.css.
+  // Install the display default only here, before the page's styles. Declaring
+  // it first in the appended phone CSS would give it a later layer position.
   var defaults = document.createElement('style');
   defaults.id = 'dsh-app-phone-layers';
-  defaults.textContent = '@layer dsh-app-touch-defaults;';
+  defaults.textContent = '@layer dsh-app-touch-defaults { @media (pointer: coarse) { ' +
+    ':where(:root[data-dsh-app-layout] [data-slot="main"] :is(a, span)[role="button"]:not([hidden], [hidden] *, [data-dsh-adapt="off"], [data-dsh-adapt="off"] *)) ' +
+    '{ display: inline-block; } } }';
   document.head.insertBefore(defaults, document.head.firstChild);
   var OPEN = 'data-dsh-app-drawer';
 

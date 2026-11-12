@@ -63,7 +63,7 @@
 
 在 App 的完整 DSH Web 页面里，开启「网页版手机布局」且浏览器报告粗指针（`pointer: coarse`）时，`[data-slot="main"]` 内的 `button`、`[role="button"]`、`select` 和 `input` 使用 **44 × 44 CSS px** 的最小尺寸。`main` 也包含官方对话，因此该规则不只影响插件页。细指针不增加这层尺寸规则；关闭手机布局时不注入它。独立 Web 岛屿和 Flutter 原生面板不走这份样式。
 
-`role="switch"`、`role="slider"`、`input[type="range"]` 和隐藏元素不改变显示方式；开关和滑轨保留原尺寸。普通 HTML checkbox / radio 也受最小尺寸约束。默认行内的 `a[role="button"]` / `span[role="button"]` 提供 `inline-block` 默认值，使最小尺寸能生效；默认 layer 在页面样式之前声明，让作者自己的 `display` 规则仍优先。显式行内布局和固定尺寸包装容器应由插件自行核验，不应假定宿主会改写其内部布局。
+`role="switch"`、`role="slider"`、`input[type="range"]` 和隐藏元素不改变显示方式；开关和滑轨保留原尺寸。普通 HTML checkbox / radio 也受最小尺寸约束。默认行内的 `a[role="button"]` / `span[role="button"]` 提供 `inline-block` 默认值，使最小尺寸能生效；整段默认 layer 样式放在页面已有样式之前，让作者自己的 `display` 规则仍优先。显式行内布局和固定尺寸包装容器应由插件自行核验，不应假定宿主会改写其内部布局。
 
 在任意祖先或控件上设置 `data-dsh-adapt="off"`，即可让该子树保留自己的控件尺寸和显示方式，放在 `html` 或 `main` 上同样有效：
 

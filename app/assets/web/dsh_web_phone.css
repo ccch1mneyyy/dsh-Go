@@ -48,13 +48,8 @@
     min-width: 44px !important;
     min-height: 44px !important;
   }
-  /* Inline links/spans otherwise ignore min-size. The script declares this
-     layer before author styles, so their display rules stay in charge. */
-  @layer dsh-app-touch-defaults {
-    :where(:root[data-dsh-app-layout] [data-slot="main"] :is(a, span)[role="button"]:not([hidden], [hidden] *, [data-dsh-adapt="off"], [data-dsh-adapt="off"] *)) {
-      display: inline-block;
-    }
-  }
+  /* Inline links/spans also need the low-priority display default installed
+     by dsh_web_phone.js before the page's styles. */
 }
 
 /* Full-screen layers clear the app's controls and the gesture bar. The app
