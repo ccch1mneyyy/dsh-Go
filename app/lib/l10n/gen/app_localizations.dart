@@ -38936,6 +38936,546 @@ abstract class L10n {
   /// **'知道可能重复，重新填写'**
   String get workshopReportUnknownAgain;
 
+  /// No description provided for @workshopPublishTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿'**
+  String get workshopPublishTitle;
+
+  /// No description provided for @workshopPublishClosedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊暂时不接收投稿'**
+  String get workshopPublishClosedTitle;
+
+  /// No description provided for @workshopPublishClosedMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'已经交上去的仍然可以在「我的投稿」里看。'**
+  String get workshopPublishClosedMessage;
+
+  /// No description provided for @workshopPublishSignInTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'先登录论坛账号'**
+  String get workshopPublishSignInTitle;
+
+  /// No description provided for @workshopPublishSignInMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊靠论坛账号确认投稿的人是谁。'**
+  String get workshopPublishSignInMessage;
+
+  /// No description provided for @workshopPublishProfileTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没读到论坛账号资料'**
+  String get workshopPublishProfileTitle;
+
+  /// No description provided for @workshopPublishProfileMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'要先知道你是哪个账号，才能投稿。'**
+  String get workshopPublishProfileMessage;
+
+  /// No description provided for @workshopPublishCheckFailedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能读出上一次投稿的记录'**
+  String get workshopPublishCheckFailedTitle;
+
+  /// No description provided for @workshopPublishCheckLocked.
+  ///
+  /// In zh, this message translates to:
+  /// **'为了不重复投稿，读出来之前不能开始新的。'**
+  String get workshopPublishCheckLocked;
+
+  /// No description provided for @workshopPublishWaitingPrevious.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一个操作还没结束，稍等。'**
+  String get workshopPublishWaitingPrevious;
+
+  /// No description provided for @workshopPublishConsentUnsaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'这次同意已经生效，但没能记在本机，下次可能再问一遍。'**
+  String get workshopPublishConsentUnsaved;
+
+  /// No description provided for @workshopPublishDisclosureTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿前，先确认一件事'**
+  String get workshopPublishDisclosureTitle;
+
+  /// No description provided for @workshopPublishDisclosureLead.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊需要知道投稿的人是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。'**
+  String get workshopPublishDisclosureLead;
+
+  /// No description provided for @workshopPublishDisclosureWorker.
+  ///
+  /// In zh, this message translates to:
+  /// **'收到凭据的工坊'**
+  String get workshopPublishDisclosureWorker;
+
+  /// No description provided for @workshopPublishDisclosureForum.
+  ///
+  /// In zh, this message translates to:
+  /// **'核对身份的论坛'**
+  String get workshopPublishDisclosureForum;
+
+  /// No description provided for @workshopPublishDisclosureUse.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。'**
+  String get workshopPublishDisclosureUse;
+
+  /// No description provided for @workshopPublishDisclosureKept.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。'**
+  String get workshopPublishDisclosureKept;
+
+  /// No description provided for @workshopPublishDisclosureStale.
+  ///
+  /// In zh, this message translates to:
+  /// **'地址刚刚有变化，请按现在显示的重新确认。'**
+  String get workshopPublishDisclosureStale;
+
+  /// No description provided for @workshopPublishDisclosureAccept.
+  ///
+  /// In zh, this message translates to:
+  /// **'同意并继续'**
+  String get workshopPublishDisclosureAccept;
+
+  /// No description provided for @workshopPublishDisclosureDecline.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂不'**
+  String get workshopPublishDisclosureDecline;
+
+  /// No description provided for @workshopPublishChooseTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选一个要投稿的'**
+  String get workshopPublishChooseTitle;
+
+  /// No description provided for @workshopPublishCompanionCurrent.
+  ///
+  /// In zh, this message translates to:
+  /// **'现在的伙伴'**
+  String get workshopPublishCompanionCurrent;
+
+  /// No description provided for @workshopPublishSourcesEmptyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有可以投稿的'**
+  String get workshopPublishSourcesEmptyTitle;
+
+  /// No description provided for @workshopPublishSourcesEmptyMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'自己导入的像素宠物和现在的伙伴可以投稿。'**
+  String get workshopPublishSourcesEmptyMessage;
+
+  /// No description provided for @workshopPublishSourcesIssue.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能读出本机可以投稿的内容。'**
+  String get workshopPublishSourcesIssue;
+
+  /// No description provided for @workshopPublishPetsIssue.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能读出本机的像素宠物。'**
+  String get workshopPublishPetsIssue;
+
+  /// No description provided for @workshopPublishCompanionIssue.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能读出本机的伙伴。'**
+  String get workshopPublishCompanionIssue;
+
+  /// No description provided for @workshopPublishNoCompanion.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机还没有伙伴，先到伙伴小屋请一位。'**
+  String get workshopPublishNoCompanion;
+
+  /// No description provided for @workshopPublishSectionSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿内容'**
+  String get workshopPublishSectionSource;
+
+  /// No description provided for @workshopPublishChange.
+  ///
+  /// In zh, this message translates to:
+  /// **'更换'**
+  String get workshopPublishChange;
+
+  /// No description provided for @workshopPublishSectionNames.
+  ///
+  /// In zh, this message translates to:
+  /// **'名称'**
+  String get workshopPublishSectionNames;
+
+  /// No description provided for @workshopPublishTitleZh.
+  ///
+  /// In zh, this message translates to:
+  /// **'中文名称'**
+  String get workshopPublishTitleZh;
+
+  /// No description provided for @workshopPublishTitleEn.
+  ///
+  /// In zh, this message translates to:
+  /// **'英文名称'**
+  String get workshopPublishTitleEn;
+
+  /// No description provided for @workshopPublishSectionInfo.
+  ///
+  /// In zh, this message translates to:
+  /// **'作品信息'**
+  String get workshopPublishSectionInfo;
+
+  /// No description provided for @workshopPublishId.
+  ///
+  /// In zh, this message translates to:
+  /// **'作品 ID'**
+  String get workshopPublishId;
+
+  /// No description provided for @workshopPublishIdHelper.
+  ///
+  /// In zh, this message translates to:
+  /// **'小写字母、数字和短横线'**
+  String get workshopPublishIdHelper;
+
+  /// No description provided for @workshopPublishAuthor.
+  ///
+  /// In zh, this message translates to:
+  /// **'作者'**
+  String get workshopPublishAuthor;
+
+  /// No description provided for @workshopPublishLicenseAuthor.
+  ///
+  /// In zh, this message translates to:
+  /// **'作者授权'**
+  String get workshopPublishLicenseAuthor;
+
+  /// No description provided for @workshopPublishSourceLink.
+  ///
+  /// In zh, this message translates to:
+  /// **'来源链接'**
+  String get workshopPublishSourceLink;
+
+  /// No description provided for @workshopPublishSourceHelper.
+  ///
+  /// In zh, this message translates to:
+  /// **'作品主页或出处，以 https:// 开头'**
+  String get workshopPublishSourceHelper;
+
+  /// No description provided for @workshopPublishSectionAbout.
+  ///
+  /// In zh, this message translates to:
+  /// **'介绍（选填）'**
+  String get workshopPublishSectionAbout;
+
+  /// No description provided for @workshopPublishTags.
+  ///
+  /// In zh, this message translates to:
+  /// **'标签'**
+  String get workshopPublishTags;
+
+  /// No description provided for @workshopPublishTagsHelper.
+  ///
+  /// In zh, this message translates to:
+  /// **'用逗号分开，最多 8 个'**
+  String get workshopPublishTagsHelper;
+
+  /// No description provided for @workshopPublishNext.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一步'**
+  String get workshopPublishNext;
+
+  /// No description provided for @workshopPublishPreparing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在打包…'**
+  String get workshopPublishPreparing;
+
+  /// No description provided for @workshopPublishBadTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'名称不能为空，最多 120 个字'**
+  String get workshopPublishBadTitle;
+
+  /// No description provided for @workshopPublishBadId.
+  ///
+  /// In zh, this message translates to:
+  /// **'只能用小写字母、数字和短横线，最多 40 个字符'**
+  String get workshopPublishBadId;
+
+  /// No description provided for @workshopPublishBadVersion.
+  ///
+  /// In zh, this message translates to:
+  /// **'写成 1.0.0 这样的版本号'**
+  String get workshopPublishBadVersion;
+
+  /// No description provided for @workshopPublishBadAuthor.
+  ///
+  /// In zh, this message translates to:
+  /// **'作者不能为空，最多 256 个字'**
+  String get workshopPublishBadAuthor;
+
+  /// No description provided for @workshopPublishBadLicense.
+  ///
+  /// In zh, this message translates to:
+  /// **'选一个许可'**
+  String get workshopPublishBadLicense;
+
+  /// No description provided for @workshopPublishBadSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'填一个以 https:// 开头的链接'**
+  String get workshopPublishBadSource;
+
+  /// No description provided for @workshopPublishBadDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'简介最多 512 个字'**
+  String get workshopPublishBadDescription;
+
+  /// No description provided for @workshopPublishBadTags.
+  ///
+  /// In zh, this message translates to:
+  /// **'最多 8 个标签，每个不超过 32 个字，不能重复'**
+  String get workshopPublishBadTags;
+
+  /// No description provided for @workshopPublishBadRights.
+  ///
+  /// In zh, this message translates to:
+  /// **'先确认你有权分享这份内容'**
+  String get workshopPublishBadRights;
+
+  /// No description provided for @workshopPublishFiles.
+  ///
+  /// In zh, this message translates to:
+  /// **'包里的文件'**
+  String get workshopPublishFiles;
+
+  /// No description provided for @workshopPublishEdit.
+  ///
+  /// In zh, this message translates to:
+  /// **'修改资料'**
+  String get workshopPublishEdit;
+
+  /// No description provided for @workshopPublishRights.
+  ///
+  /// In zh, this message translates to:
+  /// **'我确认自己有权分享这份内容'**
+  String get workshopPublishRights;
+
+  /// No description provided for @workshopPublishReviewNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'交上去后先由工坊审核，通过了大家才能看到。'**
+  String get workshopPublishReviewNote;
+
+  /// No description provided for @workshopPublishSubmit.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿'**
+  String get workshopPublishSubmit;
+
+  /// No description provided for @workshopPublishPhaseWorking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在处理…'**
+  String get workshopPublishPhaseWorking;
+
+  /// No description provided for @workshopPublishPhaseUploading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在上传'**
+  String get workshopPublishPhaseUploading;
+
+  /// No description provided for @workshopPublishPhaseWaiting.
+  ///
+  /// In zh, this message translates to:
+  /// **'已经传完，等工坊确认…'**
+  String get workshopPublishPhaseWaiting;
+
+  /// No description provided for @workshopPublishStay.
+  ///
+  /// In zh, this message translates to:
+  /// **'离开这一页不会中断。'**
+  String get workshopPublishStay;
+
+  /// No description provided for @workshopPublishDoneTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'已交给工坊，等待审核'**
+  String get workshopPublishDoneTitle;
+
+  /// No description provided for @workshopPublishDoneMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'进度可以在「我的投稿」里看。'**
+  String get workshopPublishDoneMessage;
+
+  /// No description provided for @workshopPublishBackToMine.
+  ///
+  /// In zh, this message translates to:
+  /// **'回到我的投稿'**
+  String get workshopPublishBackToMine;
+
+  /// No description provided for @workshopPublishApprovedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'这份投稿已经通过审核'**
+  String get workshopPublishApprovedTitle;
+
+  /// No description provided for @workshopPublishApprovedMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'有没有上架，以「发现」里看到的为准。'**
+  String get workshopPublishApprovedMessage;
+
+  /// No description provided for @workshopPublishRejectedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'这份投稿没有通过审核'**
+  String get workshopPublishRejectedTitle;
+
+  /// No description provided for @workshopPublishWithdrawnTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'这份投稿已经撤回'**
+  String get workshopPublishWithdrawnTitle;
+
+  /// No description provided for @workshopPublishReason.
+  ///
+  /// In zh, this message translates to:
+  /// **'原因：{reason}'**
+  String workshopPublishReason(String reason);
+
+  /// No description provided for @workshopPublishAgain.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新投稿'**
+  String get workshopPublishAgain;
+
+  /// No description provided for @workshopPublishAgainMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'改好以后可以重新投一次。'**
+  String get workshopPublishAgainMessage;
+
+  /// No description provided for @workshopPublishRecordKept.
+  ///
+  /// In zh, this message translates to:
+  /// **'结果已经确认，但本机的投稿记录没能清掉。'**
+  String get workshopPublishRecordKept;
+
+  /// No description provided for @workshopPublishLeftovers.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机留下的临时文件没能清掉。'**
+  String get workshopPublishLeftovers;
+
+  /// No description provided for @workshopPublishPendingTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'有一份投稿还没结束'**
+  String get workshopPublishPendingTitle;
+
+  /// No description provided for @workshopPublishPendingMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次没有交完。继续会用同一份内容接着交，不会多出一份。'**
+  String get workshopPublishPendingMessage;
+
+  /// No description provided for @workshopPublishPendingLocked.
+  ///
+  /// In zh, this message translates to:
+  /// **'这份投稿的内容已经定下，暂时不能修改，也不能换成别的。问题解决后可以接着交。'**
+  String get workshopPublishPendingLocked;
+
+  /// No description provided for @workshopPublishUnknownTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'不确定有没有交上去'**
+  String get workshopPublishUnknownTitle;
+
+  /// No description provided for @workshopPublishUnknownMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊没有回话，结果还不知道。查看结果会拿同一份投稿再问一次：已经交上的不会重复，没交完的接着交。'**
+  String get workshopPublishUnknownMessage;
+
+  /// No description provided for @workshopPublishContinue.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续投稿'**
+  String get workshopPublishContinue;
+
+  /// No description provided for @workshopPublishCheckResult.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看结果'**
+  String get workshopPublishCheckResult;
+
+  /// No description provided for @workshopPublishCheckAgain.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新查询'**
+  String get workshopPublishCheckAgain;
+
+  /// No description provided for @workshopPublishErrorInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'有几项资料要改一下。'**
+  String get workshopPublishErrorInvalid;
+
+  /// No description provided for @workshopPublishErrorMismatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'打好的包和填写的资料对不上，请再试一次。'**
+  String get workshopPublishErrorMismatch;
+
+  /// No description provided for @workshopPublishErrorPending.
+  ///
+  /// In zh, this message translates to:
+  /// **'还有一份投稿没有结束，先把它处理完。'**
+  String get workshopPublishErrorPending;
+
+  /// No description provided for @workshopPublishErrorTooLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'包太大了，超过了工坊的上限。'**
+  String get workshopPublishErrorTooLarge;
+
+  /// No description provided for @workshopPublishErrorMetadata.
+  ///
+  /// In zh, this message translates to:
+  /// **'资料没有通过工坊的检查，改一改再试。'**
+  String get workshopPublishErrorMetadata;
+
+  /// No description provided for @workshopPublishErrorNotReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没准备好，稍等再试。'**
+  String get workshopPublishErrorNotReady;
+
+  /// No description provided for @workshopPublishErrorAgain.
+  ///
+  /// In zh, this message translates to:
+  /// **'现在还不能重新投稿。'**
+  String get workshopPublishErrorAgain;
+
   /// No description provided for @workspaceRecoveryTitle.
   ///
   /// In zh, this message translates to:

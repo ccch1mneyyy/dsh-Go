@@ -22597,6 +22597,287 @@ class L10nEn extends L10n {
   String get workshopReportUnknownAgain => 'I understand, write it again';
 
   @override
+  String get workshopPublishTitle => 'Submit';
+
+  @override
+  String get workshopPublishClosedTitle => 'The Workshop isn\'t taking submissions right now';
+
+  @override
+  String get workshopPublishClosedMessage => 'What you already sent is still under My uploads.';
+
+  @override
+  String get workshopPublishSignInTitle => 'Sign in to the forum first';
+
+  @override
+  String get workshopPublishSignInMessage => 'The Workshop uses your forum account to know who is submitting.';
+
+  @override
+  String get workshopPublishProfileTitle => 'Couldn\'t read your forum account yet';
+
+  @override
+  String get workshopPublishProfileMessage => 'Submitting needs to know which account you are.';
+
+  @override
+  String get workshopPublishCheckFailedTitle => 'Couldn\'t read the record of your last submission';
+
+  @override
+  String get workshopPublishCheckLocked => 'To avoid sending something twice, a new one can\'t start until it is read.';
+
+  @override
+  String get workshopPublishWaitingPrevious => 'The previous step is still finishing.';
+
+  @override
+  String get workshopPublishConsentUnsaved =>
+      'Your consent counts for now, but it couldn\'t be saved on this phone. You may be asked again.';
+
+  @override
+  String get workshopPublishDisclosureTitle => 'One thing to confirm before you submit';
+
+  @override
+  String get workshopPublishDisclosureLead =>
+      'The Workshop needs to know who is submitting. To find out, your forum sign-in credential (a User API Key) is sent to the Workshop service below, which asks the forum which account it belongs to.';
+
+  @override
+  String get workshopPublishDisclosureWorker => 'Workshop that receives the credential';
+
+  @override
+  String get workshopPublishDisclosureForum => 'Forum that confirms who you are';
+
+  @override
+  String get workshopPublishDisclosureUse =>
+      'It is sent when you submit, view or withdraw your submissions, or report something. The Workshop only uses it to confirm your identity with the forum and does not keep it.';
+
+  @override
+  String get workshopPublishDisclosureKept =>
+      'This phone only remembers that you agreed to these two addresses, with no extra copy of the credential. If either changes, you\'ll be asked again.';
+
+  @override
+  String get workshopPublishDisclosureStale => 'The addresses just changed. Please confirm the ones shown now.';
+
+  @override
+  String get workshopPublishDisclosureAccept => 'Agree and continue';
+
+  @override
+  String get workshopPublishDisclosureDecline => 'Not now';
+
+  @override
+  String get workshopPublishChooseTitle => 'Choose what to submit';
+
+  @override
+  String get workshopPublishCompanionCurrent => 'Your current companion';
+
+  @override
+  String get workshopPublishSourcesEmptyTitle => 'Nothing to submit yet';
+
+  @override
+  String get workshopPublishSourcesEmptyMessage =>
+      'Pixel pets you imported and your current companion can be submitted.';
+
+  @override
+  String get workshopPublishSourcesIssue => 'Couldn\'t read what can be submitted from this phone.';
+
+  @override
+  String get workshopPublishPetsIssue => 'Couldn\'t read the pixel pets on this phone.';
+
+  @override
+  String get workshopPublishCompanionIssue => 'Couldn\'t read the companion on this phone.';
+
+  @override
+  String get workshopPublishNoCompanion =>
+      'There\'s no companion on this phone yet. Invite one in the Companion room first.';
+
+  @override
+  String get workshopPublishSectionSource => 'What to submit';
+
+  @override
+  String get workshopPublishChange => 'Change';
+
+  @override
+  String get workshopPublishSectionNames => 'Name';
+
+  @override
+  String get workshopPublishTitleZh => 'Chinese name';
+
+  @override
+  String get workshopPublishTitleEn => 'English name';
+
+  @override
+  String get workshopPublishSectionInfo => 'Details';
+
+  @override
+  String get workshopPublishId => 'Item ID';
+
+  @override
+  String get workshopPublishIdHelper => 'Lowercase letters, digits and hyphens';
+
+  @override
+  String get workshopPublishAuthor => 'Author';
+
+  @override
+  String get workshopPublishLicenseAuthor => 'Author permission';
+
+  @override
+  String get workshopPublishSourceLink => 'Source link';
+
+  @override
+  String get workshopPublishSourceHelper => 'Its home page or where it comes from, starting with https://';
+
+  @override
+  String get workshopPublishSectionAbout => 'About (optional)';
+
+  @override
+  String get workshopPublishTags => 'Tags';
+
+  @override
+  String get workshopPublishTagsHelper => 'Separate with commas, up to 8';
+
+  @override
+  String get workshopPublishNext => 'Next';
+
+  @override
+  String get workshopPublishPreparing => 'Packing…';
+
+  @override
+  String get workshopPublishBadTitle => 'Enter a name, up to 120 characters';
+
+  @override
+  String get workshopPublishBadId => 'Lowercase letters, digits and hyphens only, up to 40 characters';
+
+  @override
+  String get workshopPublishBadVersion => 'Write a version like 1.0.0';
+
+  @override
+  String get workshopPublishBadAuthor => 'Enter an author, up to 256 characters';
+
+  @override
+  String get workshopPublishBadLicense => 'Choose a license';
+
+  @override
+  String get workshopPublishBadSource => 'Enter a link starting with https://';
+
+  @override
+  String get workshopPublishBadDescription => 'Up to 512 characters';
+
+  @override
+  String get workshopPublishBadTags => 'Up to 8 tags of 32 characters each, with no repeats';
+
+  @override
+  String get workshopPublishBadRights => 'Confirm that you have the right to share this first';
+
+  @override
+  String get workshopPublishFiles => 'Files in the package';
+
+  @override
+  String get workshopPublishEdit => 'Edit details';
+
+  @override
+  String get workshopPublishRights => 'I confirm I have the right to share this';
+
+  @override
+  String get workshopPublishReviewNote => 'The Workshop reviews it first. Others see it once it is approved.';
+
+  @override
+  String get workshopPublishSubmit => 'Submit';
+
+  @override
+  String get workshopPublishPhaseWorking => 'Working…';
+
+  @override
+  String get workshopPublishPhaseUploading => 'Uploading';
+
+  @override
+  String get workshopPublishPhaseWaiting => 'All sent. Waiting for the Workshop…';
+
+  @override
+  String get workshopPublishStay => 'Leaving this page won\'t interrupt it.';
+
+  @override
+  String get workshopPublishDoneTitle => 'Sent to the Workshop, waiting for review';
+
+  @override
+  String get workshopPublishDoneMessage => 'Follow it under My uploads.';
+
+  @override
+  String get workshopPublishBackToMine => 'Back to My uploads';
+
+  @override
+  String get workshopPublishApprovedTitle => 'This submission has been approved';
+
+  @override
+  String get workshopPublishApprovedMessage => 'Whether it is listed is what Browse shows.';
+
+  @override
+  String get workshopPublishRejectedTitle => 'This submission wasn\'t approved';
+
+  @override
+  String get workshopPublishWithdrawnTitle => 'This submission was withdrawn';
+
+  @override
+  String workshopPublishReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get workshopPublishAgain => 'Submit again';
+
+  @override
+  String get workshopPublishAgainMessage => 'Fix it and you can submit it again.';
+
+  @override
+  String get workshopPublishRecordKept => 'The result is confirmed, but the record on this phone couldn\'t be cleared.';
+
+  @override
+  String get workshopPublishLeftovers => 'Temporary files left on this phone couldn\'t be removed.';
+
+  @override
+  String get workshopPublishPendingTitle => 'One submission isn\'t finished';
+
+  @override
+  String get workshopPublishPendingMessage =>
+      'It didn\'t finish last time. Continuing sends the same content on, without creating a second one.';
+
+  @override
+  String get workshopPublishPendingLocked =>
+      'Its details are fixed for now: they can\'t be edited or swapped for something else. Once the problem is solved you can continue.';
+
+  @override
+  String get workshopPublishUnknownTitle => 'Not sure whether it was sent';
+
+  @override
+  String get workshopPublishUnknownMessage =>
+      'The Workshop didn\'t answer, so the result isn\'t known. Checking asks again about the same submission: if it arrived it isn\'t repeated, and if it didn\'t it carries on.';
+
+  @override
+  String get workshopPublishContinue => 'Continue';
+
+  @override
+  String get workshopPublishCheckResult => 'Check result';
+
+  @override
+  String get workshopPublishCheckAgain => 'Check again';
+
+  @override
+  String get workshopPublishErrorInvalid => 'A few details need fixing.';
+
+  @override
+  String get workshopPublishErrorMismatch => 'The package doesn\'t match the details you entered. Please try again.';
+
+  @override
+  String get workshopPublishErrorPending => 'Another submission isn\'t finished. Deal with it first.';
+
+  @override
+  String get workshopPublishErrorTooLarge => 'The package is larger than the Workshop accepts.';
+
+  @override
+  String get workshopPublishErrorMetadata => 'The Workshop didn\'t accept these details. Change them and try again.';
+
+  @override
+  String get workshopPublishErrorNotReady => 'Not ready yet. Try again in a moment.';
+
+  @override
+  String get workshopPublishErrorAgain => 'It can\'t be submitted again right now.';
+
+  @override
   String get workspaceRecoveryTitle => 'Workspace index recovery';
 
   @override

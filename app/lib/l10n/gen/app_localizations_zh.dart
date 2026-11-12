@@ -21410,6 +21410,278 @@ class L10nZh extends L10n {
   String get workshopReportUnknownAgain => '知道可能重复，重新填写';
 
   @override
+  String get workshopPublishTitle => '投稿';
+
+  @override
+  String get workshopPublishClosedTitle => '工坊暂时不接收投稿';
+
+  @override
+  String get workshopPublishClosedMessage => '已经交上去的仍然可以在「我的投稿」里看。';
+
+  @override
+  String get workshopPublishSignInTitle => '先登录论坛账号';
+
+  @override
+  String get workshopPublishSignInMessage => '工坊靠论坛账号确认投稿的人是谁。';
+
+  @override
+  String get workshopPublishProfileTitle => '还没读到论坛账号资料';
+
+  @override
+  String get workshopPublishProfileMessage => '要先知道你是哪个账号，才能投稿。';
+
+  @override
+  String get workshopPublishCheckFailedTitle => '没能读出上一次投稿的记录';
+
+  @override
+  String get workshopPublishCheckLocked => '为了不重复投稿，读出来之前不能开始新的。';
+
+  @override
+  String get workshopPublishWaitingPrevious => '上一个操作还没结束，稍等。';
+
+  @override
+  String get workshopPublishConsentUnsaved => '这次同意已经生效，但没能记在本机，下次可能再问一遍。';
+
+  @override
+  String get workshopPublishDisclosureTitle => '投稿前，先确认一件事';
+
+  @override
+  String get workshopPublishDisclosureLead => '工坊需要知道投稿的人是谁。办法是把你的论坛登录凭据（User API Key）发给下面这个工坊服务，由它去问论坛你是哪个账号。';
+
+  @override
+  String get workshopPublishDisclosureWorker => '收到凭据的工坊';
+
+  @override
+  String get workshopPublishDisclosureForum => '核对身份的论坛';
+
+  @override
+  String get workshopPublishDisclosureUse => '投稿、查看或撤回自己的投稿、举报时都会带上它。工坊只拿它向论坛确认身份，不保存。';
+
+  @override
+  String get workshopPublishDisclosureKept => '本机只记下你同意过这两个地址，不另存凭据；换了其中一个会再问。';
+
+  @override
+  String get workshopPublishDisclosureStale => '地址刚刚有变化，请按现在显示的重新确认。';
+
+  @override
+  String get workshopPublishDisclosureAccept => '同意并继续';
+
+  @override
+  String get workshopPublishDisclosureDecline => '暂不';
+
+  @override
+  String get workshopPublishChooseTitle => '选一个要投稿的';
+
+  @override
+  String get workshopPublishCompanionCurrent => '现在的伙伴';
+
+  @override
+  String get workshopPublishSourcesEmptyTitle => '还没有可以投稿的';
+
+  @override
+  String get workshopPublishSourcesEmptyMessage => '自己导入的像素宠物和现在的伙伴可以投稿。';
+
+  @override
+  String get workshopPublishSourcesIssue => '没能读出本机可以投稿的内容。';
+
+  @override
+  String get workshopPublishPetsIssue => '没能读出本机的像素宠物。';
+
+  @override
+  String get workshopPublishCompanionIssue => '没能读出本机的伙伴。';
+
+  @override
+  String get workshopPublishNoCompanion => '本机还没有伙伴，先到伙伴小屋请一位。';
+
+  @override
+  String get workshopPublishSectionSource => '投稿内容';
+
+  @override
+  String get workshopPublishChange => '更换';
+
+  @override
+  String get workshopPublishSectionNames => '名称';
+
+  @override
+  String get workshopPublishTitleZh => '中文名称';
+
+  @override
+  String get workshopPublishTitleEn => '英文名称';
+
+  @override
+  String get workshopPublishSectionInfo => '作品信息';
+
+  @override
+  String get workshopPublishId => '作品 ID';
+
+  @override
+  String get workshopPublishIdHelper => '小写字母、数字和短横线';
+
+  @override
+  String get workshopPublishAuthor => '作者';
+
+  @override
+  String get workshopPublishLicenseAuthor => '作者授权';
+
+  @override
+  String get workshopPublishSourceLink => '来源链接';
+
+  @override
+  String get workshopPublishSourceHelper => '作品主页或出处，以 https:// 开头';
+
+  @override
+  String get workshopPublishSectionAbout => '介绍（选填）';
+
+  @override
+  String get workshopPublishTags => '标签';
+
+  @override
+  String get workshopPublishTagsHelper => '用逗号分开，最多 8 个';
+
+  @override
+  String get workshopPublishNext => '下一步';
+
+  @override
+  String get workshopPublishPreparing => '正在打包…';
+
+  @override
+  String get workshopPublishBadTitle => '名称不能为空，最多 120 个字';
+
+  @override
+  String get workshopPublishBadId => '只能用小写字母、数字和短横线，最多 40 个字符';
+
+  @override
+  String get workshopPublishBadVersion => '写成 1.0.0 这样的版本号';
+
+  @override
+  String get workshopPublishBadAuthor => '作者不能为空，最多 256 个字';
+
+  @override
+  String get workshopPublishBadLicense => '选一个许可';
+
+  @override
+  String get workshopPublishBadSource => '填一个以 https:// 开头的链接';
+
+  @override
+  String get workshopPublishBadDescription => '简介最多 512 个字';
+
+  @override
+  String get workshopPublishBadTags => '最多 8 个标签，每个不超过 32 个字，不能重复';
+
+  @override
+  String get workshopPublishBadRights => '先确认你有权分享这份内容';
+
+  @override
+  String get workshopPublishFiles => '包里的文件';
+
+  @override
+  String get workshopPublishEdit => '修改资料';
+
+  @override
+  String get workshopPublishRights => '我确认自己有权分享这份内容';
+
+  @override
+  String get workshopPublishReviewNote => '交上去后先由工坊审核，通过了大家才能看到。';
+
+  @override
+  String get workshopPublishSubmit => '投稿';
+
+  @override
+  String get workshopPublishPhaseWorking => '正在处理…';
+
+  @override
+  String get workshopPublishPhaseUploading => '正在上传';
+
+  @override
+  String get workshopPublishPhaseWaiting => '已经传完，等工坊确认…';
+
+  @override
+  String get workshopPublishStay => '离开这一页不会中断。';
+
+  @override
+  String get workshopPublishDoneTitle => '已交给工坊，等待审核';
+
+  @override
+  String get workshopPublishDoneMessage => '进度可以在「我的投稿」里看。';
+
+  @override
+  String get workshopPublishBackToMine => '回到我的投稿';
+
+  @override
+  String get workshopPublishApprovedTitle => '这份投稿已经通过审核';
+
+  @override
+  String get workshopPublishApprovedMessage => '有没有上架，以「发现」里看到的为准。';
+
+  @override
+  String get workshopPublishRejectedTitle => '这份投稿没有通过审核';
+
+  @override
+  String get workshopPublishWithdrawnTitle => '这份投稿已经撤回';
+
+  @override
+  String workshopPublishReason(String reason) {
+    return '原因：$reason';
+  }
+
+  @override
+  String get workshopPublishAgain => '重新投稿';
+
+  @override
+  String get workshopPublishAgainMessage => '改好以后可以重新投一次。';
+
+  @override
+  String get workshopPublishRecordKept => '结果已经确认，但本机的投稿记录没能清掉。';
+
+  @override
+  String get workshopPublishLeftovers => '本机留下的临时文件没能清掉。';
+
+  @override
+  String get workshopPublishPendingTitle => '有一份投稿还没结束';
+
+  @override
+  String get workshopPublishPendingMessage => '上次没有交完。继续会用同一份内容接着交，不会多出一份。';
+
+  @override
+  String get workshopPublishPendingLocked => '这份投稿的内容已经定下，暂时不能修改，也不能换成别的。问题解决后可以接着交。';
+
+  @override
+  String get workshopPublishUnknownTitle => '不确定有没有交上去';
+
+  @override
+  String get workshopPublishUnknownMessage => '工坊没有回话，结果还不知道。查看结果会拿同一份投稿再问一次：已经交上的不会重复，没交完的接着交。';
+
+  @override
+  String get workshopPublishContinue => '继续投稿';
+
+  @override
+  String get workshopPublishCheckResult => '查看结果';
+
+  @override
+  String get workshopPublishCheckAgain => '重新查询';
+
+  @override
+  String get workshopPublishErrorInvalid => '有几项资料要改一下。';
+
+  @override
+  String get workshopPublishErrorMismatch => '打好的包和填写的资料对不上，请再试一次。';
+
+  @override
+  String get workshopPublishErrorPending => '还有一份投稿没有结束，先把它处理完。';
+
+  @override
+  String get workshopPublishErrorTooLarge => '包太大了，超过了工坊的上限。';
+
+  @override
+  String get workshopPublishErrorMetadata => '资料没有通过工坊的检查，改一改再试。';
+
+  @override
+  String get workshopPublishErrorNotReady => '还没准备好，稍等再试。';
+
+  @override
+  String get workshopPublishErrorAgain => '现在还不能重新投稿。';
+
+  @override
   String get workspaceRecoveryTitle => '工作区索引救援';
 
   @override
