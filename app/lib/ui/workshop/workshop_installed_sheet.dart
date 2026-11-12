@@ -159,7 +159,7 @@ class WorkshopInstalledAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (row.publicEntry case final entry?) return WorkshopAvatar(entry.metadata, size: size);
+    if (row.publicEntry case final entry?) return WorkshopEntryAvatar(entry, size: size);
     final local = row.local;
     if (local is WorkshopInstalled) {
       // The same tint WorkshopAvatar gives this identity.
