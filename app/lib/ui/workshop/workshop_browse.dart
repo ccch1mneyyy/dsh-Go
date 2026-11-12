@@ -36,7 +36,15 @@ class WorkshopBrowseSliver extends ConsumerStatefulWidget {
 }
 
 class _WorkshopBrowseSliverState extends ConsumerState<WorkshopBrowseSliver> {
-  late final TextEditingController _search = TextEditingController(text: ref.read(workshopCatalogProvider).query);
+  late final TextEditingController _search;
+
+  @override
+  void initState() {
+    super.initState();
+    // Made here, not on first use: a page that never showed the field (no
+    // catalogue yet) must not reach for providers while it is torn down.
+    _search = TextEditingController(text: ref.read(workshopCatalogProvider).query);
+  }
 
   @override
   void dispose() {

@@ -56,6 +56,7 @@ import '../settings/settings_widgets.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 import '../theme/surfaces.dart';
+import '../workshop/workshop_screen.dart';
 import 'companion_ask.dart';
 import 'companion_chrome.dart';
 import 'companion_log.dart';
@@ -2829,6 +2830,24 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
                         onTap: () {
                           Navigator.of(sheet).pop();
                           unawaited(_restart());
+                        },
+                      ),
+                    // 创意工坊: companions other people made. Only where this build has one to open.
+                    if (ref.read(workshopAvailableProvider))
+                      SettingsTile(
+                        icon: AppIcons.workshop,
+                        tinted: false,
+                        title: l10n.workshopTitle,
+                        subtitle: l10n.workshopEntrySubtitle,
+                        onTap: () {
+                          Navigator.of(sheet).pop();
+                          unawaited(
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const WorkshopScreen(),
+                              ),
+                            ),
+                          );
                         },
                       ),
                     SettingsTile(
