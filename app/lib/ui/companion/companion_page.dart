@@ -2407,6 +2407,25 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
     });
   }
 
+  /// Back from the workshop. A companion installed or uninstalled there
+  /// changed the pack under her and the stage left: show whoever is in the
+  /// pack now, or the setup screen when nobody is.
+  Future<void> _afterWorkshop() async {
+    if (!mounted || _phase != _Phase.failed || _failure != companionStagePackChanged) return;
+    final here = await _store?.installed() ?? false;
+    if (!mounted || _phase != _Phase.failed || _failure != companionStagePackChanged) return;
+    if (here) {
+      await _retryStage();
+      return;
+    }
+    setState(() {
+      _phase = _Phase.setup;
+      _failure = null;
+      _stageReady = false;
+    });
+    _syncSignals();
+  }
+
   /// Why she couldn't load, in words: a model too new for the runtime says so.
   String _loadFailureText(L10n l10n) {
     final why = _failure ?? '';
@@ -2842,11 +2861,9 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
                         onTap: () {
                           Navigator.of(sheet).pop();
                           unawaited(
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const WorkshopScreen(),
-                              ),
-                            ),
+                            Navigator.of(context)
+                                .push(MaterialPageRoute<void>(builder: (_) => const WorkshopScreen()))
+                                .then((_) => _afterWorkshop()),
                           );
                         },
                       ),
