@@ -20842,6 +20842,245 @@ class L10nZh extends L10n {
   }
 
   @override
+  String get workshopTitle => '创意工坊';
+
+  @override
+  String get workshopSubtitle => '大家做的宠物和伙伴，挑喜欢的装上';
+
+  @override
+  String get workshopEntrySubtitle => '找别人做的宠物和伙伴';
+
+  @override
+  String get workshopTabBrowse => '发现';
+
+  @override
+  String get workshopTabMine => '我的投稿';
+
+  @override
+  String get workshopKindAll => '全部';
+
+  @override
+  String get workshopKindPet => '像素宠物';
+
+  @override
+  String get workshopKindCompanion => '伙伴';
+
+  @override
+  String get workshopSearchHint => '搜索名称或作者';
+
+  @override
+  String get workshopGet => '获取';
+
+  @override
+  String get workshopRefresh => '刷新';
+
+  @override
+  String workshopByAuthor(String author) {
+    return '$author 制作';
+  }
+
+  @override
+  String get workshopEmptyTitle => '这里还空着';
+
+  @override
+  String get workshopEmptyMessage => '还没有人投稿。做了宠物或伙伴的话，可以第一个发上来。';
+
+  @override
+  String get workshopNoMatchTitle => '没有找到';
+
+  @override
+  String get workshopNoMatchMessage => '换个名字或作者再试试。';
+
+  @override
+  String get workshopUnavailableTitle => '暂时打不开工坊';
+
+  @override
+  String get workshopNotOpenTitle => '工坊还没有开放';
+
+  @override
+  String get workshopNotOpenMessage => '这个版本还没有接入工坊服务。';
+
+  @override
+  String workshopShowingOlder(String when) {
+    return '没能刷新，显示的是 $when 取到的内容。';
+  }
+
+  @override
+  String get workshopLocalUnknown => '读不出本机已装了哪些，「已安装」的标记可能不准。';
+
+  @override
+  String get workshopStatVersion => '版本';
+
+  @override
+  String get workshopStatSize => '大小';
+
+  @override
+  String get workshopStatLicense => '许可';
+
+  @override
+  String get workshopAbout => '简介';
+
+  @override
+  String get workshopNoDescription => '作者没有写简介。';
+
+  @override
+  String get workshopSource => '来源';
+
+  @override
+  String workshopMinApp(String version) {
+    return '需要 DSH Go $version 或更新的版本。';
+  }
+
+  @override
+  String workshopInstalledVersion(String version) {
+    return '已安装 $version';
+  }
+
+  @override
+  String workshopUpdateTo(String version) {
+    return '更新到 $version';
+  }
+
+  @override
+  String get workshopInstalledWithdrawn => '你装的这个版本已经被撤回。它还能用，但不会再有更新，建议卸载。';
+
+  @override
+  String get workshopPhasePreparing => '正在准备…';
+
+  @override
+  String get workshopPhaseDownloading => '正在下载';
+
+  @override
+  String get workshopPhaseVerifying => '正在校验…';
+
+  @override
+  String get workshopPhaseCancelling => '正在取消…';
+
+  @override
+  String workshopProgressBytes(String received, String total) {
+    return '$received / $total';
+  }
+
+  @override
+  String get workshopInstallDone => '装好了';
+
+  @override
+  String get workshopInstallDonePet => '装好了，到宠物页就能换上它。';
+
+  @override
+  String get workshopInstallDoneCompanion => '装好了，到伙伴小屋就能见到她。';
+
+  @override
+  String get workshopInstallDoneRefreshIssue => '装好了，但列表没能刷新，重新进来就能看到。';
+
+  @override
+  String get workshopInstallCancelled => '已取消，没有改动本机的内容。';
+
+  @override
+  String get workshopInstallBusy => '上一个安装或卸载还没结束，等它完成再试。';
+
+  @override
+  String get workshopReplaceTitle => '覆盖本机已有的？';
+
+  @override
+  String workshopReplaceMessage(String title) {
+    return '本机已经有一个同名的资源，不是从工坊这一条装的。继续会用「$title」替换它，替换后找不回来。';
+  }
+
+  @override
+  String get workshopReplaceConfirm => '覆盖';
+
+  @override
+  String get workshopReport => '举报';
+
+  @override
+  String get workshopErrorNetwork => '网络不通，稍后再试。';
+
+  @override
+  String get workshopErrorTimeout => '等得太久没有回应，稍后再试。';
+
+  @override
+  String get workshopErrorServer => '工坊服务暂时出了问题，稍后再试。';
+
+  @override
+  String get workshopErrorRateLimited => '操作太频繁了，过一会儿再试。';
+
+  @override
+  String get workshopErrorBadData => '工坊返回的内容不对，没有采用。稍后再试。';
+
+  @override
+  String get workshopErrorCatalogChanged => '这个作品刚刚有变化，请刷新后再看。';
+
+  @override
+  String get workshopErrorNotFound => '找不到这个作品了，可能已经下架。';
+
+  @override
+  String get workshopErrorWithdrawn => '这个版本已经被撤回，不能安装。';
+
+  @override
+  String get workshopErrorMinApp => 'App 版本太旧，更新后才能安装。';
+
+  @override
+  String get workshopErrorUnsupported => '这个版本的 App 还不认识这类作品。';
+
+  @override
+  String get workshopErrorCompanionOff => '伙伴类作品暂时关闭了。';
+
+  @override
+  String get workshopErrorUploadOff => '工坊暂时不接收投稿。';
+
+  @override
+  String get workshopErrorNoSpace => '手机空间不够，腾出一些再试。';
+
+  @override
+  String get workshopErrorStorage => '没能读写手机上的文件。';
+
+  @override
+  String get workshopErrorIntegrity => '下载的内容和登记的不一致，已丢弃。请重试。';
+
+  @override
+  String get workshopErrorDowngrade => '本机装的版本更新，不会换成旧的。';
+
+  @override
+  String get workshopErrorRuntimeMissing => '要先在伙伴小屋里请过一位角色，才能装别的伙伴。';
+
+  @override
+  String get workshopErrorReadersBusy => '她正在用着，先离开伙伴小屋或关掉悬浮窗再试。';
+
+  @override
+  String get workshopErrorInstallRecord => '本机的安装记录对不上，没有动它。';
+
+  @override
+  String get workshopErrorOtherOrigin => '这是从别的工坊装的。';
+
+  @override
+  String get workshopErrorSignIn => '需要先登录论坛账号。';
+
+  @override
+  String get workshopErrorConsent => '需要先同意把登录凭据交给工坊核对身份。';
+
+  @override
+  String get workshopErrorForumMismatch => '登录的论坛和工坊认的不是同一个，请重新登录。';
+
+  @override
+  String get workshopErrorForumDown => '论坛暂时联系不上，稍后再试。';
+
+  @override
+  String get workshopErrorPreferences => '没能保存本机的记录，这一步没有继续。';
+
+  @override
+  String get workshopErrorBusy => '上一步还没结束，稍等。';
+
+  @override
+  String get workshopErrorCancelled => '已取消。';
+
+  @override
+  String get workshopErrorUnknownResult => '不确定有没有成功。先刷新看看，别急着重试。';
+
+  @override
+  String get workshopErrorGeneric => '没有成功，稍后再试。';
+
+  @override
   String get workspaceRecoveryTitle => '工作区索引救援';
 
   @override

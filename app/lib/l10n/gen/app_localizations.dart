@@ -37856,6 +37856,456 @@ abstract class L10n {
   /// **'还没连上「{name}」，连上后再打开网页版'**
   String webConnectHostFirst(String name);
 
+  /// No description provided for @workshopTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'创意工坊'**
+  String get workshopTitle;
+
+  /// No description provided for @workshopSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'大家做的宠物和伙伴，挑喜欢的装上'**
+  String get workshopSubtitle;
+
+  /// No description provided for @workshopEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'找别人做的宠物和伙伴'**
+  String get workshopEntrySubtitle;
+
+  /// No description provided for @workshopTabBrowse.
+  ///
+  /// In zh, this message translates to:
+  /// **'发现'**
+  String get workshopTabBrowse;
+
+  /// No description provided for @workshopTabMine.
+  ///
+  /// In zh, this message translates to:
+  /// **'我的投稿'**
+  String get workshopTabMine;
+
+  /// No description provided for @workshopKindAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部'**
+  String get workshopKindAll;
+
+  /// No description provided for @workshopKindPet.
+  ///
+  /// In zh, this message translates to:
+  /// **'像素宠物'**
+  String get workshopKindPet;
+
+  /// No description provided for @workshopKindCompanion.
+  ///
+  /// In zh, this message translates to:
+  /// **'伙伴'**
+  String get workshopKindCompanion;
+
+  /// No description provided for @workshopSearchHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索名称或作者'**
+  String get workshopSearchHint;
+
+  /// No description provided for @workshopGet.
+  ///
+  /// In zh, this message translates to:
+  /// **'获取'**
+  String get workshopGet;
+
+  /// No description provided for @workshopRefresh.
+  ///
+  /// In zh, this message translates to:
+  /// **'刷新'**
+  String get workshopRefresh;
+
+  /// No description provided for @workshopByAuthor.
+  ///
+  /// In zh, this message translates to:
+  /// **'{author} 制作'**
+  String workshopByAuthor(String author);
+
+  /// No description provided for @workshopEmptyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'这里还空着'**
+  String get workshopEmptyTitle;
+
+  /// No description provided for @workshopEmptyMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有人投稿。做了宠物或伙伴的话，可以第一个发上来。'**
+  String get workshopEmptyMessage;
+
+  /// No description provided for @workshopNoMatchTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有找到'**
+  String get workshopNoMatchTitle;
+
+  /// No description provided for @workshopNoMatchMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'换个名字或作者再试试。'**
+  String get workshopNoMatchMessage;
+
+  /// No description provided for @workshopUnavailableTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时打不开工坊'**
+  String get workshopUnavailableTitle;
+
+  /// No description provided for @workshopNotOpenTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊还没有开放'**
+  String get workshopNotOpenTitle;
+
+  /// No description provided for @workshopNotOpenMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个版本还没有接入工坊服务。'**
+  String get workshopNotOpenMessage;
+
+  /// No description provided for @workshopShowingOlder.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能刷新，显示的是 {when} 取到的内容。'**
+  String workshopShowingOlder(String when);
+
+  /// No description provided for @workshopLocalUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'读不出本机已装了哪些，「已安装」的标记可能不准。'**
+  String get workshopLocalUnknown;
+
+  /// No description provided for @workshopStatVersion.
+  ///
+  /// In zh, this message translates to:
+  /// **'版本'**
+  String get workshopStatVersion;
+
+  /// No description provided for @workshopStatSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'大小'**
+  String get workshopStatSize;
+
+  /// No description provided for @workshopStatLicense.
+  ///
+  /// In zh, this message translates to:
+  /// **'许可'**
+  String get workshopStatLicense;
+
+  /// No description provided for @workshopAbout.
+  ///
+  /// In zh, this message translates to:
+  /// **'简介'**
+  String get workshopAbout;
+
+  /// No description provided for @workshopNoDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'作者没有写简介。'**
+  String get workshopNoDescription;
+
+  /// No description provided for @workshopSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'来源'**
+  String get workshopSource;
+
+  /// No description provided for @workshopMinApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要 DSH Go {version} 或更新的版本。'**
+  String workshopMinApp(String version);
+
+  /// No description provided for @workshopInstalledVersion.
+  ///
+  /// In zh, this message translates to:
+  /// **'已安装 {version}'**
+  String workshopInstalledVersion(String version);
+
+  /// No description provided for @workshopUpdateTo.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新到 {version}'**
+  String workshopUpdateTo(String version);
+
+  /// No description provided for @workshopInstalledWithdrawn.
+  ///
+  /// In zh, this message translates to:
+  /// **'你装的这个版本已经被撤回。它还能用，但不会再有更新，建议卸载。'**
+  String get workshopInstalledWithdrawn;
+
+  /// No description provided for @workshopPhasePreparing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在准备…'**
+  String get workshopPhasePreparing;
+
+  /// No description provided for @workshopPhaseDownloading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在下载'**
+  String get workshopPhaseDownloading;
+
+  /// No description provided for @workshopPhaseVerifying.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在校验…'**
+  String get workshopPhaseVerifying;
+
+  /// No description provided for @workshopPhaseCancelling.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在取消…'**
+  String get workshopPhaseCancelling;
+
+  /// No description provided for @workshopProgressBytes.
+  ///
+  /// In zh, this message translates to:
+  /// **'{received} / {total}'**
+  String workshopProgressBytes(String received, String total);
+
+  /// No description provided for @workshopInstallDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'装好了'**
+  String get workshopInstallDone;
+
+  /// No description provided for @workshopInstallDonePet.
+  ///
+  /// In zh, this message translates to:
+  /// **'装好了，到宠物页就能换上它。'**
+  String get workshopInstallDonePet;
+
+  /// No description provided for @workshopInstallDoneCompanion.
+  ///
+  /// In zh, this message translates to:
+  /// **'装好了，到伙伴小屋就能见到她。'**
+  String get workshopInstallDoneCompanion;
+
+  /// No description provided for @workshopInstallDoneRefreshIssue.
+  ///
+  /// In zh, this message translates to:
+  /// **'装好了，但列表没能刷新，重新进来就能看到。'**
+  String get workshopInstallDoneRefreshIssue;
+
+  /// No description provided for @workshopInstallCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消，没有改动本机的内容。'**
+  String get workshopInstallCancelled;
+
+  /// No description provided for @workshopInstallBusy.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一个安装或卸载还没结束，等它完成再试。'**
+  String get workshopInstallBusy;
+
+  /// No description provided for @workshopReplaceTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'覆盖本机已有的？'**
+  String get workshopReplaceTitle;
+
+  /// No description provided for @workshopReplaceMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机已经有一个同名的资源，不是从工坊这一条装的。继续会用「{title}」替换它，替换后找不回来。'**
+  String workshopReplaceMessage(String title);
+
+  /// No description provided for @workshopReplaceConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'覆盖'**
+  String get workshopReplaceConfirm;
+
+  /// No description provided for @workshopReport.
+  ///
+  /// In zh, this message translates to:
+  /// **'举报'**
+  String get workshopReport;
+
+  /// No description provided for @workshopErrorNetwork.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络不通，稍后再试。'**
+  String get workshopErrorNetwork;
+
+  /// No description provided for @workshopErrorTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'等得太久没有回应，稍后再试。'**
+  String get workshopErrorTimeout;
+
+  /// No description provided for @workshopErrorServer.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊服务暂时出了问题，稍后再试。'**
+  String get workshopErrorServer;
+
+  /// No description provided for @workshopErrorRateLimited.
+  ///
+  /// In zh, this message translates to:
+  /// **'操作太频繁了，过一会儿再试。'**
+  String get workshopErrorRateLimited;
+
+  /// No description provided for @workshopErrorBadData.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊返回的内容不对，没有采用。稍后再试。'**
+  String get workshopErrorBadData;
+
+  /// No description provided for @workshopErrorCatalogChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个作品刚刚有变化，请刷新后再看。'**
+  String get workshopErrorCatalogChanged;
+
+  /// No description provided for @workshopErrorNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'找不到这个作品了，可能已经下架。'**
+  String get workshopErrorNotFound;
+
+  /// No description provided for @workshopErrorWithdrawn.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个版本已经被撤回，不能安装。'**
+  String get workshopErrorWithdrawn;
+
+  /// No description provided for @workshopErrorMinApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'App 版本太旧，更新后才能安装。'**
+  String get workshopErrorMinApp;
+
+  /// No description provided for @workshopErrorUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个版本的 App 还不认识这类作品。'**
+  String get workshopErrorUnsupported;
+
+  /// No description provided for @workshopErrorCompanionOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'伙伴类作品暂时关闭了。'**
+  String get workshopErrorCompanionOff;
+
+  /// No description provided for @workshopErrorUploadOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊暂时不接收投稿。'**
+  String get workshopErrorUploadOff;
+
+  /// No description provided for @workshopErrorNoSpace.
+  ///
+  /// In zh, this message translates to:
+  /// **'手机空间不够，腾出一些再试。'**
+  String get workshopErrorNoSpace;
+
+  /// No description provided for @workshopErrorStorage.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能读写手机上的文件。'**
+  String get workshopErrorStorage;
+
+  /// No description provided for @workshopErrorIntegrity.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载的内容和登记的不一致，已丢弃。请重试。'**
+  String get workshopErrorIntegrity;
+
+  /// No description provided for @workshopErrorDowngrade.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机装的版本更新，不会换成旧的。'**
+  String get workshopErrorDowngrade;
+
+  /// No description provided for @workshopErrorRuntimeMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'要先在伙伴小屋里请过一位角色，才能装别的伙伴。'**
+  String get workshopErrorRuntimeMissing;
+
+  /// No description provided for @workshopErrorReadersBusy.
+  ///
+  /// In zh, this message translates to:
+  /// **'她正在用着，先离开伙伴小屋或关掉悬浮窗再试。'**
+  String get workshopErrorReadersBusy;
+
+  /// No description provided for @workshopErrorInstallRecord.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机的安装记录对不上，没有动它。'**
+  String get workshopErrorInstallRecord;
+
+  /// No description provided for @workshopErrorOtherOrigin.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是从别的工坊装的。'**
+  String get workshopErrorOtherOrigin;
+
+  /// No description provided for @workshopErrorSignIn.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要先登录论坛账号。'**
+  String get workshopErrorSignIn;
+
+  /// No description provided for @workshopErrorConsent.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要先同意把登录凭据交给工坊核对身份。'**
+  String get workshopErrorConsent;
+
+  /// No description provided for @workshopErrorForumMismatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录的论坛和工坊认的不是同一个，请重新登录。'**
+  String get workshopErrorForumMismatch;
+
+  /// No description provided for @workshopErrorForumDown.
+  ///
+  /// In zh, this message translates to:
+  /// **'论坛暂时联系不上，稍后再试。'**
+  String get workshopErrorForumDown;
+
+  /// No description provided for @workshopErrorPreferences.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能保存本机的记录，这一步没有继续。'**
+  String get workshopErrorPreferences;
+
+  /// No description provided for @workshopErrorBusy.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一步还没结束，稍等。'**
+  String get workshopErrorBusy;
+
+  /// No description provided for @workshopErrorCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消。'**
+  String get workshopErrorCancelled;
+
+  /// No description provided for @workshopErrorUnknownResult.
+  ///
+  /// In zh, this message translates to:
+  /// **'不确定有没有成功。先刷新看看，别急着重试。'**
+  String get workshopErrorUnknownResult;
+
+  /// No description provided for @workshopErrorGeneric.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有成功，稍后再试。'**
+  String get workshopErrorGeneric;
+
   /// No description provided for @workspaceRecoveryTitle.
   ///
   /// In zh, this message translates to:

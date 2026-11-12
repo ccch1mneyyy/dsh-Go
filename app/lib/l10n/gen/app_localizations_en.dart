@@ -22007,6 +22007,254 @@ class L10nEn extends L10n {
   }
 
   @override
+  String get workshopTitle => 'Workshop';
+
+  @override
+  String get workshopSubtitle => 'Pets and companions made by others. Install the ones you like';
+
+  @override
+  String get workshopEntrySubtitle => 'Find pets and companions made by others';
+
+  @override
+  String get workshopTabBrowse => 'Browse';
+
+  @override
+  String get workshopTabMine => 'My uploads';
+
+  @override
+  String get workshopKindAll => 'All';
+
+  @override
+  String get workshopKindPet => 'Pixel pets';
+
+  @override
+  String get workshopKindCompanion => 'Companions';
+
+  @override
+  String get workshopSearchHint => 'Search by name or author';
+
+  @override
+  String get workshopGet => 'Get';
+
+  @override
+  String get workshopRefresh => 'Refresh';
+
+  @override
+  String workshopByAuthor(String author) {
+    return 'By $author';
+  }
+
+  @override
+  String get workshopEmptyTitle => 'Nothing here yet';
+
+  @override
+  String get workshopEmptyMessage =>
+      'No one has uploaded anything. If you made a pet or a companion, yours can be the first.';
+
+  @override
+  String get workshopNoMatchTitle => 'No matches';
+
+  @override
+  String get workshopNoMatchMessage => 'Try another name or author.';
+
+  @override
+  String get workshopUnavailableTitle => 'The Workshop can\'t be opened right now';
+
+  @override
+  String get workshopNotOpenTitle => 'The Workshop isn\'t open yet';
+
+  @override
+  String get workshopNotOpenMessage => 'This version isn\'t connected to a Workshop service.';
+
+  @override
+  String workshopShowingOlder(String when) {
+    return 'Couldn\'t refresh. Showing what was fetched $when.';
+  }
+
+  @override
+  String get workshopLocalUnknown =>
+      'Couldn\'t read what is installed on this phone, so the Installed marks may be wrong.';
+
+  @override
+  String get workshopStatVersion => 'Version';
+
+  @override
+  String get workshopStatSize => 'Size';
+
+  @override
+  String get workshopStatLicense => 'License';
+
+  @override
+  String get workshopAbout => 'About';
+
+  @override
+  String get workshopNoDescription => 'The author didn\'t write a description.';
+
+  @override
+  String get workshopSource => 'Source';
+
+  @override
+  String workshopMinApp(String version) {
+    return 'Needs DSH Go $version or later.';
+  }
+
+  @override
+  String workshopInstalledVersion(String version) {
+    return 'Installed $version';
+  }
+
+  @override
+  String workshopUpdateTo(String version) {
+    return 'Update to $version';
+  }
+
+  @override
+  String get workshopInstalledWithdrawn =>
+      'The version you installed has been withdrawn. It still works but won\'t get updates, so consider removing it.';
+
+  @override
+  String get workshopPhasePreparing => 'Getting ready…';
+
+  @override
+  String get workshopPhaseDownloading => 'Downloading';
+
+  @override
+  String get workshopPhaseVerifying => 'Verifying…';
+
+  @override
+  String get workshopPhaseCancelling => 'Cancelling…';
+
+  @override
+  String workshopProgressBytes(String received, String total) {
+    return '$received / $total';
+  }
+
+  @override
+  String get workshopInstallDone => 'Installed';
+
+  @override
+  String get workshopInstallDonePet => 'Installed. Pick it on the Pets page.';
+
+  @override
+  String get workshopInstallDoneCompanion => 'Installed. She\'s in the Companion room.';
+
+  @override
+  String get workshopInstallDoneRefreshIssue =>
+      'Installed, but the list couldn\'t refresh. Open this page again to see it.';
+
+  @override
+  String get workshopInstallCancelled => 'Cancelled. Nothing on this phone was changed.';
+
+  @override
+  String get workshopInstallBusy => 'Another install or removal is still running. Try again when it finishes.';
+
+  @override
+  String get workshopReplaceTitle => 'Replace what\'s on this phone?';
+
+  @override
+  String workshopReplaceMessage(String title) {
+    return 'This phone already has something with the same name that didn\'t come from this Workshop entry. Continuing replaces it with \"$title\", and the old one can\'t be brought back.';
+  }
+
+  @override
+  String get workshopReplaceConfirm => 'Replace';
+
+  @override
+  String get workshopReport => 'Report';
+
+  @override
+  String get workshopErrorNetwork => 'No connection. Try again later.';
+
+  @override
+  String get workshopErrorTimeout => 'No response in time. Try again later.';
+
+  @override
+  String get workshopErrorServer => 'The Workshop service has a problem right now. Try again later.';
+
+  @override
+  String get workshopErrorRateLimited => 'Too many requests. Try again in a while.';
+
+  @override
+  String get workshopErrorBadData => 'The Workshop sent something unexpected, so it wasn\'t used. Try again later.';
+
+  @override
+  String get workshopErrorCatalogChanged => 'This item just changed. Refresh and look again.';
+
+  @override
+  String get workshopErrorNotFound => 'This item can\'t be found. It may have been taken down.';
+
+  @override
+  String get workshopErrorWithdrawn => 'This version has been withdrawn and can\'t be installed.';
+
+  @override
+  String get workshopErrorMinApp => 'This app is too old. Update it to install this.';
+
+  @override
+  String get workshopErrorUnsupported => 'This version of the app doesn\'t know this kind of item.';
+
+  @override
+  String get workshopErrorCompanionOff => 'Companion items are turned off for now.';
+
+  @override
+  String get workshopErrorUploadOff => 'The Workshop isn\'t taking uploads right now.';
+
+  @override
+  String get workshopErrorNoSpace => 'Not enough storage on this phone. Free some up and try again.';
+
+  @override
+  String get workshopErrorStorage => 'Couldn\'t read or write files on this phone.';
+
+  @override
+  String get workshopErrorIntegrity =>
+      'The download didn\'t match what was registered, so it was discarded. Try again.';
+
+  @override
+  String get workshopErrorDowngrade => 'The version on this phone is newer and won\'t be replaced with an older one.';
+
+  @override
+  String get workshopErrorRuntimeMissing =>
+      'Invite a character in the Companion room first. Then other companions can be installed.';
+
+  @override
+  String get workshopErrorReadersBusy =>
+      'She\'s in use. Leave the Companion room or close the floating window, then try again.';
+
+  @override
+  String get workshopErrorInstallRecord => 'The install record on this phone doesn\'t match, so nothing was changed.';
+
+  @override
+  String get workshopErrorOtherOrigin => 'This was installed from a different Workshop.';
+
+  @override
+  String get workshopErrorSignIn => 'Sign in to the forum first.';
+
+  @override
+  String get workshopErrorConsent => 'Agree to let the Workshop check your sign-in first.';
+
+  @override
+  String get workshopErrorForumMismatch =>
+      'The forum you signed in to isn\'t the one this Workshop uses. Sign in again.';
+
+  @override
+  String get workshopErrorForumDown => 'The forum can\'t be reached right now. Try again later.';
+
+  @override
+  String get workshopErrorPreferences => 'Couldn\'t save the record on this phone, so this step didn\'t continue.';
+
+  @override
+  String get workshopErrorBusy => 'The previous step is still running. One moment.';
+
+  @override
+  String get workshopErrorCancelled => 'Cancelled.';
+
+  @override
+  String get workshopErrorUnknownResult =>
+      'It\'s unclear whether that went through. Refresh and check before trying again.';
+
+  @override
+  String get workshopErrorGeneric => 'That didn\'t work. Try again later.';
+
+  @override
   String get workspaceRecoveryTitle => 'Workspace index recovery';
 
   @override
