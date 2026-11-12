@@ -47,21 +47,34 @@ class ResourceRecoveryTest {
         assertNull(checkNotNull(ResourceRecovery.check(noId.keys, noId::get)).displayId)
     }
 
-    @Test fun unavailableNamespaceOnEitherSideNeverReadsPidDisplayOrTasks() {
+    @Test fun oneSidedNamespaceLossNeverReadsPidDisplayOrTasks() {
         val unavailable = current.copy(nsDev = 0L, nsIno = 0L, nsAvailable = false)
-        for (now in listOf(current, unavailable)) {
-            for (before in listOf(old(), old().copy(birth = unavailable.copy(pid = 99)))) {
-                if (now.nsAvailable && before.birth.nsAvailable) continue
-                failure("recoveryUnknown") {
-                    ResourceRecovery.verify(now, before, { error("namespace unknown: no PID query") },
-                        { error("no display query") }, { error("no task query") })
-                }
+        for ((now, before) in listOf(
+            current to old().copy(birth = unavailable.copy(pid = 99)),
+            unavailable to old(),
+        )) {
+            failure("recoveryUnknown") {
+                ResourceRecovery.verify(now, before, { error("namespace unknown: no PID query") },
+                    { error("no display query") }, { error("no task query") })
             }
         }
+    }
+
+    @Test fun bothSidesWithoutNamespaceStillProveDeadPeerEmpty() {
+        val unavailable = current.copy(nsDev = 0L, nsIno = 0L, nsAvailable = false)
+        val original = old().copy(birth = unavailable.copy(pid = 99))
+        val order = mutableListOf<String>()
+        assertEquals("deadPeerEmpty", ResourceRecovery.verify(unavailable, original,
+            { order += "pid:$it"; true },
+            { order += "displays"; listOf(ResourceRecovery.DisplayFact(0, "main", 1000, false)) },
+            { order += "tasks:$it"; true }))
+        assertEquals(listOf("pid:99", "displays", "tasks:12"), order)
+        val calls = mutableListOf<Int>()
         failure("recoveryUnknown") {
-            ResourceRecovery.verify(current.copy(nsIno = 0L), old(), { error("invalid namespace") },
-                { error("no display query") }, { error("no task query") })
+            ResourceRecovery.verify(unavailable, original, { calls += it; false },
+                { error("live PID: no display") }, { error("live PID: no tasks") })
         }
+        assertEquals(listOf(99), calls)
     }
 
     @Test fun unavailableNamespaceDoesNotInvalidatePreviousBootProof() {
