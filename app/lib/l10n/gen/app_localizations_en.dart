@@ -22255,6 +22255,218 @@ class L10nEn extends L10n {
   String get workshopErrorGeneric => 'That didn\'t work. Try again later.';
 
   @override
+  String get workshopMinePublish => 'Submit';
+
+  @override
+  String get workshopMinePublishHint => 'Shows up in Discover once approved';
+
+  @override
+  String get workshopMineSignInTitle => 'Submissions belong to a forum account';
+
+  @override
+  String get workshopMineSignInMessage => 'Sign in to see what you have sent in.';
+
+  @override
+  String get workshopMineConsentTitle => 'One more step';
+
+  @override
+  String get workshopMineConsentMessage =>
+      'The workshop checks who you are with your forum sign-in. Agree to that to see your submissions.';
+
+  @override
+  String get workshopMineConsentAction => 'See details';
+
+  @override
+  String get workshopMineDisclosureTitle => 'Let the workshop check your forum identity?';
+
+  @override
+  String workshopMineDisclosureMessage(String worker, String forum) {
+    return 'The workshop service $worker will receive your forum account\'s User API Key and pass it to $forum to check who you are. This happens whenever you view, withdraw or report.';
+  }
+
+  @override
+  String get workshopMineDisclosureAgree => 'Agree';
+
+  @override
+  String get workshopMineDisclosureUnsaved =>
+      'Agreed, but it couldn\'t be saved on this phone. You may be asked again.';
+
+  @override
+  String get workshopMineEmptyTitle => 'No submissions yet';
+
+  @override
+  String get workshopMineEmptyMessage => 'Made a pet or a companion? Send it in for others to use.';
+
+  @override
+  String get workshopMineEmptyFiltered => 'Nothing with this status';
+
+  @override
+  String get workshopMineLoadFailed => 'Couldn\'t load your submissions';
+
+  @override
+  String get workshopMineStale => 'Couldn\'t get the latest. Showing what was loaded before.';
+
+  @override
+  String get workshopMineLoadMore => 'Load more';
+
+  @override
+  String get workshopMineStatusPending => 'In review';
+
+  @override
+  String get workshopMineStatusApproved => 'Approved';
+
+  @override
+  String get workshopMineStatusRejected => 'Rejected';
+
+  @override
+  String get workshopMineStatusWithdrawn => 'Withdrawn';
+
+  @override
+  String get workshopMineStatusDraft => 'Draft';
+
+  @override
+  String get workshopMineDetailTitle => 'Submission';
+
+  @override
+  String get workshopMineRefreshOne => 'Refresh this one';
+
+  @override
+  String get workshopMineAboutPending => 'Sent and waiting for review. It shows up in Discover once approved.';
+
+  @override
+  String get workshopMineAboutApproved => 'Approved. Whether it is public right now is what Discover shows.';
+
+  @override
+  String get workshopMineAboutRejected => 'Not approved.';
+
+  @override
+  String get workshopMineAboutWithdrawn => 'Withdrawn. This can\'t be undone.';
+
+  @override
+  String get workshopMineAboutDraft => 'The file hasn\'t finished uploading, so it isn\'t in review.';
+
+  @override
+  String get workshopMineReviewReason => 'Reviewer\'s note';
+
+  @override
+  String get workshopMineWithdrawReason => 'Reason for withdrawing';
+
+  @override
+  String get workshopMineWithdrawReasonHint => 'For example: wrong file, want to change it first';
+
+  @override
+  String get workshopMineCreatedAt => 'Submitted';
+
+  @override
+  String get workshopMineUpdatedAt => 'Last updated';
+
+  @override
+  String get workshopMineDetailStale => 'Couldn\'t refresh this one. Showing the status loaded before.';
+
+  @override
+  String get workshopMineAccountChanged => 'The account has changed';
+
+  @override
+  String get workshopMineAccountChangedMessage =>
+      'This submission belongs to the previous account and is no longer shown.';
+
+  @override
+  String get workshopMineWithdraw => 'Withdraw';
+
+  @override
+  String get workshopMineWithdrawConfirmTitle => 'Withdraw this submission?';
+
+  @override
+  String workshopMineWithdrawConfirmMessage(String title) {
+    return 'This can\'t be undone. If \"$title\" is already public, nobody will be able to download this version, and the same version number can\'t be published again.';
+  }
+
+  @override
+  String get workshopMineWithdrawConfirm => 'Withdraw';
+
+  @override
+  String get workshopMineWithdrawing => 'Withdrawing…';
+
+  @override
+  String get workshopMineWithdrawDone => 'Submission withdrawn';
+
+  @override
+  String get workshopMineWithdrawUnknown =>
+      'Not sure whether it was withdrawn. Check the result first; don\'t withdraw again yet.';
+
+  @override
+  String get workshopMineWithdrawQuery => 'Check result';
+
+  @override
+  String get workshopMineWithdrawStill => 'It hasn\'t been withdrawn. You can withdraw it again if you still want to.';
+
+  @override
+  String get workshopMineWithdrawReconciled => 'It is withdrawn now.';
+
+  @override
+  String get workshopMineReasonEmpty => 'Write a reason first.';
+
+  @override
+  String workshopMineReasonTooLong(String max) {
+    return 'At most $max characters. This is too long.';
+  }
+
+  @override
+  String get workshopMineReasonBadChars => 'It contains characters that can\'t be used. Remove them and try again.';
+
+  @override
+  String get workshopMineReasonRejected => 'This reason wasn\'t accepted. Change it and try again.';
+
+  @override
+  String workshopReportTarget(String title, String version) {
+    return '$title · $version';
+  }
+
+  @override
+  String get workshopReportReason => 'Reason';
+
+  @override
+  String get workshopReportReasonHint => 'What\'s wrong with it, e.g. infringement or unsuitable content';
+
+  @override
+  String get workshopReportNote =>
+      'A reviewer will look at this report. Reporting doesn\'t take the item down by itself.';
+
+  @override
+  String get workshopReportSubmit => 'Send report';
+
+  @override
+  String get workshopReportSending => 'Sending…';
+
+  @override
+  String get workshopReportDone => 'Report received. A reviewer will look at it.';
+
+  @override
+  String get workshopReportSignInTitle => 'Reporting needs a forum account';
+
+  @override
+  String get workshopReportSignInMessage => 'Sign in to send a report.';
+
+  @override
+  String get workshopReportConsentMessage =>
+      'The workshop checks who you are with your forum sign-in. Agree to that to report.';
+
+  @override
+  String get workshopReportUnknownTitle => 'Not sure it arrived';
+
+  @override
+  String get workshopReportUnknownMessage =>
+      'The last report may or may not have been received, and there is no way to check. Sending again could create a duplicate.';
+
+  @override
+  String workshopReportUnknownOther(String id, String version) {
+    return 'That report was about $id $version.';
+  }
+
+  @override
+  String get workshopReportUnknownAgain => 'I understand, write it again';
+
+  @override
   String get workspaceRecoveryTitle => 'Workspace index recovery';
 
   @override

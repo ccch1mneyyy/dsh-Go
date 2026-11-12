@@ -38306,6 +38306,396 @@ abstract class L10n {
   /// **'没有成功，稍后再试。'**
   String get workshopErrorGeneric;
 
+  /// No description provided for @workshopMinePublish.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿'**
+  String get workshopMinePublish;
+
+  /// No description provided for @workshopMinePublishHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'审核通过后出现在「发现」里'**
+  String get workshopMinePublishHint;
+
+  /// No description provided for @workshopMineSignInTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿记在论坛账号上'**
+  String get workshopMineSignInTitle;
+
+  /// No description provided for @workshopMineSignInMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录后就能看到自己发过的作品。'**
+  String get workshopMineSignInMessage;
+
+  /// No description provided for @workshopMineConsentTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'还差一步确认'**
+  String get workshopMineConsentTitle;
+
+  /// No description provided for @workshopMineConsentMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊要用你的论坛登录凭据核对身份，同意后才能看到自己的投稿。'**
+  String get workshopMineConsentMessage;
+
+  /// No description provided for @workshopMineConsentAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看说明'**
+  String get workshopMineConsentAction;
+
+  /// No description provided for @workshopMineDisclosureTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'让工坊核对你的论坛身份？'**
+  String get workshopMineDisclosureTitle;
+
+  /// No description provided for @workshopMineDisclosureMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊服务 {worker} 会收到你论坛账号的 User API Key，并交给 {forum} 核对你是谁。查看投稿、撤回和举报时都会这样做。'**
+  String workshopMineDisclosureMessage(String worker, String forum);
+
+  /// No description provided for @workshopMineDisclosureAgree.
+  ///
+  /// In zh, this message translates to:
+  /// **'同意'**
+  String get workshopMineDisclosureAgree;
+
+  /// No description provided for @workshopMineDisclosureUnsaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'已同意，但没能记在本机，下次可能还会再问。'**
+  String get workshopMineDisclosureUnsaved;
+
+  /// No description provided for @workshopMineEmptyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有投稿'**
+  String get workshopMineEmptyTitle;
+
+  /// No description provided for @workshopMineEmptyMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'做了宠物或伙伴的话，可以发上来给大家用。'**
+  String get workshopMineEmptyMessage;
+
+  /// No description provided for @workshopMineEmptyFiltered.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有这类投稿'**
+  String get workshopMineEmptyFiltered;
+
+  /// No description provided for @workshopMineLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能读到投稿'**
+  String get workshopMineLoadFailed;
+
+  /// No description provided for @workshopMineStale.
+  ///
+  /// In zh, this message translates to:
+  /// **'没读到最新内容，下面是之前读到的。'**
+  String get workshopMineStale;
+
+  /// No description provided for @workshopMineLoadMore.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载更多'**
+  String get workshopMineLoadMore;
+
+  /// No description provided for @workshopMineStatusPending.
+  ///
+  /// In zh, this message translates to:
+  /// **'待审核'**
+  String get workshopMineStatusPending;
+
+  /// No description provided for @workshopMineStatusApproved.
+  ///
+  /// In zh, this message translates to:
+  /// **'已通过'**
+  String get workshopMineStatusApproved;
+
+  /// No description provided for @workshopMineStatusRejected.
+  ///
+  /// In zh, this message translates to:
+  /// **'已拒绝'**
+  String get workshopMineStatusRejected;
+
+  /// No description provided for @workshopMineStatusWithdrawn.
+  ///
+  /// In zh, this message translates to:
+  /// **'已撤回'**
+  String get workshopMineStatusWithdrawn;
+
+  /// No description provided for @workshopMineStatusDraft.
+  ///
+  /// In zh, this message translates to:
+  /// **'草稿'**
+  String get workshopMineStatusDraft;
+
+  /// No description provided for @workshopMineDetailTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'投稿详情'**
+  String get workshopMineDetailTitle;
+
+  /// No description provided for @workshopMineRefreshOne.
+  ///
+  /// In zh, this message translates to:
+  /// **'刷新这一条'**
+  String get workshopMineRefreshOne;
+
+  /// No description provided for @workshopMineAboutPending.
+  ///
+  /// In zh, this message translates to:
+  /// **'已经提交，正在等审核。通过后会出现在「发现」里。'**
+  String get workshopMineAboutPending;
+
+  /// No description provided for @workshopMineAboutApproved.
+  ///
+  /// In zh, this message translates to:
+  /// **'审核通过了。现在是否公开，以「发现」里看到的为准。'**
+  String get workshopMineAboutApproved;
+
+  /// No description provided for @workshopMineAboutRejected.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有通过审核。'**
+  String get workshopMineAboutRejected;
+
+  /// No description provided for @workshopMineAboutWithdrawn.
+  ///
+  /// In zh, this message translates to:
+  /// **'已经撤回，不能恢复。'**
+  String get workshopMineAboutWithdrawn;
+
+  /// No description provided for @workshopMineAboutDraft.
+  ///
+  /// In zh, this message translates to:
+  /// **'文件还没有传完，不会进入审核。'**
+  String get workshopMineAboutDraft;
+
+  /// No description provided for @workshopMineReviewReason.
+  ///
+  /// In zh, this message translates to:
+  /// **'审核意见'**
+  String get workshopMineReviewReason;
+
+  /// No description provided for @workshopMineWithdrawReason.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤回原因'**
+  String get workshopMineWithdrawReason;
+
+  /// No description provided for @workshopMineWithdrawReasonHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'比如传错了文件、想改了再发'**
+  String get workshopMineWithdrawReasonHint;
+
+  /// No description provided for @workshopMineCreatedAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'提交时间'**
+  String get workshopMineCreatedAt;
+
+  /// No description provided for @workshopMineUpdatedAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近更新'**
+  String get workshopMineUpdatedAt;
+
+  /// No description provided for @workshopMineDetailStale.
+  ///
+  /// In zh, this message translates to:
+  /// **'这一条没能刷新，显示的是之前读到的状态。'**
+  String get workshopMineDetailStale;
+
+  /// No description provided for @workshopMineAccountChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号已经换了'**
+  String get workshopMineAccountChanged;
+
+  /// No description provided for @workshopMineAccountChangedMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'这条投稿属于之前的账号，不再显示。'**
+  String get workshopMineAccountChangedMessage;
+
+  /// No description provided for @workshopMineWithdraw.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤回投稿'**
+  String get workshopMineWithdraw;
+
+  /// No description provided for @workshopMineWithdrawConfirmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤回这条投稿？'**
+  String get workshopMineWithdrawConfirmTitle;
+
+  /// No description provided for @workshopMineWithdrawConfirmMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤回后不能恢复。如果「{title}」已经公开，所有人都不能再下载这个版本，同一个版本号也不能重新发布。'**
+  String workshopMineWithdrawConfirmMessage(String title);
+
+  /// No description provided for @workshopMineWithdrawConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤回'**
+  String get workshopMineWithdrawConfirm;
+
+  /// No description provided for @workshopMineWithdrawing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在撤回…'**
+  String get workshopMineWithdrawing;
+
+  /// No description provided for @workshopMineWithdrawDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'这条投稿已撤回'**
+  String get workshopMineWithdrawDone;
+
+  /// No description provided for @workshopMineWithdrawUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'不确定有没有撤回成功。先查询结果，不要重复撤回。'**
+  String get workshopMineWithdrawUnknown;
+
+  /// No description provided for @workshopMineWithdrawQuery.
+  ///
+  /// In zh, this message translates to:
+  /// **'查询结果'**
+  String get workshopMineWithdrawQuery;
+
+  /// No description provided for @workshopMineWithdrawStill.
+  ///
+  /// In zh, this message translates to:
+  /// **'查到它还没有撤回。需要的话可以再撤回一次。'**
+  String get workshopMineWithdrawStill;
+
+  /// No description provided for @workshopMineWithdrawReconciled.
+  ///
+  /// In zh, this message translates to:
+  /// **'查到它现在已经是撤回状态。'**
+  String get workshopMineWithdrawReconciled;
+
+  /// No description provided for @workshopMineReasonEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'先写下原因。'**
+  String get workshopMineReasonEmpty;
+
+  /// No description provided for @workshopMineReasonTooLong.
+  ///
+  /// In zh, this message translates to:
+  /// **'最多 {max} 字，现在超了。'**
+  String workshopMineReasonTooLong(String max);
+
+  /// No description provided for @workshopMineReasonBadChars.
+  ///
+  /// In zh, this message translates to:
+  /// **'里面有不能用的字符，删掉后再试。'**
+  String get workshopMineReasonBadChars;
+
+  /// No description provided for @workshopMineReasonRejected.
+  ///
+  /// In zh, this message translates to:
+  /// **'这段原因没有被接受，改一下再试。'**
+  String get workshopMineReasonRejected;
+
+  /// No description provided for @workshopReportTarget.
+  ///
+  /// In zh, this message translates to:
+  /// **'{title} · {version}'**
+  String workshopReportTarget(String title, String version);
+
+  /// No description provided for @workshopReportReason.
+  ///
+  /// In zh, this message translates to:
+  /// **'举报原因'**
+  String get workshopReportReason;
+
+  /// No description provided for @workshopReportReasonHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'它有什么问题，比如侵权、内容不合适'**
+  String get workshopReportReasonHint;
+
+  /// No description provided for @workshopReportNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'审核员会查看这条举报。作品不会因为举报自动下架。'**
+  String get workshopReportNote;
+
+  /// No description provided for @workshopReportSubmit.
+  ///
+  /// In zh, this message translates to:
+  /// **'提交举报'**
+  String get workshopReportSubmit;
+
+  /// No description provided for @workshopReportSending.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在提交…'**
+  String get workshopReportSending;
+
+  /// No description provided for @workshopReportDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'举报已送达，审核员会查看。'**
+  String get workshopReportDone;
+
+  /// No description provided for @workshopReportSignInTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'举报需要论坛账号'**
+  String get workshopReportSignInTitle;
+
+  /// No description provided for @workshopReportSignInMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录后才能提交举报。'**
+  String get workshopReportSignInMessage;
+
+  /// No description provided for @workshopReportConsentMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊要用你的论坛登录凭据核对身份，同意后才能举报。'**
+  String get workshopReportConsentMessage;
+
+  /// No description provided for @workshopReportUnknownTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'不确定有没有送达'**
+  String get workshopReportUnknownTitle;
+
+  /// No description provided for @workshopReportUnknownMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一次举报可能已经收到，也可能没有，现在查不到结果。再发一次可能变成重复举报。'**
+  String get workshopReportUnknownMessage;
+
+  /// No description provided for @workshopReportUnknownOther.
+  ///
+  /// In zh, this message translates to:
+  /// **'那一次举报的是 {id} {version}。'**
+  String workshopReportUnknownOther(String id, String version);
+
+  /// No description provided for @workshopReportUnknownAgain.
+  ///
+  /// In zh, this message translates to:
+  /// **'知道可能重复，重新填写'**
+  String get workshopReportUnknownAgain;
+
   /// No description provided for @workspaceRecoveryTitle.
   ///
   /// In zh, this message translates to:
