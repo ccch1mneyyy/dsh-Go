@@ -12,6 +12,12 @@
 // is one transform on the compositor.
 (function () {
   if (window.__dshApp) return;
+  // Declare the display-default layer before the page's styles, including
+  // already loaded named layers. Its rules stay in dsh_web_phone.css.
+  var defaults = document.createElement('style');
+  defaults.id = 'dsh-app-phone-layers';
+  defaults.textContent = '@layer dsh-app-touch-defaults;';
+  document.head.insertBefore(defaults, document.head.firstChild);
   var OPEN = 'data-dsh-app-drawer';
 
   // The app picks the layout from the frame width (web_view_page.dart) and
