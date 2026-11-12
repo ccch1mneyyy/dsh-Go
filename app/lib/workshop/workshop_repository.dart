@@ -366,6 +366,49 @@ Future<int?> _nativeFreeBytes() async {
   on PlatformException { return null; }
 }
 
+/// Known package format, content, path, size and compatibility diagnostics.
+///
+/// Use with an explicitly local diagnostic, not to infer its origin from the
+/// string. Membership does not prove corruption or authorize removal. The
+/// installed listing does not fully validate model or image contents; a valid
+/// receipt with a local issue still keeps its ordinary removal fence.
+///
+/// Receipt, storage, missing-runtime, export-target, preview and catalog
+/// availability codes keep their separate handling. This classifies the mapped
+/// code, not the source exception's enum. Unlisted/future codes retain the
+/// caller's fallback; an equal string from another source proves no provenance.
+const Set<String> workshopPackageValidationCodes = {
+  'workshop_pet_not_a_zip',
+  'workshop_pet_no_pack',
+  'workshop_pet_bad_pack',
+  'workshop_pet_missing_sheet',
+  'workshop_pet_bad_sheet',
+  'workshop_pet_too_large',
+  'workshop_companion_bad_index',
+  'workshop_companion_bad_json',
+  'workshop_companion_bad_metadata',
+  'workshop_companion_bad_moc',
+  'workshop_companion_bad_model',
+  'workshop_companion_bad_png',
+  'workshop_companion_bad_reference',
+  'workshop_companion_changed',
+  'workshop_companion_empty_file',
+  'workshop_companion_forbidden_file',
+  'workshop_companion_legacy_model',
+  'workshop_companion_missing_file',
+  'workshop_companion_missing_index',
+  'workshop_companion_missing_model',
+  'workshop_companion_missing_reference',
+  'workshop_companion_missing_texture',
+  'workshop_companion_moc_version',
+  'workshop_companion_no_model',
+  'workshop_companion_not_a_pack',
+  'workshop_companion_runtime_incomplete',
+  'workshop_companion_runtime_mismatch',
+  'workshop_companion_too_large',
+  'workshop_companion_unsafe_path',
+};
+
 WorkshopException workshopLocalError(Object error) {
   if (error is WorkshopException) return error;
   final int? errno;

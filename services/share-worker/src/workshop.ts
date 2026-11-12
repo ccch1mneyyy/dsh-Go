@@ -39,11 +39,28 @@ function page<T>(items: T[], url: URL, key: (item: T) => string) {
   const limit = Number(limitText), selected = sorted.slice(0, limit);
   return { selected, nextCursor: sorted.length > limit ? key(selected[selected.length - 1]!) : null };
 }
+function personalPage(items: Submission[], url: URL, status: string | null) {
+  const limitText = url.searchParams.get('limit') ?? '20', cursor = url.searchParams.get('cursor');
+  need(/^[1-9][0-9]{0,2}$/.test(limitText) && Number(limitText) <= 100 && (cursor === null || cursor.length === 32 && SID.test(cursor)), 'bad_query');
+  // The caller supplies all of this owner's records. Resolve before filtering:
+  // a retained cursor row may have left the selected status since the last page.
+  const anchor = cursor === null ? undefined : items.find(s => s.submissionId === cursor);
+  need(cursor === null || anchor !== undefined, 'bad_query');
+  // State timestamps have one canonical UTC millisecond format. Creation keys
+  // never change and submissions are not pruned; updatedAt is not an order key.
+  const sorted = items.filter(s => (!status || s.status === status) && (!anchor || s.createdAt < anchor.createdAt ||
+    s.createdAt === anchor.createdAt && s.submissionId > anchor.submissionId)).sort((a, b) =>
+    a.createdAt > b.createdAt ? -1 : a.createdAt < b.createdAt ? 1 :
+      a.submissionId < b.submissionId ? -1 : a.submissionId > b.submissionId ? 1 : 0);
+  const limit = Number(limitText), selected = sorted.slice(0, limit);
+  return { selected, nextCursor: sorted.length > limit ? selected[selected.length - 1]!.submissionId : null };
+}
 function listSubmissions(snapshot: Snapshot, url: URL, owner?: Owner): Response {
   const status = url.searchParams.get('status'); need(status === null || STATUSES.includes(status as typeof STATUSES[number]), 'bad_query');
   const selectedKind = owner ? null : url.searchParams.get('kind'); need(selectedKind === null || kind(selectedKind), 'bad_query');
-  const result = page(snapshot.state.submissions.filter(s => (!owner || sameOwner(s.owner, owner)) && (!status || s.status === status) &&
-    (!selectedKind || s.metadata.kind === selectedKind)), url, s => s.submissionId);
+  const result = owner ? personalPage(snapshot.state.submissions.filter(s => sameOwner(s.owner, owner)), url, status)
+    : page(snapshot.state.submissions.filter(s => (!status || s.status === status) &&
+      (!selectedKind || s.metadata.kind === selectedKind)), url, s => s.submissionId);
   return json(200, { submissions: result.selected, nextCursor: result.nextCursor });
 }
 function reportView(report: Report) { return { ...report, status: report.resolution ? 'resolved' as const : 'open' as const }; }

@@ -89,7 +89,7 @@ withdrawn 投稿记录不能恢复。撤回尚未获批准的 draft / pending / 
 | --- | --- | --- |
 | `POST /submissions` | `{requestId, ...metadata}`；`requestId` 为 16..128 位 ASCII 字母数字 `_-` | 首次 201 返回 draft；同一 `requestId` 且 metadata 一致的重试 200 返回现有状态，`{submission}` |
 | `PUT /submissions/<id>/archive` | `application/zip` 原始 ZIP | 200 `{submission}`；验证后为 pending；pending 状态下相同字节重试可 200 |
-| `GET /submissions?limit=20&cursor=<id>&status=pending` | 无 | 200 `{submissions:[...], nextCursor: null 或 id}`，仅本人；`limit` 默认 20、最大 100，按 id 字典序 |
+| `GET /submissions?limit=20&cursor=<id>&status=pending` | 无 | 200 `{submissions:[...], nextCursor: null 或 id}`，仅本人；`limit` 默认 20、最大 100，按 createdAt 降序、同毫秒 id 二进制字典序升序 |
 | `GET /submissions/<id>` | 无 | 200 `{submission}`，仅本人 |
 | `POST /submissions/<id>/withdraw` | `{reason}`，1..2000 码点 | 200 `{submission}`；上传关闭时仍允许撤回；已撤回幂等 |
 | `POST /reports` | `{kind, id, version, reason}`，`reason` 1..2000 码点 | 201 `{reportId}`；只举报曾获批准发布的版本，不自动下架 |
@@ -109,6 +109,14 @@ withdrawn 投稿记录不能恢复。撤回尚未获批准的 draft / pending / 
 review 重复相同终态决策不重验、不改变当前公开行或原 review 信息，也不新增审计；对相反终态决策或已撤回记录返回 409。要重新发布未撤回的旧版，须使用新的 requestId，以原 SHA / size 创建新投稿、进入 pending 后再批准；对旧 approved 原 sid 重发 approve 只返回历史记录，不会重新上架。已进入版本撤回账本的 release 不能通过新投稿恢复。
 
 公开查询无需身份。创建、上传、本人列表 / 查看、撤回、举报都需要论坛 User API key。外层 UI 先核对 `forumOrigin` 并明确确认将凭据交给这个 Worker；数据层不隐式授权。
+
+### 本人投稿的顺序与游标
+
+本人列表在服务端对完整匹配集合按 `createdAt` 新的在前排序，同一毫秒按 `submissionId` 二进制字典序升序；`updatedAt`、审核和撤回时间不参与排序。App 保留服务器返回的页序，不能靠每页本地排序替代这个全局顺序。
+
+`cursor` 仍为上一页末行的 32 位小写十六进制 ID。服务端先从本人全部投稿中解析该行的创建时间，再按本次 status 筛选和严格后续区间分页；锚点刚被审核或撤回而离开当前筛选时仍可续翻。投稿记录不自动删除，`createdAt` 不随状态变化重写。格式正确但不存在于本人记录中的游标与其他作者的游标都返回 400 `workshop_bad_query`，不猜时间、不回到第一页，也不把未知锚点当作列表结束；调用方可明确刷新首页重新开始。
+
+多页是实时视图，不是跨请求快照。翻页期间出现在游标前方的新投稿或新进入筛选的行需要刷新首页；位于游标后方的行可在后续页出现，离开筛选的行不再返回。同毫秒的新行也按同一 ID 比较规则落在前方或后方。更改 status 应从无 cursor 的首页开始。旧版 ID 升序产生的已加载前缀不能与新排序尾页混接；切换服务端排序后须刷新首页，32 位游标形状相同不表示旧翻页过程能无缝迁移。管理员投稿、举报及审计继续使用下面的 ID 升序合同。
 
 ## 审核台与管理详情
 
