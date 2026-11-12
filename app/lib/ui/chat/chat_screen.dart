@@ -1744,6 +1744,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                       const EngineFailureCard(padding: EdgeInsets.fromLTRB(16, 0, 16, 20)),
                                     ChatEmptyState(
                                       connected: connected,
+                                      suggestions: ref.watch(settingsProvider.select((s) => s.chatSuggestions))
+                                          ? defaultSuggestions
+                                          : const [],
                                       connecting: connAsync.isLoading,
                                       starting: starting,
                                       tidying: tidying,
