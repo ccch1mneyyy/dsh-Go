@@ -36,7 +36,7 @@ ZIP 通过完整验证后先写原 `workshop/blobs/<ZIP SHA>.zip`；派生图以
 
 对 pending 的新批准重验原 ZIP 与登记 PNG 的实际 SHA / size、尺寸和完整像素合同，然后再读最新状态并 CAS。管理员看到的登记图与批准后返回的字节是同一份，不在批准后按新版算法重新派生。缺对象、摘要不符或存储失败不能自动改为无图；同终态审核的幂等行为仍只返回原记录。
 
-图片选择绑定 submission，永久 Release 仍只锁定版本的 ZIP SHA / size / 作者。旧无图 release 不自动补图；要选择公开图，须以新的 requestId、声明和 pending 重新接受审核。未撤回的相同 release / 相同 ZIP 经新审核可以由有图改成无图，或由无图改成该声明派生的图；无声明的旧客户端重投不继承图片。版本撤回继续永久生效，不能借新图片解除。
+图片选择绑定 submission，永久 Release 仍只锁定版本的 ZIP SHA / size / 作者。旧无图 release 不自动补图；要选择公开图，须以新的 requestId、声明和 pending 重新接受审核。未撤回的相同 release / 相同 ZIP 经新审核可以由有图改成无图，或由无图改成该声明派生的图；无声明的旧客户端重投不继承图片。版本撤回继续永久生效，不能借新图片解除。 已提交的投稿如果声明了 `previewSource` 却没有登记图片（没有预览功能的 Worker 接过它的包会留下这种记录），按无图读取：目录条目不带 `preview`，公开图片地址返回 404，包照常发放，整份状态不因此判为非法。
 
 公开地址为 `/market/workshop/<kind>/<id>/<version>/<ZIP SHA>/preview/<PNG SHA>.png`。GET / HEAD 先核功能开关与最新状态：current 必须指向 approved 投稿并选择精确 descriptor，Release 的 ZIP 绑定须相符，版本不得在 withdrawn 中。相同 blob 或同一 PNG 被其他版本使用不能授予这条路径；同一地址若本来就由 current 授权，后来出现同内容待审记录也不会撤销它。被替换或撤回的旧选择不再授权，返回 404；关闭 companion 返回 503；uploads 关闭仍允许读取已公开图片。
 

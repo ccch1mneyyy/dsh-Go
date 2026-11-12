@@ -43,7 +43,7 @@ Dart 阶段通过时另打印一行 `{"dartTest":{"name":"local Worker catalog i
 
 宠物固定 id 为 `workshop-local-pet`，v2 为 `2.0.0`，minApp 显式 `1.0.0`，清单 id 同步。对照宠物为 `workshop-local-keep`。伙伴只用现有合成夹具，不运行模型、脚本或 GPU。小 ZIP 的真实 HTTP 字节校验不是设备渲染证据。
 
-预览断言嵌在原有11阶段内，不增加投稿意图或作者create配额。仅主宠物v1／v2的metadata新增`previewSource: pet-idle`，ZIP仍是原manifest和引用sheet，没有新增图片成员；`keep`、`keepNext`及伙伴继续省略该字段，上传／审核／目录必须继续无图。两版原sheet像素相同，归档因动画时间不同而不同；这能同时验证共享图片摘要仍按版本／归档路径授权。
+预览断言分布在这 11 个阶段里，不另外占用投稿意图或作者的 create 配额。只有主宠物 v1／v2 的 metadata 带 `previewSource: pet-idle`，ZIP仍是原manifest和引用sheet，没有新增图片成员；`keep`、`keepNext`及伙伴继续省略该字段，上传／审核／目录必须继续无图。两版原sheet像素相同，归档因动画时间不同而不同；这能同时验证共享图片摘要仍按版本／归档路径授权。
 
 预览响应核对五字段规范路径、Content-Type、Content-Length、private/no-store、nosniff、实际字节SHA及PNG签名／IHDR尺寸。PNG完整CRC、压缩流及像素验证由真实Worker承担；本演练的HTTP断言不另写一套图片解码器。匿名图片请求不附论坛或管理凭据，且仍受本次回环来源门约束。不能用管理员端点成功代替公开授权断言。图片GET／HEAD不要求206或304。
 
@@ -51,7 +51,7 @@ Dart 阶段通过时另打印一行 `{"dartTest":{"name":"local Worker catalog i
 
 生产 HTTPS 来源门保持不变。两端只监听 `127.0.0.1`，假论坛只接受 `GET /session/current.json` 和本次随机合成 User API Key。临时 ADMIN_KEY 也随机生成，仅写本次临时 `.dev.vars`。二者不放命令行、URL 或成功摘要。
 
-每次运行由 `workshop-e2e-tls.mjs` 用 Node 内置 crypto 现场生成 RSA-2048 密钥和自签名 X509 证书，SAN 仅含 `127.0.0.1`，有效期从生成前5分钟至生成后24小时。证书和私钥只写入本次 mkdtemp 目录（文件模式0600），随清理删除；仓库不再包含固定私钥夹具，也不依赖 OpenSSL 可执行文件或新 npm 包。生成器只接受测试时钟，不接受外部主机名；使用 [Node crypto](https://nodejs.org/docs/latest-v22.x/api/crypto.html) 的密钥生成和签名，以及 [RFC 5280](https://www.rfc-editor.org/rfc/rfc5280.html) 的有限 v3 证书编码。
+每次运行由 `workshop-e2e-tls.mjs` 用 Node 内置 crypto 现场生成 RSA-2048 密钥和自签名 X509 证书，SAN 仅含 `127.0.0.1`，有效期从生成前5分钟至生成后24小时。证书和私钥只写入本次 mkdtemp 目录（文件模式0600），随清理删除；仓库里没有私钥或证书文件，脚本也不依赖 OpenSSL 可执行文件或额外的 npm 包。生成器只接受测试时钟，不接受外部主机名；使用 [Node crypto](https://nodejs.org/docs/latest-v22.x/api/crypto.html) 的密钥生成和签名，以及 [RFC 5280](https://www.rfc-editor.org/rfc/rfc5280.html) 的有限 v3 证书编码。
 
 Node 只给本次 Agent 加该 CA；Worker 子进程通过本次临时 `NODE_EXTRA_CA_CERTS` 文件使用它。锁定 Miniflare core 插件把该变量的证书加入 workerd 出站 TLS 配置。源码事实不代替实际握手：首次作者请求成功，才证明当前 Wrangler／workerd 真正信任了这次生成的 CA 并联系到假论坛。
 

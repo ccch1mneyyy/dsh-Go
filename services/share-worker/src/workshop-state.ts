@@ -50,11 +50,13 @@ function validSubmission(v: unknown): v is Submission {
   if (!record(v) || !token(v.submissionId) || !validOwner(v.owner) || !validMeta(v.metadata) || !STATUSES.includes(v.status as Status) ||
       !timestamp(v.createdAt) || !timestamp(v.updatedAt) || v.updatedAt < v.createdAt) return false;
   if ((v.submittedAt === undefined) !== (v.validation === undefined) || v.submittedAt !== undefined && (!timestamp(v.submittedAt) || !validSummary(v.validation))) return false;
-  // Old submissions without a declaration remain image-free. A declared
-  // preview is registered exactly when the archive enters pending, and stays
-  // bound to this submission through review/withdrawal; Release is unchanged.
+  // Submissions without a registered preview are image-free. A declared
+  // preview is registered when the archive enters pending and stays bound to
+  // this submission through review/withdrawal; Release is unchanged. A
+  // declaration with no registration (a Worker without previews took the
+  // archive) is read as image-free too: every reader asks for the descriptor,
+  // and refusing the whole state would take the catalog down with it.
   if (v.preview !== undefined && (v.submittedAt === undefined || !validPreview(v.preview, v.metadata))) return false;
-  if (v.submittedAt !== undefined && v.metadata.previewSource !== undefined && v.preview === undefined) return false;
   if (v.review !== undefined && (!record(v.review) || !timestamp(v.review.at) || !['approve', 'reject'].includes(v.review.decision as string) || !text(v.review.reason, 2000))) return false;
   if (v.withdrawal !== undefined && (!record(v.withdrawal) || !timestamp(v.withdrawal.at) || !text(v.withdrawal.reason, 2000))) return false;
   if (v.status === 'draft') return v.submittedAt === undefined && v.review === undefined && v.withdrawal === undefined;

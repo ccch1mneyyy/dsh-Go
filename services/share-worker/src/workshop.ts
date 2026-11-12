@@ -167,7 +167,8 @@ async function serveBlob(request: Request, env: Env, ctx: Ctx, meta: SubmissionM
   response.headers.set('Content-Type', 'application/zip'); return response;
 }
 async function publicRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promise<Response> {
-  method(request, 'GET', 'HEAD'); await limitBurst(request, env, false);
+  const picture = /^\/market\/workshop\/(pet|companion)\/[^/]+\/[^/]+\/[a-f0-9]{64}\/preview\/[a-f0-9]{64}\.png$/.test(url.pathname);
+  method(request, 'GET', 'HEAD'); await limitBurst(request, env, false, picture ? 'workshop-preview' : 'workshop');
   const flags = features(env), companions = url.pathname === '/market/companions.json';
   if (companions || url.pathname.startsWith('/market/workshop/companion/')) need(flags.companion, 'companion_disabled', 503);
   const snapshot = await loadState(env);
@@ -177,7 +178,7 @@ async function publicRoute(request: Request, env: Env, ctx: Ctx, url: URL): Prom
     if (matchesEtag(request.headers.get('If-None-Match'), tag)) return new Response(null, { status: 304, headers });
     return new Response(request.method === 'HEAD' ? null : body, { headers: { ...headers, 'Content-Length': String(encoder.encode(body).length) } });
   }
-  if (/^\/market\/workshop\/(pet|companion)\/[^/]+\/[^/]+\/[a-f0-9]{64}\/preview\/[a-f0-9]{64}\.png$/.test(url.pathname)) {
+  if (picture) {
     const state = snapshot.state, submission = state.current.map(sid => find(state, sid)).find(s => s.preview?.path === url.pathname);
     need(submission?.status === 'approved' && submission.preview, 'not_found', 404);
     const key = releaseId(submission.metadata), release = state.releases.find(r => releaseId(r) === key);

@@ -176,6 +176,27 @@ it('keeps a failed pending CAS private and recovers with the original archive an
   const recovered = await f.upload(item); expect(recovered.status).toBe(200); expect((await recovered.json() as any).submission.preview).toBeDefined();
   expect(f.bucket.writes.filter(value => value.startsWith('workshop/previews/'))).toHaveLength(1);
 });
+it('reads a declared preview with no registered image as image-free instead of refusing the state', async () => {
+  const f = setup(), item = await f.publish(), state = f.state();
+  // What a Worker without previews leaves behind when it takes the archive.
+  delete state.submissions[0].preview;
+  await f.bucket.put(STATE_KEY, new TextEncoder().encode(JSON.stringify(state)));
+  const catalog = await f.call('/market/workshop.json'); expect(catalog.status).toBe(200);
+  const entry = (await catalog.json() as any).entries[0];
+  expect(entry.previewSource).toBe('pet-idle'); expect(entry).not.toHaveProperty('preview');
+  expect((await f.call(item.submission.preview.path)).status).toBe(404);
+  expect((await f.call(assetUrl(item.meta))).status).toBe(200);
+});
+it('counts picture requests apart from the catalog and package downloads', async () => {
+  const f = setup(), item = await f.publish(), keys: string[] = [];
+  f.env.READ_LIMIT = { limit: async ({ key }: { key: string }) => { keys.push(key); return { success: !key.startsWith('workshop-preview:') }; } } as unknown as NonNullable<typeof f.env.READ_LIMIT>;
+  const picture = await f.call(item.submission.preview.path); expect(picture.status).toBe(429);
+  expect(await picture.json()).toEqual({ error: 'workshop_rate_limited' });
+  expect((await f.call('/market/workshop.json')).status).toBe(200);
+  expect((await f.call(assetUrl(item.meta))).status).toBe(200);
+  expect(keys.filter(key => key.startsWith('workshop-preview:'))).toHaveLength(1);
+  expect(keys.filter(key => key.startsWith('workshop:'))).toHaveLength(2);
+});
 it('rejects a persisted descriptor whose path does not match its own submission', async () => {
   const f = setup(), item = await f.publish(), state = f.state();
   state.submissions[0].preview.path = state.submissions[0].preview.path.replace('/sample/', '/another/');

@@ -133,7 +133,7 @@ void main() {
     expect(File('$root/m.moc3').existsSync(), isFalse);
     expect(http.requests, isEmpty);
 
-    // This opt-in preserves the two existing ASCII output stems. A default
+    // The two plain fixtures keep the names `pet` and `companion`. A default
     // run leaves no files, and these synthetic MOC bytes do not exercise Core.
     final output = Platform.environment['DSH_WORKSHOP_CONTRACT_OUT'];
     if (output != null && output.isNotEmpty) {
@@ -205,7 +205,7 @@ void main() {
     }
     expect(http.requests, isEmpty);
 
-    // Preserve all four existing output names. This emits the actual prepared
+    // The Worker's contract test reads these fixed names. This emits the actual prepared
     // files; the Worker consumer must read them, never recreate Node ZIPs.
     final output = Platform.environment['DSH_WORKSHOP_CONTRACT_OUT'];
     if (output != null && output.isNotEmpty) {

@@ -49,7 +49,7 @@ App 在确认账号与 Worker 目标后发送断言；不能因为已读取 capa
 
 `GET|HEAD /market/workshop/<kind>/<id>/<version>/<ZIP SHA>/preview/<PNG SHA>.png` 无需凭据。每次先读当前权威状态，须有 approved 的 current 投稿精确选择该 descriptor，且对应 Release 的 ZIP SHA / size 一致、版本未撤回，之后才读图片对象。仅有待审记录、PNG SHA 或裸桶对象不会新增授权；若另一个已批准 current 投稿已授权同一地址，后来的待审记录也不会撤销它。被替换、移除图片选择或撤回后，不再被 current 授权的旧地址返回 `404 / workshop_not_found`。
 
-成功返回固定 `image/png`、登记 `Content-Length`、`nosniff`、`Cache-Control: private, no-store`，不跳转。GET 还核实际正文长度与 SHA；HEAD 核 R2 原生摘要 / 长度并不返正文。图片没有 Range / 304 协议，条件头不跳过授权：获准时 GET 为完整 200、HEAD 为无正文 200。关闭 uploads 不隐藏已有公开图；关闭 companion 时对应图片和 ZIP 一样先返回 `503 / workshop_companion_disabled`，主目录仍保留全部 withdrawn。撤回不能追回浏览器已经取得的副本；页面须随目录、来源或条目变化清除不再对应的图片。
+成功返回固定 `image/png`、登记 `Content-Length`、`nosniff`、`Cache-Control: private, no-store`，不跳转。图片请求按客户端单独计数（限流键前缀 `workshop-preview:`），不占目录和包下载的额度。GET 还核实际正文长度与 SHA；HEAD 核 R2 原生摘要 / 长度并不返正文。图片没有 Range / 304 协议，条件头不跳过授权：获准时 GET 为完整 200、HEAD 为无正文 200。关闭 uploads 不隐藏已有公开图；关闭 companion 时对应图片和 ZIP 一样先返回 `503 / workshop_companion_disabled`，主目录仍保留全部 withdrawn。撤回不能追回浏览器已经取得的副本；页面须随目录、来源或条目变化清除不再对应的图片。
 
 ## metadata 与投稿记录
 
@@ -116,7 +116,7 @@ review 重复相同终态决策不重验、不改变当前公开行或原 review
 
 `cursor` 仍为上一页末行的 32 位小写十六进制 ID。服务端先从本人全部投稿中解析该行的创建时间，再按本次 status 筛选和严格后续区间分页；锚点刚被审核或撤回而离开当前筛选时仍可续翻。投稿记录不自动删除，`createdAt` 不随状态变化重写。格式正确但不存在于本人记录中的游标与其他作者的游标都返回 400 `workshop_bad_query`，不猜时间、不回到第一页，也不把未知锚点当作列表结束；调用方可明确刷新首页重新开始。
 
-多页是实时视图，不是跨请求快照。翻页期间出现在游标前方的新投稿或新进入筛选的行需要刷新首页；位于游标后方的行可在后续页出现，离开筛选的行不再返回。同毫秒的新行也按同一 ID 比较规则落在前方或后方。更改 status 应从无 cursor 的首页开始。旧版 ID 升序产生的已加载前缀不能与新排序尾页混接；切换服务端排序后须刷新首页，32 位游标形状相同不表示旧翻页过程能无缝迁移。管理员投稿、举报及审计继续使用下面的 ID 升序合同。
+多页是实时视图，不是跨请求快照。翻页期间出现在游标前方的新投稿或新进入筛选的行需要刷新首页；位于游标后方的行可在后续页出现，离开筛选的行不再返回。同毫秒的新行也按同一 ID 比较规则落在前方或后方。更改 status 应从无 cursor 的首页开始。
 
 ## 审核台与管理详情
 
