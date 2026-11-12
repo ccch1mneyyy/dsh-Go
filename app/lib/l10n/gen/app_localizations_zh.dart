@@ -21229,7 +21229,7 @@ class L10nZh extends L10n {
   }
 
   @override
-  String get workshopInstalledRemoveMessage => '会删掉这台手机上的这一份，删了找不回来。';
+  String get workshopInstalledRemoveMessage => '会删掉这台手机上的这一份。想再用，要回工坊重新获取。';
 
   @override
   String get workshopInstalledRemoveNoReinstall => '工坊里现在找不到它，卸载后可能装不回来。';

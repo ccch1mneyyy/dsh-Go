@@ -439,7 +439,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('卸载「cat」？'), findsOneWidget);
-      expect(find.text('会删掉这台手机上的这一份，删了找不回来。'), findsOneWidget);
+      expect(find.text('会删掉这台手机上的这一份。想再用，要回工坊重新获取。'), findsOneWidget);
       expect(bench.installed.uninstalled, isEmpty);
 
       await tester.tap(find.text('取消'));

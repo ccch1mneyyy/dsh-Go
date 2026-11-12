@@ -38597,7 +38597,7 @@ abstract class L10n {
   /// No description provided for @workshopInstalledRemoveMessage.
   ///
   /// In zh, this message translates to:
-  /// **'会删掉这台手机上的这一份，删了找不回来。'**
+  /// **'会删掉这台手机上的这一份。想再用，要回工坊重新获取。'**
   String get workshopInstalledRemoveMessage;
 
   /// No description provided for @workshopInstalledRemoveNoReinstall.

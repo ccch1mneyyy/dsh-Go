@@ -22412,7 +22412,8 @@ class L10nEn extends L10n {
   }
 
   @override
-  String get workshopInstalledRemoveMessage => 'This deletes the copy on this phone. It can\'t be undone.';
+  String get workshopInstalledRemoveMessage =>
+      'This deletes the copy on this phone. To use it again, get it from the Workshop again.';
 
   @override
   String get workshopInstalledRemoveNoReinstall =>
