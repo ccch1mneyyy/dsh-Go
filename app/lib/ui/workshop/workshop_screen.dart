@@ -53,6 +53,10 @@ class _WorkshopScreenState extends ConsumerState<WorkshopScreen> {
         case WorkshopTab.browse:
           await ref.read(workshopCatalogProvider.notifier).refresh();
         case WorkshopTab.installed:
+          // Updates and withdrawals come from the catalogue: ask it first, then
+          // have the rows take what it brought.
+          await ref.read(workshopCatalogProvider.notifier).refresh();
+          if (!mounted) return;
           await ref.read(workshopInstalledProvider.notifier).refresh();
         case WorkshopTab.mine:
           await refreshWorkshopMine(ref);
