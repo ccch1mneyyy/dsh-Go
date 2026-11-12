@@ -655,6 +655,35 @@ void main() {
       expect(_container(tester).read(workshopPublishProvider).input.rightsConfirmed, isFalse);
     });
 
+    testWidgets('letting go of the old request failed: 「重试」 tries that step again, and sends nothing', (tester) async {
+      final world = _World();
+      world.client.creating = (call) async =>
+          publishResult(call.metadata, status: WorkshopSubmissionStatus.rejected);
+      await _open(tester, world);
+      await _toReview(tester);
+      await tester.tap(find.widgetWithText(FilledButton, '投稿'));
+      await _settle(tester);
+
+      world.preferences.retiring = (_, _) async => throw const WorkshopException('workshop_preferences');
+      await tester.tap(find.text('重新投稿'));
+      await _settle(tester);
+      // Still the result, with the record already cleared: what failed is
+      // the step after it.
+      expect(find.text('这份投稿没有通过审核'), findsOneWidget);
+      expect(_container(tester).read(workshopPublishProvider).hasPending, isFalse);
+      expect(_container(tester).read(workshopPublishProvider).preferenceError, isNotNull);
+      _expectWords(tester);
+      await _clearNotice(tester);
+
+      final creates = world.client.creates.length;
+      world.preferences.retiring = null;
+      await _tapVisible(tester, find.text('重试'));
+      expect(world.events.last, 'retire');
+      expect(world.client.creates, hasLength(creates));
+      expect(_container(tester).read(workshopPublishProvider).preferenceError, isNull);
+      expect(find.text('下一步'), findsOneWidget);
+    });
+
     testWidgets('a confirmed result stays a result when the phone record could not be cleared', (tester) async {
       final world = _World();
       world.preferences.clearing = (_, _) async => throw StateError('disk');
