@@ -21205,6 +21205,211 @@ class L10nZh extends L10n {
   String get workshopInstalledRemovedRefreshIssue => '已卸载，但列表没能刷新，重新进来就能看到。';
 
   @override
+  String get workshopMinePublish => '投稿';
+
+  @override
+  String get workshopMinePublishHint => '审核通过后出现在「发现」里';
+
+  @override
+  String get workshopMineSignInTitle => '投稿记在论坛账号上';
+
+  @override
+  String get workshopMineSignInMessage => '登录后就能看到自己发过的作品。';
+
+  @override
+  String get workshopMineConsentTitle => '还差一步确认';
+
+  @override
+  String get workshopMineConsentMessage => '工坊要用你的论坛登录凭据核对身份，同意后才能看到自己的投稿。';
+
+  @override
+  String get workshopMineConsentAction => '查看说明';
+
+  @override
+  String get workshopMineDisclosureTitle => '让工坊核对你的论坛身份？';
+
+  @override
+  String workshopMineDisclosureMessage(String worker, String forum) {
+    return '工坊服务 $worker 会收到你论坛账号的 User API Key，并交给 $forum 核对你是谁。查看投稿、撤回和举报时都会这样做。';
+  }
+
+  @override
+  String get workshopMineDisclosureAgree => '同意';
+
+  @override
+  String get workshopMineDisclosureUnsaved => '已同意，但没能记在本机，下次可能还会再问。';
+
+  @override
+  String get workshopMineEmptyTitle => '还没有投稿';
+
+  @override
+  String get workshopMineEmptyMessage => '做了宠物或伙伴的话，可以发上来给大家用。';
+
+  @override
+  String get workshopMineEmptyFiltered => '没有这类投稿';
+
+  @override
+  String get workshopMineLoadFailed => '没能读到投稿';
+
+  @override
+  String get workshopMineStale => '没读到最新内容，下面是之前读到的。';
+
+  @override
+  String get workshopMineLoadMore => '加载更多';
+
+  @override
+  String get workshopMineStatusPending => '待审核';
+
+  @override
+  String get workshopMineStatusApproved => '已通过';
+
+  @override
+  String get workshopMineStatusRejected => '已拒绝';
+
+  @override
+  String get workshopMineStatusWithdrawn => '已撤回';
+
+  @override
+  String get workshopMineStatusDraft => '草稿';
+
+  @override
+  String get workshopMineDetailTitle => '投稿详情';
+
+  @override
+  String get workshopMineRefreshOne => '刷新这一条';
+
+  @override
+  String get workshopMineAboutPending => '已经提交，正在等审核。通过后会出现在「发现」里。';
+
+  @override
+  String get workshopMineAboutApproved => '审核通过了。现在是否公开，以「发现」里看到的为准。';
+
+  @override
+  String get workshopMineAboutRejected => '没有通过审核。';
+
+  @override
+  String get workshopMineAboutWithdrawn => '已经撤回，不能恢复。';
+
+  @override
+  String get workshopMineAboutDraft => '文件还没有传完，不会进入审核。';
+
+  @override
+  String get workshopMineReviewReason => '审核意见';
+
+  @override
+  String get workshopMineWithdrawReason => '撤回原因';
+
+  @override
+  String get workshopMineWithdrawReasonHint => '比如传错了文件、想改了再发';
+
+  @override
+  String get workshopMineCreatedAt => '提交时间';
+
+  @override
+  String get workshopMineUpdatedAt => '最近更新';
+
+  @override
+  String get workshopMineDetailStale => '这一条没能刷新，显示的是之前读到的状态。';
+
+  @override
+  String get workshopMineAccountChanged => '账号已经换了';
+
+  @override
+  String get workshopMineAccountChangedMessage => '这条投稿属于之前的账号，不再显示。';
+
+  @override
+  String get workshopMineWithdraw => '撤回投稿';
+
+  @override
+  String get workshopMineWithdrawConfirmTitle => '撤回这条投稿？';
+
+  @override
+  String workshopMineWithdrawConfirmMessage(String title) {
+    return '撤回后不能恢复。如果「$title」已经公开，所有人都不能再下载这个版本，同一个版本号也不能重新发布。';
+  }
+
+  @override
+  String get workshopMineWithdrawConfirm => '撤回';
+
+  @override
+  String get workshopMineWithdrawing => '正在撤回…';
+
+  @override
+  String get workshopMineWithdrawDone => '这条投稿已撤回';
+
+  @override
+  String get workshopMineWithdrawUnknown => '不确定有没有撤回成功。先查询结果，不要重复撤回。';
+
+  @override
+  String get workshopMineWithdrawQuery => '查询结果';
+
+  @override
+  String get workshopMineWithdrawStill => '查到它还没有撤回。需要的话可以再撤回一次。';
+
+  @override
+  String get workshopMineWithdrawReconciled => '查到它现在已经是撤回状态。';
+
+  @override
+  String get workshopMineReasonEmpty => '先写下原因。';
+
+  @override
+  String workshopMineReasonTooLong(String max) {
+    return '最多 $max 字，现在超了。';
+  }
+
+  @override
+  String get workshopMineReasonBadChars => '里面有不能用的字符，删掉后再试。';
+
+  @override
+  String get workshopMineReasonRejected => '这段原因没有被接受，改一下再试。';
+
+  @override
+  String workshopReportTarget(String title, String version) {
+    return '$title · $version';
+  }
+
+  @override
+  String get workshopReportReason => '举报原因';
+
+  @override
+  String get workshopReportReasonHint => '它有什么问题，比如侵权、内容不合适';
+
+  @override
+  String get workshopReportNote => '审核员会查看这条举报。作品不会因为举报自动下架。';
+
+  @override
+  String get workshopReportSubmit => '提交举报';
+
+  @override
+  String get workshopReportSending => '正在提交…';
+
+  @override
+  String get workshopReportDone => '举报已送达，审核员会查看。';
+
+  @override
+  String get workshopReportSignInTitle => '举报需要论坛账号';
+
+  @override
+  String get workshopReportSignInMessage => '登录后才能提交举报。';
+
+  @override
+  String get workshopReportConsentMessage => '工坊要用你的论坛登录凭据核对身份，同意后才能举报。';
+
+  @override
+  String get workshopReportUnknownTitle => '不确定有没有送达';
+
+  @override
+  String get workshopReportUnknownMessage => '上一次举报可能已经收到，也可能没有，现在查不到结果。再发一次可能变成重复举报。';
+
+  @override
+  String workshopReportUnknownOther(String id, String version) {
+    return '那一次举报的是 $id $version。';
+  }
+
+  @override
+  String get workshopReportUnknownAgain => '知道可能重复，重新填写';
+
+  @override
   String get workspaceRecoveryTitle => '工作区索引救援';
 
   @override
