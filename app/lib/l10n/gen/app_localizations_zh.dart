@@ -6508,6 +6508,36 @@ class L10nZh extends L10n {
   String get engineProviderConnection => '连接';
 
   @override
+  String get engineProviderHeaders => '请求头（可选）';
+
+  @override
+  String get engineProviderHeadersWarning => '请求头以明文保存，不参与日志脱敏。敏感凭据请使用 API Key 或凭据引用。';
+
+  @override
+  String get engineProviderHeaderName => '名称';
+
+  @override
+  String get engineProviderHeaderValue => '值';
+
+  @override
+  String get engineProviderHeaderAdd => '添加请求头';
+
+  @override
+  String get engineProviderHeaderInvalidName => '请求头名称只能包含英文字母、数字或 HTTP 标记符号，不能包含空格或冒号';
+
+  @override
+  String get engineProviderHeaderReserved => 'User-Agent 由引擎设置，请移除此请求头';
+
+  @override
+  String get engineProviderHeaderLocked => '由引擎管理，保留现有配置';
+
+  @override
+  String get engineProviderHeaderDuplicate => '请求头名称重复（不区分大小写）';
+
+  @override
+  String get engineProviderHeaderInvalidValue => '请求头值只能包含单行 Latin-1 文本，不支持换行或控制字符（制表符除外）';
+
+  @override
   String get engineProviderDefaultUrl => '默认地址';
 
   @override
@@ -17349,6 +17379,18 @@ class L10nZh extends L10n {
 
   @override
   String get starSettingsTitle => '给 DSH Go 点个 star';
+
+  @override
+  String get hubStartPage => '起始页';
+
+  @override
+  String get hubChatSuggestions => '聊天建议';
+
+  @override
+  String get hubChatSuggestionsHint => '显示起始页的聊天建议';
+
+  @override
+  String get searchKwChatSuggestions => '起始页,空白页,新对话,聊天建议,建议卡片';
 
   @override
   String get phoneStartupFailureStopping => '启动失败，正在停止';
