@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../diagnostics/redact.dart';
 import '../../l10n/l10n.dart';
@@ -98,6 +98,81 @@ abstract class SshTransport implements RemoteShell {
 
 typedef SshTransportFactory = Future<SshTransport> Function(SshConnectParams params, HostKeyCheck verifyHostKey);
 
+/// Cipher preference used for every connection.
+///
+/// AES-GCM used to come first (dartssh2's own default). PointyCastle's GCM
+/// does its GF(2^128) multiply bit by bit: `gcm.dart:_mult` runs 128 rounds of
+/// three byte-wide passes with no tables, so a single 16-byte block costs
+/// roughly 6k byte operations. On 1.0.4 that one function took 73.6% of the UI
+/// isolate while a long session was streaming, which is what starved frames.
+/// AES-CTR has no such multiply: in the AOT microbenchmark it decrypts 3.1
+/// MiB/s where GCM manages 0.5, so it leads the list.
+///
+/// ChaCha20-Poly1305 is deliberately last. It is the one cipher whose Terrapin
+/// (CVE-2023-48795) prefix truncation works on *every* connection that did not
+/// negotiate strict KEX, and dartssh2 enables strict KEX only when the server
+/// offers it. Putting it after both AES-GCM entries means it is picked only
+/// when the server offers nothing else - i.e. only in the cases where
+/// dartssh2's default order (GCM first) would have picked it too. AES-CTR is
+/// not a practical Terrapin target: that needs a CBC cipher, and CBC is never
+/// offered here (oss-security advisory, 2023-12-18).
+///
+/// This is only a reorder: every cipher dartssh2 enables by default stays in
+/// the list, so a server offering nothing but AES-GCM still negotiates it.
+/// CBC, SHA-1 kex and `none` are never added.
+///
+/// Leading with AES-CTR costs one thing: AES-CTR needs a MAC, while the AEAD
+/// ciphers need none, so a peer that offers AES-CTR but only MACs dartssh2 does
+/// not implement (e.g. `umac-128-etm@openssh.com`) cannot negotiate with this
+/// list at all. [DartSshTransport.connect] covers that case: it retries once
+/// with dartssh2's AEAD-first order when MAC selection is what failed.
+const sshCipherPreference = <SSHCipherType>[
+  SSHCipherType.aes256ctr,
+  SSHCipherType.aes128ctr,
+  SSHCipherType.aes256gcm,
+  SSHCipherType.aes128gcm,
+  SSHCipherType.chacha20poly1305,
+];
+
+/// `fast` applies [sshCipherPreference]; `legacy` keeps dartssh2's original
+/// order, so one build can compare the two with
+/// `--dart-define=DSH_SSH_CIPHER=legacy`.
+const _sshCipherProfile = String.fromEnvironment('DSH_SSH_CIPHER', defaultValue: 'fast');
+
+/// Throws on anything but `fast` / `legacy`: a typo in the build define should
+/// fail before the socket opens rather than quietly pick a preference.
+SSHAlgorithms sshClientAlgorithms({String profile = _sshCipherProfile}) =>
+    switch (profile) {
+      'fast' => const SSHAlgorithms(cipher: sshCipherPreference),
+      'legacy' => const SSHAlgorithms(),
+      _ => throw ArgumentError.value(profile, 'profile', 'expected fast or legacy'),
+    };
+
+/// `--dart-define=DSH_SSH_TRACE=cipher` in a profile build prints the
+/// negotiated kex, cipher and MAC once per key exchange. Never in release.
+const _sshTrace = String.fromEnvironment('DSH_SSH_TRACE');
+const _traceNegotiation = !kReleaseMode && _sshTrace == 'cipher';
+
+/// Keeps only what a perf A/B needs to read; passing null otherwise keeps
+/// dartssh2's per-packet debug callbacks from costing anything. The library
+/// prints the kex line as `_kexType`, the strict-KEX verdict as `_strictKex`,
+/// and the negotiated algorithms as `...CipherType` / `...MacType`. The last
+/// two lines are what the A/B run reads; `_strictKex` says whether the
+/// Terrapin countermeasure negotiated.
+const _traceKeys = <String>['_kexType', '_strictKex', 'CipherType', 'MacType'];
+
+void _printNegotiation(String? line) {
+  if (line == null) return;
+  if (_traceKeys.any(line.contains)) debugPrint('dsh-ssh $line');
+}
+
+/// A handshake that failed because the negotiated cipher needs a MAC that is
+/// not available; [DartSshTransport.connect] catches it to retry once.
+class _MacNegotiationFailure implements Exception {
+  const _MacNegotiationFailure(this.cause);
+  final Object cause;
+}
+
 /// dartssh2-backed transport.
 class DartSshTransport implements SshTransport, RemoteBootstrapShell {
   /// Takes ownership of an authenticated client, including closing it.
@@ -106,13 +181,50 @@ class DartSshTransport implements SshTransport, RemoteBootstrapShell {
   final SSHClient _client;
 
   static Future<SshTransport> connect(SshConnectParams params, HostKeyCheck verifyHostKey) async {
-    List<SSHKeyPair>? identities;
+    // Resolved first so a bad DSH_SSH_CIPHER fails before the socket opens;
+    // throwing later would leave the connection without a close path.
+    final algorithms = sshClientAlgorithms();
+    final identities = await _resolveIdentities(params);
+    try {
+      return await _open(params, verifyHostKey, identities, algorithms);
+    } on _MacNegotiationFailure catch (failure) {
+      // sshCipherPreference leads with AES-CTR, which needs a MAC that both
+      // sides implement. A peer that offers AES-CTR but only MACs dartssh2 does
+      // not know (e.g. umac-128-etm@openssh.com) would fail to negotiate at
+      // all, where dartssh2's AEAD-first order never negotiates a MAC. Retry
+      // with that order so those peers keep connecting.
+      if (algorithms.cipher.first.isAead) throw describeSshError(failure.cause, params);
+      if (_traceNegotiation) debugPrint('dsh-ssh no matching MAC; retrying with the AEAD-first cipher order');
+      try {
+        return await _open(params, verifyHostKey, identities, sshClientAlgorithms(profile: 'legacy'));
+      } on _MacNegotiationFailure catch (retryFailure) {
+        throw describeSshError(retryFailure.cause, params);
+      }
+    }
+  }
+
+  /// Decodes the key or vets the password before a socket is opened.
+  static Future<List<SSHKeyPair>?> _resolveIdentities(SshConnectParams params) async {
     if (params.auth == SshAuthMethod.privateKey) {
-      identities = await decodePrivateKey(params.secrets.privateKey ?? '', params.secrets.passphrase);
-    } else if ((params.secrets.password ?? '').isEmpty) {
+      return decodePrivateKey(params.secrets.privateKey ?? '', params.secrets.passphrase);
+    }
+    if ((params.secrets.password ?? '').isEmpty) {
       throw HostLinkError(HostLinkErrorKind.authFailed, appL10n.remoteErrPasswordMissing);
     }
+    return null;
+  }
 
+  /// One socket, one handshake, up to authentication.
+  ///
+  /// A handshake that fails because the negotiated cipher needs a MAC that is
+  /// not available is rethrown as [_MacNegotiationFailure], so [connect] can
+  /// retry with another cipher order instead of reporting an unreachable host.
+  static Future<DartSshTransport> _open(
+    SshConnectParams params,
+    HostKeyCheck verifyHostKey,
+    List<SSHKeyPair>? identities,
+    SSHAlgorithms algorithms,
+  ) async {
     final SSHSocket socket;
     try {
       socket = await SSHSocket.connect(params.host, params.port, timeout: params.connectTimeout);
@@ -131,6 +243,8 @@ class DartSshTransport implements SshTransport, RemoteBootstrapShell {
       socket,
       username: params.username,
       compression: params.compression,
+      algorithms: algorithms,
+      printDebug: _traceNegotiation ? _printNegotiation : null,
       identities: identities,
       onPasswordRequest: params.auth == SshAuthMethod.password ? () => params.secrets.password : null,
       // Keyboard-interactive servers ask for the same password.
@@ -157,9 +271,34 @@ class DartSshTransport implements SshTransport, RemoteBootstrapShell {
     } catch (e) {
       client.close();
       if (keyVerdict != null) throw keyVerdict!;
+      if (isMacNegotiationFailure(e)) throw _MacNegotiationFailure(e);
       throw describeSshError(e, params);
     }
     return DartSshTransport.fromClient(client);
+  }
+
+  /// Whether dartssh2 gave up because the cipher it negotiated needs a MAC and
+  /// none of the peer's MACs are implemented by the library.
+  ///
+  /// The library wraps the cause - [SSHAuthAbortError], then
+  /// [SSHInternalError], then the [StateError] raised while negotiating - so
+  /// read through those before matching the message. Only the two messages
+  /// `_handleMessageKexInit` throws are matched.
+  static bool isMacNegotiationFailure(Object error) {
+    Object? cause = error;
+    for (var depth = 0; depth < 4; depth++) {
+      final current = cause;
+      if (current is SSHAuthAbortError) {
+        cause = current.reason;
+      } else if (current is SSHInternalError) {
+        cause = current.error;
+      } else {
+        break;
+      }
+    }
+    if (cause is! StateError) return false;
+    final message = cause.message;
+    return message == 'No matching client MAC algorithm' || message == 'No matching server MAC algorithm';
   }
 
   /// Parses a PEM private key, mapping failures to a person-readable error.
