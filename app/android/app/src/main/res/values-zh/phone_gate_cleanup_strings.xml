@@ -8,6 +8,7 @@
     <string name="background_setup_task_query_failed">无法查询系统任务，后台屏检查失败。</string>
     <string name="background_setup_recovery_failed">无法读取后台服务身份，未创建后台屏。</string>
     <string name="background_setup_display_failed">系统未能创建可用的后台屏。</string>
+    <string name="background_setup_display_denied">这个系统没有给 shell 通道创建后台屏的权限（缺少 CREATE_VIRTUAL_DISPLAY），这台手机上后台屏需要 root。</string>
     <string name="background_setup_locked">请先解锁手机，再连接后台屏。</string>
     <string name="background_setup_history_full">后台服务已达任务记录上限，请关闭通道后重新连接。</string>
     <string name="background_setup_bind_timeout">连接 Shizuku 服务超时，请确认它正在运行后重连。</string>
