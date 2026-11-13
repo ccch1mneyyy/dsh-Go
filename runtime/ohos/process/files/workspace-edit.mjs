@@ -7,7 +7,7 @@ import { borrowProcessGrantAuthority, processWorkspaceGrant, isLogicalWorkspaceP
   quarantineProcessGrantRetirement } from './process-authority.mjs';
 
 const fail = (code, message = code) => Object.assign(new Error(message), { code });
-let binding, moveBinding, unavailable;
+let binding, moveBinding, wholeBinding, unavailable;
 
 // Evaluated by the sole preload before plugins. No writable global bridge.
 if (isMainThread && process.platform === 'openharmony') {
@@ -23,6 +23,10 @@ if (isMainThread && process.platform === 'openharmony') {
     const moveNames = ['beginMoveOutput', 'publishMoveOutput'];
     if (moveNames.every(name => typeof loaded[name] === 'function')) {
       moveBinding = Object.freeze(Object.fromEntries(moveNames.map(name => [name, loaded[name].bind(loaded)])));
+    }
+    const wholeNames = ['beginWholeOutput', 'writeWholeOutput', 'closeWholeOutput', 'stepWholeOutput', 'abortWholeOutput'];
+    if (wholeNames.every(name => typeof loaded[name] === 'function')) {
+      wholeBinding = Object.freeze(Object.fromEntries(wholeNames.map(name => [name, loaded[name].bind(loaded)])));
     }
   } catch (error) { unavailable = error; }
 }
@@ -68,7 +72,7 @@ function workspaceOperationScope(target, policy, requestSignal, destination) {
     if (destination) {
       if (!moveBinding) throw fail('ERR_WORKSPACE_MOVE_ABI');
       const to = posix.resolve(String(destination.targetKey));
-      if (!isLogicalWorkspacePath(to) || to.split('/').slice(0, 3).join('/') !== root) throw fail('ERR_WORKSPACE_MOVE_SCOPE');
+      if (!isLogicalWorkspacePath(to) || to.split('/').slice(0, 3).join('/') !== root) throw fail('ERR_WORKSPACE_MOVE_SCOPE', '暂不支持在两个授权文件夹之间移动。请先复制到目标文件夹，确认成功后再删除原文件。');
       destinationRelative = to.slice(root.length + 1);
     }
     let grant;
@@ -81,6 +85,7 @@ function workspaceOperationScope(target, policy, requestSignal, destination) {
     if (policy.mode === 'read-only' || !grant.writable) throw fail('EACCES', '授权文件夹没有本次编辑所需的写入权限。');
     const lease = borrowProcessGrantAuthority().issue([grant], { readOnly: false, workspaceRoot: root });
     let handle, result, failure, failed = false, committed = false, publicationAttempted = false, cleanupFailed = false, wholeWritePartial = false;
+    let wholeAttempted = false, wholeEffectUnknown = false;
     function recordFailure(error, stage) {
       failure = failed ? combined(failure, error, stage) : error;
       failed = true;
@@ -221,34 +226,57 @@ function workspaceOperationScope(target, policy, requestSignal, destination) {
       committed = true;
     }
 
-    // Whole-write uses the original request signal, never Move's commit view.
-    // This draft admits existing files only until the new-file mode is decided.
+    // Whole-write is an independent optional ABI group. Never use Move's
+    // synchronous fallback or commit shield when the original signal applies.
     async function writeWhole(content, mode, options = {}) {
-      if (mode === undefined) throw fail('ERR_WORKSPACE_ARGUMENT',
-        'new-file whole-write mode remains pending owner confirmation');
-      if (!moveBinding) throw fail('ERR_WORKSPACE_MOVE_ABI');
+      if (!wholeBinding) throw fail('ERR_WORKSPACE_WHOLE_ABI');
       await turn(signal);
-      moveBinding.beginMoveOutput(handle, relative, mode, options.createIfAbsent === true);
+      wholeAttempted = true;
+      // Explicit policy: mode 0 remains a valid preserved existing-file mode.
+      wholeBinding.beginWholeOutput(handle, relative, mode === undefined ? 1 : 0,
+        mode === undefined ? 0 : mode, options.createIfAbsent === true);
       const bytes = Buffer.from(content, 'utf8');
       for (let offset = 0; offset < bytes.length;) {
         await turn(signal);
         const part = bytes.subarray(offset, Math.min(offset + 1048576, bytes.length));
-        const count = binding.writeEdit(handle, part);
-        if (count <= 0 || count > part.length) throw fail('EIO', 'workspace whole write made invalid write progress');
+        const count = wholeBinding.writeWholeOutput(handle, part);
+        if (count <= 0 || count > part.length) throw fail('EIO', 'workspace whole write made invalid progress');
         offset += count;
       }
-      binding.closeEdit(handle);
+      wholeBinding.closeWholeOutput(handle);
       await turn(signal);
-      publicationAttempted = true;
-      try { moveBinding.publishMoveOutput(handle); }
-      catch (error) {
-        if (error.workspaceMoveEffect === 0) publicationAttempted = false;
-        else if (error.workspaceMoveEffect === 1) wholeWritePartial = true;
-        else if (error.workspaceMoveEffect === 2) committed = true;
-        throw error;
+      const observe = effect => {
+        if (!Number.isInteger(effect) || effect < 0 || effect > 2 || (wholeWritePartial && effect === 0)) {
+          throw fail('ERR_WORKSPACE_WHOLE_ABI');
+        }
+        wholeEffectUnknown = false;
+        publicationAttempted = effect !== 0;
+        if (effect === 1) wholeWritePartial = true;
+        if (effect === 2) committed = true;
+      };
+      while (true) {
+        publicationAttempted = true;
+        wholeEffectUnknown = true;
+        let step;
+        try { step = wholeBinding.stepWholeOutput(handle); }
+        catch (error) {
+          if (error.workspaceWholeEffect !== undefined) observe(error.workspaceWholeEffect);
+          throw error;
+        }
+        if (!step || step.schemaVersion !== 1 || step.effectKnown !== true ||
+            typeof step.stagingRemoved !== 'boolean' || !Number.isInteger(step.continuation)) {
+          throw fail('ERR_WORKSPACE_WHOLE_ABI');
+        }
+        const valid = step.effect === 2 ? step.continuation === 0 :
+          step.effect === 0 ? step.continuation === 1 && !step.stagingRemoved :
+          step.effect === 1 && [2, 3].includes(step.continuation) && !step.stagingRemoved;
+        if (!valid) throw fail('ERR_WORKSPACE_WHOLE_ABI');
+        observe(step.effect);
+        if (committed) return; // stagingRemoved is diagnostic, never a retire claim.
+        // Body complete: preserve the original sync/mode/close tail without
+        // a new late-cancellation point. All other steps yield to the signal.
+        if (step.continuation !== 3) await turn(signal);
       }
-      // Normal return confirms complete publication; its bool is staging-only.
-      committed = true;
     }
 
     async function writeMove(content, mode, options) {
@@ -306,7 +334,10 @@ function workspaceOperationScope(target, policy, requestSignal, destination) {
       result = await action(io);
     } catch (error) { recordFailure(error, 'workspace edit failed'); }
     if (handle !== undefined) {
-      try { binding.abortEdit(handle); }
+      try {
+        if (wholeAttempted) wholeBinding.abortWholeOutput(handle);
+        else binding.abortEdit(handle);
+      }
       catch (error) {
         cleanupFailed = true;
         recordFailure(error, 'workspace edit cleanup failed');
@@ -335,7 +366,7 @@ function workspaceOperationScope(target, policy, requestSignal, destination) {
       if (committed || publicationAttempted || cleanupFailed) {
         throw Object.assign(new Error(failure?.message ?? String(failure), { cause: failure }), {
           code: failure?.code,
-          workspaceEditState: committed ? 'committed' : wholeWritePartial ? 'partial' : publicationAttempted ? 'unknown' : 'unpublished',
+          workspaceEditState: committed ? 'committed' : wholeEffectUnknown ? 'unknown' : wholeWritePartial ? 'partial' : publicationAttempted ? 'unknown' : 'unpublished',
           workspaceEditCleanupFailed: cleanupFailed,
         });
       }
@@ -354,7 +385,7 @@ export function workspaceMoveScope(source, destination, policy, signal) {
   const fromLogical = isLogicalWorkspacePath(String(source.targetKey));
   const toLogical = isLogicalWorkspacePath(String(destination.targetKey));
   if (!fromLogical && !toLogical) return;
-  if (!fromLogical || !toLogical) throw fail('ERR_WORKSPACE_MOVE_SCOPE');
+  if (!fromLogical || !toLogical) throw fail('ERR_WORKSPACE_MOVE_SCOPE', '暂不支持在授权文件夹与普通路径之间直接移动。请先复制到目标位置，确认成功后再删除原文件。');
   return workspaceOperationScope(source, policy, signal, destination);
 }
 

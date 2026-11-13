@@ -875,6 +875,44 @@ def main():
                   'workspace-write-existing-entry.py', 'workspace-write-existing-entry.mjs',
                   'workspace-write-existing-instrumentation.mjs', 'workspace-write-existing-oracle.json')],
               scope='Two after-only existing-file default write contracts: physical and normally selected logical; actual SessionStore/ToolRuntime/Sandbox/Local, complete batch and independent exact versions, after-write-await and dispose resource samples; no new file, guard/cancellation, full Host/RPC/UI or device claim')
+    # Four normal defaults: existing/new, physical/logical; same-source whole V1 build.
+    for workspace_write_whole_mode in ('plain', 'jitless'):
+        g.run('workspace-write-whole-' + workspace_write_whole_mode,
+              lambda m=workspace_write_whole_mode: g.py(
+                  rt + 'workspace-write-whole-entry.py',
+                  '--source', s, '--payload', payload(), '--node', node(),
+                  '--manifest', o / 'composed/expanded/dsh-runtime/manifest.json',
+                  '--typescript-prefix', p('typescript_prefix'),
+                  '--native-directory', o / 'workspace-authority-entry/native',
+                  '--authority-build-directory', o / 'workspace-authority-entry',
+                  '--publication-fixture', native() / 'libpublication-test-linked.so',
+                  '--out', o / ('workspace-write-whole-' + m),
+                  *(['--jitless'] if m == 'jitless' else [])),
+              needs=('compose', 'workspace-authority-entry', 'native-publication-build'),
+              timeout=120,
+              tests=[rt + name for name in (
+                  'workspace-write-whole-entry.py', 'workspace-write-whole-entry.mjs',
+                  'workspace-write-whole-instrumentation.mjs', 'workspace-write-whole-oracle.json')],
+              scope='Four after-only default whole writes through actual SessionStore/ToolRuntime/Sandbox/Local and the new same-source Native group; full batch/version/five-method effect2/resource oracle, same-parent wx directory-default mode/gid reference; no old logical baseline, guard/wx fallback/cancellation/effect1/ACL/SGID/device claim')
+    # Two normal logical writes cancelled after a real positive staging write; no publication.
+    for workspace_write_cancel_mode in ('plain', 'jitless'):
+        g.run('workspace-write-cancel-' + workspace_write_cancel_mode,
+              lambda m=workspace_write_cancel_mode: g.py(
+                  rt + 'workspace-write-cancel-entry.py',
+                  '--source', s, '--payload', payload(), '--node', node(),
+                  '--manifest', o / 'composed/expanded/dsh-runtime/manifest.json',
+                  '--typescript-prefix', p('typescript_prefix'),
+                  '--native-directory', o / 'workspace-authority-entry/native',
+                  '--authority-build-directory', o / 'workspace-authority-entry',
+                  '--publication-fixture', native() / 'libpublication-test-linked.so',
+                  '--out', o / ('workspace-write-cancel-' + m),
+                  *(['--jitless'] if m == 'jitless' else [])),
+              needs=('compose', 'workspace-authority-entry', 'native-publication-build'),
+              timeout=120,
+              tests=[rt + name for name in (
+                  'workspace-write-cancel-entry.py', 'workspace-write-cancel-entry.mjs',
+                  'workspace-write-cancel-instrumentation.mjs', 'workspace-write-cancel-oracle.json')],
+              scope='Two normal logical existing/new whole writes cancelled through the original signal after the first real positive staging write; full provider rejection/batch, unchanged-or-absent target, owned staging and lease/dispose/retirement oracle; no guarded copy, partial publication, fault injection, physical cancellation, full Host or device claim')
     # Reuse the composed payload and the same authority-entry native registry.
     # Only two normal own-file read/edit cases; no new native build in this runner.
     for workspace_edit_mode in ('plain', 'jitless'):
