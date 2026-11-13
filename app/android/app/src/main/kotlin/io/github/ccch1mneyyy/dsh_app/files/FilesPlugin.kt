@@ -40,6 +40,9 @@ import kotlin.concurrent.thread
  * - `listOutputs {depth}` → `[{path, bytes, modified}]` under `/sdcard/Download/DSH-Go`, then
  *   the old `/sdcard/Download/DSH` (guest paths; empty without phone storage).
  * - `open {path, mime, name, chooser}` → ACTION_VIEW through this app's FileProvider.
+ * - `share {path, name, mime}` → ACTION_SEND through this app's FileProvider; the chooser runs
+ *   in a task of its own, so the app the person picks (WeChat, …) keeps its own screens out of
+ *   this app's task.
  * - `saveToDownloads {path, name, mime}` → shown location (`Download/DSH-Go/x.pdf`):
  *   MediaStore Downloads on API 29+, the public Downloads directory before
  *   (asks for the storage permission when needed).
@@ -96,6 +99,7 @@ class FilesPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
             }
             "listOutputs" -> background(result) { listOutputs(call.argument<Int>("depth") ?: 3) }
             "open" -> open(call, result)
+            "share" -> share(call, result)
             "saveToDownloads" -> save(call, result)
             "pdfInfo" -> pdf(result) { info(call.argument<String>("path") ?: "") }
             "pdfPage" -> pdf(result) {
@@ -134,6 +138,45 @@ class FilesPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCallHandle
             } else {
                 context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
+            result.success(null)
+        } catch (e: ActivityNotFoundException) {
+            result.error("no_app", e.message, null)
+        } catch (e: Exception) {
+            result.error("failed", e.message, null)
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Share
+
+    /**
+     * The system share sheet with one file, through this app's FileProvider.
+     *
+     * The chooser is started in a task of its own ([Intent.FLAG_ACTIVITY_NEW_TASK]): started
+     * from this activity's task, it joins that task, and the app the person picks (WeChat, …)
+     * can then leave its own screens there — the recent-tasks card still says DSH Go, and
+     * 「返回」 never comes back here (#1130, the same symptom as #217).
+     */
+    private fun share(call: MethodCall, result: MethodChannel.Result) {
+        val file = File(call.argument<String>("path") ?: "")
+        if (!file.isFile) return result.error("missing", "no such file", null)
+        val name = call.argument<String>("name") ?: file.name
+        val mime = mimeOf(call.argument<String>("mime"), name)
+        val uri = try {
+            contentUri(file, name)
+        } catch (e: Exception) {
+            return result.error("failed", e.message, null)
+        }
+        val send = Intent(Intent.ACTION_SEND)
+            .setType(mime)
+            .putExtra(Intent.EXTRA_STREAM, uri)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        send.clipData = ClipData.newRawUri(name, uri)
+        if (send.resolveActivity(context.packageManager) == null) {
+            return result.error("no_app", "no app takes $mime", null)
+        }
+        try {
+            context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             result.success(null)
         } catch (e: ActivityNotFoundException) {
             result.error("no_app", e.message, null)

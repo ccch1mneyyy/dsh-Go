@@ -9,7 +9,6 @@ import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../l10n/l10n.dart';
 import 'artifacts.dart';
@@ -60,22 +59,12 @@ String artifactErrorText(Object error) {
 /// Host, session and path, and fetched again when the Host reports a new
 /// version.
 class ArtifactFiles {
-  ArtifactFiles({
-    required this.connection,
-    required this.channel,
-    Future<void> Function(ShareParams params)? share,
-    Future<Directory> Function()? cacheRoot,
-  }) : _share = share ?? _systemShare,
-       _cacheRoot = cacheRoot ?? getTemporaryDirectory;
+  ArtifactFiles({required this.connection, required this.channel, Future<Directory> Function()? cacheRoot})
+    : _cacheRoot = cacheRoot ?? getTemporaryDirectory;
 
   final HostConnection? connection;
   final FilesChannel channel;
-  final Future<void> Function(ShareParams params) _share;
   final Future<Directory> Function() _cacheRoot;
-
-  static Future<void> _systemShare(ShareParams params) async {
-    await SharePlus.instance.share(params);
-  }
 
   bool get isLocal => connection?.isLocal ?? false;
 
@@ -194,15 +183,12 @@ class ArtifactFiles {
     await channel.open(file.path, name: artifact.name, mime: artifact.mimeType, chooser: chooser);
   }
 
-  /// The system share sheet with the file.
+  /// The system share sheet with the file. Goes through the files channel, which starts the
+  /// chooser in a task of its own: the app the person picks (WeChat, …) then keeps its own
+  /// screens there instead of leaving them in this app's task (#1130, the same symptom as #217).
   Future<void> share(String sessionId, Artifact artifact, {void Function(double?)? onProgress}) async {
     final file = await materialize(sessionId, artifact, onProgress: onProgress);
-    await _share(
-      ShareParams(
-        files: [XFile(file.path, mimeType: artifact.mimeType, name: artifact.name)],
-        fileNameOverrides: [artifact.name],
-      ),
-    );
+    await channel.share(file.path, name: artifact.name, mime: artifact.mimeType);
   }
 
   /// Copies the file into the phone's public Downloads; returns where.

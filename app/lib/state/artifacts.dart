@@ -489,6 +489,12 @@ class FilesChannel {
   Future<void> open(String hostPath, {required String name, required String mime, bool chooser = false}) =>
       channel.invokeMethod<void>('open', {'path': hostPath, 'name': name, 'mime': mime, 'chooser': chooser});
 
+  /// The system share sheet with one Android file. The chooser runs in a task
+  /// of its own, so the app the person picks (WeChat, …) cannot take this app's
+  /// task with it and leave 「返回」 inside that app.
+  Future<void> share(String hostPath, {required String name, required String mime}) =>
+      channel.invokeMethod<void>('share', {'path': hostPath, 'name': name, 'mime': mime});
+
   /// Copies an Android file into the public Downloads (`Download/DSH-Go`);
   /// returns where it landed (`Download/DSH-Go/report.pdf`).
   Future<String> saveToDownloads(String hostPath, {required String name, required String mime}) async =>
