@@ -1217,6 +1217,7 @@ def main():
     g.run('native-contract', lambda: g.py(tools + 'native-contract.test.py'), needs=('tools',), tests=[tools + 'native-contract.test.py'])
     g.run('fork-installed-resolution', lambda: g.py(tools + 'prepare-forks-installed.test.py'), needs=('tools',), tests=[tools + 'prepare-forks-installed.test.py'])
     g.run('archive-manifest', lambda: g.py(tools + 'runtime-archive-manifest-contract.py', '--node', node(), '--report', o / 'archive-manifest.json'), needs=('tools',))
+    g.node_tests('scan-channel', [tools + 'scan-channel.test.mjs'], needs=('tools',))
     g.run('hms-declarations', lambda: g.py(tools + 'prepare-hms-sdk.test.py', '--helper', s / 'tooling/ohos/hms-stubs/prepare-sdk.py', '--output', o / 'hms-declarations'), needs=('tools',), tests=[tools + 'prepare-hms-sdk.test.py'])
     g.run('embedding-member-identity', lambda: g.py(tools + 'prepare-pasteboard.test.py'), env=lambda: {'DSH_EMBEDDING_HAR': str(p('embedding_har'))}, needs=('tools',), tests=[tools + 'prepare-pasteboard.test.py'])
     g.run('clipboard-settlement', lambda: g.py(tools + 'clipboard-settlement.py', '--input-har', p('embedding_har'), '--node', node(), '--typescript-prefix', p('typescript_prefix'), '--output', o / 'clipboard-settlement'), needs=('tools',))
@@ -1270,7 +1271,7 @@ def main():
     g.internal('flutter-input-identity', flutter_identity, needs=('flutter-l10n', 'install-record-wire'))
     flutter_tests = ['test/secrets', 'test/ohos/attachment_files_test.dart', 'test/runtime/phone_callback_bridge_test.dart', 'test/runtime/runtime_recovery_test.dart', 'test/runtime/ohos_install_record_test.dart', 'test/usage/ohos_device_contract_test.dart',
                      'test/safe_mode/safe_mode_logic_test.dart', 'test/state/engine_control_test.dart', 'test/runtime/runtime_controller_test.dart',
-                     'test/plugins/ohos_replace_cancel_test.dart',
+                     'test/plugins/ohos_replace_cancel_test.dart', 'test/remote/pairing_system_scanner_test.dart',
                      'test/chat/artifact_ohos_workspace_materialize_test.dart',
                      'test/runtime/ohos_idle_diagnostics_test.dart',
                      'test/chat/attachment_file_budget_test.dart', 'test/remote/private_key_file_budget_test.dart',

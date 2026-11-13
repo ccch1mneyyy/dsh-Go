@@ -17110,6 +17110,12 @@ class L10nEn extends L10n {
   String get remotePairCameraFailed => 'The camera didn’t open. Use From photos or Paste pairing link.';
 
   @override
+  String get remotePairSystemScan => 'Scan';
+
+  @override
+  String get remotePairSystemScanHint => 'Opens the system scanner; it can also read a screenshot from your photos';
+
+  @override
   String get remotePairReading => 'Reading the pairing code…';
 
   @override

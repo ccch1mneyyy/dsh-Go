@@ -16250,6 +16250,12 @@ class L10nZh extends L10n {
   String get remotePairCameraFailed => '相机打不开。可以用「从相册识别」或「粘贴配对链接」';
 
   @override
+  String get remotePairSystemScan => '扫码';
+
+  @override
+  String get remotePairSystemScanHint => '打开系统扫码，里面也能从相册选截图';
+
+  @override
   String get remotePairReading => '正在读取配对信息…';
 
   @override

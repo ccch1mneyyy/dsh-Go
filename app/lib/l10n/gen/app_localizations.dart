@@ -29762,6 +29762,18 @@ abstract class L10n {
   /// **'相机打不开。可以用「从相册识别」或「粘贴配对链接」'**
   String get remotePairCameraFailed;
 
+  /// No description provided for @remotePairSystemScan.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫码'**
+  String get remotePairSystemScan;
+
+  /// No description provided for @remotePairSystemScanHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开系统扫码，里面也能从相册选截图'**
+  String get remotePairSystemScanHint;
+
   /// No description provided for @remotePairReading.
   ///
   /// In zh, this message translates to:

@@ -122,10 +122,11 @@ flowchart TD
 | share_plus、`dsh/share` | HMS 发出及冷/热接收候选、URI 即时复制、owner/物理面板归属 | v2 已关闭不同 Context 缓存路径错拒；整体仍 **BLOCKED（UNCOMPILED_HMS）**；dismiss 先到不能猜成功 |
 | `dsh/voice` | HMS 识别与公开录音候选，权限生命周期、16 kHz 单声道 16 bit WAV | **UNCOMPILED_HMS**；离线模型接口 unsupported，地区/语言/真实麦克风待验证 |
 | `pdfInfo/pdfPage/pdfClose` | HMS PDF 候选、安全副本、renderer/fd/缓存归属，缓存消失可退休 | **UNCOMPILED_HMS**；真实 PDFKit 解码与页图未测；已审公开 fallback 仍可系统打开 |
+| `dsh/app.scanQrCode` | 扫码配对电脑：Scan Kit 默认界面扫码（系统页面带相册入口），取消返回 null | **UNCOMPILED_HMS**；模块名依据华为文档离线镜像，真实扫码页、取消码与相册识码待设备 |
 | 输入法粘贴 | 39 修复 helper 拒绝/异常路径的 Promise 结算，空值不删除选区 | 主线必须实际采用 prepared HAR；ACL 待项目账号，未加 READ_PASTEBOARD，未接原生 PasteButton fallback |
 | `dsh/usage` | 当前不填造假 OH 事实 | **协议 BLOCKED**；v1 sdk 是 Android level、无 platform，需客户端/服务端共同版本化决定 |
 
-通道行为与状态来源分别见 E03、E06、E11–E21；专题入口见末节。三个公开原生主包的编译结论分别绑定各自最小 Entry；顺序增量合成的共享 Entry 只有源码应用证明，不能直接继承为新的完整组合编译结论。HMS 声明占位的严格 ArkTS 0 错误只检查调用方，不能改写上述三个 **UNCOMPILED_HMS**。[证据表](evidence-20261102.md)
+通道行为与状态来源分别见 E03、E06、E11–E21；专题入口见末节。三个公开原生主包的编译结论分别绑定各自最小 Entry；顺序增量合成的共享 Entry 只有源码应用证明，不能直接继承为新的完整组合编译结论。HMS 声明占位的严格 ArkTS 0 错误只检查调用方，不能改写上述四个 **UNCOMPILED_HMS**。[证据表](evidence-20261102.md)
 
 ## 4. 异步所有权与恢复的共同规则
 
