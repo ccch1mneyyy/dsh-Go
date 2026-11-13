@@ -878,9 +878,21 @@ class PrivilegedDisplayCore internal constructor(
             // Keep the virtual display's keyboard off the main screen: IME policy HIDE.
             runCatching { setImePolicyHide(vd.display.displayId) }
         } catch (e: Throwable) {
+            // The reader holds GPU buffers of its own; a failed allocation must not keep them
+            // attached, or the next open reports releasePending forever.
+            runCatching { ir.close() }
+            if (pendingReader === ir) pendingReader = null
+            // Nothing is owned when the creation call threw: keep "attempted" only if a handle
+            // was already assigned, otherwise every later open fails with releaseUnconfirmed.
+            if (display == null) displayCreationAttempted = false
             // Retain real handles for legacy callers too: whole-peer retirement must not
             // mistake a swallowed release failure for an empty peer.
-            if (e is Fault) throw e else throw Fault("displayUnsupported")
+            if (e is Fault) throw e
+            // CREATE_VIRTUAL_DISPLAY is signature|privileged. Shell-based channels (Shizuku, local
+            // ADB) do not hold it on every ROM, so name the missing capability instead of
+            // reporting a generic "the system could not create a screen".
+            else if (e is SecurityException) throw Fault("displayPermissionDenied")
+            else throw Fault("displayUnsupported")
         }
     }
 
