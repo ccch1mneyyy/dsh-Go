@@ -538,6 +538,7 @@ class BackgroundControl private constructor(context: Context) {
         "releaseQueryFailed" -> R.string.background_setup_task_query_failed
         "recoveryUnavailable" -> R.string.background_setup_recovery_failed
         "displayUnsupported", "displayTargetChanged", "displayMissing" -> R.string.background_setup_display_failed
+        "displayPermissionDenied" -> R.string.background_setup_display_denied
         "systemOperationDenied" -> R.string.background_input_permission_denied
         "locked" -> R.string.background_setup_locked
         "scopeHistoryFull" -> R.string.background_setup_history_full
