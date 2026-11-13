@@ -248,6 +248,8 @@ object Reasons {
         // l10n:keep privileged protocol
         "displayUnsupported" -> "此系统不支持所需的独立焦点虚拟屏，未改用主屏"
         // l10n:keep privileged protocol
+        "displayPermissionDenied" -> "此系统未授予 shell 通道创建虚拟屏的权限，后台屏无法创建"
+        // l10n:keep privileged protocol
         "displayReleaseFailed" -> "未收到后台屏资源释放的完整回执"
         // l10n:keep privileged protocol
         "displayMissing" -> "本次任务还没有后台屏，请先启动目标应用"
