@@ -8,6 +8,7 @@
     <string name="background_setup_task_query_failed">The system task query failed. The background screen could not be checked.</string>
     <string name="background_setup_recovery_failed">The background service identity is unavailable. No screen was created.</string>
     <string name="background_setup_display_failed">The system could not create a usable background screen.</string>
+    <string name="background_setup_display_denied">This ROM does not let the shell channel create a background screen (CREATE_VIRTUAL_DISPLAY is missing). Root is required for background screens on this phone.</string>
     <string name="background_setup_locked">Unlock the phone before connecting the background screen.</string>
     <string name="background_setup_history_full">The service task history is full. Turn the channel off, then reconnect.</string>
     <string name="background_setup_bind_timeout">Shizuku connection timed out. Check that it is running and reconnect.</string>
