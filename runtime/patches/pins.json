@@ -1140,6 +1140,14 @@
         }
       }
     },
+    "zzzzzzzzz-piai-custom-channel-developer-role.diff": {
+      "0.2.2-rc.1": {
+        "node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js": {
+          "after": "d5e3fdd882bd572419d591b1578287fa3500dbdd381c6707c316e0169d698b6b",
+          "before": "71bef2194ebc72d9d86a0ce3a0fe24345b808208a4752fb077f71cf6603b04aa"
+        }
+      }
+    },
     "zzzzzzzzz-plugin-detail-body-cancel.diff": {
       "0.2.2-rc.1": {
         "node_modules/@deepseek-ai/dsh-plugin-detail/lib/index.js": {

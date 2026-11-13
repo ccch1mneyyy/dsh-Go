@@ -1,0 +1,35 @@
+# Custom channels: keep pi-ai's developer role off (docs/design/plugin-seams.md §9.2).
+# Applied by runtime/lib/rtbuild.py patch-dsh; pinned per DSH version in pins.json.
+#
+# resolveModelCompat only forwards compat fields a profile or the catalog actually
+# sets and lets everything else fall through to pi-ai's URL detection. For a channel
+# the catalog does not know, detection answers `supportsDeveloperRole: true`, so any
+# reasoning-enabled model sends `role: "developer"`, which OpenAI-compatible servers
+# such as Alibaba DashScope reject with 400 invalid_parameter_error. The catalog sets
+# supportsDeveloperRole: false on every entry it ships, so mirror that default here.
+--- a/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js	2026-11-13 16:33:04.806355300 +0800
++++ b/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js	2026-11-13 16:33:04.806355300 +0800
+@@ -639,11 +639,20 @@
+ 		}
+ 		configured[field] = value;
+ 	}
+-	if (Object.keys(configured).length === 0) return {};
+-	return { compat: {
++	if (Object.keys(configured).length === 0) {
++		/* A configured model the catalog does not describe has no compat of its own,
++		and pi-ai's URL detection answers `supportsDeveloperRole: true` for an
++		unfamiliar OpenAI-compatible endpoint. Most third-party servers accept only
++		`system`, so keep the conservative catalog default instead. */
++		if (base === void 0 && gate?.supportsDeveloperRole === "offer") return { compat: { supportsDeveloperRole: false } };
++		return {};
++	}
++	const compat = {
+ 		...base?.api === api ? base.compat : void 0,
+ 		...configured
+-	} };
++	};
++	if (base === void 0 && compat.supportsDeveloperRole === void 0 && gate?.supportsDeveloperRole === "offer") compat.supportsDeveloperRole = false;
++	return { compat };
+ }
+ /**
+ * Materialize one route's catalog by merging the installed catalog defaults
