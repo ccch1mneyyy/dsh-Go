@@ -9,7 +9,7 @@ import { prepareLinuxImages } from './prepare-images.mjs';
 import { loadLinuxNative } from './native-session.mjs';
 import { LinuxRuntimeBackend } from './backend.mjs';
 import { linuxHostLock } from './host-paths.mjs';
-import { openLinuxInstance, cleanGuestClose } from './instance.mjs';
+import { openLinuxInstance, discardLinuxInstance, cleanGuestClose } from './instance.mjs';
 
 const error=(code,message)=>Object.assign(new Error(message),{code});
 const deferred=()=>{const d=Promise.withResolvers();d.promise.catch(()=>{});return d;};
@@ -115,6 +115,14 @@ export class LinuxInstallationOwner {
   async dispose(){this.#disposed=true;this.#abort.abort(error('ABORT_ERR','Linux owner disposed'));if(this.#promise)await this.#promise.catch(()=>{});return this.#retireAndClean();}
 }
 export const createLinuxInstallationOwner=(options)=>new LinuxInstallationOwner(options);
+
+// The explicit 重新安装 Linux: deletes every retained instance under the same
+// trusted root and real flock an owner would take; no VM, download or manifest.
+// Callers must first know that no owner of this process holds the data.
+export function discardLinuxInstallation({directory},internals={}){
+  if(!isAbsolute(directory??''))throw new TypeError('Trusted private directory is required');
+  return discardLinuxInstance({directory,lockExclusive:internals.lockExclusive??linuxHostLock()},internals.instance);
+}
 
 // Fixed signed-resource layout. Only the host runtime publication supplies this
 // directory; a manifest cannot select arbitrary host files for guest block IO.

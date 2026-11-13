@@ -39,7 +39,7 @@ bash -c '<脚本>'（虚拟 shell Worker）
 
 ## 资产与兼容
 
-agent 变了（mounts、opened 里 `mounts:true`），六件资产必须重建；931 资产代际的已装实例会以 `ERR_OHOS_LINUX_ASSET_GENERATION` 拒绝恢复，需要用户在设置里重新安装（本期没有迁移）。新 host 配旧 agent：无 mounts 的作业照常，带 mounts 的明确拒绝。`libdsh_linux.so` 需要用含 `fs_export.c` 与补丁 0016 的源码重建（宿主测试与 OH arm64 两份）。
+agent 变了（mounts、opened 里 `mounts:true`），六件资产必须重建；931 资产代际的已装实例会以 `ERR_OHOS_LINUX_ASSET_GENERATION` 拒绝恢复，需要用户在 设置 · 能力 · Linux 环境 点「重新安装 Linux」（控制动作 `discardRetained`，见 [CONTROL.zh.md](CONTROL.zh.md)）删掉旧数据再开启（本期没有迁移）。新 host 配旧 agent：无 mounts 的作业照常，带 mounts 的明确拒绝。`libdsh_linux.so` 需要用含 `fs_export.c` 与补丁 0016 的源码重建（宿主测试与 OH arm64 两份）。
 
 ## 验证
 

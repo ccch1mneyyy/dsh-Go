@@ -47,6 +47,16 @@ backend 不再隐式继承宿主环境，仅提供客体 PATH/HOME/TMPDIR/LANG �
 
 App的HTTP localhost/127.0.0.1代理映射到TinyEMU宿主端10.0.2.2；其他127/8、IPv6 loopback和HTTPS loopback明确拒绝。合并gitee.com及huaweicloud.com直连项，保留整值`*`的客户端语义。控制HTTP本身不走该代理。完整别名、地址、错误码、传输范围和实际客户端验证边界见同目录`PROXY.zh.md`；不影响App归档下载器或全部插件路由。
 
+### 删除保留数据（重新安装 Linux）
+
+```json
+{"v":1,"instanceId":"<GET返回>","attemptId":"<GET返回或null>","action":"discardRetained"}
+```
+
+保留实例无法恢复（下文 §4 的各类拒绝）时唯一的出路，由 App 在用户确认「重新安装 Linux」后发送，没有其他字段。与其他 POST 不同，它在删除完成后才回复：成功为 `200` 和完整状态对象，`lastErrorCode` 清为 null，开关保持关闭，不会自动开启。删除不需要 VM，只用文件系统和锁：取同一个根 `.lock` 的真实 `flock`（被占用为 `ERR_OHOS_LINUX_BUSY`），按 `openLinuxInstance` 同样核对根与锁的规范路径、FD 身份和私有权限，把除 `.lock` 外的每一项先在根内改名为 `.discard-<随机>` 并同步根目录，再逐项删除（目录递归删除不跟随链接，其余一律按名字 unlink，不打开也不跟随）并再次同步。根目录和 `.lock` inode 保留，下一次启用就是全新安装。删除中途崩溃留下的 `.discard-*` 只是垃圾：`openLinuxInstance` 持锁后先删掉它们再判断有无保留数据，绝不把它们当实例恢复。
+
+只在本 service 没有进行中的安装/关闭/删除、没有作业或路由命令、不在最终停止、且开关关闭（或安装已以 failed/unavailable 结束）时受理，否则 `409 ERR_OHOS_LINUX_BUSY`；最终停止开始后为 `ERR_OHOS_LINUX_CLOSED`。本进程的 owner 若曾创建 native VM，或其退役未确认、状态为 unknown，则 `409 ERR_OHOS_LINUX_RESTART_REQUIRED`：数据可能仍被占用，须退出整个 App 后再删。未曾创建 VM 且已确认退役的失败尝试在删除成功后被丢弃，`restartRequired` 随之恢复 false，同一进程内再开启即全新安装；这是“失败的安装 owner 不重建”的唯一例外，前提是该尝试从未持有 native 资源。删除本身失败时 `lastErrorCode` 为其错误码，数据可能已部分删除，再次删除会继续。删除进行中 `setEnabled(true)` 为 busy，`setEnabled(false)` 无动作，`shutdown` 等它结束后才收尾。
+
 ### 最终停止
 
 ```json
@@ -113,7 +123,7 @@ App的HTTP localhost/127.0.0.1代理映射到TinyEMU宿主端10.0.2.2；其他12
 
 错误体为 `{"v":1,"error":{"code":"ERR_...","message":"HTTP标准短语"},"status":<当前完整状态>}`；鉴权拒绝不附 status。400/413/415 为请求问题；409 为 stale/busy/disabled/failed/unknown 等拒绝；shutdown 已受理但未确认只在 GET 状态中报告，不能把 202 当完成；503 为缺 connection 或可信 host path。仅在首次显式启用后才可能发现 assets 缺失，此时后台状态 `unavailable`。
 
-setEnabled(true) 在 installing 时为幂等保持；setEnabled(false) 在 disabling 时同样保持，不重发 cancel；在 disabling 完成前 true 拒绝 busy。shutdown 一旦开始不可重新开启。不存在自动换号重试、后台重建或每任务grant已完成的声明。931在新的App进程中仅按当前可见且完整合格的clean持久记录恢复同代数据盘；该记录的生成路径要求本epoch的guest syncfs和native成功退役。旧v1、dirty/booting、资产变更或身份错误明确拒绝并保留，不自动重装覆盖。正常shutdown后退出整个App再开与突然杀进程/掉电恢复是不同范围。
+setEnabled(true) 在 installing 时为幂等保持；setEnabled(false) 在 disabling 时同样保持，不重发 cancel；在 disabling 完成前 true 拒绝 busy。shutdown 一旦开始不可重新开启。不存在自动换号重试、后台重建或每任务grant已完成的声明。931在新的App进程中仅按当前可见且完整合格的clean持久记录恢复同代数据盘；该记录的生成路径要求本epoch的guest syncfs和native成功退役。旧v1、dirty/booting、资产变更或身份错误明确拒绝并保留，不自动重装覆盖；用户确认的 `discardRetained`（App 的「重新安装 Linux」）是删除它们的唯一途径。正常shutdown后退出整个App再开与突然杀进程/掉电恢复是不同范围。
 
 ## 5. 需要联测的实际边界
 
