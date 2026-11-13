@@ -195,6 +195,8 @@ export class RuntimePlugin implements FlutterPlugin, MethodCallHandler, StreamHa
       if (values.has('noProxy')) proxy.noProxy = values.get('noProxy') as string;
       result.success(await controller.setLinuxProxy(proxy)); return;
     }
+    // User-confirmed in the app; deletes only the retained Linux instance.
+    if (call.method === 'discardLinuxRetained') { result.success(await controller.discardLinuxRetained()); return; }
     if (call.method === 'runLinuxPrivateGuest') {
       const instance: Any = call.argument('instanceId'); const attempt: Any = call.argument('attemptId');
       const id: Any = call.argument('requestId'); const argv: Any = call.argument('argv');

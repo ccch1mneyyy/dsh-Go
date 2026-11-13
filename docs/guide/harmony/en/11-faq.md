@@ -70,6 +70,7 @@ On this phone's HarmonyOS engine these commands need the Linux environment; see 
 - **Off**: turn on **Turn on Linux**. The first time, wait until it's ready, then ask the AI to try again; while it's getting ready those commands still fail rather than wait for it.
 - The page says the local engine isn't running: start the local engine first.
 - The page asks you to quit and reopen the app: do that, then turn it on.
+- It says the existing Linux data can't be used any more (usually after an app update): tap **Reinstall Linux** on the same page, then turn on **Turn on Linux**. What was installed inside Linux is deleted; see [Engine and remote hosts](03-engine-hosts.md#linux-environment).
 - **Failed**, or it couldn't turn on with a code: include that code and a diagnostics bundle when you report the problem.
 - The AI says Linux is busy: Linux runs one command at a time, and a plugin's long-running Python service holds it the whole time, so other commands report busy after a short wait. Turn that plugin off or try later.
 - Downloads are slow or can't connect: set a proxy under **Network proxy** on the same page.

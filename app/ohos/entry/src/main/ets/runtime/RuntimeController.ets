@@ -731,6 +731,12 @@ export class RuntimeController {
     return this.linux.setProxy(state.baseUrl as string, state.token as string, proxy);
   }
 
+  discardLinuxRetained(): Promise<string> {
+    if (this.requestedStop || this.resetRequested) throw new RuntimeChannelError('ohos_linux_stopping', '引擎正在停止，未删除 Linux 数据。');
+    const state = this.linuxHost();
+    return this.linux.discardRetained(state.baseUrl as string, state.token as string);
+  }
+
   runLinuxPrivateGuest(request: LinuxRunRequest): Promise<string> {
     if (this.requestedStop || this.resetRequested) throw new RuntimeChannelError('ohos_linux_stopping', '引擎正在停止，未开始 Linux 作业。');
     const state = this.linuxHost();

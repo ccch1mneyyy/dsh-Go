@@ -501,6 +501,12 @@ class OhosLinuxRuntime {
   Future<OhosLinuxSnapshot> setProxy(OhosLinuxProxyConfiguration proxy) =>
       _call('setLinuxProxy', {'proxy': proxy.toMap()});
 
+  /// 重新安装 Linux: deletes everything inside Linux. Only while it is off (or
+  /// its install has failed) and idle; it never switches Linux on. The next
+  /// switch-on installs afresh. Unlike [setEnabled] the snapshot comes back
+  /// after the deletion has finished.
+  Future<OhosLinuxSnapshot> discardRetained() => _call('discardLinuxRetained');
+
   /// Keep [scope] when retrying an uncertain transport result. Its fixed request
   /// identity prevents a retry from executing the command a second time.
   Future<OhosLinuxSnapshot> runPrivateGuest({

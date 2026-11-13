@@ -17378,6 +17378,54 @@ abstract class L10n {
   /// **'没能开启：{code}'**
   String linuxErrorWithCode(String code);
 
+  /// No description provided for @linuxReinstall.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新安装 Linux'**
+  String get linuxReinstall;
+
+  /// No description provided for @linuxReinstallHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除 Linux 里的全部内容，再开启时全新安装'**
+  String get linuxReinstallHint;
+
+  /// No description provided for @linuxReinstallAfterRestart.
+  ///
+  /// In zh, this message translates to:
+  /// **'这次运行已经启动过 Linux：完全退出并重新打开 App 后才能重新安装'**
+  String get linuxReinstallAfterRestart;
+
+  /// No description provided for @linuxReinstallTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新安装 Linux？'**
+  String get linuxReinstallTitle;
+
+  /// No description provided for @linuxReinstallBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'会删除 Linux 里的全部内容：装过的软件和 Python 包、只存在 Linux 里的文件，以及在 Linux 里登录过的账号（比如 gh）。对话工作区里的文件不受影响。\n\n开关保持关闭；之后打开会重新下载并安装。'**
+  String get linuxReinstallBody;
+
+  /// No description provided for @linuxRetainedRefused.
+  ///
+  /// In zh, this message translates to:
+  /// **'原来的 Linux 数据没法继续用了（常见于 App 更新之后），App 不会自动覆盖它。点「重新安装 Linux」删除后再开启，即可全新安装。（{code}）'**
+  String linuxRetainedRefused(String code);
+
+  /// No description provided for @linuxReinstallRestart.
+  ///
+  /// In zh, this message translates to:
+  /// **'这次运行已经启动过 Linux，数据可能仍被占用。完全退出并重新打开 App 后，再点「重新安装 Linux」。'**
+  String get linuxReinstallRestart;
+
+  /// No description provided for @linuxReinstallFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能重新安装：{code}'**
+  String linuxReinstallFailed(String code);
+
   /// No description provided for @linuxProxyTitle.
   ///
   /// In zh, this message translates to:

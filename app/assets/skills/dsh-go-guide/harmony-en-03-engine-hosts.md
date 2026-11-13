@@ -35,6 +35,7 @@ Runs command-line tools such as gh and Python on this phone. This row exists onl
 - The switch is remembered: left on, Linux comes back on by itself each time the local engine starts.
 - While Linux is on, the app uses roughly 100 MB more memory. Turning it off gives that back only when the app fully quits.
 - When the page asks you to quit and reopen the app (for example after turning the switch off while it was getting ready), Linux can be turned on again only after reopening.
+- When the page says the existing Linux data can't be used any more (usually after an app update), tap **Reinstall Linux**. It deletes everything inside Linux: installed software and Python packages, files that exist only inside Linux, and accounts signed in there (such as gh); files in your chat workspaces aren't touched. It works while the switch is off or turning on failed; if Linux already started in this run of the app, turn the switch off and quit and reopen the app first. Afterwards the switch stays off, and turning it on downloads and installs Linux again.
 
 While it's on, `gh`, `python3`, `python`, `pip` and `pip3` run by the AI in chats on this phone's engine go to this Linux, and so do Python processes that plugins start; run anything else with `linux <command>`, for example `linux sh -c '…'`. `bash`, `git`, `rg` and `node` still run in the app's own command environment. While it's off, those commands report that the Linux environment is off; nothing is installed for you.
 
@@ -48,7 +49,7 @@ Commands in Linux see the chat's workspace at the same paths; when the chat's pe
 
 Gitee, Huawei Cloud and other mirrors in China always connect directly. The proxy is saved only on this phone, and a change applies to the commands that follow.
 
-Resetting or uninstalling the runtime doesn't delete what is installed in Linux; uninstalling the app does. If it won't turn on, see [FAQ](11-faq.md).
+Resetting or uninstalling the runtime doesn't delete what is installed in Linux; **Reinstall Linux** or uninstalling the app does. If it won't turn on, see [FAQ](11-faq.md).
 
 ## Reset the runtime
 

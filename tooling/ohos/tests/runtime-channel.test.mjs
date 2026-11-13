@@ -990,6 +990,7 @@ test('930 Linux MethodChannel preserves request identity and uses only NativeHos
     async getStatus(url, token) { calls.push(['status', url, token]); return '{"fixture":"status"}'; },
     async setEnabled(url, token, enabled) { calls.push(['enable', url, token, enabled]); return '{"fixture":"accepted"}'; },
     async runPrivateGuest(url, token, request) { calls.push(['run', url, token, request]); return '{"fixture":"queued"}'; },
+    async discardRetained(url, token) { calls.push(['discard', url, token]); return '{"fixture":"discarded"}'; },
   };
   c.controller.initialize = () => { throw Error('Linux controls must not run runtime installation or recovery'); };
   try {
@@ -1007,6 +1008,12 @@ test('930 Linux MethodChannel preserves request identity and uses only NativeHos
     assert.deepEqual(Object.entries(JSON.parse(JSON.stringify(calls[2][3])).env), [...args.env]);
     assert.equal((await c.invoke('runLinuxPrivateGuest', {...args, env: new Map([['TEST_VALUE', 4]])})).code, 'ohos_linux_arguments');
     assert.equal(calls.length, 3);
+    // 重新安装 Linux: no arguments reach Node; the endpoint is NativeHost's.
+    assert.equal(await c.invoke('discardLinuxRetained', {baseUrl: 'http://untrusted.invalid', token: 'untrusted'}), '{"fixture":"discarded"}');
+    assert.deepEqual(calls[3], ['discard', 'http://127.0.0.1:3080', 'fixture-managed-token']);
+    c.controller.requestedStop = true;
+    assert.equal((await c.invoke('discardLinuxRetained')).code, 'ohos_linux_stopping');
+    assert.equal(calls.length, 4);
   } finally { c.close(); }
 });
 

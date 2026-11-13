@@ -26,6 +26,28 @@
       }
     }
   },
+  "linuxReinstall": "重新安装 Linux",
+  "linuxReinstallHint": "删除 Linux 里的全部内容，再开启时全新安装",
+  "linuxReinstallAfterRestart": "这次运行已经启动过 Linux：完全退出并重新打开 App 后才能重新安装",
+  "linuxReinstallTitle": "重新安装 Linux？",
+  "linuxReinstallBody": "会删除 Linux 里的全部内容：装过的软件和 Python 包、只存在 Linux 里的文件，以及在 Linux 里登录过的账号（比如 gh）。对话工作区里的文件不受影响。\n\n开关保持关闭；之后打开会重新下载并安装。",
+  "linuxRetainedRefused": "原来的 Linux 数据没法继续用了（常见于 App 更新之后），App 不会自动覆盖它。点「重新安装 Linux」删除后再开启，即可全新安装。（{code}）",
+  "@linuxRetainedRefused": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "linuxReinstallRestart": "这次运行已经启动过 Linux，数据可能仍被占用。完全退出并重新打开 App 后，再点「重新安装 Linux」。",
+  "linuxReinstallFailed": "没能重新安装：{code}",
+  "@linuxReinstallFailed": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "linuxProxyTitle": "网络代理",
   "linuxProxyFooter": "只作用于 Linux 里的命令。gitee、华为云等国内源始终直连。",
   "linuxProxyMode": "方式",
