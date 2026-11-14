@@ -249,7 +249,7 @@ There is **no** user-facing "export pet pack" button. When submitting, the clien
 
 - Only `pack.json` and the PNGs it references; unknown metadata, `codexImport` and local submission receipts are excluded.
 - The `id` in `pack.json` is rewritten to the submission id; `author`/`license`/`source` are overridden with the form values.
-- The normalized archive is fully validated again; the client upload limit is 20 MiB for the zip, and the workshop works with a 64 MiB expanded budget (the server has its own rules).
+- The normalized archive is fully validated again; the client upload limit is 50 MiB for the zip, and the workshop works with a 128 MiB expanded budget (the server has its own rules).
 
 ## 9. Publishing to the Creative Workshop
 

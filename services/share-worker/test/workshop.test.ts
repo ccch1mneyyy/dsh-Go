@@ -4,7 +4,7 @@ import { assetUrl, blobKey } from '../src/workshop-common';
 import { STATE_KEY } from '../src/workshop-state';
 import { makeCtx, makeEnv } from './fakes';
 import { PetBucket } from './pet-market-fakes';
-import { companion, metaFor, pet, petManifest } from './workshop-fixtures';
+import { companion, largeCompanion, metaFor, pet, petManifest } from './workshop-fixtures';
 
 const API = '/api/workshop/v1';
 let githubUser = 42;
@@ -210,8 +210,9 @@ it('charges invalid archive attempts and verifies both declared SHA and actual b
   const wrong = Buffer.from(item.bytes); wrong[0] ^= 1;
   expect(await (await f.call(`${API}/submissions/${item.sid}/archive`, 'PUT', wrong)).json()).toEqual({ error: 'workshop_sha_mismatch' });
   expect(await (await f.call(`${API}/submissions/${item.sid}/archive`, 'PUT', wrong.subarray(1))).json()).toEqual({ error: 'workshop_size_mismatch' });
+  expect(await (await f.call(`${API}/submissions/${item.sid}/archive`, 'PUT', Buffer.concat([item.bytes, Buffer.from([0])]))).json()).toEqual({ error: 'workshop_size_mismatch' });
   expect(f.bucket.objects.has(blobKey(item.meta.sha256))).toBe(false); expect(f.state().submissions[0].status).toBe('draft');
-  expect([...f.kv.values.values()]).toContain('2');
+  expect([...f.kv.values.values()]).toContain('3');
 });
 it('reports a CAS loser without losing the winning submission', async () => {
   const f = setup(), bytes = pet(), meta = metaFor(bytes);
@@ -292,3 +293,11 @@ it('auto-approves a checked upload when the switch is on, idempotently, and leav
   const manual = await f.create(item.bytes, { version: '3.0.0' });
   expect((await f.upload(manual)).submission.status).toBe('pending');
 });
+it('publishes a companion over the old 20 MiB cap and keeps its state readable', async () => {
+  const f = setup(), bytes = largeCompanion(4);
+  expect(bytes.length).toBeGreaterThan(25 * 1024 * 1024);
+  const item = await f.publish(bytes, { kind: 'companion' });
+  expect(f.state().releases[0].size).toBe(bytes.length);
+  expect((await (await f.call('/market/companions.json')).json() as any).entries).toHaveLength(1);
+  expect((await f.call(assetUrl(item.meta))).status).toBe(200);
+}, 30_000);

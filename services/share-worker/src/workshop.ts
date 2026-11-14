@@ -1,7 +1,7 @@
 // Workshop routes: public catalog/bytes and explicitly authenticated moderation.
 // All lower-level exceptions are translated here; never log an account token, its
 // upstream response, or an exception that might contain request headers.
-import { json, readCapped } from './api';
+import { json, readExactly } from './api';
 import type { Env } from './env';
 import { COMMON, matchesEtag, parseHttpDate, serveObject, type Ctx } from './files';
 import { record } from './pet-catalog';
@@ -238,8 +238,10 @@ async function userRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promis
     need(request.headers.get('Content-Type')?.split(';')[0]?.trim().toLowerCase() === 'application/zip', 'content_type', 415);
     const length = request.headers.get('Content-Length'); need(length === null || /^\d+$/.test(length) && Number(length) <= UPLOAD_CAP, 'body_too_large', 413);
     await quota(request, env, owner, 'archive', 20);
-    let bytes = await readCapped(request, UPLOAD_CAP); need(bytes, 'body_too_large', 413);
-    need(bytes.length === existing.metadata.size, 'size_mismatch', 422); need(await sha256(bytes) === existing.metadata.sha256, 'sha_mismatch', 422);
+    // Straight into one buffer of the declared size: at the 50 MiB cap,
+    // chunks plus a copy would take most of the Worker's memory.
+    let bytes = await readExactly(request, existing.metadata.size);
+    need(bytes && bytes.length === existing.metadata.size, 'size_mismatch', 422); need(await sha256(bytes) === existing.metadata.sha256, 'sha_mismatch', 422);
     if (uploaded(existing)) return json(200, { submission: existing });
     // The opt-in dimensions/byte gate runs before any image inflate. Full
     // archive validation still precedes deriving and registering the image.

@@ -57,6 +57,26 @@ export async function readCapped(request: Request, limit: number): Promise<Uint8
   return out;
 }
 
+/** A body whose length is already known, read straight into one buffer: a
+ *  large upload is held once, not as chunks plus their concatenation. Longer
+ *  than [size]: null. Shorter: the bytes that came. */
+export async function readExactly(request: Request, size: number): Promise<Uint8Array | null> {
+  const out = new Uint8Array(size);
+  if (!request.body) return out.subarray(0, 0);
+  const reader = request.body.getReader();
+  let at = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return out.subarray(0, at);
+    if (value.byteLength > size - at) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    out.set(value, at);
+    at += value.byteLength;
+  }
+}
+
 function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

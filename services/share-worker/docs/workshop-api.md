@@ -15,7 +15,7 @@ Worker 校验令牌时只请求 `GET https://api.github.com/user`（15 秒超时
 `GET /api/workshop/v1/capabilities`：
 
 ```json
-{"schema":1,"features":{"uploads":true,"companion":true},"kinds":["pet","companion"],"licenses":["CC0-1.0","CC-BY-4.0","CC-BY-SA-4.0","MIT","Apache-2.0","BSD-2-Clause","BSD-3-Clause","LicenseRef-Author-Permission"],"account":{"origin":"https://github.com","clientId":"Iv23liExample"},"maxMocVersion":6,"preview":{"schema":1,"sources":["pet-idle","companion-preview"],"format":"png","maxWidth":512,"maxHeight":512,"maxPixels":262144,"maxBytes":2097152},"limits":{"archiveBytes":20971520,"expandedBytes":67108864,"companionMemberBytes":16777216,"companionEntries":1000,"petEntries":256}}
+{"schema":1,"features":{"uploads":true,"companion":true},"kinds":["pet","companion"],"licenses":["CC0-1.0","CC-BY-4.0","CC-BY-SA-4.0","MIT","Apache-2.0","BSD-2-Clause","BSD-3-Clause","LicenseRef-Author-Permission"],"account":{"origin":"https://github.com","clientId":"Iv23liExample"},"maxMocVersion":6,"preview":{"schema":1,"sources":["pet-idle","companion-preview"],"format":"png","maxWidth":512,"maxHeight":512,"maxPixels":262144,"maxBytes":2097152},"limits":{"archiveBytes":52428800,"expandedBytes":134217728,"companionMemberBytes":16777216,"companionEntries":1000,"petEntries":256}}
 ```
 
 `account.origin` 固定为 `https://github.com`。`account.clientId` 是 App 发起 GitHub 设备授权所用 OAuth App 的公开 client id，取自 Worker 变量 `WORKSHOP_GITHUB_CLIENT_ID`；只有匹配 `^[A-Za-z0-9._-]{1,64}$` 时才公布，未配置或格式不对时为 `null`，此时 App 无从发起登录，作者请求也就无法进行。Worker 自己不提供任何登录端点。
