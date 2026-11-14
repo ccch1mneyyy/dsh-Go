@@ -94,6 +94,16 @@ class WorkshopAccountController extends Notifier<WorkshopAccountState> {
   SecretStore get _store => ref.read(workshopAccountStoreProvider);
   bool _live(int attempt) => ref.mounted && attempt == _attempt;
 
+  /// Changes to the stored account, one after another: a cancelled attempt's
+  /// write and its clean-up finish before a later attempt's write starts, so
+  /// the clean-up can never delete what the later one saved.
+  Future<void> _stored = Future<void>.value();
+  Future<void> _inOrder(Future<void> Function() change) {
+    final done = _stored.then((_) => change());
+    _stored = done.catchError((Object _) {});
+    return done;
+  }
+
   Future<void> _restore(SecretStore store, int attempt) async {
     var next = _signedOut;
     try {
@@ -149,21 +159,23 @@ class WorkshopAccountController extends Notifier<WorkshopAccountState> {
             if (!_live(attempt)) return;
             // Written before the state changes, so a sign-out that arrives
             // meanwhile deletes after this write rather than before it.
-            try {
-              await store.write(workshopAccountKey, jsonEncode({'token': token, 'id': user.id, 'login': user.login}));
-            } on Object {
-              // Still signed in for this run; the next start asks again.
-            }
-            if (!_live(attempt)) {
+            await _inOrder(() async {
+              try {
+                await store.write(workshopAccountKey, jsonEncode({'token': token, 'id': user.id, 'login': user.login}));
+              } on Object {
+                // Still signed in for this run; the next start asks again.
+              }
               // Cancelled while the write ran: what was just stored must not
               // sign the person in on the next start.
-              try {
-                await store.delete(workshopAccountKey);
-              } on Object {
-                // Restored next start; the person can sign out from there.
+              if (!_live(attempt)) {
+                try {
+                  await store.delete(workshopAccountKey);
+                } on Object {
+                  // Restored next start; the person can sign out from there.
+                }
               }
-              return;
-            }
+            });
+            if (!_live(attempt)) return;
             state = WorkshopAccountState(phase: WorkshopAccountPhase.signedIn, id: user.id, login: user.login,
               credential: WorkshopAccountCredential(token));
             return;
@@ -190,7 +202,8 @@ class WorkshopAccountController extends Notifier<WorkshopAccountState> {
   /// stored copy cannot be deleted: it would come back on the next start.
   Future<void> signOut() async {
     _attempt++;
-    await _store.delete(workshopAccountKey);
+    final store = _store;
+    await _inOrder(() => store.delete(workshopAccountKey));
     if (ref.mounted) state = _signedOut;
   }
 
@@ -200,8 +213,9 @@ class WorkshopAccountController extends Notifier<WorkshopAccountState> {
     if (state.phase != WorkshopAccountPhase.signedIn) return;
     _attempt++;
     state = _signedOut;
+    final store = _store;
     try {
-      await _store.delete(workshopAccountKey);
+      await _inOrder(() => store.delete(workshopAccountKey));
     } on Object {
       // The next start restores it, the Worker refuses it again, and it ends here.
     }

@@ -160,6 +160,28 @@ void main() {
     expect(store.values, isEmpty);
   });
 
+  test("a cancelled attempt's clean-up never deletes what the next attempt saved", () async {
+    final store = _GatedStore();
+    final world = _World(store: store);
+    addTearDown(world.container.dispose);
+    await world.restored();
+    world.answers['/login/device/code'] = [_code(), _code()];
+    world.answers['/login/oauth/access_token'] = [
+      {'access_token': 'gho_first', 'token_type': 'bearer', 'scope': ''},
+      {'access_token': 'gho_second', 'token_type': 'bearer', 'scope': ''},
+    ];
+    world.answers['/user'] = [{'id': 1, 'login': 'first'}, {'id': 2, 'login': 'second'}];
+    final first = world.controller.startSignIn();
+    await store.writing.future;
+    world.controller.cancelSignIn();
+    final second = world.controller.startSignIn();
+    await pumpEventQueue();
+    store.gate.complete();
+    await Future.wait([first, second]);
+    expect((world.state.phase, world.state.login), (WorkshopAccountPhase.signedIn, 'second'));
+    expect(jsonDecode(store.values[workshopAccountKey]!), {'token': 'gho_second', 'id': 2, 'login': 'second'});
+  });
+
   test('signing out and a refused token both forget the stored account', () async {
     for (final forget in [(WorkshopAccountController c) => c.signOut(), (WorkshopAccountController c) => c.markInvalid()]) {
       final world = _World(stored: {workshopAccountKey: jsonEncode({'token': 'gho_saved', 'id': 7, 'login': 'octo'})});
@@ -173,14 +195,16 @@ void main() {
   });
 }
 
-/// Holds a write open until the test lets it finish.
+/// Holds the first write open until the test lets it finish.
 class _GatedStore extends MemorySecretStore {
   final writing = Completer<void>(), gate = Completer<void>();
 
   @override
   Future<void> write(String key, String value) async {
-    writing.complete();
-    await gate.future;
+    if (!writing.isCompleted) {
+      writing.complete();
+      await gate.future;
+    }
     await super.write(key, value);
   }
 }
