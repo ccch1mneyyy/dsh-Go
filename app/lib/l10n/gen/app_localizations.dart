@@ -5522,6 +5522,12 @@ abstract class L10n {
   /// **'大小'**
   String get botsPetSize;
 
+  /// No description provided for @botsPetCustomSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义大小'**
+  String get botsPetCustomSize;
+
   /// No description provided for @botsPetQuiet.
   ///
   /// In zh, this message translates to:
@@ -32869,6 +32875,12 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'大'**
   String get stateSizeLarge;
+
+  /// No description provided for @stateSizeCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get stateSizeCustom;
 
   /// No description provided for @statePetDone.
   ///

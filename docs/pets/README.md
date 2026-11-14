@@ -172,7 +172,7 @@ App 只读它认识的字段，未知字段忽略。**`description` 不读**（�
 
 - `pixelArt: true` 且 `scale: 1`：最近邻绘制，App 选整数倍，让每个美术像素占整数个物理像素（左上角、脚线都对物理像素）。
 - `scale > 1` 或 `pixelArt: false`：平滑缩放，倍数不限整数。
-- 宠物大小按 `contentBox.h` 定档（小 22dp / 标准 30dp / 大 40dp），不按 canvas。想让宠物显大，调 `contentBox`，别放大 canvas。
+- 宠物大小按 `contentBox.h` 定档（小 22dp / 标准 30dp / 大 40dp；用户还能在「自定义」里拖到标准的 50%–300%），不按 canvas。想让宠物显大，调 `contentBox`，别放大 canvas。
 - 建议按 1x 美术像素绘制、整像素排版，需要镜像轴落在半像素时再写 `anchor.x: 35.5` 这类值。
 
 ### 4.5 锚点与命中框

@@ -828,6 +828,7 @@
     }
   },
   "botsPetSize": "大小",
+  "botsPetCustomSize": "自定义大小",
   "botsPetQuiet": "安静模式",
   "botsPetQuietSubtitle": "只做动作，不冒气泡",
   "botsPetShowNow": "立即显示",

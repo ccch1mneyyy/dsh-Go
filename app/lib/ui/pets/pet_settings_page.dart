@@ -19,6 +19,7 @@ import '../theme/app_icons.dart';
 import '../shell/page_frame.dart';
 import '../workshop/workshop_screen.dart';
 import 'overlay_settings_tile.dart';
+import 'pet_custom_size.dart';
 import 'pet_picker.dart';
 
 /// 设置 › 宠物: the chosen pet (or 不显示) on the right; opens
@@ -94,6 +95,7 @@ class PetSettingsPage extends ConsumerWidget {
                     selected: prefs.size,
                     onChanged: (s) => unawaited(notifier.setSize(s)),
                   ),
+                  ExpandReveal(open: prefs.size == PetSize.custom, child: const PetCustomSizePanel()),
                   SettingsSwitchTile(
                     spot: Spots.petQuiet,
                     subtitle: l10n.botsPetQuietSubtitle,

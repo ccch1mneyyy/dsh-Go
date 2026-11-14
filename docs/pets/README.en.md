@@ -172,7 +172,7 @@ A complete, valid PNG: correct CRCs, contiguous IDAT, exact zlib end, no trailin
 
 - `pixelArt: true` with `scale: 1`: nearest-neighbour drawing at an integer multiple, so every art pixel occupies a whole number of physical pixels (top-left and feet line align to physical pixels).
 - `scale > 1` or `pixelArt: false`: smooth scaling, no integer constraint.
-- Pet size is driven by `contentBox.h` (small 22 dp / standard 30 dp / large 40 dp), not by canvas. To make a pet look bigger, change `contentBox`, not the canvas.
+- Pet size is driven by `contentBox.h` (small 22 dp / standard 30 dp / large 40 dp; people can also drag Custom to 50–300% of standard), not by canvas. To make a pet look bigger, change `contentBox`, not the canvas.
 - Prefer drawing at 1× art pixels on whole pixels; use values like `anchor.x: 35.5` only when the mirror axis really sits on a half pixel.
 
 ### 4.5 Anchor and hit boxes
