@@ -63,6 +63,13 @@ def load_contract():
     return module
 
 
+def load_native_assets():
+    spec = importlib.util.spec_from_file_location('native_assets', ROOT / 'tooling/ohos/native_assets.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--hap', required=True, type=Path)
@@ -87,7 +94,11 @@ def main():
     supplied = {name for name in python_pair if (args.native / name).is_file()}
     optional = {name for name in ('libdsh_linux.so', 'libdsh_workspace_grants.so')
                 if (args.native / name).is_file()}
-    expected_libs = LIBS | (python_pair if supplied else set()) | optional
+    # The AOT's native assets, each only as its OH build from the native input directory.
+    native_assets = load_native_assets()
+    asset_sources, found = native_assets.plan(args.aot, args.native)
+    problems += [f'AOT native assets: {item}' for item in found]
+    expected_libs = LIBS | (python_pair if supplied else set()) | optional | set(asset_sources)
     if supplied and supplied != python_pair:
         problems.append('Incomplete native Python input pair')
     # Every library, as packaged, against what went in.
@@ -96,6 +107,7 @@ def main():
         problems.append(f'libs: missing {sorted(expected_libs - libs)}, extra {sorted(libs - expected_libs)}')
     inputs = {name: args.native / name for name in ('libnode.so', 'libdsh_flock.so', 'libdsh_require_builtin.so')}
     inputs.update({name: args.native / name for name in supplied | optional})
+    inputs.update(asset_sources)
     inputs['libapp.so'] = args.aot / 'arm64-v8a/app.so'
     table = {}
     with args.hap.open('rb') as raw:
@@ -111,6 +123,8 @@ def main():
                 if table[name]['loadedBytesChanged']:
                     problems.append(f"{name}: hvigor's pass changed {table[name]['loadedBytesChanged']} loaded bytes")
     report['libs'] = table
+    problems += [f'AOT native assets: {item}' for item in native_assets.packaged_problems(
+        asset_sources, args.aot, {name: read(LIB_DIR + name) for name in asset_sources if name in libs})]
 
     with tempfile.TemporaryDirectory(prefix='audit-hap-') as temp:
         out = Path(temp) / 'all'

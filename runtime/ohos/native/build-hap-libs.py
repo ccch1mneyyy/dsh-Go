@@ -51,6 +51,9 @@ def audit(libraries, sdk):
     for name, elf in elves.items():
         if elf.runpath:
             problems.append(f'{name} carries a RUNPATH')
+        glibc = sorted(symbol for symbol in elf.strong | elf.weak | elf.defined if '@GLIBC_' in symbol)
+        if glibc:
+            problems.append(f'{name} has {len(glibc)} glibc-versioned symbols, e.g. {glibc[:3]}')
         closure, pending = {}, list(elf.needed)
         while pending:
             dependency = pending.pop()
@@ -110,7 +113,12 @@ def main():
     parser.add_argument('--output', required=True, type=Path, help='Fresh arm64-v8a directory')
     parser.add_argument('--tinyemu-source', type=Path, help='Optional fixed TinyEMU archive; builds signed Linux backend into this HAP set')
     parser.add_argument('--workspace-grants', action='store_true', help='Build the optional native directory-lease Node consumer')
+    parser.add_argument('--sqlite-amalgamation', type=Path,
+                        help="Pinned SQLite amalgamation zip; builds the OH libsqlite3.so the AOT's sqlite3 asset needs")
+    parser.add_argument('--sqlite3-package', type=Path, help='With --sqlite-amalgamation: the locked Dart sqlite3 package')
     args = parser.parse_args()
+    if (args.sqlite_amalgamation is None) != (args.sqlite3_package is None):
+        parser.error('--sqlite-amalgamation and --sqlite3-package go together')
     clang = args.clang.absolute()
     sdk, runtimes, built, source, flock, loader, api, work, output = (path.resolve() for path in
         (args.sdk_native, args.cxx_runtime, args.libnode_output, args.node_source, args.flock_package,
@@ -163,6 +171,12 @@ def main():
         subprocess.run(['ninja', '-C', str(work / 'linux')], check=True)
         shutil.copyfile(work / 'linux/generated-linux/libdsh_linux.so', output / 'libdsh_linux.so')
         subprocess.run([str(strip), '--strip-unneeded', str(output / 'libdsh_linux.so')], check=True)
+    if args.sqlite_amalgamation:
+        subprocess.run([sys.executable, '-B', str(HERE / 'build-sqlite.py'), '--sdk-native', str(sdk),
+                        '--amalgamation', str(args.sqlite_amalgamation.resolve()),
+                        '--sqlite3-package', str(args.sqlite3_package.resolve()), '--output', str(work / 'sqlite')],
+                       check=True)
+        shutil.copyfile(work / 'sqlite/libsqlite3.so', output / 'libsqlite3.so')
     # Not in the sysroot: the SDK ships it beside its compiler. Only needed if something in the set says so.
     shared = 'libc++_shared.so'
     if any(shared in Elf(path, sdk / 'llvm/bin').needed for path in output.glob('*.so')):

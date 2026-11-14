@@ -1253,6 +1253,7 @@ def main():
         g.run(filename[:-3], lambda f=filename: g.py(tools + f), needs=('tools',), tests=[tools + filename])
     g.run('hap-distribution', lambda: g.py(tools + 'hap-distribution.test.py'), needs=('tools',), tests=[tools + 'hap-distribution.test.py'])
     g.run('native-contract', lambda: g.py(tools + 'native-contract.test.py'), needs=('tools',), tests=[tools + 'native-contract.test.py'])
+    g.run('hap-native-assets', lambda: g.py(tools + 'hap-native-assets.test.py'), env=lambda: {'OHOS_SDK': str(p('sdk'))}, needs=('tools',), tests=[tools + 'hap-native-assets.test.py'])
     g.run('fork-installed-resolution', lambda: g.py(tools + 'prepare-forks-installed.test.py'), needs=('tools',), tests=[tools + 'prepare-forks-installed.test.py'])
     g.run('archive-manifest', lambda: g.py(tools + 'runtime-archive-manifest-contract.py', '--node', node(), '--report', o / 'archive-manifest.json'), needs=('tools',))
     g.node_tests('scan-channel', [tools + 'scan-channel.test.mjs'], needs=('tools',))
