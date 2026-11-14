@@ -1,7 +1,7 @@
+import 'package:dsh_app/ui/terminal/terminal_keyboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:xterm/xterm.dart' show TerminalView;
 
 import 'support.dart';
 
@@ -47,9 +47,9 @@ void main() {
     final attach = backend.attachOf(backend.created.single['id']! as String);
     tester.testTextInput.log.clear();
 
-    await tester.tap(find.byType(TerminalView));
-    // A single tap lands once the double-tap window has passed.
-    await settleTerminal(tester);
+    // What a tap on the screen calls (TerminalScreen wires onTapUp to it).
+    tester.state<TerminalKeyboardState>(find.byType(TerminalKeyboard)).show();
+    await tester.pump();
     expect(
       tester.testTextInput.log.map((call) => call.method),
       containsAllInOrder(['TextInput.setClient', 'TextInput.show']),
