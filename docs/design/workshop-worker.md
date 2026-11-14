@@ -50,7 +50,7 @@ ZIP 通过完整验证后先写原 `workshop/blobs/<ZIP SHA>.zip`；派生图以
 
 `WORKSHOP_UPLOAD_ENABLED=1` 与 `WORKSHOP_COMPANION_ENABLED=1` 在 `wrangler.jsonc` 里默认设为 1，未配置时也视为开启；设为 0（或其他非 1 的显式值）分别返回稳定的 `workshop_upload_disabled` 或 `workshop_companion_disabled`。上传关闭不阻止本人查询、撤回、举报和管理员拒绝 / 撤回。旧宠物市场不受这两个开关影响。
 
-Worker 用作者请求里的 `Authorization: Bearer <token>`（只收 `[A-Za-z0-9_]{1,255}`）请求 `https://api.github.com/user`，以 manual 方式接收响应、拒绝跟随重定向；本地 workerd 里 `redirect: 'error'` 不受支持，不能照搬浏览器 / Node 的该选项。GitHub 回 401 记为 `account_auth_invalid`；只信 200 响应里的正整数 `id` 和 `login`，其余状态、过大或无有效身份的响应、网络错误都记为 `account_unavailable`（503），不把它当成凭据失效。令牌不落 R2 / KV / 日志，也不作持久指纹。用户名是显示快照；稳定身份是账号来源 + GitHub 用户 id。`WORKSHOP_GITHUB_API_URL` 只给测试和本地演练换成 HTTPS 替身，线上不设。
+Worker 用作者请求里的 `Authorization: Bearer <token>`（只收 `[A-Za-z0-9_]{1,255}`）请求 `https://api.github.com/user`，以 manual 方式接收响应、拒绝跟随重定向；本地 workerd 里 `redirect: 'error'` 不受支持，不能沿用浏览器 / Node 的该选项。GitHub 回 401 记为 `account_auth_invalid`；只信 200 响应里的正整数 `id` 和 `login`，其余状态、过大或无有效身份的响应、网络错误都记为 `account_unavailable`（503），不把它当成凭据失效。令牌不落 R2 / KV / 日志，也不作持久指纹。用户名是显示快照；稳定身份是账号来源 + GitHub 用户 id。`WORKSHOP_GITHUB_API_URL` 只给测试和本地演练换成 HTTPS 替身，线上不设。
 
 每个作者身份请求都必须携带 `X-Workshop-Account-Origin: https://github.com`，声明凭据所属的账号来源；缺失或不等返回 `409 / workshop_account_origin`，在请求 GitHub 之前拒绝。公共查询与管理员的独立身份门不要求此头。
 
