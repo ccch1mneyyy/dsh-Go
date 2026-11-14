@@ -29312,6 +29312,12 @@ abstract class L10n {
   /// **'开启动画时可用'**
   String get searchNeedsAnimations;
 
+  /// No description provided for @searchNeedsWorkshop.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个版本没有带创意工坊'**
+  String get searchNeedsWorkshop;
+
   /// No description provided for @searchNeedsChat.
   ///
   /// In zh, this message translates to:

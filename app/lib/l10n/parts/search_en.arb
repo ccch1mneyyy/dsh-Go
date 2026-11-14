@@ -5,6 +5,7 @@
   "searchNeedsNativeUi": "Available in the native interface",
   "searchNeedsEngineField": "Available when the host has it",
   "searchNeedsAnimations": "Available with animations on",
+  "searchNeedsWorkshop": "This build doesn't include the Workshop",
   "searchNeedsChat": "Available with a chat open",
   "searchKwTheme": "appearance,colors,colours,accent,icons",
   "searchKwPets": "pet,pets,companion,whale,overlay",

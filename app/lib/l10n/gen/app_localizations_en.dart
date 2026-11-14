@@ -16880,6 +16880,9 @@ class L10nEn extends L10n {
   String get searchNeedsAnimations => 'Available with animations on';
 
   @override
+  String get searchNeedsWorkshop => 'This build doesn\'t include the Workshop';
+
+  @override
   String get searchNeedsChat => 'Available with a chat open';
 
   @override

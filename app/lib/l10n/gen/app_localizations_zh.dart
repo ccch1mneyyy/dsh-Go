@@ -16035,6 +16035,9 @@ class L10nZh extends L10n {
   String get searchNeedsAnimations => '开启动画时可用';
 
   @override
+  String get searchNeedsWorkshop => '这个版本没有带创意工坊';
+
+  @override
   String get searchNeedsChat => '打开对话时可用';
 
   @override
