@@ -305,16 +305,28 @@ it('publishes a companion over the old 20 MiB cap and keeps its state readable',
   }
   expect((await f.call(assetUrl(item.meta))).status).toBe(200);
 }, 30_000);
-it('reads and checks large archives one at a time per isolate', async () => {
+it('reads and checks one large archive at a time per isolate; another gets 429 and can retry', async () => {
   const f = setup(), bytes = largeCompanion(3);
   const [a, b] = [await f.create(bytes, { kind: 'companion' }), await f.create(bytes, { kind: 'companion' })];
-  let active = 0, most = 0; const put = f.bucket.put.bind(f.bucket);
-  vi.spyOn(f.bucket, 'put').mockImplementation(async (...args: Parameters<typeof put>) => {
-    if (!String(args[0]).startsWith('workshop/blobs/')) return put(...args);
-    active++; most = Math.max(most, active); await new Promise(r => setTimeout(r, 30));
-    try { return await put(...args); } finally { active--; }
-  });
-  const [x, y] = await Promise.all([f.upload(a), f.upload(b)]);
-  expect([x.submission.status, y.submission.status]).toEqual(['pending', 'pending']);
-  expect(most).toBe(1);
+  const archive = (sid: string) => f.call(`${API}/submissions/${sid}/archive`, 'PUT', bytes);
+  const [x, y] = await Promise.all([archive(a.sid), archive(b.sid)]);
+  expect([x.status, y.status]).toEqual([200, 429]);
+  expect(await y.json()).toEqual({ error: 'workshop_rate_limited' }); expect(y.headers.get('Retry-After')).toBe('60');
+  expect((await f.upload(b)).submission.status).toBe('pending');
+}, 30_000);
+it('gives up on a large body that stops arriving and frees the isolate for the next one', async () => {
+  const f = setup(), bytes = largeCompanion(3), item = await f.create(bytes, { kind: 'companion' });
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+  try {
+    const stalled = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(bytes.subarray(0, 1024)); } });
+    const pending = worker.fetch(new Request('https://example.org' + `${API}/submissions/${item.sid}/archive`, {
+      method: 'PUT', body: stalled, duplex: 'half',
+      headers: { Authorization: 'Bearer synthetic_github_token', 'X-Workshop-Account-Origin': 'https://github.com', 'Content-Type': 'application/zip' },
+    } as RequestInit), f.env, makeCtx().ctx);
+    let done = false; void pending.finally(() => { done = true; });
+    for (let minute = 0; minute < 12 && !done; minute++) await vi.advanceTimersByTimeAsync(60_000);
+    const response = await pending;
+    expect(response.status).toBe(408); expect(await response.json()).toEqual({ error: 'workshop_upload_timeout' });
+  } finally { vi.useRealTimers(); }
+  expect((await f.upload(item)).submission.status).toBe('pending');
 }, 30_000);

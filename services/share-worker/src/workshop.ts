@@ -237,13 +237,15 @@ async function userRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promis
     enabled(env, existing.metadata.kind); need(existing.status === 'draft' || uploaded(existing), 'submission_state', 409);
     need(request.headers.get('Content-Type')?.split(';')[0]?.trim().toLowerCase() === 'application/zip', 'content_type', 415);
     const length = request.headers.get('Content-Length'); need(length === null || /^\d+$/.test(length) && Number(length) <= UPLOAD_CAP, 'body_too_large', 413);
-    await quota(request, env, owner, 'archive', 20);
+    // Before the quota: a busy isolate is not the author's attempt.
+    const release = largeArchiveLease(existing.metadata.size);
     let validation: ReturnType<typeof validatePack>, descriptor: PublicPreview | undefined;
-    const release = await largeArchiveTurn(existing.metadata.size);
     try {
+      await quota(request, env, owner, 'archive', 20);
       // Straight into one buffer of the declared size: at the 50 MiB cap,
       // chunks plus a copy would take most of the Worker's memory.
-      let bytes = await readExactly(request, existing.metadata.size);
+      let bytes = await readExactly(request, existing.metadata.size, LARGE_READ_MS);
+      need(bytes !== 'timeout', 'upload_timeout', 408);
       need(bytes && bytes.length === existing.metadata.size, 'size_mismatch', 422); need(await sha256(bytes) === existing.metadata.sha256, 'sha_mismatch', 422);
       if (uploaded(existing)) return json(200, { submission: existing });
       // The opt-in dimensions/byte gate runs before any image inflate. Full
@@ -362,7 +364,7 @@ async function adminRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promi
   let validation = initial.validation;
   if (body.decision === 'approve') {
     enabled(env, initial.metadata.kind);
-    const release = await largeArchiveTurn(initial.metadata.size);
+    const release = largeArchiveLease(initial.metadata.size);
     try { validation = validatePack(await blobBytes(env, initial.metadata), initial.metadata, MAX_MOC_VERSION); } finally { release(); }
     if (initial.preview) {
       const info = validatePublicPng(await previewBytes(env, initial.preview));
@@ -380,17 +382,20 @@ async function adminRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promi
   }
   await commitState(env, previous, state, now); return json(200, { submission });
 }
-/** An isolate has 128 MB and may serve several requests: archives over 16 MiB
- *  are read and checked one at a time in it; smaller ones as they come. */
-const LARGE_ARCHIVE = 16 * 1024 * 1024;
-let largeArchive: Promise<void> = Promise.resolve();
-async function largeArchiveTurn(size: number): Promise<() => void> {
+/** An isolate has 128 MB and may serve several requests: one archive over
+ *  16 MiB at a time is read and checked in it, another gets 429 and retries;
+ *  smaller ones go as they come. The lease lapses by itself, so a request the
+ *  runtime drops mid-way (its finally never runs) cannot hold it for good. */
+const LARGE_ARCHIVE = 16 * 1024 * 1024, LARGE_LEASE_MS = 10 * 60_000;
+/** Reading the body ends before the lease does, leaving time to check it. */
+export const LARGE_READ_MS = 9 * 60_000;
+let largeLease: { until: number } | null = null;
+function largeArchiveLease(size: number): () => void {
   if (size <= LARGE_ARCHIVE) return () => {};
-  let release!: () => void;
-  const before = largeArchive, done = new Promise<void>(resolve => (release = resolve));
-  largeArchive = before.then(() => done);
-  await before;
-  return release;
+  need(!largeLease || largeLease.until <= Date.now(), 'rate_limited', 429);
+  const lease = { until: Date.now() + LARGE_LEASE_MS };
+  largeLease = lease;
+  return () => { if (largeLease === lease) largeLease = null; };
 }
 export const AUTO_APPROVE_REASON = '自动通过';
 /** The archive checks are the whole review. A version conflict (an id another

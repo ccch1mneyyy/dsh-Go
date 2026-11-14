@@ -59,23 +59,33 @@ export async function readCapped(request: Request, limit: number): Promise<Uint8
 
 /** A body whose length is already known, read straight into one buffer: a
  *  large upload is held once, not as chunks plus their concatenation. Longer
- *  than [size]: null. Shorter: the bytes that came. */
-export async function readExactly(request: Request, size: number): Promise<Uint8Array | null> {
+ *  than [size]: null. Not finished within [withinMs]: 'timeout'. Shorter: the
+ *  bytes that came. */
+export async function readExactly(request: Request, size: number, withinMs: number): Promise<Uint8Array | null | 'timeout'> {
   const out = new Uint8Array(size);
   if (!request.body) return out.subarray(0, 0);
   const reader = request.body.getReader();
-  let at = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) return out.subarray(0, at);
-    if (value.byteLength > size - at) {
-      await reader.cancel().catch(() => {});
-      return null;
+  let at = 0, timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<'timeout'>(resolve => { timer = setTimeout(() => resolve('timeout'), withinMs); });
+  try {
+    for (;;) {
+      const next = await Promise.race([reader.read(), late]);
+      if (next === 'timeout') {
+        await reader.cancel().catch(() => {});
+        return 'timeout';
+      }
+      const { done, value } = next;
+      if (done) return out.subarray(0, at);
+      if (value.byteLength > size - at) {
+        await reader.cancel().catch(() => {});
+        return null;
+      }
+      out.set(value, at);
+      at += value.byteLength;
     }
-    out.set(value, at);
-    at += value.byteLength;
-  }
+  } finally { if (timer !== undefined) clearTimeout(timer); }
 }
+
 
 function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
