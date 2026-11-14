@@ -78,7 +78,7 @@ PNG 检查完整 CRC 和 chunk 顺序、合法色型 / 深度、PLTE / tRNS、�
 
 投稿 ZIP 是 App 本地导入的一个更严的子集：
 
-- 压缩后 ≤ 20 MiB（App 宠物本地 ≤ 64 MiB），只收 ZIP32。
+- 压缩后 ≤ 50 MiB（2026-11-15 由 20 MiB 放宽；App 宠物本地 ≤ 64 MiB），只收 ZIP32。上传按投稿登记的大小一次分配缓冲、边收边写，不再先攒分块再拼接，50 MiB 的包只在内存里占一份。超过旧上限 20 MiB 的作品在目录里放进单独的 `largeEntries`：50 MiB 之前的 App 遇到超过 20 MiB 的条目会把整份目录判为无效，而它们只读 `entries`，看不到这些作品；新 App 两个字段合起来读。之后再放宽上限时，App 对比本机上限大的条目逐条显示「App 版本太旧」（`workshop_app_too_old`），不让整份目录失效。同一个 isolate 里同时只读、查一个超过 16 MiB 的包（上传和管理员批准时的重验），另一个直接得到 429 `workshop_rate_limited`（Retry-After 60）稍后重试，免得两个 50 MiB 的包同时占内存；小包照旧并行。这个占位 10 分钟后自动失效，运行时中途丢掉的请求（finally 来不及执行）也占不住它；读请求体最多等 9 分钟，超时返回 408 `workshop_upload_timeout` 并放开占位。忙时的 429 在扣作者上传配额之前判定。
 - 目录必须为空且完整 CRC / EOF 有效。
 - pet 仅一个根或单层目录的 `pack.json` 及引用的 PNG，拒绝多余成员，元数据必须与投稿声明一致。
 - 服务端不猜测或修补作品几何。
@@ -89,9 +89,9 @@ companion 只收 character / 数据白名单（json、moc3、png、jpg、jpeg、
 
 companion 的 JSON 逐成员完成严格解析和语义校验。ZIP 目录在循环前已经完整校验，character / model 的引用直接对该目录检查，不依赖被引用文件排在前面。单个 JSON 函数返回后，其完整对象不加入跨成员的 Map；只保留 character 通过标志、model 数量和 moc 版本集合。所有 JSON 仍完整解析，包括未引用的附加数据；所有 model3 仍检查引用，包括未被 character 选中的模型；后续成员仍逐个核 CRC、PNG 和 moc 门。文件、字节、深度及引用的接受规则没有因此收紧或放宽。若一个无效包同时有多个问题，逐成员语义校验可能先报不同的现有 400 验证码；此类包仍拒绝。
 
-这样做移除了随 JSON 成员累计保留的对象图，不是流式 JSON 解析或完整的内存保证。单个 JSON 仍会完整形成对象图；其节点复杂度、解析临时字符串、PNG 完整 scanline、zlib 拼接瞬态和其他请求的缓冲都需要运行时测量。对象离开函数作用域也不保证 GC 立即归还内存。[Workers 内存限制](https://developers.cloudflare.com/workers/platform/limits/#memory) 是每个 isolate 128 MB，一个 isolate 可能同时承载多项请求，不能把 64 MiB 的归档展开门当作堆预算。
+这样做移除了随 JSON 成员累计保留的对象图，不是流式 JSON 解析或完整的内存保证。单个 JSON 仍会完整形成对象图；其节点复杂度、解析临时字符串、PNG 完整 scanline、zlib 拼接瞬态和其他请求的缓冲都需要运行时测量。对象离开函数作用域也不保证 GC 立即归还内存。[Workers 内存限制](https://developers.cloudflare.com/workers/platform/limits/#memory) 是每个 isolate 128 MB，一个 isolate 可能同时承载多项请求，不能把 128 MiB 的归档展开门当作堆预算。2026-11-15 在 Node 里实测：45 MiB 的伙伴包（6 张噪声贴图）上传并通过验证，除请求体和测试替身 R2 各自的副本外，额外占用约 45 MiB。
 
-moc 上限 6 来自 `tooling/companion/fixtures/live2d-core-sources-v1.json` 里 2026-11-07 的实测：官方 Core 6.0.1、SHA `8741…ef47`、`latestMocVersion` 6。这份历史记录不证明当前安装 runtime 的聚合摘要一致。版本头通过不等于 Core 一致性或所有模型功能可渲染；批准者仍须用获准的固定 Core 做完整的一致性 / 加载检查，并核对模型许可、内容和实际 App 效果。Worker 不附带 Core / runtime / 模型 / 贴图。companion ≤ 1000 成员、单成员 16 MiB、展开 64 MiB；PNG 沿用 pet 的完整上限，其余数据格式不声称已做音视频或 Core 的完整解码。
+moc 上限 6 来自 `tooling/companion/fixtures/live2d-core-sources-v1.json` 里 2026-11-07 的实测：官方 Core 6.0.1、SHA `8741…ef47`、`latestMocVersion` 6。这份历史记录不证明当前安装 runtime 的聚合摘要一致。版本头通过不等于 Core 一致性或所有模型功能可渲染；批准者仍须用获准的固定 Core 做完整的一致性 / 加载检查，并核对模型许可、内容和实际 App 效果。Worker 不附带 Core / runtime / 模型 / 贴图。companion ≤ 1000 成员、单成员 16 MiB、展开 128 MiB；PNG 沿用 pet 的完整上限，其余数据格式不声称已做音视频或 Core 的完整解码。
 
 ## 测试覆盖
 
