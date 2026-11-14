@@ -277,3 +277,18 @@ it('lets moderators terminate abandoned drafts while retaining immutable metadat
   expect((await f.call(path, 'POST', { reason: 'Repeat withdrawal' }, true)).status).toBe(200);
   expect(f.state().audit).toHaveLength(2);
 });
+it('auto-approves a checked upload when the switch is on, idempotently, and leaves version conflicts pending', async () => {
+  const f = setup(); f.env.WORKSHOP_AUTO_APPROVE = '1';
+  const item = await f.create(), out = await f.upload(item);
+  expect(out.submission).toMatchObject({ status: 'approved', review: { decision: 'approve', reason: '自动通过' } });
+  expect((await (await f.call('/market/workshop.json')).json() as any).entries).toHaveLength(1);
+  expect((await f.call(assetUrl(item.meta))).status).toBe(200);
+  expect((await f.upload(item)).submission.status).toBe('approved');
+  expect(f.state().audit.map((e: any) => e.action)).toEqual(['create', 'submit', 'approve']);
+  githubUser = 43; const outsider = await f.create(item.bytes, { version: '2.0.0' });
+  expect((await f.upload(outsider)).submission.status).toBe('pending');
+  githubUser = 42;
+  f.env.WORKSHOP_AUTO_APPROVE = '0';
+  const manual = await f.create(item.bytes, { version: '3.0.0' });
+  expect((await f.upload(manual)).submission.status).toBe('pending');
+});
