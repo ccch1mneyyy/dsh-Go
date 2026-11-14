@@ -1,10 +1,10 @@
-// 「我的投稿」: what this forum account sent to the workshop, each with its
+// 「我的投稿」: what this GitHub account sent to the workshop, each with its
 // review status, and the way in to 投稿 (docs/design/workshop-app.md).
 //
 // Every row comes from workshopSubmissionsProvider, which starts over when
 // the account or the workshop changes; nothing here keeps rows of its own, so
 // one account's submissions are never drawn under another. Reading needs the
-// forum sign-in and the credential agreement (workshop_mine_access.dart); it
+// GitHub sign-in and the credential agreement (workshop_mine_access.dart); it
 // does not need uploads to be open.
 
 import 'dart:async';
@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
+import '../../state/workshop_account_state.dart';
 import '../../state/workshop_auth_state.dart';
 import '../../state/workshop_submissions_state.dart';
 import '../../workshop/workshop_models.dart';
@@ -300,7 +301,42 @@ class _WorkshopMineSliverState extends ConsumerState<WorkshopMineSliver> {
               ),
             ),
         ],
+        const SliverToBoxAdapter(child: _AccountLine()),
       ],
+    );
+  }
+}
+
+/// Which GitHub account these submissions belong to, and 退出登录. Signing out
+/// only forgets the token here; the note says where GitHub takes it back.
+class _AccountLine extends ConsumerWidget {
+  const _AccountLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final login = ref.watch(workshopAccountProvider.select((value) => value.login));
+    if (login == null) return const SizedBox.shrink();
+    final style = Theme.of(context).textTheme.bodySmall?.copyWith(color: DshColors.of(context).textTertiary);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(child: Text(l10n.workshopAccountLine(login), style: style, overflow: TextOverflow.ellipsis)),
+          TextButton(
+            onPressed: () async {
+              try {
+                await ref.read(workshopAccountProvider.notifier).signOut();
+                if (context.mounted) showBriefNotice(context, l10n.workshopAccountSignedOut);
+              } on Object {
+                if (context.mounted) showBriefNotice(context, l10n.workshopAccountSignOutFailed);
+              }
+            },
+            child: Text(l10n.workshopAccountSignOut),
+          ),
+        ],
+      ),
     );
   }
 }

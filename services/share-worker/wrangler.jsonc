@@ -78,7 +78,9 @@
     "PET_MARKET_ENABLED": "1",
     "WORKSHOP_UPLOAD_ENABLED": "1",
     "WORKSHOP_COMPANION_ENABLED": "1",
-    "WORKSHOP_FORUM_URL": "https://forum.dshtui.com",
+    // Public client id of the GitHub OAuth App authors sign in with (device
+    // flow in the App). Empty: capabilities say clientId null, uploads wait.
+    "WORKSHOP_GITHUB_CLIENT_ID": "",
     "UPLOADS_PER_HOUR": "20",
     "MAX_BYTES": "20971520",
     // "key": /beta asks for an access key (the private beta). "public": anyone
