@@ -234,13 +234,13 @@ async function userRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promis
     // Keep only this record alive while decoding the ZIP; a full authority
     // envelope and a 16-bit RGBA inflate must not occupy the heap together.
     const existing = find((await loadState(env)).state, sid, owner);
-    enabled(env, existing.metadata.kind); need(existing.status === 'draft' || existing.status === 'pending', 'submission_state', 409);
+    enabled(env, existing.metadata.kind); need(existing.status === 'draft' || uploaded(existing), 'submission_state', 409);
     need(request.headers.get('Content-Type')?.split(';')[0]?.trim().toLowerCase() === 'application/zip', 'content_type', 415);
     const length = request.headers.get('Content-Length'); need(length === null || /^\d+$/.test(length) && Number(length) <= UPLOAD_CAP, 'body_too_large', 413);
     await quota(request, env, owner, 'archive', 20);
     let bytes = await readCapped(request, UPLOAD_CAP); need(bytes, 'body_too_large', 413);
     need(bytes.length === existing.metadata.size, 'size_mismatch', 422); need(await sha256(bytes) === existing.metadata.sha256, 'sha_mismatch', 422);
-    if (existing.status === 'pending') return json(200, { submission: existing });
+    if (uploaded(existing)) return json(200, { submission: existing });
     // The opt-in dimensions/byte gate runs before any image inflate. Full
     // archive validation still precedes deriving and registering the image.
     checkPreviewRequest(bytes, existing.metadata);
@@ -253,11 +253,13 @@ async function userRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promis
     // Re-read after validation and the private blob write. A concurrent owner
     // withdrawal/review cannot be overwritten by a stale draft snapshot.
     const previous = await loadState(env), state = editState(previous), submission = find(state, sid, owner), now = new Date().toISOString();
-    if (submission.status === 'pending') return json(200, { submission });
+    if (uploaded(submission)) return json(200, { submission });
     need(submission.status === 'draft', 'submission_state', 409);
     submission.status = 'pending'; submission.submittedAt = now; submission.updatedAt = now; submission.validation = validation;
     if (descriptor) submission.preview = descriptor;
-    audit(state, now, { action: 'submit', actor: owner, submissionId: sid }); await commitState(env, previous, state, now);
+    audit(state, now, { action: 'submit', actor: owner, submissionId: sid });
+    if (env.WORKSHOP_AUTO_APPROVE === '1') autoApprove(state, submission, now);
+    await commitState(env, previous, state, now);
     return json(200, { submission });
   }
   const previous = await loadState(env), existing = find(previous.state, sid, owner);
@@ -370,6 +372,17 @@ async function adminRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promi
     audit(state, now, { action: 'reject', actor: 'admin', submissionId: sid, reason: explanation });
   }
   await commitState(env, previous, state, now); return json(200, { submission });
+}
+export const AUTO_APPROVE_REASON = '自动通过';
+/** The archive checks are the whole review. A version conflict (an id another
+ *  author holds, a withdrawn or rewritten version) stays pending for a person. */
+function autoApprove(state: State, submission: Submission, now: string) {
+  try { approve(state, submission, now, AUTO_APPROVE_REASON); } catch (error) { if (!(error instanceof WorkshopError)) throw error; }
+}
+/** The archive is in: a repeated upload answers with the record, also once
+ *  auto-approval already published it. */
+function uploaded(submission: Submission) {
+  return submission.status === 'pending' || submission.status === 'approved' && submission.review?.reason === AUTO_APPROVE_REASON;
 }
 export async function workshop(request: Request, env: Env, ctx: Ctx): Promise<Response> {
   let adminRequest = false;
