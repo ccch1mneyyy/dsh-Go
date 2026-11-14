@@ -2924,6 +2924,7 @@
   "linuxProxySameAsHttp": "Same as HTTP",
   "linuxProxyLoopbackNote": "127.0.0.1 means this phone, not your computer.",
   "linuxProxyUrlInvalid": "Enter an address starting with http:// or https://, such as http://127.0.0.1:7890",
+  "searchKwLinux": "Linux,terminal,command line,virtual machine,gh,GitHub CLI,python,pip,proxy",
   "liveThinking": "Thinking",
   "liveWorking": "Working",
   "liveJuggling": "Subagents at work",

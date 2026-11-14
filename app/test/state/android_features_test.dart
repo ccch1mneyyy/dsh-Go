@@ -152,13 +152,13 @@ void main() {
       }
     });
 
-    test('HarmonyOS\'s own is 系统操作 alone', () {
+    test('HarmonyOS\'s own are 系统操作 and Linux 环境', () {
       expect(
         {
           for (final spot in SettingsIndex.spots)
             if (spot.ohosOnly) spot.id,
         },
-        {'page:systemActions'},
+        {'page:systemActions', 'page:linuxEnvironment'},
       );
       expect(SettingsIndex.ohosOnlyLink('system-actions'), isTrue);
       expect(SettingsIndex.ohosOnlyLink('phone'), isFalse);

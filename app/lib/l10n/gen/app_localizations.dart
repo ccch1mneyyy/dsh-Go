@@ -17636,6 +17636,12 @@ abstract class L10n {
   /// **'请填 http:// 或 https:// 开头的地址，例如 http://127.0.0.1:7890'**
   String get linuxProxyUrlInvalid;
 
+  /// No description provided for @searchKwLinux.
+  ///
+  /// In zh, this message translates to:
+  /// **'Linux,终端,命令行,虚拟机,gh,GitHub CLI,python,pip,代理'**
+  String get searchKwLinux;
+
   /// No description provided for @liveThinking.
   ///
   /// In zh, this message translates to:

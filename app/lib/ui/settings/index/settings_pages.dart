@@ -35,6 +35,7 @@ import '../notification_settings.dart';
 import '../performance_page.dart';
 import '../personalization_page.dart';
 import '../privacy_page.dart';
+import '../linux_environment_page.dart';
 import '../reply_prefs_page.dart';
 import '../settings_screen.dart';
 import '../system_access_page.dart';
@@ -63,6 +64,7 @@ Widget settingsPage(SettingsPageId id, {String? sessionId}) => switch (id) {
   SettingsPageId.phoneDnd => const PhoneDndPage(),
   SettingsPageId.phoneUnlocks => const PhoneUnlockPage(),
   SettingsPageId.systemActions => const SystemActionsPage(),
+  SettingsPageId.linuxEnvironment => const LinuxEnvironmentPage(),
   SettingsPageId.engine => const EngineScreen(),
   SettingsPageId.background => const BackgroundGuidePage(),
   SettingsPageId.systemAccess => const SystemAccessPage(),

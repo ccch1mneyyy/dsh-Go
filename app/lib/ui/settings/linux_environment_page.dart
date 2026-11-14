@@ -72,6 +72,7 @@ class LinuxEnvironmentTile extends ConsumerWidget {
     final (tone, label) = linuxStatus(l10n, ref.watch(ohosLinuxProvider));
     return SettingsTile(
       key: const ValueKey('settings-linux'),
+      spot: SettingsIndex.entry(SettingsPageId.linuxEnvironment),
       icon: AppIcons.command,
       tint: tint,
       title: l10n.linuxTitle,

@@ -10050,6 +10050,9 @@ class L10nEn extends L10n {
       'Enter an address starting with http:// or https://, such as http://127.0.0.1:7890';
 
   @override
+  String get searchKwLinux => 'Linux,terminal,command line,virtual machine,gh,GitHub CLI,python,pip,proxy';
+
+  @override
   String get liveThinking => 'Thinking';
 
   @override

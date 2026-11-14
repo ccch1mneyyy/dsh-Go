@@ -73,6 +73,7 @@ enum SettingsPageId {
   phoneDnd,
   phoneUnlocks,
   systemActions,
+  linuxEnvironment,
   webSearch,
   media,
   plugins,
@@ -419,6 +420,15 @@ final _pages = <SettingsPageMeta>[
     keywords: (l) => l.searchKwSystemActions,
     freq: Freq.medium,
     links: const ['system-actions'],
+    ohosOnly: true,
+  ),
+  SettingsPageMeta(
+    SettingsPageId.linuxEnvironment,
+    title: (l) => l.linuxTitle,
+    group: _abilities,
+    keywords: (l) => l.searchKwLinux,
+    freq: Freq.low,
+    links: const ['linux'],
     ohosOnly: true,
   ),
   SettingsPageMeta(

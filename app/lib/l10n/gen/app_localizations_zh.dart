@@ -9522,6 +9522,9 @@ class L10nZh extends L10n {
   String get linuxProxyUrlInvalid => '请填 http:// 或 https:// 开头的地址，例如 http://127.0.0.1:7890';
 
   @override
+  String get searchKwLinux => 'Linux,终端,命令行,虚拟机,gh,GitHub CLI,python,pip,代理';
+
+  @override
   String get liveThinking => '正在思考';
 
   @override

@@ -60,5 +60,6 @@
   "linuxProxyUnset": "未设置",
   "linuxProxySameAsHttp": "同 HTTP",
   "linuxProxyLoopbackNote": "127.0.0.1 指的是这台手机，不是电脑。",
-  "linuxProxyUrlInvalid": "请填 http:// 或 https:// 开头的地址，例如 http://127.0.0.1:7890"
+  "linuxProxyUrlInvalid": "请填 http:// 或 https:// 开头的地址，例如 http://127.0.0.1:7890",
+  "searchKwLinux": "Linux,终端,命令行,虚拟机,gh,GitHub CLI,python,pip,代理"
 }
