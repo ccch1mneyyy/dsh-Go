@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
+import android.os.Messenger
 import android.os.ResultReceiver
 import android.view.Display
 import android.view.MotionEvent
@@ -26,11 +28,12 @@ class BackgroundProbeActivity : Activity() {
     private var view: View? = null
     private val expire = Runnable { finishAndRemoveTask() }
 
-    private val finishReceiver = object : ResultReceiver(ui) {
-        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-            if (resultCode == ProbeActivityContract.FINISH && resultData?.getString(ProbeActivityContract.NONCE) == nonce)
-                finishAndRemoveTask()
-        }
+    private val finishMessenger by lazy {
+        Messenger(Handler(ui.looper) { message: Message ->
+            if (message.what == ProbeActivityContract.FINISH &&
+                message.data?.getString(ProbeActivityContract.NONCE) == nonce) finishAndRemoveTask()
+            true
+        })
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +46,7 @@ class BackgroundProbeActivity : Activity() {
             return
         }
         report(ProbeActivityContract.CREATED, Bundle().apply {
-            putParcelable(ProbeActivityContract.RECEIVER, finishReceiver)
+            putParcelable(ProbeActivityContract.RECEIVER, finishMessenger)
         })
         ui.postDelayed(expire, 8_000)
         // A misrouted launch must never arm or draw the test window on the main screen.

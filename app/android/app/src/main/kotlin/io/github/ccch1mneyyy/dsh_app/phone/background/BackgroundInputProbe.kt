@@ -8,6 +8,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
+import android.os.Messenger
 import android.os.ResultReceiver
 import android.os.SystemClock
 import android.view.Display
@@ -30,10 +32,14 @@ internal class BackgroundInputProbe(private val context: Context, private val di
             if (data.get(ProbeActivityContract.NONCE) != nonce) return
             try {
                 if (resultCode == ProbeActivityContract.CREATED) {
-                    val finish = data.get(ProbeActivityContract.RECEIVER) as? ResultReceiver ?: return
-                    if (!session.connected { finish.send(ProbeActivityContract.FINISH, Bundle().apply {
-                        putString(ProbeActivityContract.NONCE, nonce)
-                    }) }) return
+                    val finish = data.get(ProbeActivityContract.RECEIVER) as? Messenger ?: return
+                    if (!session.connected {
+                            runCatching {
+                                finish.send(Message.obtain(null, ProbeActivityContract.FINISH).apply {
+                                    this.data = Bundle().apply { putString(ProbeActivityContract.NONCE, nonce) }
+                                })
+                            }
+                        }) return
                     connected = true
                     probe.entered(InputProbeDiagnostics.Stage.ACTIVITY_READY_WAIT)
                     if (data.get(ProbeActivityContract.DISPLAY) != display.displayId) probe.fail(IllegalStateException())
@@ -89,7 +95,11 @@ internal class BackgroundInputProbe(private val context: Context, private val di
                 pending.send(context, 0, null, null, null, null, options.toBundle())
             } catch (e: PendingIntent.CanceledException) { session.rejected(); probe.fail(e) }
             catch (e: SecurityException) { session.rejected(); probe.fail(e) }
-            finally { pending.cancel() }
+            finally {
+                // A root/system caller cannot always cancel an app-owned PendingIntent;
+                // cleanup must never turn a successful probe into a false failure.
+                runCatching { pending.cancel() }
+            }
             probe.verify(now = SystemClock::uptimeMillis, send = { target, time ->
                 if (session.isSealed || !display.isValid) throw probe.failure("inputWindowNotReady")
                 send(target, time)

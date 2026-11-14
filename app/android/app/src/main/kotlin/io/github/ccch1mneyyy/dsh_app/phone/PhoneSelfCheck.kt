@@ -17,6 +17,7 @@ import io.github.ccch1mneyyy.dsh_app.phone.selfcheck.TargetContract.FrameStage
 import io.github.ccch1mneyyy.dsh_app.phone.selfcheck.TargetState
 import java.util.UUID
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /**
  * One local diagnostic, with the same registry and original physical peer as phone tasks.
@@ -176,7 +177,7 @@ internal class PhoneSelfCheck(
                 channelReady = true
                 update(run, Stage.CHANNEL, State.PASS, true, durationMs = clock() - probeStarted)
                 if (!mayStart(run)) { cancelFromWorker(run); return@call }
-                // One request creates the probe's own screen and runs the input check on it.
+                // The app host gives the leased display a focused window; the privileged side only injects.
                 update(run, Stage.DISPLAY, State.RUNNING, false)
                 update(run, Stage.INPUT_PROBE, State.RUNNING, false)
                 val request = Bundle().apply {
@@ -184,9 +185,10 @@ internal class PhoneSelfCheck(
                     putString(Proto.OWNER, run.io.owner)
                     putInt(Proto.RELEASE_RECEIPT, 1)
                     putInt(Proto.SELF_CHECK_PROBE_VERSION, 1)
+                    putBoolean(Proto.SELF_CHECK_HOSTED, true)
                 }
                 val beginStarted = clock()
-                val reply = OwnerScopeProtocol.first(run.io, peer, request) { commit ->
+                val allocation = OwnerScopeProtocol.first(run.io, peer, request) { commit ->
                     admit(run) {
                         commit()
                         verifyEntered = true
@@ -197,11 +199,48 @@ internal class PhoneSelfCheck(
                     update(run, Stage.INPUT_PROBE, State.NOT_RUN, false, Reason.UNAVAILABLE)
                     return@call
                 }
+                val displayId = allocation.getInt(Proto.DISPLAY_ID, -1)
+                if (displayId <= 0 || allocation.get(Proto.SELF_CHECK_DISPLAY_READY) != true) {
+                    update(run, Stage.DISPLAY, State.UNKNOWN, true, Reason.WINDOW_NOT_READY)
+                    update(run, Stage.INPUT_PROBE, State.NOT_RUN, false, Reason.UNAVAILABLE)
+                    return@call
+                }
+                update(run, Stage.DISPLAY, State.PASS, true)
+                val session = background.startProbeActivity(displayId, run.host())
+                if (session == null || !session.armed.await(3000, TimeUnit.MILLISECONDS) ||
+                    session.target == null) {
+                    update(run, Stage.INPUT_PROBE, State.UNKNOWN, false, Reason.WINDOW_NOT_READY)
+                    return@call
+                }
+                val target = checkNotNull(session.target)
+                val tapRequest = Bundle().apply {
+                    putString(Proto.OP, Proto.OP_SELF_CHECK_TAP)
+                    putString(Proto.OWNER, run.io.owner)
+                    putInt(Proto.DISPLAY_ID, target.displayId)
+                    putInt(Proto.X, target.x)
+                    putInt(Proto.Y, target.y)
+                    putLong(Proto.TIME, session.time)
+                }
+                val reply = OwnerScopeProtocol.execute(peer, run.io.owner, tapRequest) {
+                    check(admit(run) {
+                        run.io.checkDispatch()
+                        verifyEntered = true
+                    })
+                }
+                if (reply.get(Proto.OK) != true) {
+                    update(run, Stage.INPUT_PROBE, State.UNKNOWN, true, Reason.INPUT_API_UNAVAILABLE)
+                    return@call
+                }
+                if (!session.done.await(1000, TimeUnit.MILLISECONDS) || !session.ok) {
+                    update(run, Stage.INPUT_PROBE, State.UNKNOWN, true,
+                        Reason.fromWire(session.error ?: "inputUnconfirmed"))
+                    return@call
+                }
                 synchronized(lock) {
                     run.report.acceptProbe(run.io.owner, reply.get(Proto.OWNER),
                         reply.get(Proto.SELF_CHECK_PROBE_VERSION), reply.get(Proto.OK),
-                        reply.get(Proto.SELF_CHECK_DISPLAY_READY), reply.get(Proto.INJECT_OK),
-                        reply.get(Proto.ERROR), reply.get(Proto.INJECT_ERROR), clock() - beginStarted)
+                        reply.get(Proto.SELF_CHECK_DISPLAY_READY), true,
+                        reply.get(Proto.ERROR), null, clock() - beginStarted)
                 }
                 changed()
             }

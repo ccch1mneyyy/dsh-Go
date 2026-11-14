@@ -152,7 +152,7 @@ class PrivilegedDisplayCore internal constructor(
         val response = Bundle()
         val op = request.getString(Proto.OP)
         var targetReply = SelfCheckTargetRequest.Step.entries.any { it.op == op } || request.containsKey(Proto.SELF_CHECK_TARGET_C2_VERSION)
-        var selfCheckReply = op == Proto.OP_SELF_CHECK_PROBE
+        var selfCheckReply = op == Proto.OP_SELF_CHECK_PROBE || op == Proto.OP_SELF_CHECK_TAP
         try {
             if (!BackgroundAfterVisual.validRequest(op, request.containsKey(Proto.AFTER_LOCAL_VISUAL),
                     request.get(Proto.AFTER_LOCAL_VISUAL))) throw Fault("invalidArguments")
@@ -183,6 +183,25 @@ class PrivilegedDisplayCore internal constructor(
                     response.putInt(Proto.SELF_CHECK_TARGET_VERSION, 1)
                     response.putInt(Proto.SELF_CHECK_TARGET_C2_VERSION, 1)
                 }
+                return response
+            }
+            if (op == Proto.OP_SELF_CHECK_TAP) {
+                val ownerId = SelfCheckTapRequest.owner(request.keySet(), request::get)
+                    ?: throw Fault("invalidArguments")
+                if (owner != ownerId || !selfCheckOwner) throw Fault("identityChanged")
+                val current = display ?: throw Fault("displayMissing")
+                if (request.getInt(Proto.DISPLAY_ID, -1) != current.display.displayId)
+                    throw Fault("displayTargetChanged")
+                val x = request.getInt(Proto.X, -1)
+                val y = request.getInt(Proto.Y, -1)
+                val time = request.getLong(Proto.TIME, 0L)
+                if (x < 0 || y < 0 || time <= 0) throw Fault("invalidArguments")
+                sendMotion(MotionEvent.ACTION_DOWN, x, y, time, waitForFinish = false)
+                sendMotion(MotionEvent.ACTION_UP, x, y, time, waitForFinish = false)
+                response.putBoolean(Proto.OK, true)
+                response.putString(Proto.OWNER, ownerId)
+                response.putInt(Proto.SELF_CHECK_PROBE_VERSION, 1)
+                response.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
                 return response
             }
             if (op == Proto.OP_COLLECT_SYSTEM_IME) {
@@ -732,13 +751,23 @@ class PrivilegedDisplayCore internal constructor(
         val target = display?.display ?: throw Fault("displayMissing")
         if (target.displayId <= Display.DEFAULT_DISPLAY || !target.isValid) throw Fault("displayUnsupported")
         response.putBoolean(Proto.SELF_CHECK_DISPLAY_READY, true)
+        if (request.getBoolean(Proto.SELF_CHECK_HOSTED, false)) {
+            // The app launches its own focus owner on this allocated display, then sends OP_SELF_CHECK_TAP.
+            response.putInt(Proto.DISPLAY_ID, target.displayId)
+            return
+        }
         val window = BackgroundInputProbe(privileged, target)
         selfCheckWindow = window // A failing show/verify must not lose the actual cleanup job.
         try {
             window.verify { point, time ->
                 // An attempted send is not proof of delivery or proof that no input occurred.
                 response.putBoolean(Proto.INJECT_OK, false)
+                // Let the activity window settle after ARMED before the first event.
+                sleepChecked(150)
                 sendMotion(MotionEvent.ACTION_DOWN, point.x, point.y, time, waitForFinish = false)
+                // Let the receiving window process DOWN before UP; async injection can
+                // otherwise drop the pair when both events share a single input frame.
+                sleepChecked(60)
                 sendMotion(MotionEvent.ACTION_UP, point.x, point.y, time, waitForFinish = false)
             }
             response.putBoolean(Proto.INJECT_OK, true) // Only matching receiver DOWN/UP gets here.
@@ -768,6 +797,7 @@ class PrivilegedDisplayCore internal constructor(
                 try {
                     window.verify { target, time ->
                         sendMotion(MotionEvent.ACTION_DOWN, target.x, target.y, time, waitForFinish = false)
+                        sleepChecked(60)
                         sendMotion(MotionEvent.ACTION_UP, target.x, target.y, time, waitForFinish = false)
                     }
                 } finally {

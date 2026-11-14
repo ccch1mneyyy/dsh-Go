@@ -3,10 +3,12 @@ package io.github.ccch1mneyyy.dsh_app.phone.background
 /** Fixed local probe request only. The real Core calls this before registering or allocating. */
 internal object SelfCheckProbeRequest {
     private val fields = setOf(Proto.OP, Proto.OWNER, Proto.RELEASE_RECEIPT, Proto.SELF_CHECK_PROBE_VERSION)
+    private val hostedFields = fields + Proto.SELF_CHECK_HOSTED
     private val uuid = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 
     fun owner(keys: Set<String>, value: (String) -> Any?): String? {
-        if (keys != fields) return null
+        if (keys != fields && keys != hostedFields) return null
+        if (keys == hostedFields && value(Proto.SELF_CHECK_HOSTED) != true) return null
         val op = value(Proto.OP)
         if (op !is String || op != Proto.OP_SELF_CHECK_PROBE) return null
         val release = value(Proto.RELEASE_RECEIPT)
