@@ -48,7 +48,8 @@ void main() {
     tester.testTextInput.log.clear();
 
     await tester.tap(find.byType(TerminalView));
-    await tester.pump();
+    // A single tap lands once the double-tap window has passed.
+    await settleTerminal(tester);
     expect(
       tester.testTextInput.log.map((call) => call.method),
       containsAllInOrder(['TextInput.setClient', 'TextInput.show']),
