@@ -21,9 +21,6 @@ concurrency:
   group: runtime-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  NODE_VERSION: 24.22.1
-
 jobs:
   build:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -33,9 +30,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: ${{ env.NODE_VERSION }}
       # Downloads are verified by hash on every run, so a stale cache is harmless.
       - name: Restore the download cache
         id: cache
