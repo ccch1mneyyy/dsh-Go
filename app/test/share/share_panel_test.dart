@@ -95,7 +95,7 @@ class _Links implements ConversationLinkMaker {
     uploads.add((fileBytes, expiry, title));
     return ConversationLink(
       url: Uri.parse('https://go.example.cn/c/a1B2c3D4e5#k=${'K' * 43}'),
-      expiresAt: expiry == LinkExpiry.forever ? null : DateTime.utc(2026, 11, 24, 12),
+      expiresAt: DateTime.utc(2026, 11, 24, 12),
       id: 'a1B2c3D4e5',
     );
   }
@@ -457,12 +457,14 @@ void main() {
     final panel = await _open(tester, state: _fixture(), reply: 'a6');
     await _key(tester, 'share-to-link');
     expect(find.text('端到端加密，服务器看不到内容'), findsOneWidget);
-    expect(tester.widget<SegmentedPill<LinkExpiry>>(find.byType(SegmentedPill<LinkExpiry>)).selected, LinkExpiry.month);
+    expect(tester.widget<SegmentedPill<LinkExpiry>>(find.byType(SegmentedPill<LinkExpiry>)).selected, LinkExpiry.week);
+    expect(find.text('永久'), findsNothing);
+    expect(find.text('30 天'), findsNothing);
     expect(find.byTooltip('关闭'), findsNothing);
-    await _tap(tester, find.text('永久'));
+    await _tap(tester, find.text('1 天'));
     await _key(tester, 'share-link-make');
     final (bytes, expiry, title) = panel.links.uploads.single;
-    expect(expiry, LinkExpiry.forever);
+    expect(expiry, LinkExpiry.day);
     expect(title, '修复登录重复提交');
     final uploaded = decodeConversationFile(utf8.decode(bytes));
     expect(uploaded.share.entries.map((e) => e.type), ['turn', 'user', 'tool', 'todos', 'reply']);
@@ -578,25 +580,25 @@ void main() {
     }
   });
 
-  testWidgets('[link-undo] restoring a month link does not make it permanent', (tester) async {
+  testWidgets('[link-undo] restoring a week link does not make it a one-day link', (tester) async {
     final panel = await _open(tester, state: _undoFixture(), reply: 'a6');
     try {
       await _tapAndPump(tester, find.byKey(const ValueKey('share-to-link')));
       await _tapAndPump(tester, find.byKey(const ValueKey('share-link-make')));
-      expect(panel.links.uploads.single.$2, LinkExpiry.month);
+      expect(panel.links.uploads.single.$2, LinkExpiry.week);
       await _tapAndPump(tester, find.byKey(const ValueKey('share-link-stop')));
       await _tapAndPump(tester, find.byKey(const ValueKey('share-link-stop-confirm')));
-      await _tapAndPump(tester, find.text(LinkExpiry.forever.label));
+      await _tapAndPump(tester, find.text(LinkExpiry.day.label));
       expect(
         tester.widget<SegmentedPill<LinkExpiry>>(find.byType(SegmentedPill<LinkExpiry>)).selected,
-        LinkExpiry.forever,
+        LinkExpiry.day,
       );
       await _tapAndPump(tester, find.byKey(const ValueKey('share-link-restore')));
       expect(panel.links.restored, ['a1B2c3D4e5']);
-      expect(panel.links.uploads, hasLength(1), reason: 'undo did not create a permanent upload');
+      expect(panel.links.uploads, hasLength(1), reason: 'undo did not create a one-day upload');
       expect(find.byKey(const ValueKey('share-link-copy')), findsNothing);
       expect(find.byKey(const ValueKey('share-link-make')), findsOneWidget);
-      await _tapAndPump(tester, find.text(LinkExpiry.month.label));
+      await _tapAndPump(tester, find.text(LinkExpiry.week.label));
       expect(
         find.byKey(const ValueKey('share-link-copy')),
         findsOneWidget,

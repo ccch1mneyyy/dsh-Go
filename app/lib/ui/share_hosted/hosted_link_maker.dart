@@ -19,9 +19,8 @@ class HostedConversationLinkMaker implements ConversationLinkMaker {
   final HostedLinksController _links;
 
   static HostedTtl ttlOf(LinkExpiry expiry) => switch (expiry) {
+    LinkExpiry.day => HostedTtl.day,
     LinkExpiry.week => HostedTtl.week,
-    LinkExpiry.month => HostedTtl.month,
-    LinkExpiry.forever => HostedTtl.forever,
   };
 
   /// Throws [HostedShareException]; its `message` is ready to show.

@@ -196,6 +196,7 @@
   "remoteHostedErrForbidden": "没有权限删除这个链接",
   "remoteHostedErrBroken": "链接不完整或已损坏",
   "remoteChat": "对话",
+  "remoteHostedTtlDay": "1 天",
   "remoteHostedTtlWeek": "7 天",
   "remoteHostedTtlMonth": "30 天",
   "remoteHostedTtlForever": "永久",

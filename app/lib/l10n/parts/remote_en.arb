@@ -106,6 +106,7 @@
   "remoteHostedErrForbidden": "You don’t have permission to delete this link",
   "remoteHostedErrBroken": "Link is incomplete or damaged",
   "remoteChat": "Chat",
+  "remoteHostedTtlDay": "1 day",
   "remoteHostedTtlWeek": "7 days",
   "remoteHostedTtlMonth": "30 days",
   "remoteHostedTtlForever": "Forever",

@@ -20,7 +20,7 @@ async function setup() {
   const put = vi.fn((key: string, body: Uint8Array, options: R2PutOptions) => bucket.put(key, body, options));
   c.env.BUCKET = { head, put } as unknown as R2Bucket;
   return { ...c, bucket, head, put,
-    request: (ttl = '30d') => worker.fetch(new Request('https://go.dshtui.com/api/v1/c?ttl=' + ttl, {
+    request: (ttl = '7d') => worker.fetch(new Request('https://go.dshtui.com/api/v1/c?ttl=' + ttl, {
       method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'CF-Connecting-IP': '203.0.113.7' }, body: bytes,
     }), c.env, c.ctx) };
 }
@@ -43,18 +43,18 @@ it('real R2 conditional put creates once and returns null for the competing writ
   expect(await (await c.bucket.get('probe'))!.text()).toBe(winner);
 });
 
-it.each(['7d', '30d', 'forever'] as const)('uploads %s with one conditional put and no head, preserving metadata and quota', async ttl => {
+it.each(['7d', '30d', 'forever'] as const)('uploads %s as 7d with one conditional put and no head, preserving metadata and quota', async ttl => {
   const c = await setup();
   const response = await c.request(ttl);
   expect(response.status).toBe(201);
   const out = await response.json() as { id: string; deleteToken: string; expiresAt: string | null };
-  const key = ids.objectKey(out.id)!;
+  const key = '7d/' + out.id;
   const stored = (await c.bucket.get(key))!;
   expect(new Uint8Array(await stored.arrayBuffer())).toEqual(bytes);
   expect(stored.httpMetadata?.contentType).toBe('application/octet-stream');
   const hash = Buffer.from(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(out.deleteToken))).toString('hex');
   expect(stored.customMetadata?.dt).toBe(hash);
-  expect(out.expiresAt).toBe(ids.expiresAt(ids.tierOfTtl(ttl), stored.uploaded)?.toISOString() ?? null);
+  expect(out.expiresAt).toBe(ids.expiresAt(ids.tierOfTtl('7d'), stored.uploaded)?.toISOString() ?? null);
   expect([...c.kv.values.entries()].filter(([key]) => key.startsWith('up:')).map(([, value]) => value)).toEqual(['1']);
   expect(c.head).not.toHaveBeenCalled();
   expect(c.put).toHaveBeenCalledTimes(1);
@@ -63,12 +63,12 @@ it.each(['7d', '30d', 'forever'] as const)('uploads %s with one conditional put 
 
 it('retries a synthetic random ID collision without replacing the existing body or delete metadata', async () => {
   const c = await setup();
-  await c.bucket.put('30d/K000000000', oldBody, { customMetadata: { dt: 'existing' } });
-  const id = vi.spyOn(ids, 'newId').mockReturnValueOnce('K000000000').mockReturnValue('K111111111');
+  await c.bucket.put('7d/1000000000', oldBody, { customMetadata: { dt: 'existing' } });
+  const id = vi.spyOn(ids, 'newId').mockReturnValueOnce('1000000000').mockReturnValue('1111111111');
   const response = await c.request();
   expect(response.status).toBe(201);
-  expect((await response.json() as { id: string }).id).toBe('K111111111');
-  const existing = (await c.bucket.get('30d/K000000000'))!;
+  expect((await response.json() as { id: string }).id).toBe('1111111111');
+  const existing = (await c.bucket.get('7d/1000000000'))!;
   expect(new Uint8Array(await existing.arrayBuffer())).toEqual(oldBody);
   expect(existing.customMetadata).toEqual({ dt: 'existing' });
   expect(id).toHaveBeenCalledTimes(2);
@@ -79,8 +79,8 @@ it('retries a synthetic random ID collision without replacing the existing body 
 
 it('stops after four collisions without committing quota or touching the existing blob', async () => {
   const c = await setup();
-  await c.bucket.put('30d/K000000000', oldBody, { customMetadata: { dt: 'existing' } });
-  const id = vi.spyOn(ids, 'newId').mockReturnValue('K000000000');
+  await c.bucket.put('7d/1000000000', oldBody, { customMetadata: { dt: 'existing' } });
+  const id = vi.spyOn(ids, 'newId').mockReturnValue('1000000000');
   const response = await c.request();
   expect(response.status).toBe(503);
   expect(await response.json()).toEqual({ error: 'try_again' });
@@ -88,12 +88,12 @@ it('stops after four collisions without committing quota or touching the existin
   expect(c.put).toHaveBeenCalledTimes(4);
   expect(c.head).not.toHaveBeenCalled();
   expect([...c.kv.values.values()]).toEqual([]);
-  expect(new Uint8Array(await (await c.bucket.get('30d/K000000000'))!.arrayBuffer())).toEqual(oldBody);
+  expect(new Uint8Array(await (await c.bucket.get('7d/1000000000'))!.arrayBuffer())).toEqual(oldBody);
 });
 
 it('a competing commit between ID selection and put cannot be overwritten', async () => {
   const c = await setup();
-  vi.spyOn(ids, 'newId').mockReturnValueOnce('K000000000').mockReturnValue('K111111111');
+  vi.spyOn(ids, 'newId').mockReturnValueOnce('1000000000').mockReturnValue('1111111111');
   c.put.mockImplementationOnce(async (key, body, options) => {
     await c.bucket.put(key, oldBody, { customMetadata: { dt: 'other-upload' } });
     return c.bucket.put(key, body, options);
@@ -101,10 +101,10 @@ it('a competing commit between ID selection and put cannot be overwritten', asyn
   const response = await c.request();
   expect(response.status).toBe(201);
   const result = await response.json() as { id: string };
-  const existing = (await c.bucket.get('30d/K000000000'))!;
+  const existing = (await c.bucket.get('7d/1000000000'))!;
   expect(new Uint8Array(await existing.arrayBuffer())).toEqual(oldBody);
   expect(existing.customMetadata).toEqual({ dt: 'other-upload' });
-  expect(result.id).toBe('K111111111');
+  expect(result.id).toBe('1111111111');
   expect(c.put).toHaveBeenCalledTimes(2);
   expect([...c.kv.values.values()]).toEqual(['1']);
 });
@@ -112,7 +112,7 @@ it('a competing commit between ID selection and put cannot be overwritten', asyn
 it('a storage exception is not treated as a collision or quota commit', async () => {
   const c = await setup();
   vi.spyOn(console, 'error').mockImplementation(() => {});
-  const id = vi.spyOn(ids, 'newId').mockReturnValue('K000000000');
+  const id = vi.spyOn(ids, 'newId').mockReturnValue('1000000000');
   c.put.mockRejectedValue(new Error('synthetic storage failure'));
   const response = await c.request();
   expect(response.status).toBe(500);
@@ -121,4 +121,17 @@ it('a storage exception is not treated as a collision or quota commit', async ()
   expect(c.put).toHaveBeenCalledTimes(1);
   expect(c.head).not.toHaveBeenCalled();
   expect([...c.kv.values.values()]).toEqual([]);
+});
+
+it('a 1d upload never takes an id an old 30-day link still uses', async () => {
+  const c = await setup();
+  await c.bucket.put('30d/K000000000', oldBody, { customMetadata: { dt: 'existing' } });
+  vi.spyOn(ids, 'newId').mockReturnValueOnce('K000000000').mockReturnValue('K111111111');
+  const response = await c.request('1d');
+  expect(response.status).toBe(201);
+  expect((await response.json() as { id: string }).id).toBe('K111111111');
+  expect(await c.bucket.head('1d/K000000000')).toBeNull();
+  expect(await c.bucket.head('1d/K111111111')).not.toBeNull();
+  expect(new Uint8Array(await (await c.bucket.get('30d/K000000000'))!.arrayBuffer())).toEqual(oldBody);
+  expect(c.put).toHaveBeenCalledTimes(1);
 });

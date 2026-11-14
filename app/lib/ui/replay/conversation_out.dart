@@ -128,14 +128,12 @@ String fileStem(String title) {
 
 /// How long a hosted link lives (the share host's `ttl`).
 enum LinkExpiry {
-  week,
-  month,
-  forever;
+  day,
+  week;
 
   String get label => switch (this) {
+    LinkExpiry.day => appL10n.viewLinkDay,
     LinkExpiry.week => appL10n.viewLinkWeek,
-    LinkExpiry.month => appL10n.viewLinkMonth,
-    LinkExpiry.forever => appL10n.viewLinkForever,
   };
 }
 

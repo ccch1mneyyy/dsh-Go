@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ALPHABET, ID_LENGTH, TIERS, newId, objectKey, tierOfId } from '../src/ids';
+import { ALPHABET, ID_LENGTH, TIERS, newId, tiersOfId } from '../src/ids';
 import worker from '../src/index';
 import { makeEnv } from './fakes';
 
@@ -31,7 +31,7 @@ describe('ID entropy consumption', () => {
     for (let i = 0; i < 100; i++) {
       const id = newId(tier.ttl);
       expect(id).toBe(ALPHABET[tier.from] + '0'.repeat(ID_LENGTH - 1));
-      expect(objectKey(id)).toBe(tier.prefix + id);
+      expect(tiersOfId(id)[0]?.prefix).toBe(tier.prefix);
     }
     const allocated = random.mock.calls.reduce((sum, [a]) => sum + a!.byteLength, 0);
     console.log(JSON.stringify({ tier: tier.ttl, ids: 100, calls: random.mock.calls.length, bytes: allocated }));
@@ -49,7 +49,7 @@ describe('ID entropy consumption', () => {
       for (value = 0; value < limit; value++) {
         const id = newId(tier.ttl);
         expect(id[0]).toBe(ALPHABET[tier.from + value % n]);
-        expect(tierOfId(id)?.ttl).toBe(tier.ttl);
+        expect(tiersOfId(id)[0]?.ttl).toBe(tier.ttl);
         counts[ALPHABET.indexOf(id[0]!) - tier.from]++;
       }
       expect(counts).toEqual(Array(n).fill(limit / n));
@@ -98,7 +98,7 @@ describe('ID entropy consumption', () => {
       if (call > 1) throw failure;
       bytes.fill(255);
     });
-    rejectsSame(() => newId('forever'));
+    rejectsSame(() => newId('1d'));
     expect(refill).toHaveBeenCalledTimes(2);
     refill.mockRestore();
     const healthy = entropy((bytes) => bytes.fill(1));
@@ -112,7 +112,7 @@ describe('ID entropy consumption', () => {
       for (let i = 0; i < 100; i++) {
         const id = newId(tier.ttl);
         expect(id).toMatch(/^[0-9A-Za-z]{10}$/);
-        expect(tierOfId(id)?.ttl).toBe(tier.ttl);
+        expect(tiersOfId(id)[0]?.ttl).toBe(tier.ttl);
       }
     }
     console.log(JSON.stringify({ realCryptoIds: 300, calls: random.mock.calls.length,
@@ -131,7 +131,7 @@ describe('ID entropy consumption', () => {
     expect(head).not.toHaveBeenCalled();
     expect(put).toHaveBeenCalledTimes(2);
     expect(put.mock.calls.every(([, , options]) => options.onlyIf?.get('If-None-Match') === '*')).toBe(true);
-    expect(tierOfId(out.id)?.ttl).toBe('7d');
+    expect(tiersOfId(out.id)[0]?.ttl).toBe('7d');
     expect(out.deleteToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(random.mock.calls.filter(([a]) => a!.byteLength === 32)).toHaveLength(1);
     expect(ctx.bucket.objects.size).toBe(1);

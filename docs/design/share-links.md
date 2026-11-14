@@ -64,7 +64,7 @@ App（分享面板「链接」）
 
 | 请求 | 说明 | 成功 | 失败 |
 |---|---|---|---|
-| `POST /api/v1/c?ttl=7d\|30d\|forever` | 体为密文，`Content-Type: application/octet-stream`，≤ 20 MB；缺省 `30d` | `201 {id, deleteToken, expiresAt}`（永久为 `null`） | 400 格式 / 415 类型 / 413 太大 / 429 限速 |
+| `POST /api/v1/c?ttl=1d\|7d` | 体为密文，`Content-Type: application/octet-stream`，≤ 20 MB；缺省 `7d`；旧版 App 发的 `30d`、`forever` 按 `7d` 存 | `201 {id, deleteToken, expiresAt}` | 400 格式 / 415 类型 / 413 太大 / 429 限速 |
 | `GET /api/v1/c/<id>` | 取回密文 | `200` 密文 | 404 不存在、已删除或已过期 |
 | `DELETE /api/v1/c/<id>` | `Authorization: Bearer <deleteToken>`，或 `X-Admin-Key` | `204` | 401 无凭据 / 403 不对 / 404 |
 | `GET /api/github/stars` | 首页的 Star 数（`src/github.ts`）：Worker 去问 `api.github.com/repos/ccch1mneyyy/dsh-go`，访客不连 GitHub | `200 {stars}`，`max-age=600` | 503 从没拿到过 |
@@ -93,9 +93,12 @@ App（分享面板「链接」）
 
 | 档 | 首字符 | R2 前缀 | 生命周期规则 |
 |---|---|---|---|
-| 7 天 | `0-9 A-J` | `7d/` | 7 天后删除 |
-| 30 天（默认） | `K-Z a-d` | `30d/` | 30 天后删除 |
-| 永久 | `e-z` | `keep/` | 无 |
+| 7 天（默认） | `0-9 A-J` | `7d/` | 7 天后删除 |
+| 1 天 | `K-Z a-d` | `1d/` | 1 天后删除 |
+
+- 2026-11 起不再新建 30 天和永久链接（存储大头其实是内测安装包，但永久链接只增不减，也没必要）。之前发出的照常能打开、能删除：
+  - `K-Z a-d` 原来是 30 天档，读取时先找 `1d/`，找不到再找 `30d/`；新建 1 天链接时避开 `30d/` 里还在的同名对象。`30d/` 清空后（2026-12 中旬）这段回退可以删掉。
+  - `e-z` 不再发新 id，`keep/` 里的旧永久链接继续按 id 读取和删除。
 
 - R2 生命周期按上传时间计，实际删除可能晚一天以内，所以 `GET` 自己也按 `uploaded + 天数` 判断，过期即 404。
 - 另有一条规则：未完成的分片上传 1 天后清理。
@@ -171,7 +174,7 @@ CF_TOKEN_FILE=<token 文件> scripts/provision.sh apply   # 建 R2 + 生命周�
 
 - 早期完全够用。最先碰到的是 KV 写入（1000 次上传 / 天）和 Worker 请求（下载页、更新检查、使用统计等每天约 2 万次，剩下的够约 4 万次打开）。
 - 超出后升级 Workers Paid（$5 / 月）：请求 1000 万 / 月，KV 写 100 万 / 月；R2 超额按 $0.015 / GB-月、A 类 $4.5 / 百万、B 类 $0.36 / 百万计。
-- 「永久」链接会持续占空间，是长期成本的主要来源。
+- 链接最长 7 天，存储随时间自己回落；占空间的大头是内测通道 `beta/` 下每个版本的安装包。
 
 ## 10. 举报处理
 

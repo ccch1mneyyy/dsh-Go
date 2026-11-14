@@ -1,6 +1,6 @@
 // dshgo-share: hosted conversation links for dsh-go (docs/design/share-links.md).
 //
-//   POST   /api/v1/c?ttl=7d|30d|forever   store a ciphertext → {id, deleteToken, expiresAt}
+//   POST   /api/v1/c?ttl=1d|7d (30d/forever → 7d)   store a ciphertext → {id, deleteToken, expiresAt}
 //   GET    /api/v1/c/<id>                 the ciphertext
 //   DELETE /api/v1/c/<id>                 Bearer <deleteToken>, or X-Admin-Key
 //   GET    /c/<id>                        the viewer page (decrypts with #k=…)

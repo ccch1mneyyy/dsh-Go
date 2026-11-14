@@ -1,7 +1,7 @@
 // The link API (docs/design/share-links.md). The server only ever sees ciphertext.
 
 import type { Env } from './env';
-import { expiresAt, newId, objectKey, parseTtl, tierOfId, tierOfTtl } from './ids';
+import { RETIRED_TIERS, expiresAt, newId, parseTtl, tierOfTtl, tiersOfId, type Tier } from './ids';
 import { burstAllowed, clientKey, uploadQuota } from './limits';
 
 export const MAGIC = [0x44, 0x53, 0x47, 0x31]; // "DSG1"
@@ -76,6 +76,11 @@ async function sameSecret(a: string, b: string): Promise<boolean> {
   return diff === 0;
 }
 
+async function anyStored(env: Env, tiers: readonly Tier[], id: string): Promise<boolean> {
+  for (const t of tiers) if (await env.BUCKET.head(t.prefix + id)) return true;
+  return false;
+}
+
 export async function upload(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const ttl = parseTtl(url.searchParams.get('ttl'));
@@ -103,6 +108,8 @@ export async function upload(request: Request, env: Env): Promise<Response> {
   for (let attempt = 0; attempt < 4; attempt++) {
     const id = newId(ttl);
     const key = tier.prefix + id;
+    // An id in a run a retired tier also used must not shadow a link still stored there.
+    if (await anyStored(env, RETIRED_TIERS.filter((t) => tiersOfId(id).includes(t)), id)) continue;
     // Check absence atomically with the write, without a separate R2 read.
     const stored = await env.BUCKET.put(key, body, {
       onlyIf: new Headers({ 'If-None-Match': '*' }),
@@ -121,11 +128,17 @@ export async function fetchBlob(request: Request, env: Env, id: string): Promise
   if (!(await burstAllowed(env.READ_LIMIT, clientKey(request)))) {
     return error(429, 'rate_limited', { 'Retry-After': '60' });
   }
-  const key = objectKey(id);
-  if (!key) return error(404, 'not_found');
-  const object = await env.BUCKET.get(key);
-  if (!object) return error(404, 'not_found');
-  const expires = expiresAt(tierOfId(id)!, object.uploaded);
+  let object: R2ObjectBody | null = null;
+  let tier: Tier | null = null;
+  for (const t of tiersOfId(id)) {
+    object = await env.BUCKET.get(t.prefix + id);
+    if (object) {
+      tier = t;
+      break;
+    }
+  }
+  if (!object || !tier) return error(404, 'not_found');
+  const expires = expiresAt(tier, object.uploaded);
   if (expires && expires.getTime() <= Date.now()) {
     // The lifecycle rule removes it within a day; until then it's gone too.
     await object.body.cancel().catch(() => {});
@@ -152,10 +165,16 @@ export async function remove(request: Request, env: Env, id: string): Promise<Re
     return error(429, 'rate_limited', { 'Retry-After': '60' });
   }
 
-  const key = objectKey(id);
-  if (!key) return error(404, 'not_found');
-  const object = await env.BUCKET.head(key);
-  if (!object) return error(404, 'not_found');
+  let key: string | null = null;
+  let object: R2Object | null = null;
+  for (const t of tiersOfId(id)) {
+    object = await env.BUCKET.head(t.prefix + id);
+    if (object) {
+      key = t.prefix + id;
+      break;
+    }
+  }
+  if (!object || !key) return error(404, 'not_found');
 
   let allowed = adminAllowed;
   if (admin === null && bearer !== null) {

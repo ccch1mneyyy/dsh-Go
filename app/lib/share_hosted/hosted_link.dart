@@ -5,8 +5,10 @@ import '../links/app_links.dart' show appLinkScheme;
 import 'hosted_config.dart';
 import 'hosted_crypto.dart';
 
-/// How long a link lives. [wire] is the API's `ttl`.
+/// How long a link lives. [wire] is the API's `ttl`. New links are [day] or
+/// [week]; [month] and [forever] are only for links made before those went.
 enum HostedTtl {
+  day('1d'),
   week('7d'),
   month('30d'),
   forever('forever');
@@ -15,14 +17,15 @@ enum HostedTtl {
 
   final String wire;
 
-  /// For a picker: 「7 天」「30 天」「永久」.
+  /// 「1 天」「7 天」, and for older links 「30 天」「永久」.
   String get label => switch (this) {
+    HostedTtl.day => appL10n.remoteHostedTtlDay,
     HostedTtl.week => appL10n.remoteHostedTtlWeek,
     HostedTtl.month => appL10n.remoteHostedTtlMonth,
     HostedTtl.forever => appL10n.remoteHostedTtlForever,
   };
 
-  static const fallback = HostedTtl.month;
+  static const fallback = HostedTtl.week;
 
   static HostedTtl parse(String? wire) => values.firstWhere((t) => t.wire == wire, orElse: () => fallback);
 }

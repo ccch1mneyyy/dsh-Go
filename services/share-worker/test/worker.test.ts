@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import worker from '../src/index';
-import { ALPHABET, ID_LENGTH, TIERS, newId, objectKey, parseTtl, tierOfId } from '../src/ids';
+import { ALPHABET, ID_LENGTH, TIERS, newId, parseTtl, tiersOfId } from '../src/ids';
 import { clientKey, uploadQuota } from '../src/limits';
 import { makeEnv, serve, workerFirst } from './fakes';
 
@@ -40,32 +40,37 @@ describe('ids', () => {
       for (let i = 0; i < 200; i++) {
         const id = newId(tier.ttl);
         expect(id).toMatch(new RegExp(`^[0-9A-Za-z]{${ID_LENGTH}}$`));
-        expect(tierOfId(id)?.ttl).toBe(tier.ttl);
-        expect(objectKey(id)).toBe(tier.prefix + id);
+        expect(tiersOfId(id)[0]?.ttl).toBe(tier.ttl);
       }
     }
   });
 
-  it('covers the whole alphabet with no overlap', () => {
-    const owners = [...ALPHABET].map((c) => TIERS.filter((t) => tierOfId(c + '000000000')?.ttl === t.ttl).length);
-    expect(owners.every((n) => n === 1)).toBe(true);
+  it('gives new links 0-9 A-Z a-d, one tier each, and keeps e-z for the old forever links', () => {
+    const owners = [...ALPHABET].map((c) => TIERS.filter((t) => tiersOfId(c + '000000000').includes(t)).length);
+    expect(owners.slice(0, 40).every((n) => n === 1)).toBe(true);
+    expect(owners.slice(40).every((n) => n === 0)).toBe(true);
+    expect([...ALPHABET].every((c) => tiersOfId(c + '000000000').length > 0)).toBe(true);
+    expect(tiersOfId('K000000000').map((t) => t.prefix)).toEqual(['1d/', '30d/']);
+    expect(tiersOfId('e000000000').map((t) => t.prefix)).toEqual(['keep/']);
   });
 
   it('uses every first character of a tier', () => {
     const seen = new Set<string>();
-    for (let i = 0; i < 2000; i++) seen.add(newId('forever')[0]!);
-    expect(seen.size).toBe(22);
+    for (let i = 0; i < 2000; i++) seen.add(newId('1d')[0]!);
+    expect(seen.size).toBe(20);
   });
 
   it('rejects ids that are not ours', () => {
-    for (const bad of ['', 'abc', 'abcdefghij1', 'abcdefghi_', '../../etc/x', 'ÄbcdefghiJ']) expect(objectKey(bad)).toBeNull();
+    for (const bad of ['', 'abc', 'abcdefghij1', 'abcdefghi_', '../../etc/x', 'ÄbcdefghiJ']) expect(tiersOfId(bad)).toEqual([]);
   });
 
-  it('parses ttl with a 30d default', () => {
-    expect(parseTtl(null)).toBe('30d');
-    expect(parseTtl('')).toBe('30d');
+  it('parses ttl with a 7d default; what older apps ask for gets 7d', () => {
+    expect(parseTtl(null)).toBe('7d');
+    expect(parseTtl('')).toBe('7d');
+    expect(parseTtl('1d')).toBe('1d');
     expect(parseTtl('7d')).toBe('7d');
-    expect(parseTtl('forever')).toBe('forever');
+    expect(parseTtl('30d')).toBe('7d');
+    expect(parseTtl('forever')).toBe('7d');
     expect(parseTtl('1y')).toBeNull();
   });
 });
@@ -86,25 +91,31 @@ describe('upload', () => {
     const ctx = makeEnv();
     const before = Date.now();
     const out = await uploadOne(ctx);
-    expect(tierOfId(out.id)?.ttl).toBe('30d');
+    expect(tiersOfId(out.id)[0]?.ttl).toBe('7d');
     expect(out.deleteToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
     const expires = Date.parse(out.expiresAt!);
-    expect(expires - before).toBeGreaterThanOrEqual(30 * 86_400_000 - 1000);
-    expect(expires - before).toBeLessThanOrEqual(30 * 86_400_000 + 5000);
-    const stored = ctx.bucket.objects.get('30d/' + out.id)!;
+    expect(expires - before).toBeGreaterThanOrEqual(7 * 86_400_000 - 1000);
+    expect(expires - before).toBeLessThanOrEqual(7 * 86_400_000 + 5000);
+    const stored = ctx.bucket.objects.get('7d/' + out.id)!;
     expect(stored.bytes).toEqual(blob());
     expect(stored.contentType).toBe('application/octet-stream');
     expect(stored.customMetadata.dt).toMatch(/^[0-9a-f]{64}$/);
     expect(JSON.stringify(stored.customMetadata)).not.toContain(out.deleteToken);
   });
 
-  it('honours 7d and forever', async () => {
+  it('honours 1d and 7d; 30d and forever from older apps get 7d', async () => {
     const ctx = makeEnv();
+    const before = Date.now();
+    const day = await uploadOne(ctx, '1d');
+    expect(ctx.bucket.objects.has('1d/' + day.id)).toBe(true);
+    expect(Date.parse(day.expiresAt!) - before).toBeLessThanOrEqual(86_400_000 + 5000);
     const week = await uploadOne(ctx, '7d');
     expect(ctx.bucket.objects.has('7d/' + week.id)).toBe(true);
-    const keep = await uploadOne(ctx, 'forever');
-    expect(keep.expiresAt).toBeNull();
-    expect(ctx.bucket.objects.has('keep/' + keep.id)).toBe(true);
+    for (const old of ['30d', 'forever']) {
+      const out = await uploadOne(ctx, old);
+      expect(ctx.bucket.objects.has('7d/' + out.id)).toBe(true);
+      expect(out.expiresAt).not.toBeNull();
+    }
   });
 
   it('rejects what is not a DSG1 blob', async () => {
@@ -172,7 +183,7 @@ describe('upload', () => {
 
   it('keeps reads and authorized deletion available while uploads are paused', async () => {
     const ctx = makeEnv();
-    const link = await uploadOne(ctx, 'forever');
+    const link = await uploadOne(ctx, '7d');
     ctx.env.UPLOADS_PER_HOUR = '0';
     expect((await worker.fetch(post(blob()), ctx.env)).status).toBe(429);
     const response = await worker.fetch(get(`/api/v1/c/${link.id}`), ctx.env);
@@ -237,9 +248,24 @@ describe('read', () => {
     ctx.bucket.now = () => new Date(Date.now() - 7 * 86_400_000 - 1000);
     const { id } = await uploadOne(ctx, '7d');
     expect((await worker.fetch(get(`/api/v1/c/${id}`), ctx.env)).status).toBe(404);
-    ctx.bucket.now = () => new Date(Date.now() - 400 * 86_400_000);
-    const keep = await uploadOne(ctx, 'forever');
-    expect((await worker.fetch(get(`/api/v1/c/${keep.id}`), ctx.env)).status).toBe(200);
+    ctx.bucket.now = () => new Date(Date.now() - 2 * 86_400_000);
+    const day = await uploadOne(ctx, '1d');
+    expect((await worker.fetch(get(`/api/v1/c/${day.id}`), ctx.env)).status).toBe(404);
+  });
+
+  it('still serves links made before 1 day replaced 30 days and forever', async () => {
+    const ctx = makeEnv();
+    const days = (n: number) => new Date(Date.now() - n * 86_400_000);
+    ctx.bucket.objects.set('keep/eAAAAAAAAA', { bytes: blob(), uploaded: days(400), customMetadata: {} });
+    ctx.bucket.objects.set('30d/KAAAAAAAAA', { bytes: blob(), uploaded: days(10), customMetadata: {} });
+    ctx.bucket.objects.set('30d/KBBBBBBBBB', { bytes: blob(), uploaded: days(31), customMetadata: {} });
+    expect((await worker.fetch(get('/api/v1/c/eAAAAAAAAA'), ctx.env)).status).toBe(200);
+    expect((await worker.fetch(get('/api/v1/c/KAAAAAAAAA'), ctx.env)).status).toBe(200);
+    expect((await worker.fetch(get('/api/v1/c/KBBBBBBBBB'), ctx.env)).status).toBe(404);
+    expect((await worker.fetch(del('KAAAAAAAAA', { 'X-Admin-Key': ctx.env.ADMIN_KEY }), ctx.env)).status).toBe(204);
+    expect(ctx.bucket.objects.has('30d/KAAAAAAAAA')).toBe(false);
+    expect((await worker.fetch(del('eAAAAAAAAA', { 'X-Admin-Key': ctx.env.ADMIN_KEY }), ctx.env)).status).toBe(204);
+    expect(ctx.bucket.objects.has('keep/eAAAAAAAAA')).toBe(false);
   });
 
   it('limits reads per client, loosely', async () => {
@@ -325,7 +351,7 @@ describe('delete', () => {
 
   it('lets the admin key remove any link', async () => {
     const ctx = makeEnv();
-    const a = await uploadOne(ctx, 'forever');
+    const a = await uploadOne(ctx, '7d');
     expect((await worker.fetch(del(a.id, { 'X-Admin-Key': 'wrong-key-wrong-key-wrong-key-wrong' }), ctx.env)).status).toBe(403);
     expect((await worker.fetch(del(a.id, { 'X-Admin-Key': ctx.env.ADMIN_KEY }), ctx.env)).status).toBe(204);
     expect(ctx.bucket.objects.size).toBe(0);

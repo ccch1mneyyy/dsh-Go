@@ -17,7 +17,7 @@ Touching and holding a chat in the chat list, or choosing **Share** in a deliver
 
 ### Link
 
-End-to-end encrypted; the server can't see your content. Choose **7 days**, **30 days** (default) or **Forever** and tap **Create link**. Then **Copy link**, show the **QR code**, **Share** it, or **Stop sharing**: after you confirm, you have 4 seconds to tap **Undo**. If you don't, deletion starts after that window; the link stops working once deletion succeeds.
+End-to-end encrypted; the server can't see your content. Choose **1 day** or **7 days** (default) and tap **Create link**. Then **Copy link**, show the **QR code**, **Share** it, or **Stop sharing**: after you confirm, you have 4 seconds to tap **Undo**. If you don't, deletion starts after that window; the link stops working once deletion succeeds.
 
 ### Image
 
@@ -40,7 +40,7 @@ Sharing always masks keys, tokens and passwords in URLs, and replaces your user 
 <!-- nav: commonSettings,hubPrivacy,remoteHostedMyLinks -->
 `Settings › Privacy and sharing › My shared links` · [Open](dshgo://open/shared-links)
 
-Lists links made on this phone, with their expiry. A link can be deleted only from the phone that made it: after uninstalling the app, clearing its data or switching phones, it can't be deleted, and a **Forever** link stays up. After you delete one and confirm, it disappears right away and you have 4 seconds to tap **Undo**; if you don't, deletion starts after that window and the link stops working once deletion succeeds. If deleting fails, the link comes back with the reason. Expired links leave the list after 30 days.
+Lists links made on this phone, with their expiry. A link can be deleted only from the phone that made it: after uninstalling the app, clearing its data or switching phones, it can't be deleted and stays up until it expires. After you delete one and confirm, it disappears right away and you have 4 seconds to tap **Undo**; if you don't, deletion starts after that window and the link stops working once deletion succeeds. If deleting fails, the link comes back with the reason. Expired links leave the list after 30 days.
 
 If you change the range or options after creating a link, the link on the panel clears, but the one already created still works. Delete it here if needed.
 

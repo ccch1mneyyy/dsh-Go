@@ -132,11 +132,12 @@ if [[ "$mode" == apply ]]; then
   fi
   # Our bucket only: replaces its rule set with exactly these.
   res=$(cf PUT "/accounts/$ACCOUNT/r2/buckets/$BUCKET/lifecycle" '{"rules":[
+    {"id":"expire-1d","enabled":true,"conditions":{"prefix":"1d/"},"deleteObjectsTransition":{"condition":{"type":"Age","maxAge":86400}}},
     {"id":"expire-7d","enabled":true,"conditions":{"prefix":"7d/"},"deleteObjectsTransition":{"condition":{"type":"Age","maxAge":604800}}},
     {"id":"expire-30d","enabled":true,"conditions":{"prefix":"30d/"},"deleteObjectsTransition":{"condition":{"type":"Age","maxAge":2592000}}},
     {"id":"abort-multipart","enabled":true,"conditions":{"prefix":""},"abortMultipartUploadsTransition":{"condition":{"type":"Age","maxAge":86400}}}]}')
   ok "$res" || die "setting lifecycle failed: $(jq -c '.errors' <<<"$res")"
-  echo "lifecycle: 7d/ → 7 days, 30d/ → 30 days"
+  echo "lifecycle: 1d/ → 1 day, 7d/ → 7 days, 30d/ → 30 days"
 
   if [[ -z "$FOUND_KV" ]]; then
     res=$(cf POST "/accounts/$ACCOUNT/storage/kv/namespaces" "{\"title\":\"$KV_TITLE\"}")

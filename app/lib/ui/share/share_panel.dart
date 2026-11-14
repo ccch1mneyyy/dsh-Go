@@ -637,7 +637,7 @@ class SharePanelModel extends ChangeNotifier {
 
   // ── 链接 ─────────────────────────────────────────────────────────────────
 
-  LinkExpiry _expiry = LinkExpiry.month;
+  LinkExpiry _expiry = LinkExpiry.week;
   ConversationLink? _link;
   Object? _linkFor;
   ({ConversationLink link, Object key})? _stopped;
