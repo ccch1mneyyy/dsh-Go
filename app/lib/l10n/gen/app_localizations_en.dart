@@ -17058,6 +17058,9 @@ class L10nEn extends L10n {
   String get searchKwPetOverlayFraming => 'framing,full body,half body';
 
   @override
+  String get searchKwWorkshop => 'workshop,download pets,download companions,share pets,submit';
+
+  @override
   String get searchKwBlur => 'blur,glass,frosted';
 
   @override

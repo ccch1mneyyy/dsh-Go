@@ -797,6 +797,12 @@ abstract final class Spots {
     title: (l) => l.botsPetOverlayFraming,
     keywords: (l) => l.searchKwPetOverlayFraming,
   );
+  static final workshop = SettingSpot(
+    'workshop',
+    page: SettingsPageId.pets,
+    title: (l) => l.workshopTitle,
+    keywords: (l) => l.searchKwWorkshop,
+  );
 
   // 界面.
   static final uiMode = SettingSpot(
@@ -1120,6 +1126,7 @@ final _rows = <SettingSpot>[
   Spots.petDisplayWhen,
   Spots.petOverlayShows,
   Spots.petOverlayFraming,
+  Spots.workshop,
   Spots.uiMode,
   Spots.hardwareEnterSends,
   Spots.chatSuggestions,

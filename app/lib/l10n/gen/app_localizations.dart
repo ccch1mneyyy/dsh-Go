@@ -29666,6 +29666,12 @@ abstract class L10n {
   /// **'取景,全身,半身'**
   String get searchKwPetOverlayFraming;
 
+  /// No description provided for @searchKwWorkshop.
+  ///
+  /// In zh, this message translates to:
+  /// **'工坊,下载宠物,下载伙伴,分享宠物,投稿'**
+  String get searchKwWorkshop;
+
   /// No description provided for @searchKwBlur.
   ///
   /// In zh, this message translates to:

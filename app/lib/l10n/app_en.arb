@@ -4929,6 +4929,7 @@
   "searchKwPetDisplayWhen": "pet display,when to show",
   "searchKwPetOverlayShows": "floating companion,room companion,pixel pet,live2d",
   "searchKwPetOverlayFraming": "framing,full body,half body",
+  "searchKwWorkshop": "workshop,download pets,download companions,share pets,submit",
   "searchKwBlur": "blur,glass,frosted",
   "searchKwAnimations": "animation,motion,reduce motion",
   "searchKwFluidMotion": "fluid,spring,bounce,glow,smooth",
