@@ -318,13 +318,18 @@ it('gives up on a large body that stops arriving and frees the isolate for the n
   const f = setup(), bytes = largeCompanion(3), item = await f.create(bytes, { kind: 'companion' });
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
   try {
-    const stalled = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(bytes.subarray(0, 1024)); } });
+    // pull() runs once the first chunk is taken: the Worker is reading, its deadline is set.
+    let reading!: () => void; const started = new Promise<void>(resolve => { reading = resolve; });
+    const stalled = new ReadableStream<Uint8Array>({
+      start(c) { c.enqueue(bytes.subarray(0, 1024)); },
+      pull() { reading(); return new Promise<void>(() => {}); },
+    });
     const pending = worker.fetch(new Request('https://example.org' + `${API}/submissions/${item.sid}/archive`, {
       method: 'PUT', body: stalled, duplex: 'half',
       headers: { Authorization: 'Bearer synthetic_github_token', 'X-Workshop-Account-Origin': 'https://github.com', 'Content-Type': 'application/zip' },
     } as RequestInit), f.env, makeCtx().ctx);
-    let done = false; void pending.finally(() => { done = true; });
-    for (let minute = 0; minute < 12 && !done; minute++) await vi.advanceTimersByTimeAsync(60_000);
+    await started;
+    await vi.advanceTimersByTimeAsync(9 * 60_000 + 1);
     const response = await pending;
     expect(response.status).toBe(408); expect(await response.json()).toEqual({ error: 'workshop_upload_timeout' });
   } finally { vi.useRealTimers(); }
