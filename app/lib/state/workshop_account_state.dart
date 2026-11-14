@@ -154,7 +154,16 @@ class WorkshopAccountController extends Notifier<WorkshopAccountState> {
             } on Object {
               // Still signed in for this run; the next start asks again.
             }
-            if (!_live(attempt)) return;
+            if (!_live(attempt)) {
+              // Cancelled while the write ran: what was just stored must not
+              // sign the person in on the next start.
+              try {
+                await store.delete(workshopAccountKey);
+              } on Object {
+                // Restored next start; the person can sign out from there.
+              }
+              return;
+            }
             state = WorkshopAccountState(phase: WorkshopAccountPhase.signedIn, id: user.id, login: user.login,
               credential: WorkshopAccountCredential(token));
             return;

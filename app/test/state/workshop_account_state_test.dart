@@ -15,11 +15,11 @@ import 'workshop_auth_test_support.dart' show AuthClient;
 /// The real controller over an in-memory store, a scripted GitHub and a
 /// pause between polls that the test releases (or skips).
 class _World {
-  _World({Map<String, String>? stored, String? clientId = 'Iv1.test', this.manualWait = false})
-    : store = MemorySecretStore(stored) {
+  _World({Map<String, String>? stored, String? clientId = 'Iv1.test', this.manualWait = false, MemorySecretStore? store})
+    : store = store ?? MemorySecretStore(stored) {
     client.value = WorkshopCapabilities.fromJson(workshopCaps(clientId: clientId));
     container = ProviderContainer(overrides: [
-      workshopAccountStoreProvider.overrideWithValue(store),
+      workshopAccountStoreProvider.overrideWithValue(this.store),
       workshopHttpFactoryProvider.overrideWithValue((_) => http),
       workshopClientProvider.overrideWith((ref) async => client),
       workshopAccountWaitProvider.overrideWithValue((interval) {
@@ -143,6 +143,23 @@ void main() {
     expect(world.store.values, isEmpty);
   });
 
+  test('cancelling while the account is being stored leaves nothing stored', () async {
+    final store = _GatedStore();
+    final world = _World(store: store);
+    addTearDown(world.container.dispose);
+    await world.restored();
+    world.answers['/login/device/code'] = [_code()];
+    world.answers['/login/oauth/access_token'] = [{'access_token': 'gho_new_token', 'token_type': 'bearer', 'scope': ''}];
+    world.answers['/user'] = [{'id': 583231, 'login': 'octo-cat'}];
+    final done = world.controller.startSignIn();
+    await store.writing.future;
+    world.controller.cancelSignIn();
+    store.gate.complete();
+    await done;
+    expect(world.state.phase, WorkshopAccountPhase.signedOut);
+    expect(store.values, isEmpty);
+  });
+
   test('signing out and a refused token both forget the stored account', () async {
     for (final forget in [(WorkshopAccountController c) => c.signOut(), (WorkshopAccountController c) => c.markInvalid()]) {
       final world = _World(stored: {workshopAccountKey: jsonEncode({'token': 'gho_saved', 'id': 7, 'login': 'octo'})});
@@ -154,4 +171,16 @@ void main() {
       expect(world.store.values, isEmpty);
     }
   });
+}
+
+/// Holds a write open until the test lets it finish.
+class _GatedStore extends MemorySecretStore {
+  final writing = Completer<void>(), gate = Completer<void>();
+
+  @override
+  Future<void> write(String key, String value) async {
+    writing.complete();
+    await gate.future;
+    await super.write(key, value);
+  }
 }
