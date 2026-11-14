@@ -65,16 +65,10 @@ export async function readExactly(request: Request, size: number, withinMs: numb
   const out = new Uint8Array(size);
   if (!request.body) return out.subarray(0, 0);
   const reader = request.body.getReader();
-  let at = 0, timer: ReturnType<typeof setTimeout> | undefined;
-  const late = new Promise<'timeout'>(resolve => { timer = setTimeout(() => resolve('timeout'), withinMs); });
-  try {
+  const copy = async (): Promise<Uint8Array | null> => {
+    let at = 0;
     for (;;) {
-      const next = await Promise.race([reader.read(), late]);
-      if (next === 'timeout') {
-        await reader.cancel().catch(() => {});
-        return 'timeout';
-      }
-      const { done, value } = next;
+      const { done, value } = await reader.read();
       if (done) return out.subarray(0, at);
       if (value.byteLength > size - at) {
         await reader.cancel().catch(() => {});
@@ -83,6 +77,15 @@ export async function readExactly(request: Request, size: number, withinMs: numb
       out.set(value, at);
       at += value.byteLength;
     }
+  };
+  // One race for the whole copy: racing each read would keep every chunk
+  // reachable from the deadline promise until the end.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<'timeout'>(resolve => { timer = setTimeout(() => resolve('timeout'), withinMs); });
+  try {
+    const result = await Promise.race([copy(), late]);
+    if (result === 'timeout') await reader.cancel().catch(() => {});
+    return result;
   } finally { if (timer !== undefined) clearTimeout(timer); }
 }
 
