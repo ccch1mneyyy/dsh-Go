@@ -2987,6 +2987,9 @@ class L10nZh extends L10n {
   String get botsPetSize => '大小';
 
   @override
+  String get botsPetCustomSize => '自定义大小';
+
+  @override
   String get botsPetQuiet => '安静模式';
 
   @override
@@ -17941,6 +17944,9 @@ class L10nZh extends L10n {
 
   @override
   String get stateSizeLarge => '大';
+
+  @override
+  String get stateSizeCustom => '自定义';
 
   @override
   String get statePetDone => '做完了';

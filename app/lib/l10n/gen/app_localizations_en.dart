@@ -3162,6 +3162,9 @@ class L10nEn extends L10n {
   String get botsPetSize => 'Size';
 
   @override
+  String get botsPetCustomSize => 'Custom size';
+
+  @override
   String get botsPetQuiet => 'Quiet mode';
 
   @override
@@ -18926,6 +18929,9 @@ class L10nEn extends L10n {
 
   @override
   String get stateSizeLarge => 'Large';
+
+  @override
+  String get stateSizeCustom => 'Custom';
 
   @override
   String get statePetDone => 'Done';

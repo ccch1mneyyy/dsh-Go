@@ -1888,6 +1888,7 @@
     }
   },
   "botsPetSize": "大小",
+  "botsPetCustomSize": "自定义大小",
   "botsPetQuiet": "安静模式",
   "botsPetQuietSubtitle": "只做动作，不冒气泡",
   "botsPetShowNow": "立即显示",
@@ -10863,6 +10864,7 @@
   "stateSizeSmall": "小",
   "stateSizeStandard": "标准",
   "stateSizeLarge": "大",
+  "stateSizeCustom": "自定义",
   "statePetDone": "做完了",
   "statePetFailed": "出错了",
   "statePhoneNotReady": "手机操控模块未就绪",
