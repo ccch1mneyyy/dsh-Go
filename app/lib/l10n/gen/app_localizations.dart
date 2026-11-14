@@ -46709,8 +46709,38 @@ abstract class L10n {
   /// No description provided for @workshopPublishSourcesEmptyMessage.
   ///
   /// In zh, this message translates to:
-  /// **'自己导入的像素宠物和现在的伙伴可以投稿。'**
+  /// **'自己导入的像素宠物和现在的伙伴可以投稿，也可以直接从文件选一个。'**
   String get workshopPublishSourcesEmptyMessage;
+
+  /// No description provided for @workshopPublishFromFile.
+  ///
+  /// In zh, this message translates to:
+  /// **'从文件选择'**
+  String get workshopPublishFromFile;
+
+  /// No description provided for @workshopPublishFromFileHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'宠物或伙伴的 zip，不用先导入'**
+  String get workshopPublishFromFileHint;
+
+  /// No description provided for @workshopPublishTitleEnHelper.
+  ///
+  /// In zh, this message translates to:
+  /// **'选填，留空就用中文名称'**
+  String get workshopPublishTitleEnHelper;
+
+  /// No description provided for @workshopPublishAuthorHelper.
+  ///
+  /// In zh, this message translates to:
+  /// **'选填，留空就用你的 GitHub 用户名'**
+  String get workshopPublishAuthorHelper;
+
+  /// No description provided for @workshopPublishLicenseHelper.
+  ///
+  /// In zh, this message translates to:
+  /// **'选填，不选就是「作者授权」'**
+  String get workshopPublishLicenseHelper;
 
   /// No description provided for @workshopPublishSourcesIssue.
   ///
@@ -46781,7 +46811,7 @@ abstract class L10n {
   /// No description provided for @workshopPublishIdHelper.
   ///
   /// In zh, this message translates to:
-  /// **'小写字母、数字和短横线'**
+  /// **'选填，留空按名称自动生成；小写字母、数字和短横线'**
   String get workshopPublishIdHelper;
 
   /// No description provided for @workshopPublishAuthor.
@@ -46805,7 +46835,7 @@ abstract class L10n {
   /// No description provided for @workshopPublishSourceHelper.
   ///
   /// In zh, this message translates to:
-  /// **'作品主页或出处，以 https:// 开头'**
+  /// **'选填，留空就用你的 GitHub 主页；以 https:// 开头'**
   String get workshopPublishSourceHelper;
 
   /// No description provided for @workshopPublishSectionAbout.

@@ -27021,7 +27021,22 @@ class L10nEn extends L10n {
 
   @override
   String get workshopPublishSourcesEmptyMessage =>
-      'Pixel pets you imported and your current companion can be submitted.';
+      'Pixel pets you imported and your current companion can be submitted, or pick a file directly.';
+
+  @override
+  String get workshopPublishFromFile => 'Choose a file';
+
+  @override
+  String get workshopPublishFromFileHint => 'A pet or companion zip; no need to import it first';
+
+  @override
+  String get workshopPublishTitleEnHelper => 'Optional; the Chinese name is used if empty';
+
+  @override
+  String get workshopPublishAuthorHelper => 'Optional; your GitHub username is used if empty';
+
+  @override
+  String get workshopPublishLicenseHelper => 'Optional; Author permission if none is picked';
 
   @override
   String get workshopPublishSourcesIssue => 'Couldn\'t read what can be submitted from this phone.';
@@ -27058,7 +27073,7 @@ class L10nEn extends L10n {
   String get workshopPublishId => 'Item ID';
 
   @override
-  String get workshopPublishIdHelper => 'Lowercase letters, digits and hyphens';
+  String get workshopPublishIdHelper => 'Optional; made from the name if empty. Lowercase letters, digits and hyphens';
 
   @override
   String get workshopPublishAuthor => 'Author';
@@ -27070,7 +27085,7 @@ class L10nEn extends L10n {
   String get workshopPublishSourceLink => 'Source link';
 
   @override
-  String get workshopPublishSourceHelper => 'Its home page or where it comes from, starting with https://';
+  String get workshopPublishSourceHelper => 'Optional; your GitHub page is used if empty. Starts with https://';
 
   @override
   String get workshopPublishSectionAbout => 'About (optional)';

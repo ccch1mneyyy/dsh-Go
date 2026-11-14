@@ -25652,7 +25652,22 @@ class L10nZh extends L10n {
   String get workshopPublishSourcesEmptyTitle => '还没有可以投稿的';
 
   @override
-  String get workshopPublishSourcesEmptyMessage => '自己导入的像素宠物和现在的伙伴可以投稿。';
+  String get workshopPublishSourcesEmptyMessage => '自己导入的像素宠物和现在的伙伴可以投稿，也可以直接从文件选一个。';
+
+  @override
+  String get workshopPublishFromFile => '从文件选择';
+
+  @override
+  String get workshopPublishFromFileHint => '宠物或伙伴的 zip，不用先导入';
+
+  @override
+  String get workshopPublishTitleEnHelper => '选填，留空就用中文名称';
+
+  @override
+  String get workshopPublishAuthorHelper => '选填，留空就用你的 GitHub 用户名';
+
+  @override
+  String get workshopPublishLicenseHelper => '选填，不选就是「作者授权」';
 
   @override
   String get workshopPublishSourcesIssue => '没能读出本机可以投稿的内容。';
@@ -25688,7 +25703,7 @@ class L10nZh extends L10n {
   String get workshopPublishId => '作品 ID';
 
   @override
-  String get workshopPublishIdHelper => '小写字母、数字和短横线';
+  String get workshopPublishIdHelper => '选填，留空按名称自动生成；小写字母、数字和短横线';
 
   @override
   String get workshopPublishAuthor => '作者';
@@ -25700,7 +25715,7 @@ class L10nZh extends L10n {
   String get workshopPublishSourceLink => '来源链接';
 
   @override
-  String get workshopPublishSourceHelper => '作品主页或出处，以 https:// 开头';
+  String get workshopPublishSourceHelper => '选填，留空就用你的 GitHub 主页；以 https:// 开头';
 
   @override
   String get workshopPublishSectionAbout => '介绍（选填）';
