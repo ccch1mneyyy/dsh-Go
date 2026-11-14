@@ -83,6 +83,13 @@ void main() {
     expect(() => WorkshopMetadata.fromJson(catalog.entries.single.metadata.toJson()), workshopError('workshop_bad_metadata'));
     final big = WorkshopCatalog.fromJson(workshopCatalogJson(entries: [workshopEntryJson(metadata: {...workshopMeta(), 'size': 60 * 1024 * 1024})]));
     expect(big.unavailable(big.entries.single, '1.0.15'), 'workshop_app_too_old');
+    final split = WorkshopCatalog.fromJson({
+      ...workshopCatalogJson(entries: []),
+      'largeEntries': [workshopEntryJson(metadata: {...workshopMeta(), 'size': 30 * 1024 * 1024})],
+    });
+    expect(split.entries.single.metadata.size, 30 * 1024 * 1024);
+    expect(split.unavailable(split.entries.single, '1.0.15'), isNull);
+    expect(() => WorkshopCatalog.fromJson({...workshopCatalogJson(entries: []), 'largeEntries': 1}), workshopError('workshop_bad_catalog'));
     expect(() => WorkshopMetadata.fromJson({...workshopMeta(), 'size': 60 * 1024 * 1024}), workshopError('workshop_bad_metadata'));
   });
 

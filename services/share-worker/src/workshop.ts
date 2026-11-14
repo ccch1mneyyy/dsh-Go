@@ -238,20 +238,24 @@ async function userRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promis
     need(request.headers.get('Content-Type')?.split(';')[0]?.trim().toLowerCase() === 'application/zip', 'content_type', 415);
     const length = request.headers.get('Content-Length'); need(length === null || /^\d+$/.test(length) && Number(length) <= UPLOAD_CAP, 'body_too_large', 413);
     await quota(request, env, owner, 'archive', 20);
-    // Straight into one buffer of the declared size: at the 50 MiB cap,
-    // chunks plus a copy would take most of the Worker's memory.
-    let bytes = await readExactly(request, existing.metadata.size);
-    need(bytes && bytes.length === existing.metadata.size, 'size_mismatch', 422); need(await sha256(bytes) === existing.metadata.sha256, 'sha_mismatch', 422);
-    if (uploaded(existing)) return json(200, { submission: existing });
-    // The opt-in dimensions/byte gate runs before any image inflate. Full
-    // archive validation still precedes deriving and registering the image.
-    checkPreviewRequest(bytes, existing.metadata);
-    const validation = validatePack(bytes, existing.metadata, MAX_MOC_VERSION);
-    let preview = await derivePreview(bytes, existing.metadata);
-    await putBlob(env, existing.metadata, bytes); bytes = null;
-    const descriptor = preview?.descriptor;
-    if (preview) await putPreview(env, preview.descriptor, preview.bytes);
-    preview = undefined;
+    let validation: ReturnType<typeof validatePack>, descriptor: PublicPreview | undefined;
+    const release = await largeArchiveTurn(existing.metadata.size);
+    try {
+      // Straight into one buffer of the declared size: at the 50 MiB cap,
+      // chunks plus a copy would take most of the Worker's memory.
+      let bytes = await readExactly(request, existing.metadata.size);
+      need(bytes && bytes.length === existing.metadata.size, 'size_mismatch', 422); need(await sha256(bytes) === existing.metadata.sha256, 'sha_mismatch', 422);
+      if (uploaded(existing)) return json(200, { submission: existing });
+      // The opt-in dimensions/byte gate runs before any image inflate. Full
+      // archive validation still precedes deriving and registering the image.
+      checkPreviewRequest(bytes, existing.metadata);
+      validation = validatePack(bytes, existing.metadata, MAX_MOC_VERSION);
+      let preview = await derivePreview(bytes, existing.metadata);
+      await putBlob(env, existing.metadata, bytes); bytes = null;
+      descriptor = preview?.descriptor;
+      if (preview) await putPreview(env, preview.descriptor, preview.bytes);
+      preview = undefined;
+    } finally { release(); }
     // Re-read after validation and the private blob write. A concurrent owner
     // withdrawal/review cannot be overwritten by a stale draft snapshot.
     const previous = await loadState(env), state = editState(previous), submission = find(state, sid, owner), now = new Date().toISOString();
@@ -358,7 +362,8 @@ async function adminRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promi
   let validation = initial.validation;
   if (body.decision === 'approve') {
     enabled(env, initial.metadata.kind);
-    validation = validatePack(await blobBytes(env, initial.metadata), initial.metadata, MAX_MOC_VERSION);
+    const release = await largeArchiveTurn(initial.metadata.size);
+    try { validation = validatePack(await blobBytes(env, initial.metadata), initial.metadata, MAX_MOC_VERSION); } finally { release(); }
     if (initial.preview) {
       const info = validatePublicPng(await previewBytes(env, initial.preview));
       need(info.width === initial.preview.width && info.height === initial.preview.height, 'storage_unavailable', 503);
@@ -374,6 +379,18 @@ async function adminRoute(request: Request, env: Env, ctx: Ctx, url: URL): Promi
     audit(state, now, { action: 'reject', actor: 'admin', submissionId: sid, reason: explanation });
   }
   await commitState(env, previous, state, now); return json(200, { submission });
+}
+/** An isolate has 128 MB and may serve several requests: archives over 16 MiB
+ *  are read and checked one at a time in it; smaller ones as they come. */
+const LARGE_ARCHIVE = 16 * 1024 * 1024;
+let largeArchive: Promise<void> = Promise.resolve();
+async function largeArchiveTurn(size: number): Promise<() => void> {
+  if (size <= LARGE_ARCHIVE) return () => {};
+  let release!: () => void;
+  const before = largeArchive, done = new Promise<void>(resolve => (release = resolve));
+  largeArchive = before.then(() => done);
+  await before;
+  return release;
 }
 export const AUTO_APPROVE_REASON = '自动通过';
 /** The archive checks are the whole review. A version conflict (an id another

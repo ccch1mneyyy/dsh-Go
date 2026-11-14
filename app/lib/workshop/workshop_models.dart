@@ -254,10 +254,13 @@ class WorkshopWithdrawal {
 class WorkshopCatalog {
   WorkshopCatalog._(this.generatedAt, this.features, this.entries, this.withdrawn);
   factory WorkshopCatalog.fromJson(Object? value) {
-    final m = workshopMap(value), rows = m['entries'], gone = m['withdrawn'];
-    if (m['schema'] != 1 || rows is! List || rows.length > 1000 || gone is! List || gone.length > 4000) {
+    // Entries over 20 MiB come in largeEntries, which apps from before the
+    // 50 MiB cap ignore (one such entry made their whole catalog invalid).
+    final m = workshopMap(value), small = m['entries'], large = m['largeEntries'] ?? const <Object?>[], gone = m['withdrawn'];
+    if (m['schema'] != 1 || small is! List || large is! List || small.length + large.length > 1000 || gone is! List || gone.length > 4000) {
       workshopInvalid('workshop_bad_catalog');
     }
+    final rows = [...small, ...large];
     final entries = rows.map(WorkshopEntry.fromJson).toList(), withdrawals = gone.map(WorkshopWithdrawal.fromJson).toList();
     if (entries.map((e) => e.metadata.identity).toSet().length != entries.length ||
         withdrawals.map((e) => e.release).toSet().length != withdrawals.length) {

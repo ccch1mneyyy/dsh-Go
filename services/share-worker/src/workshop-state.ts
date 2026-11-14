@@ -4,7 +4,7 @@ import type { Env } from './env';
 import { record } from './pet-catalog';
 import { readBounded } from './pet-market-io';
 import { strictJson } from './workshop-archive';
-import { assetUrl, encoder, EXPANDED_CAP, UPLOAD_CAP, hash, id, identity, kind, releaseId, requireWorkshop as need, sha256, validVersion, text, validMeta, validPreview, whole,
+import { assetUrl, encoder, EXPANDED_CAP, LEGACY_UPLOAD_CAP, UPLOAD_CAP, hash, id, identity, kind, releaseId, requireWorkshop as need, sha256, validVersion, text, validMeta, validPreview, whole,
   WorkshopError, type PublicPreview, type SubmissionMeta, type WorkshopKind } from './workshop-common';
 import type { PackSummary } from './workshop-pack';
 
@@ -209,5 +209,8 @@ export function catalog(state: State, features: { uploads: boolean; companion: b
       const { rightsConfirmed: _, ...meta } = s.metadata;
       return { ...meta, ...(s.preview ? { preview: { ...s.preview } } : {}), url: assetUrl(s.metadata), blockedVersions: state.withdrawn.filter(w => identity(w) === identity(meta)).map(w => w.version).sort() };
     }).sort((a, b) => identity(a).localeCompare(identity(b)));
-  return { schema: 1, generatedAt: state.updatedAt, features, entries, withdrawn: state.withdrawn.filter(w => !onlyCompanions || w.kind === 'companion') };
+  // Over the old cap: in largeEntries, which apps from before it never read.
+  const large = entries.filter(e => e.size > LEGACY_UPLOAD_CAP);
+  return { schema: 1, generatedAt: state.updatedAt, features, entries: entries.filter(e => e.size <= LEGACY_UPLOAD_CAP),
+    ...(large.length ? { largeEntries: large } : {}), withdrawn: state.withdrawn.filter(w => !onlyCompanions || w.kind === 'companion') };
 }

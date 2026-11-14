@@ -26,6 +26,8 @@ Worker 校验令牌时只请求 `GET https://api.github.com/user`（15 秒超时
 {"schema":1,"generatedAt":"2026-11-11T00:00:00.000Z","features":{"uploads":true,"companion":true},"entries":[{"kind":"pet","id":"sample","version":"1.0.0","minApp":"1.0.13","title":{"zh":"示例","en":"Sample"},"author":"作者","license":"CC0-1.0","source":"https://example.org/sample","url":"/market/workshop/pet/sample/1.0.0/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.zip","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","size":1234,"blockedVersions":[]}],"withdrawn":[{"kind":"pet","id":"old-sample","version":"1.0.0","reason":"作者撤回","at":"2026-11-11T00:00:00.000Z"}]}
 ```
 
+大于 20 MiB 的条目不在 `entries` 里，而在可选的 `largeEntries`（结构相同，没有这类条目时省略）：2026-11-15 之前的 App 见到超过 20 MiB 的条目会整份目录判为无效，它们不读这个字段。客户端须把两者合起来，作品身份在两者之间也不能重复。
+
 `/market/companions.json` 是同一状态的 companion 过滤投影，字段仍为 `entries`，没有独立的发布存储。companion 关闭时，投影及其下载返回 503；主目录仍能浏览 pet，并保留所有种类的 `withdrawn`，以便本地处理已安装内容的撤回。目录支持条件 ETag；安装 / 更新前必须向服务器重新验证目录，不能凭失效缓存安装已关闭或已撤回的内容。
 
 `GET|HEAD /market/workshop/<kind>/<id>/<version>/<sha>.zip` 必须匹配当前公开条目、不可变绑定、未撤回；支持 Range / If-Range。仅知道 SHA，或持有 draft / pending / rejected 投稿记录，不会新增公开授权。若另一投稿已使同一 kind / id / version、同一 SHA / size 的资源成为当前条目，后来的待审或拒绝记录不撤销该既有授权。接口不跳转裸桶。

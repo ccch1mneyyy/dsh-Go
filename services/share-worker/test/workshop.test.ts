@@ -298,6 +298,23 @@ it('publishes a companion over the old 20 MiB cap and keeps its state readable',
   expect(bytes.length).toBeGreaterThan(25 * 1024 * 1024);
   const item = await f.publish(bytes, { kind: 'companion' });
   expect(f.state().releases[0].size).toBe(bytes.length);
-  expect((await (await f.call('/market/companions.json')).json() as any).entries).toHaveLength(1);
+  // Over the old 20 MiB cap: listed apart, where apps from before 50 MiB never look.
+  for (const path of ['/market/companions.json', '/market/workshop.json']) {
+    const listed = await (await f.call(path)).json() as any;
+    expect(listed.entries).toEqual([]); expect(listed.largeEntries).toHaveLength(1);
+  }
   expect((await f.call(assetUrl(item.meta))).status).toBe(200);
+}, 30_000);
+it('reads and checks large archives one at a time per isolate', async () => {
+  const f = setup(), bytes = largeCompanion(3);
+  const [a, b] = [await f.create(bytes, { kind: 'companion' }), await f.create(bytes, { kind: 'companion' })];
+  let active = 0, most = 0; const put = f.bucket.put.bind(f.bucket);
+  vi.spyOn(f.bucket, 'put').mockImplementation(async (...args: Parameters<typeof put>) => {
+    if (!String(args[0]).startsWith('workshop/blobs/')) return put(...args);
+    active++; most = Math.max(most, active); await new Promise(r => setTimeout(r, 30));
+    try { return await put(...args); } finally { active--; }
+  });
+  const [x, y] = await Promise.all([f.upload(a), f.upload(b)]);
+  expect([x.submission.status, y.submission.status]).toEqual(['pending', 'pending']);
+  expect(most).toBe(1);
 }, 30_000);
