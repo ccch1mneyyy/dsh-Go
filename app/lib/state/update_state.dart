@@ -629,7 +629,8 @@ class AppUpdateController extends Notifier<AppUpdateState> {
 
     if (!isAutoCheckDue(now: _now(), lastChecked: at(_checkedKey), lastAttempt: at(_attemptKey))) return false;
     await check();
-    return ref.mounted && state.hasUpdate && !state.isSkipped &&
+    // Switched off while the check was in flight: keep the result, skip the offer.
+    return ref.mounted && state.autoCheck && state.hasUpdate && !state.isSkipped &&
         (state.noticeOnly ? state.noticePage != null : state.asset != null);
   }
 
@@ -956,7 +957,10 @@ class AppUpdateController extends Notifier<AppUpdateState> {
   Future<bool> installWithSystem() async {
     if (_noticeOnly) return false;
     final apk = _apk;
+    final run = _run;
     if (!ref.mounted || apk == null || state.busy || !apk.isFor(state) || !await apk.file.exists()) return false;
+    // The file check can outlive this owner, package or install attempt.
+    if (!ref.mounted || run != _run || state.busy || !identical(_apk, apk) || !apk.isFor(state)) return false;
     return _installer.openWithSystemInstaller(apk.file.path);
   }
 

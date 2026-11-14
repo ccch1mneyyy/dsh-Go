@@ -26,7 +26,11 @@ Tap the plus button next to the composer and choose **Photos**, **Take photo** o
 
 Tap an image to view it full screen. Pinch to zoom in or out, up to 8x; double-tap to zoom to 2.5x around the touch point, then double-tap again to fit. Swipe left or right through images in the same attachment group, reply or tool output; the page count is shown. Workspace and web images in a reply form separate groups. While zoomed in, dragging pans the picture instead of turning pages; return to fit before swiping. Save and the long-press menu apply to the current picture.
 
-When the composer is empty and speech recognition is available, the send button becomes a microphone. Tap it and speak; your words fill the composer so you can check them before sending. When the recognition service isn't available, **Change** on the notice opens the voice input settings.
+When the composer is empty and speech recognition is available, the send button becomes a microphone. Tap it and speak; your words fill the composer so you can check them before sending. When you're signed in to DeepSeek or have an API key, DeepSeek's recognizer is used by default (the recording is sent to DeepSeek; you're told the first time); otherwise the system's recognition. When the recognition service isn't available, **Change** on the notice opens the voice settings.
+
+## Read aloud and voice calls
+
+The HarmonyOS version doesn't have read aloud or voice calls yet: there's no **Read aloud** under replies or in their long-press menu, and no **Voice call** in the plus panel.
 
 ## Create images and video
 
@@ -88,6 +92,10 @@ Touch and hold your own message for **Copy**, **Select text** and **Edit and res
 - **Regenerate** works on the last reply of the chat and resends right away. It's unavailable while the AI replies, while messages are steered or queued, or when the question had files attached.
 - **Edit and resend** needs attachments added again.
 
+## All features
+
+The round button at the bottom of the chat list opens **All features**, where everything from the web version lives: chat details, files the AI produced, files, the terminal, background tasks, skills, subagents, schedules and more. See [All features](14-all-features.md).
+
 ## Organize the chat list
 
 Touch and hold a chat for **Pin**, **Rename**, **Move to folder**, **Share**, **Select**, **Archive** and **Delete permanently**.
@@ -97,7 +105,7 @@ Touch and hold a chat for **Pin**, **Rename**, **Move to folder**, **Share**, **
 - Deletion asks for confirmation first. A running chat must be stopped. Subagent chats are deleted along with the chat; a chat that still has scheduled tasks is refused by the host. It needs a host that supports it: on an older host the action says so and archive stays the only option — it never falls back to archive silently.
 - After selecting several chats, **Delete** in the action bar removes them in one go; failures are listed one by one and only acknowledged chats leave the list. If the connection drops and the result is unconfirmed, the rest of the batch stops — refresh the list before deciding.
 - To get an archived chat back, tap **Search chats**, find it and tap **Restore and open**.
-- Filter the list with **All**, **Running**, **Pending** and **Unread**. The ⋯ at the end of the workspace row sorts by **Recent activity** or **Date created**, and has **New folder** and **Manage folders**.
+- Filter the list with **All**, **Running**, **Pending** and **Unread**. The ⋯ at the end of a folder row sorts by **Recent activity** or **Date created**, and has **New folder** and **Manage folders**.
 
 ## Swipe-left shortcuts
 

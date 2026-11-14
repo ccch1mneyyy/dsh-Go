@@ -17,6 +17,8 @@ To report a problem, export a diagnostics bundle here. It includes the version, 
 
 To let the AI look into it, tap **Let the AI read diagnostics**. The app writes a bounded snapshot for the local engine, then ask the AI to "check the diagnostics". The bundled `dsh-go-support` skill walks the symptoms and drafts an issue you can paste.
 
+On HarmonyOS the diagnostics page has no **Automatic failure analysis** and no **System input-method diagnostics**: nothing analyzes a crash by itself. After a crash, reopen the app and export a bundle, or tap **Let the AI read diagnostics**.
+
 ## The engine stops in the background, or notifications don't arrive
 
 <!-- nav: commonSettings,phoneEngineKeepAlive -->

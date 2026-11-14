@@ -4,13 +4,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'android_features.dart';
 import 'hosts_state.dart';
 
-enum VoiceMode { auto, system, engine }
+/// How 语音输入 listens. [deepseek]: DeepSeek's recognizer (the signed-in account or
+/// the API key); [cloud]: an OpenAI-compatible service set up in 设置 › 语音; auto
+/// uses DeepSeek's when someone can pay for it, else as before.
+enum VoiceMode { auto, deepseek, system, engine, cloud }
 
 /// [mode] as it works on HarmonyOS's own engine, which has no voice model: one
 /// chosen for a remote host's recognizer is automatic here.
 VoiceMode voiceModeOnHarmonyLocal(VoiceMode mode) => mode == VoiceMode.engine ? VoiceMode.auto : mode;
 
-/// HarmonyOS, talking to its own engine: only the system's recognition.
+/// HarmonyOS, talking to its own engine, which has no voice model.
 final harmonyLocalVoiceProvider = Provider<bool>(
   (ref) => ref.watch(operatingSystemProvider) == 'ohos' && ref.watch(activeHostProvider).isLocal,
 );

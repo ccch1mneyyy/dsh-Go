@@ -2,7 +2,7 @@
 
 ## 目的与边界
 
-Android 构建只应用 `targetSets.android` 里的公共补丁，现在是 main-2cd33b59 的 145 个，公共 diff 和各版本 pin 对象保持 main 原字节与数值。OHOS 的 177 项先应用这 145 个公共补丁，再应用 32 个 OHOS 专用补丁；平台判断为 false 并不等于 JavaScript 文件字节没有变化，因此不能把所有 diff 一起打进 Android 再依赖运行时判断。
+Android 构建只应用 `targetSets.android` 里的公共补丁，现在是 main-dd130b31 的 149 个，公共 diff 和各版本 pin 对象保持 main 原字节与数值。OHOS 的 181 项先应用这 149 个公共补丁，再应用 32 个 OHOS 专用补丁；平台判断为 false 并不等于 JavaScript 文件字节没有变化，因此不能把所有 diff 一起打进 Android 再依赖运行时判断。
 
 本次恢复的是 **DSH npm 前缀树的文件字节**。构建工具自身、构建报告、时间戳或压缩器可能改变完整 runtime / APK 的字节；本包没有执行 Android APK、arm64 原生 runtime 或 HAP 构建，也不宣称这些整体产物与旧版完全相同。
 
@@ -51,6 +51,8 @@ M4-7 将公共 fs diff 恢复到 `afb5cdd` 的精确内容，恢复两版 pins�
 最后一个值与拆分前的 OHOS 最终文件相同。`zz-direct-runtime.diff` 本体没有改动；恢复的是它的 fs-local 中间 pins。历史 11 个公共 diff、旧 patcher 和 session-deletion companion 的精确来源摘要记录在 `runtime/tests/ohos/android-before-ohos.json`，来自题面提供的 `afb5cdd` ZIP。
 
 以上是历史记录。合入 main-2cd33b59 时，main 的公共 `fs-create-link-denial.diff` 已在所有平台把 `EACCES` 当作硬链接被拒并走排他创建，`zzzzzzz-ohos-fs-exclusive.diff` 的唯一一处改动因此不再需要，已删除。同一次合并里另有两个 OH 覆盖被 main 的公共补丁取代而删除：`ohos-effect-dispose-completion.diff`（与 main 的 `cordis-effect-dispose-completion.diff` 逐字节相同）和 `ohos-discovery-response-cleanup.diff`（main 的 `piai-discovery-response-cancel.diff` 同样取消未读的响应体，并等它结束）。与新公共补丁改同一文件的 OH 覆盖按新链重新生成上下文，OH pins 用 `patch-dsh --target ohos --record` 在全新前缀上重录，公共 pins 仍是 main 的原值。
+
+合入 main-dd130b31 时 main 新增 `deepseek-attachment-error.diff`、`fork-default-effort.diff`、`config-editor-lock-order.diff`、`piai-overflow-output-limit.diff` 四个公共补丁，改的四个文件没有任何 OH 覆盖碰过，所以 32 个 OH 覆盖和它们的 pins 都没动，只把这四个名字按 `series` 顺序加进两个集合。全新前缀上 OHOS 输出与合并前相比只差这四个文件。
 
 ## 严格链、幂等和错误目标拒绝
 

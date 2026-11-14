@@ -59,7 +59,15 @@ import '../phone/support.dart' show FixedActiveHost, FixedHosts;
 import '../safe_mode/support.dart' show FakeBridge, failedAt;
 import '../shell/golden_harness.dart';
 
-const _pages = {'page:phone', 'page:phoneAppRules', 'page:phoneAndroidShell', 'page:phoneDnd', 'page:phoneUnlocks'};
+const _pages = {
+  'page:phone',
+  'page:phoneAppRules',
+  'page:phoneAndroidShell',
+  'page:phoneDnd',
+  'page:phoneUnlocks',
+  // 朗读的声音: HarmonyOS has no speech output yet.
+  'page:voiceReading',
+};
 const _rows = {
   'phone-a11y-restore',
   'phone-confirm',

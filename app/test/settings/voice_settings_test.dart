@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dsh_app/l10n/l10n.dart';
 import 'package:dsh_app/state/android_features.dart';
 import 'package:dsh_app/state/hosts_state.dart';
@@ -46,9 +48,10 @@ void main() {
       String os, {
       HostRef host = HostRef.local,
       List<String> languages = const [],
+      double height = 1400,
     }) async {
       tester.view.devicePixelRatio = 1;
-      tester.view.physicalSize = const Size(390, 1400);
+      tester.view.physicalSize = Size(390, height);
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
         testApp(
@@ -123,6 +126,22 @@ void main() {
       expect(find.text(zh.harmonyVoiceLocalLine), findsNothing);
     });
 
+    testWidgets('no 朗读, 实时字幕 or 通话 there yet; DeepSeek and a cloud service still listen', (tester) async {
+      await page(tester, 'ohos', height: 4000);
+      expect(find.byKey(const ValueKey('speech-voice')), findsNothing);
+      expect(find.text(zh.speechLiveSection), findsNothing);
+      expect(find.byKey(const ValueKey('speech-call-barge-in')), findsNothing);
+      expect(find.byKey(const ValueKey('voice-mode-deepseek')), findsOneWidget);
+      expect(find.byKey(const ValueKey('voice-mode-cloud')), findsOneWidget);
+    });
+
+    testWidgets('on Android 朗读 and 通话 stay', (tester) async {
+      await page(tester, 'android', height: 4000);
+      expect(find.byKey(const ValueKey('speech-voice')), findsOneWidget);
+      expect(find.text(zh.speechLiveSection), findsOneWidget);
+      expect(find.byKey(const ValueKey('speech-call-barge-in')), findsOneWidget);
+    });
+
     test('a mode saved for a remote host is automatic on its own engine', () {
       expect(voiceModeOnHarmonyLocal(VoiceMode.engine), VoiceMode.auto);
       expect(voiceModeOnHarmonyLocal(VoiceMode.system), VoiceMode.system);
@@ -157,7 +176,12 @@ void main() {
           expect(tester.getRect(row).left, greaterThanOrEqualTo(0));
           expect(tester.getRect(row).right, lessThanOrEqualTo(320));
         }
-        await tester.tap(rows.last);
+        // Mid-screen: at the top it would sit under the page's floating header.
+        unawaited(
+          Scrollable.ensureVisible(tester.element(find.byKey(const ValueKey('voice-mode-engine'))), alignment: 0.5),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('voice-mode-engine')));
         await tester.pumpAndSettle();
         final container = ProviderScope.containerOf(tester.element(find.byType(VoiceSettingsPage)));
         expect(container.read(voiceSettingsProvider), VoiceMode.engine);

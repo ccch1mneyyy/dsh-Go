@@ -19,6 +19,8 @@ const _expected = <String, String>{
   'DS Bot': 'Copyright 2026 Fei2411 and the DS Bot contributors',
   'ds-harness-remote': 'Copyright (c) 2026 DSH Remote contributors',
   'DSHA': 'Copyright (c) 2026 qiannianhuanxiang',
+  'Libraries.dev': 'Copyright (c) 2026 Jakub Antalik',
+  'Paper Shaders': 'Copyright (c) Paper Design, Inc.',
   'Shizuku-API': 'Copyright (c) 2021 RikkaW',
   'tawcroot (tawc)': 'Copyright (c) 2026 Sophie Winter',
   'libadb-android': 'Copyright 2021 Muntashir Al-Islam',
@@ -27,6 +29,9 @@ const _expected = <String, String>{
   'Bouncy Castle': 'Copyright (c) 2000-2023 The Legion of the Bouncy Castle Inc.',
   'XZ for Java': 'Copyright (C) The XZ for Java authors and contributors',
   'AndroidX WebKit': 'The Android Open Source Project',
+  'ONNX Runtime': 'Copyright (c) Microsoft Corporation',
+  'Silero VAD': 'Copyright (c) 2020-present Silero Team',
+  'smart-turn': 'Copyright (c) 2024–2025, Daily',
   'flutter_webrtc': 'Copyright (c) 2015 Howard Yang',
   'WebRTC': 'Copyright (c) 2011, The WebRTC project authors',
   'AudioSwitch': 'Copyright 2020 Twilio, inc.',
@@ -36,6 +41,7 @@ const _expected = <String, String>{
   'JetBrains Mono': 'Copyright 2020 The JetBrains Mono Project Authors',
   'jQuery': 'Copyright OpenJS Foundation and other contributors, https://openjsf.org/',
   'Lodash': 'Copyright OpenJS Foundation and other contributors <https://openjsf.org/>',
+  'Streaming Zipformer zh-en (sherpa-onnx)': 'csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20',
 };
 
 const _mit = 'Permission is hereby granted, free of charge';
@@ -68,10 +74,14 @@ void main() {
       'Bouncy Castle',
       'XZ for Java',
       'AndroidX WebKit',
+      'ONNX Runtime',
+      'Silero VAD',
+      'smart-turn',
       'tawcroot (tawc)',
       'flutter_webrtc',
       'AudioSwitch',
       'WebRTC',
+      'Streaming Zipformer zh-en (sherpa-onnx)',
     ];
 
     setUp(() async {
@@ -90,7 +100,7 @@ void main() {
       for (final name in gradle) {
         expect(names, isNot(contains(name)), reason: name);
       }
-      expect(names, containsAll(['Node.js', 'HarmonyOS runtime packages', 'DS Bot', 'Phosphor Icons']));
+      expect(names, containsAll(['Node.js', 'HarmonyOS runtime packages', 'DS Bot', 'Libraries.dev', 'Phosphor Icons']));
     });
 
     test('Node says whose it is and its terms; each package once', () {
@@ -176,7 +186,10 @@ void main() {
       expect(textOf(package), contains(_apache), reason: package);
     }
     expect(textOf('spake2-android'), allOf(contains(_lgpl), contains(_gpl)));
-    expect(textOf('Phase'), contains("used with the author's permission"));
+    expect(
+      textOf('Phase'),
+      allOf(contains("with the author's permission"), contains('Copyright (c) 2026 CikeSeven'), contains(_mit)),
+    );
     expect(textOf('Bouncy Castle'), contains(_mit));
     expect(textOf('flutter_webrtc'), contains(_mit));
     expect(textOf('WebRTC'), allOf(contains('Neither the name of Google'), contains('Additional IP Rights Grant')));

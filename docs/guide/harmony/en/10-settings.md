@@ -39,12 +39,13 @@ Shows your DeepSeek account or API key and balance; tap it to open your account.
 
 ## General
 
-- **Interface**: whether the app opens to **Native** or **Web**, and DSH Web's options; see [Web mode](05-web.md).
+- **Interface**: the **Mode** group at the top sets **Open on launch** (Work, Companion or Tavern). Below it, choose whether the app opens to **Native** or **Web**, and DSH Web's options; see [Web mode](05-web.md).
 - **Language**: **System**, **简体中文** or **English**.
 - **Notifications**: turn on **Allow notifications**, then choose **Turn complete**, **Error or stopped**, **Needs approval** and **Questions for you**. Alerts need the app running, and none go out once the system suspends it; alerts from remote hosts also need the connection online. **Progress notification** shows a chat's status in the notification bar; it's a plain notification and stops updating once the system suspends the app. Sound, banners and the lock screen are set in system settings; banners are off by default.
-- **Voice input**: which recognition turns speech into text. On-device HarmonyOS uses the system's recognition; there's no voice model.
+- **Voice**: how voice input recognizes speech: **Automatic**, **DeepSeek**, **System** or **Another cloud service**. **Automatic** uses DeepSeek when you're signed in or have an API key, otherwise the system's recognition; with DeepSeek or another cloud service, the recording is sent to that service. HarmonyOS's own engine has no voice model; **Voice model** is offered only while connected to a remote host. The HarmonyOS version doesn't have read aloud, live captions or voice calls yet, so this page only has the recognition choice.
 - **Performance**: **Auto**, **Full** or **Light**, plus glass blur, interface motion, fluid motion **Refresh rate** (Auto / Max / System) and **Frame cache**.
 - **Background running**: what happens to chats on this phone once the app leaves the screen; see [FAQ](11-faq.md).
+- **System permissions**: what each feature needs from HarmonyOS. [Open](dshgo://open/system-permissions)
 - **Privacy and sharing**:
   - **My shared links**: see [Sharing and replay](07-sharing.md).
   - **Share configuration**: select the current host's settings, plugins, skills and personal preferences to share, and share them as a link, QR code or file.
@@ -60,11 +61,12 @@ Shows your DeepSeek account or API key and balance; tap it to open your account.
 
 - **Help**: takes "what can this app do" to a new chat, where the AI answers from this guide. Not shown in Web mode.
 - **Community**: chat groups and the forum.
-- **Diagnostics**: see [FAQ](11-faq.md).
+- **Diagnostics**: inspect the environment, export a bundle, or **Let the AI read diagnostics**; HarmonyOS has no **Automatic failure analysis**. See [FAQ](11-faq.md).
 - **About DSH Go**:
   - **Version**: the app version, such as 0.9.2 (10251234), with the build number in parentheses. When there's a new version, this row on the Settings page says **Update available**.
   - **Check for updates**: HarmonyOS can't update inside the app. A new version opens the update window with **What’s new**, and the release page says how to get it; it may not have a HarmonyOS package yet. To pass on this version, tap **Skip this version**.
   - **Check automatically**: on by default; checks when the app opens, at most once a day. A new version opens the update window, unless you're on another page or typing, in which case **Check for updates** shows it. Skipped versions aren't offered again, and nothing downloads or installs.
+  - **Star DSH Go on GitHub**: opens the project page, where you can star it or share it with friends.
   - **Open-source licenses**.
 
 ## Permissions

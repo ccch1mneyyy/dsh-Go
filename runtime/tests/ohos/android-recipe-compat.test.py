@@ -2,7 +2,7 @@
 """Replay the actual old/new shell recipe blocks and mutate their real inputs.
 
 External archives are identical small fixtures, not Android image downloads.
-The baseline must be the verified main-2cd33b59 runtime directory.
+The baseline must be the verified main-dd130b31 runtime directory.
 """
 import argparse
 from contextlib import contextmanager
@@ -70,12 +70,12 @@ def main():
     baseline = args.baseline.resolve()
     for name, expected in {
         'build-runtime.sh': 'e544ad161dd3abce4c535c1e2863fb3875b40853b0f7b52693875e2dd269afe4',
-        'lib/rtbuild.py': '44a0e01595488a812cad83d4c3bc2a2a86f85995f2f1272b5191e31c271f61c8',
-        'patches/pins.json': '6dd7160d04a9658993f2ab1c8ea59a6cd50455d482bf09f512e53e79152aae4f',
-        'patches/series': 'a2aef3d10767451293155c0b82389e88a6484deb91b0749b9f07006b3e1a8319',
+        'lib/rtbuild.py': '904e61535a38a9a4464ab56f9ae444af538b91251f06bc73280fa35481bb972e',
+        'patches/pins.json': '6e0e3defbd8c4ee84b1263427d6fdea4c195584a08071393deee0894b3d9feaa',
+        'patches/series': 'd6b57c88a99ed358ce1897b5317c61787a2d14a97c960b4fe1b8b6c384056adc',
         'session-deletion/generate.py': '44aab75244ef5035d58ba2e03f4976fee514bf531bf7ca5abe5f854f889991a7',
     }.items():
-        assert sha((baseline / name).read_bytes()) == expected, 'not the main-2cd33b59 baseline: ' + name
+        assert sha((baseline / name).read_bytes()) == expected, 'not the main-dd130b31 baseline: ' + name
     cases = []
     with tempfile.TemporaryDirectory(prefix='android-recipe-contract-') as temporary:
         root = Path(temporary)

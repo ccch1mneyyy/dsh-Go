@@ -143,9 +143,6 @@ fi
 stop_daemon() {
   ((keep_daemon)) && return 0
   (cd "$APP/android" && ./gradlew --stop -q >/dev/null 2>&1) || true
-  local pids
-  pids=$(pgrep -f '[G]radleDaemon' || true)
-  [[ -n $pids ]] && kill $pids 2>/dev/null || true
 }
 drop_beta() { [[ -f $beta_json ]] && shred -u "$beta_json" 2>/dev/null || rm -f "$beta_json"; }
 trap 'drop_beta; stop_daemon' EXIT
@@ -179,6 +176,10 @@ for i in "${!flavors[@]}"; do
   (cd "$APP" && eval "${commands[$i]}")
   apk="$OUT/app-$f-$mode.apk"
   [[ -f $apk ]] || die "$f: no APK at $apk"
+  # R8 renaming what ONNX Runtime's JNI looks up by name aborts the app when a call starts.
+  if [[ $mode == release ]]; then
+    python3 -I "$ROOT/tooling/check_apk_jni.py" "$apk" || die "$f: see proguard-rules.pro"
+  fi
   if [[ -n $aapt2 ]]; then
     badge=$("$aapt2" dump badging "$apk" 2>/dev/null | sed -n '/^package:/p' || true)
     [[ $badge == *"versionCode='$code'"* && $badge == *"versionName='$name'"* ]] ||
