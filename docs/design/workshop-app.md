@@ -123,7 +123,7 @@ PNG 构造失败直接抛 `WorkshopException`，发生在 controller 动作之�
 
 空 scope 意味着 token 只能读公开资料，正好是 Worker 核身份所需。两个主机各用一个工坊的无重定向传输，响应体限 64 KiB；token 不出现在错误、日志或 `toString` 里。`client_id` 来自 Worker 的 capabilities：`"account": {"origin": "https://github.com", "clientId": …}`；`clientId` 为 null 表示该部署还没登记 GitHub OAuth App，此时不能登录（`WorkshopAccessState.signInAvailable` 为 false）。
 
-`workshopAccountProvider`（`lib/state/workshop_account_state.dart`）持有登录状态：`restoring → signedOut → awaitingCode → signedIn`。`{token, id, login}` 存在 flutter_secure_storage 的 `workshop.github.account.v1` 一个键下，读不出或格式不对就当作未登录。`startSignIn()` 读 capabilities 的 clientId、请求短码、轮询、取资料，先写存储再切到 signedIn；`cancelSignIn()` 停止等待；`signOut()` 只删本机 token，撤销 App 的授权要用户自己到 GitHub 设置里做；Worker 回 `account_auth_invalid` 时，作者操作在记下失败的同时调用 `markInvalid()`，删掉 token 回到未登录，页面随之请用户重新登录。待结算投稿的 journal 按 worker / 账号来源 / 账号 id 分区，同一个 GitHub 账号重新登录后能接着对账。以前按论坛账号记下的 journal 不迁移，和别的账号的记录一样留在原处。
+`workshopAccountProvider`（`lib/state/workshop_account_state.dart`）持有登录状态：`restoring → signedOut → awaitingCode → signedIn`。`{token, id, login}` 存在 flutter_secure_storage 的 `workshop.github.account.v1` 一个键下，读不出或格式不对就当作未登录。这和论坛 User API Key（`forum_auth.dart`）、模型服务商 key（`provider_keys.dart`）一样只放系统安全存储：AGENTS.md「不持久化完整 token」指的是日志、偏好、普通文件和诊断包，不包括系统钥匙串；令牌不进 SharedPreferences、日志、错误文本或 toString。`startSignIn()` 读 capabilities 的 clientId、请求短码、轮询、取资料，先写存储再切到 signedIn；`cancelSignIn()` 停止等待；`signOut()` 只删本机 token，撤销 App 的授权要用户自己到 GitHub 设置里做；Worker 回 `account_auth_invalid` 时，作者操作在记下失败的同时调用 `markInvalid()`，删掉 token 回到未登录，页面随之请用户重新登录。待结算投稿的 journal 按 worker / 账号来源 / 账号 id 分区，同一个 GitHub 账号重新登录后能接着对账。以前按论坛账号记下的 journal 不迁移，和别的账号的记录一样留在原处。
 
 ## 投稿与凭据
 

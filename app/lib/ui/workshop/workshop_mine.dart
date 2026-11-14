@@ -134,17 +134,23 @@ class _WorkshopMineSliverState extends ConsumerState<WorkshopMineSliver> {
     // The first read of the whole list: one quiet ring, or why it failed.
     if (!subs.hasLoaded && !filtered) {
       if (subs.error case final error?) {
-        return SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 40),
-            child: EmptyView(
-              icon: AppIcons.offline,
-              title: l10n.workshopMineLoadFailed,
-              message: workshopExceptionText(l10n, error),
-              actionLabel: l10n.commonRetry,
-              onAction: subs.busy ? null : () => unawaited(_refresh()),
+        return SliverMainAxisGroup(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 40),
+                child: EmptyView(
+                  icon: AppIcons.offline,
+                  title: l10n.workshopMineLoadFailed,
+                  message: workshopExceptionText(l10n, error),
+                  actionLabel: l10n.commonRetry,
+                  onAction: subs.busy ? null : () => unawaited(_refresh()),
+                ),
+              ),
             ),
-          ),
+            // A list that won't load is no reason to be stuck in the account.
+            const SliverToBoxAdapter(child: _AccountLine()),
+          ],
         );
       }
       return const SliverToBoxAdapter(child: _Ring());

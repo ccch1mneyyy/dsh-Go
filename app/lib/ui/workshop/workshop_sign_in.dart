@@ -102,6 +102,7 @@ class _SignInSheetState extends ConsumerState<_SignInSheet> {
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
           onPressed: () async {
             await _copy(code);
+            if (!mounted) return;
             await ref.read(accountBrowserProvider).open(uri);
           },
           child: Text(l10n.workshopSignInOpen),
