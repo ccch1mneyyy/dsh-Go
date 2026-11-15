@@ -16,8 +16,8 @@ class RemoteExecResult {
 /// Something that can run a POSIX `sh` script on the remote: the SSH
 /// session in production, a local `sh` in tests.
 abstract class RemoteShell {
-  /// Runs [script] with `sh -lc` (login shell, so `~/.profile` PATH tweaks
-  /// apply whatever the account's own shell is).
+  /// Runs [script] with a login `sh` process, so `~/.profile` PATH tweaks
+  /// apply whatever the account's own shell is.
   Future<RemoteExecResult> run(String script, {Duration timeout = const Duration(seconds: 30)});
 }
 
@@ -32,15 +32,6 @@ String redactRemoteTokens(String text) => text.replaceAll(RegExp(r'token=[^\s&#]
 
 /// Single-quotes [value] for POSIX sh.
 String shQuote(String value) => "'${value.replaceAll("'", r"'\''")}'";
-
-/// `sh -lc '<script>'`: works under bash, zsh, fish and busybox accounts alike.
-String loginShell(String script) {
-  // Unlike POSIX sh, fish interprets \\ and \' inside single quotes. Keep
-  // both backslashes and quotes outside quoted spans so the account shell
-  // passes the same script to sh, including its nested trap quoting.
-  final escaped = script.replaceAllMapped(RegExp(r"['\\]"), (match) => "'\\${match[0]}'");
-  return "sh -lc '$escaped'";
-}
 
 /// Runs scripts with the local `/bin/sh` (tests, and a "remote" that is this
 /// machine).

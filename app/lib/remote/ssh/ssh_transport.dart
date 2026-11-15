@@ -289,7 +289,7 @@ class DartSshTransport implements SshTransport, RemoteBootstrapShell {
         'printf ${shQuote('\n$marker stderr %s\n')} "\$_dsh_status" >&2; '
         r'exit "$_dsh_status"';
     // Keep any login-profile EXIT handler outside this script's trap.
-    final command = loginShell('(\ntrap ${shQuote(trap)} 0\n$script\n)');
+    final framedScript = '(\ntrap ${shQuote(trap)} 0\n$script\n)';
     final completed = Completer<RemoteExecResult>();
     SSHSession? session;
     StreamSubscription<Uint8List>? stdoutSubscription;
@@ -356,7 +356,7 @@ class DartSshTransport implements SshTransport, RemoteBootstrapShell {
     // handle to cancel until it returns; reclaim a late session below.
     timer = Timer(timeout, () => fail(TimeoutException('bootstrap', timeout), StackTrace.current));
     unawaited(
-      _client.execute(command).then<void>((opened) {
+      _client.execute('sh -l -s').then<void>((opened) {
         if (settled) {
           opened.channel.destroy();
           return;
@@ -392,6 +392,7 @@ class DartSshTransport implements SshTransport, RemoteBootstrapShell {
             finishIfReady();
           }, onError: fail),
         );
+        unawaited(_sendScript(opened, framedScript).then<void>((_) {}, onError: fail));
       }, onError: fail),
     );
     return completed.future;
@@ -399,10 +400,35 @@ class DartSshTransport implements SshTransport, RemoteBootstrapShell {
 
   @override
   Future<RemoteExecResult> run(String script, {Duration timeout = const Duration(seconds: 30)}) async {
-    final SSHRunResult result;
+    SSHSession? session;
+    var expired = false;
+
+    Future<RemoteExecResult> execute() async {
+      final opened = await _client.execute('sh -l -s');
+      if (expired) {
+        opened.channel.destroy();
+        throw TimeoutException('remote command', timeout);
+      }
+      session = opened;
+      final stdout = BytesBuilder(copy: false);
+      final stderr = BytesBuilder(copy: false);
+      await Future.wait<void>([
+        opened.stdout.forEach(stdout.add),
+        opened.stderr.forEach(stderr.add),
+        opened.done,
+        _sendScript(opened, script),
+      ], eagerError: true);
+      return RemoteExecResult(
+        opened.exitCode,
+        utf8.decode(stdout.takeBytes(), allowMalformed: true),
+        utf8.decode(stderr.takeBytes(), allowMalformed: true),
+      );
+    }
+
     try {
-      result = await _client.runWithResult(loginShell(script)).timeout(timeout);
+      return await execute().timeout(timeout);
     } on TimeoutException {
+      expired = true;
       throw HostLinkError(
         HostLinkErrorKind.unreachable,
         appL10n.remoteErrCommandTimeout,
@@ -416,12 +442,15 @@ class DartSshTransport implements SshTransport, RemoteBootstrapShell {
         detail: '$e',
         retryable: true,
       );
+    } finally {
+      session?.channel.destroy();
     }
-    return RemoteExecResult(
-      result.exitCode,
-      utf8.decode(result.stdout, allowMalformed: true),
-      utf8.decode(result.stderr, allowMalformed: true),
-    );
+  }
+
+  Future<void> _sendScript(SSHSession session, String script) async {
+    // Keep script quoting out of the account shell and Windows process command line.
+    session.write(utf8.encode('$script\n'));
+    await session.stdin.close();
   }
 
   @override

@@ -65,6 +65,9 @@ class _Session {
   late final SSHSession session;
 
   int get closeRequests => sent.whereType<SSH_Message_Channel_Close>().length;
+  int get eofRequests => sent.whereType<SSH_Message_Channel_EOF>().length;
+  String get input =>
+      utf8.decode(sent.whereType<SSH_Message_Channel_Data>().expand((message) => message.data).toList());
 
   void bytes(List<int> data, {bool stderr = false}) {
     final bytes = Uint8List.fromList(data);
@@ -96,10 +99,8 @@ class _Execution {
   final channel = _Session();
   final pending = Completer<SSHSession>();
 
-  // The original implementation has no frame. Keeping a synthetic marker in
-  // that case lets the same test reach its old runWithResult wait, not a
-  // missing-method or parsing failure.
-  String get marker => RegExp(r'DSHAPP_DONE_[0-9a-f]{32}').firstMatch(command)?.group(0) ?? 'DSHAPP_DONE_BASELINE';
+  String get marker =>
+      RegExp(r'DSHAPP_DONE_[0-9a-f]{32}').firstMatch(channel.input)?.group(0) ?? 'DSHAPP_DONE_BASELINE';
 
   String frame({bool stderr = false, int status = 0}) => '\n$marker ${stderr ? 'stderr' : 'stdout'} $status\n';
 
@@ -109,8 +110,7 @@ class _Execution {
   }
 }
 
-// runWithResult is inherited unchanged, so the baseline exercises the actual
-// dependency's original drain-and-done wait. Only opening the session is faked.
+// Only opening the session is faked; stdin, EOF and output use real SSH channels.
 class _Client extends SSHClient {
   _Client({this.holdExecute = false})
     : super(
@@ -194,6 +194,41 @@ const _url = 'DSHAPP url http://127.0.0.1:43123/?token=synthetic-full-token\n';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('ordinary scripts reach SSH stdin unchanged and send EOF', (tester) async {
+    await _using(tester, (h) async {
+      const script = "value='中文 quoted'\nprintf '%s\\n' \"\$value\"\n# apostrophe ' and backslash \\";
+      final result = _Outcome(h.transport.run(script));
+      await tester.pump();
+      expect(h.execution.command, 'sh -l -s');
+      expect(h.execution.channel.input, '$script\n');
+      expect(h.execution.channel.eofRequests, 1);
+      h.execution.channel.text('中文 quoted\n');
+      h.execution.channel.finish(0);
+      await tester.pump();
+      expect(result.value?.stdout, '中文 quoted\n');
+      expect(result.value?.exitCode, 0);
+      expect(result.error, isNull);
+    });
+  });
+
+  testWidgets('bootstrap scripts and their nested trap travel over SSH stdin', (tester) async {
+    await _using(tester, (h) async {
+      const script = "printf '%s\\n' '中文'\nexit 7";
+      final result = _Outcome(h.transport.runBootstrap(script, timeout: const Duration(seconds: 5)));
+      await tester.pump();
+      expect(h.execution.command, 'sh -l -s');
+      expect(h.execution.channel.input, contains('\n$script\n)\n'));
+      expect(h.execution.channel.input, contains('trap '));
+      expect(h.execution.channel.eofRequests, 1);
+      h.execution.channel.text('中文\n');
+      h.execution.frames(status: 7);
+      await tester.pump();
+      expect(result.value?.stdout, '中文\n');
+      expect(result.value?.exitCode, 7);
+      expect(result.error, isNull);
+    });
+  });
 
   testWidgets('startup completes after its two output frames without remote EOF', (tester) async {
     await _using(tester, (h) async {
@@ -413,12 +448,9 @@ void main() {
             startTimeout: const Duration(seconds: 5),
           );
           final result = _Outcome(bootstrap.start());
-          // Let POSIX sh itself remove the outer login-shell quoting. Running
-          // the resulting script directly avoids reading this machine's profile.
-          final unquoted = await Process.run('/bin/sh', ['-c', 'set -- ${h.execution.command}; printf %s "\$3"']);
-          expect(unquoted.exitCode, 0);
+          await Future<void>.delayed(Duration.zero);
           final outerTrap = shQuote(r'_outer_status=$?; printf "OUTER_EXIT %s\n" "$_outer_status"');
-          final ran = await Process.run('/bin/sh', ['-c', 'trap $outerTrap 0\n${unquoted.stdout}']);
+          final ran = await Process.run('/bin/sh', ['-c', 'trap $outerTrap 0\n${h.execution.channel.input}']);
           expect(ran.exitCode, exitCode);
           expect(ran.stdout, contains(h.execution.frame(status: exitCode)));
           expect(ran.stdout, endsWith('OUTER_EXIT $exitCode\n'));
@@ -443,6 +475,7 @@ void main() {
     'bash': '/bin/bash',
     'zsh': '/bin/zsh',
     'fish': Platform.environment['DSH_TEST_FISH'] ?? '/usr/bin/fish',
+    if (Platform.isWindows) 'Git Bash': 'C:/Program Files/Git/usr/bin/bash.exe',
   };
   for (final shell in accountShells.entries) {
     for (final exitCode in [0, 70]) {
@@ -465,18 +498,24 @@ void main() {
               startTimeout: const Duration(seconds: 5),
             );
             final result = _Outcome(bootstrap.start());
-            // SSH passes the complete command to the account's shell first.
-            // Do not remove its outer quoting before executing it here.
-            final ran = await Process.run(shell.value, [
-              if (shell.key == 'fish') '--no-config',
-              '-c',
-              h.execution.command,
-            ]);
-            expect(ran.exitCode, exitCode, reason: '${ran.stderr}');
-            expect(ran.stdout, endsWith(h.execution.frame(status: exitCode)));
-            expect(ran.stderr, endsWith(h.execution.frame(stderr: true, status: exitCode)));
+            await Future<void>.delayed(Duration.zero);
+            // Only the fixed command passes through the account shell.
+            final process = await Process.start(
+              shell.value,
+              [if (shell.key == 'fish') '--no-config', '-c', h.execution.command],
+              environment: Platform.isWindows
+                  ? {'PATH': 'C:\\Program Files\\Git\\usr\\bin;${Platform.environment['PATH']}'}
+                  : null,
+            );
+            final stdout = process.stdout.transform(utf8.decoder).join();
+            final stderr = process.stderr.transform(utf8.decoder).join();
+            process.stdin.write(h.execution.channel.input);
+            await process.stdin.close();
+            expect(await process.exitCode, exitCode, reason: await stderr);
+            expect(await stdout, endsWith(h.execution.frame(status: exitCode)));
+            expect(await stderr, endsWith(h.execution.frame(stderr: true, status: exitCode)));
             expect(
-              ran.stdout,
+              await stdout,
               contains(
                 exitCode == 0
                     ? 'DSHAPP url dsh web: http://127.0.0.1:43123/?token=synthetic-shell-token\n'
@@ -492,6 +531,30 @@ void main() {
       );
     }
   }
+
+  testWidgets('ordinary run times out and closes only its own channel', (tester) async {
+    await _using(tester, (h) async {
+      final result = _Outcome(h.transport.run('sleep 60', timeout: const Duration(seconds: 1)));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      expect(result.error, isA<HostLinkError>().having((error) => error.retryable, 'retryable', isTrue));
+      expect(h.execution.channel.closeRequests, 1);
+      expect(h.client.isClosed, isFalse);
+    });
+  });
+
+  testWidgets('ordinary run reclaims a session opened after its timeout', (tester) async {
+    await _using(tester, (h) async {
+      final result = _Outcome(h.transport.run('echo late', timeout: const Duration(seconds: 1)));
+      await tester.pump(const Duration(seconds: 2));
+      expect(result.error, isA<HostLinkError>());
+      h.execution.pending.complete(h.execution.channel.session);
+      await tester.pump();
+      expect(h.execution.channel.closeRequests, 1);
+      expect(h.execution.channel.input, isEmpty);
+      expect(h.client.isClosed, isFalse);
+    }, holdExecute: true);
+  });
 
   testWidgets('ordinary run keeps waiting for EOF and retains exact output', (tester) async {
     await _using(tester, (h) async {
