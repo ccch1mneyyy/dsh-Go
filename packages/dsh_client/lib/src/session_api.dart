@@ -66,7 +66,7 @@ class WatchOptions {
     this.activationAllowed,
     this.onActivationChecked,
     this.turnWindow = const TurnWindow(50, 2),
-    this.maxMessages = 500,
+    this.maxMessages = 150,
     this.includeHostEvents = true,
     this.includeConnectionEvents = true,
     this.includeSyncEvents = false,
@@ -96,8 +96,16 @@ class WatchOptions {
   /// Hard cap on the initial window. The Host cuts at the [turnWindow] turn
   /// start unless this many messages come first (then mid-turn, losing that
   /// turn's `turn/start`); its own default is 50, so without a larger cap a
-  /// 50-message window cuts mid-turn. 500 as in the official web client
-  /// (`HISTORY_PAGE_OPTIONS`).
+  /// 50-message window cuts mid-turn.
+  ///
+  /// The official web client uses 500 (`HISTORY_PAGE_OPTIONS`) because it
+  /// talks to the Host directly. Over a self-hosted relay the same window is
+  /// serialized into one `session/follow` snapshot: 500 messages measured
+  /// ~1.25 MB on a 18 MB session, which is slow to transfer on mobile networks
+  /// and exceeded the relay frame ceiling before it was raised. 150 keeps
+  /// several turns of context (~0.36 MB measured) while cutting the initial
+  /// transfer by ~3.5x; older turns still load on demand via
+  /// `session/page` with the turn-aligned 500-message window.
   final int? maxMessages;
 
   /// Forward this session's approvals, questions, status and errors.

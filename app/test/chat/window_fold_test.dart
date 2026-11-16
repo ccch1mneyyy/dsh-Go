@@ -171,7 +171,7 @@ void main() {
     final sub = container.listen(chatProvider('s'), (_, _) {});
     await tester.pump(const Duration(milliseconds: 40));
 
-    expect(client.requested.single.maxMessages, 500);
+    expect(client.requested.single.maxMessages, 150);
     final state = sub.read();
     expect(state.loading, isFalse);
     final long = state.turns.singleWhere((t) => t.startSeq == _longTurnStart);
