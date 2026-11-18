@@ -4,7 +4,10 @@ import io.github.ccch1mneyyy.dsh_app.phone.background.Reasons
 import io.github.ccch1mneyyy.dsh_app.phone.skills.PhoneTaskTrace
 import io.github.ccch1mneyyy.dsh_app.phone.skills.PhoneSkillReplaySelections
 import io.github.ccch1mneyyy.dsh_app.phone.skills.PhoneSkillOutcomes
+import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicReference
 
 enum class A11yState { CONNECTED, ENABLED_NOT_CONNECTED, DISABLED }
@@ -377,6 +380,9 @@ class PhoneCore(
                 PhoneToolCatalog.INTENT -> intent(call, scope, owner)
                 PhoneToolCatalog.NOTIFY -> notify(a, owner)
                 PhoneToolCatalog.CLIPBOARD -> clipboard(a, owner)
+                PhoneToolCatalog.CALENDAR -> calendar(a, owner)
+                PhoneToolCatalog.LOCATION -> location(a, owner)
+                PhoneToolCatalog.REMIND -> remind(a, owner)
                 PhoneToolCatalog.SCREEN -> screen(a, owner)
                 PhoneToolCatalog.COLLECT -> collect(a, owner)
                 FOCUS_TEXT -> focusText(a, scope, owner)
@@ -783,6 +789,136 @@ class PhoneCore(
         return Out(r.message, error = !r.ok, summary = ui.get("phone_log_clipboard_read", "读剪贴板"), decision = if (r.ok) "ok" else "failed") // l10n:keep test default
     }
 
+    // ── Device data: read-only calendar / location, and one scheduled notification ─────────
+
+    private fun calendar(a: Args, owner: PhoneTasks.Owner): Out {
+        if (!current(owner)) return stoppedOut("calendar")
+        val zone = env.zone()
+        val range = when (val parsed = calendarRange(a, zone)) {
+            is Either.Left -> return Out(parsed.value, error = true, summary = ui.get("phone_log_calendar", "看日历"), decision = "refused:arguments") // l10n:keep test default
+            is Either.Right -> parsed.value
+        }
+        val limit = (a.int("limit") ?: DEFAULT_CALENDAR_ROWS).coerceIn(1, MAX_CALENDAR_ROWS)
+        if (!current(owner)) return stoppedOut("calendar")
+        val rows = when (val result = env.system().calendarRows(range.first, range.second, limit)) {
+            is Either.Left -> return Out(result.value, error = true, summary = ui.get("phone_log_calendar", "看日历"), decision = "refused:calendar") // l10n:keep test default
+            is Either.Right -> result.value
+        }
+        if (!current(owner)) return stoppedOut("calendar")
+        val day = DateTimeFormatter.ofPattern("MM-dd", Locale.ROOT)
+        val clock = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+        val text = buildString {
+            // l10n:keep agent tool result
+            if (rows.isEmpty()) append("${range.third} 没有日程。") else append("${range.third} 共 ${rows.size} 条日程（手机时区）：\n")
+            rows.forEach { row ->
+                val begin = Instant.ofEpochMilli(row.beginMs).atZone(zone)
+                if (row.allDay) {
+                    append(begin.format(day)).append(" 全天 ")
+                } else {
+                    append(begin.format(day)).append(' ').append(begin.format(clock)).append('–')
+                        .append(Instant.ofEpochMilli(row.endMs).atZone(zone).format(clock)).append(' ')
+                }
+                append(row.title)
+                row.location?.let { append(" · ").append(it) }
+                row.calendar?.let { append(" · ").append(it) }
+                // l10n:keep agent tool result
+                if (!row.busy) append("（已取消或已拒绝）")
+                append('\n')
+            }
+            // l10n:keep agent tool result
+            if (rows.size >= limit) append("已到 limit，可能还有更多：调大 limit 或缩小时间范围")
+        }.trimEnd()
+        return Out(text, summary = ui.get("phone_log_calendar", "看日历")) // l10n:keep test default
+    }
+
+    /** Reads only; the last two entries are the inclusive range and its label for the model. */
+    private fun calendarRange(a: Args, zone: ZoneId): Either<String, Triple<Long, Long, String>> {
+        val from = a.str("from")
+        val to = a.str("to")
+        if (from != null || to != null) {
+            // l10n:keep agent tool result
+            if (from == null) return Either.Left("给了 to 就要一起给 from。")
+            // l10n:keep agent tool result
+            val begin = IntentSpec.parseTime(from, zone) ?: return Either.Left("from 看不懂：写成 2026-11-16 或 2026-11-16T09:00")
+            // l10n:keep agent tool result
+            val end = to?.let { IntentSpec.parseTime(it, zone) ?: return Either.Left("to 看不懂：写成 2026-11-16 或 2026-11-16T18:00") }
+            val endMs = end?.ms ?: (begin.ms + if (begin.dateOnly) 86_400_000L else 3_600_000L)
+            // l10n:keep agent tool result
+            if (endMs <= begin.ms) return Either.Left("to 不晚于 from，没有查。")
+            // l10n:keep agent tool result
+            return Either.Right(Triple(begin.ms, endMs, "$from – ${to ?: "开始后 1 小时"}"))
+        }
+        val range = a.str("range") ?: "today"
+        val today = java.time.LocalDate.now(zone)
+        val start = when (range) {
+            "today" -> today
+            "tomorrow" -> today.plusDays(1)
+            "week" -> today
+            // l10n:keep agent tool result
+            else -> return Either.Left("range 只能是 ${PhoneToolCatalog.CALENDAR_RANGES.joinToString(" / ")}")
+        }
+        val days = if (range == "week") 7L else 1L
+        val beginMs = start.atStartOfDay(zone).toInstant().toEpochMilli()
+        // l10n:keep agent tool result
+        val label = when (range) {
+            "today" -> "今天"
+            "tomorrow" -> "明天"
+            else -> "未来 7 天"
+        }
+        return Either.Right(Triple(beginMs, beginMs + days * 86_400_000L, label))
+    }
+
+    private fun location(a: Args, owner: PhoneTasks.Owner): Out {
+        if (!current(owner)) return stoppedOut("location")
+        val fix = when (val result = env.system().lastLocation()) {
+            is Either.Left -> return Out(result.value, error = true, summary = ui.get("phone_log_location", "读位置"), decision = "refused:location") // l10n:keep test default
+            is Either.Right -> result.value
+        }
+        // l10n:keep agent tool result
+        val age = when {
+            fix.ageMs < 60_000L -> "不到 1 分钟前"
+            fix.ageMs < 3_600_000L -> "${fix.ageMs / 60_000L} 分钟前"
+            else -> "${fix.ageMs / 3_600_000L} 小时前"
+        }
+        // l10n:keep agent tool result
+        val text = "最近一次定位：" +
+            "${String.format(Locale.ROOT, "%.5f", fix.lat)}, ${String.format(Locale.ROOT, "%.5f", fix.lon)}" +
+            "（精度约 ${String.format(Locale.ROOT, "%.0f", fix.accuracyM)} 米，$age）。" +
+            "坐标系 WGS-84，不是高德的 GCJ-02；要导航直接用 intent 的 navigate，不要把这里的坐标当 GCJ-02 传。"
+        return Out(text, summary = ui.get("phone_log_location", "读位置")) // l10n:keep test default
+    }
+
+    private fun remind(a: Args, owner: PhoneTasks.Owner): Out {
+        if (!current(owner)) return stoppedOut("remind")
+        // l10n:keep agent tool result
+        val title = a.str("title") ?: return Out("remind 需要 title。", error = true)
+        val text = a.str("text") ?: title
+        val afterMin = a.int("after_min")
+        val at = a.str("at")
+        // l10n:keep agent tool result
+        if ((afterMin == null) == (at == null)) return Out("remind 的 after_min 和 at 二选一。", error = true)
+        val atMs = if (afterMin != null) {
+            // l10n:keep agent tool result
+            if (afterMin !in 1..10080) return Out("after_min 只能是 1–10080（最多 7 天）。", error = true)
+            System.currentTimeMillis() + afterMin * 60_000L
+        } else {
+            // l10n:keep agent tool result
+            IntentSpec.parseTime(at!!, env.zone())?.ms ?: return Out("at 看不懂：写成 2026-11-16T19:30。", error = true)
+        }
+        if (!current(owner)) return stoppedOut("remind")
+        skillTrace.markIncomplete(owner)
+        val r = env.system().remind(title, text, atMs)
+        val whenText = Instant.ofEpochMilli(atMs).atZone(env.zone())
+            .format(DateTimeFormatter.ofPattern("MM-dd HH:mm", Locale.ROOT))
+        // l10n:keep agent tool result
+        val message = if (r.ok) {
+            "${r.message}时间：$whenText（手机时区）。省电策略可能让它晚几分钟；强制停止或重启会丢掉还没响的提醒。"
+        } else {
+            r.message
+        }
+        return Out(message, error = !r.ok, summary = ui.get("phone_log_remind", "定时提醒"), decision = if (r.ok) "ok" else "failed") // l10n:keep test default
+    }
+
     // ── Screens ─────────────────────────────────────────────────────────────────────
 
     private fun unavailable(screen: PhoneScreen): String = when (screen) {
@@ -825,7 +961,8 @@ class PhoneCore(
 
     private fun requiredScreens(name: String, a: Args): Either<String, List<PhoneScreen>> {
         return when (name) {
-            PhoneToolCatalog.APPS, PhoneToolCatalog.NOTIFY, PhoneToolCatalog.CLIPBOARD -> Either.Right(emptyList())
+            PhoneToolCatalog.APPS, PhoneToolCatalog.NOTIFY, PhoneToolCatalog.CLIPBOARD,
+            PhoneToolCatalog.CALENDAR, PhoneToolCatalog.LOCATION, PhoneToolCatalog.REMIND -> Either.Right(emptyList())
             PhoneToolCatalog.OPEN -> Either.Right(if (a.bool("background") == true)
                 listOf(PhoneScreen.MAIN, PhoneScreen.BACKGROUND) else listOf(PhoneScreen.MAIN))
             PhoneToolCatalog.SCREEN -> Either.Right(listOf(if (a.bool("background") == true) PhoneScreen.BACKGROUND else PhoneScreen.MAIN))
@@ -1378,6 +1515,8 @@ class PhoneCore(
         private val DONE = setOf("ok", "allowed", "confirmed", "confirmed-app", "confirmed-task")
         const val SETTLE_AFTER_LAUNCH_MS = 1200L
         const val MAX_APPS = 150
+        const val DEFAULT_CALENDAR_ROWS = 20
+        const val MAX_CALENDAR_ROWS = 100
         const val MAX_COLLECT_CHARS = 16_000
 
         /** The call's own time, not counting waits for the person. */
@@ -1385,6 +1524,8 @@ class PhoneCore(
             PhoneToolCatalog.ANDROID_SHELL -> 120_000L
             PhoneToolCatalog.APPS -> 15_000L
             PhoneToolCatalog.NOTIFY, PhoneToolCatalog.CLIPBOARD -> 10_000L
+            PhoneToolCatalog.CALENDAR, PhoneToolCatalog.LOCATION -> 15_000L
+            PhoneToolCatalog.REMIND -> 10_000L
             PhoneToolCatalog.OPEN, PhoneToolCatalog.INTENT -> 25_000L
             PhoneToolCatalog.SCREEN -> 12_000L
             PhoneToolCatalog.COLLECT -> 120_000L

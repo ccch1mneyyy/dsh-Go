@@ -77,6 +77,8 @@ Go back to a chat and say what you want done. While a task runs:
 
 Alarms, events, maps and sharing don't need the accessibility service.
 
+Reading the calendar and reading your location are read-only too, but they need the calendar and location permissions in system settings first: if one is missing, DSH says which one, instead of reporting "no events" for "could not read". Location is the phone's last known fix — DSH never starts a location request on its own — and it is WGS-84, so just name the destination when you want navigation. Scheduled reminders are alarms, so they still fire when the app is not in the foreground, though battery optimisation may delay them by a few minutes and a force stop or reboot drops the ones that have not fired yet.
+
 ## Floating bar
 
 When a task starts, a floating bar appears in the lower middle of the screen, and a faint band of colour lights up round the screen's edge to show the phone is being operated. The bar takes three shapes, and a tap moves between them:

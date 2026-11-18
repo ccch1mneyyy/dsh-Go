@@ -6,14 +6,17 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.Manifest
 import android.app.PendingIntent
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
+import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -346,6 +349,81 @@ class SystemActions(private val app: Context) : SystemApi {
         // l10n:keep agent tool result
         return SysResult(true, "剪贴板内容：\n$shown")
     }
+
+    // ── Device data: read-only calendar and location, plus one scheduled notification ─────
+
+    override fun calendarRows(fromMs: Long, toMs: Long, limit: Int): Either<String, List<CalendarRow>> {
+        if (app.checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
+            // l10n:keep agent tool result
+            return Either.Left("没有日历权限，读不到日程。请用户到系统设置里给 DSH 打开「日历」权限后再试；改成写日程请用 intent 的 calendar。")
+        }
+        val uri = CalendarContract.Instances.CONTENT_URI.buildUpon().also {
+            ContentUris.appendId(it, fromMs)
+            ContentUris.appendId(it, toMs)
+        }.build()
+        val projection = arrayOf(
+            CalendarContract.Instances.BEGIN,
+            CalendarContract.Instances.END,
+            CalendarContract.Instances.ALL_DAY,
+            CalendarContract.Instances.TITLE,
+            CalendarContract.Instances.EVENT_LOCATION,
+            CalendarContract.Instances.CALENDAR_DISPLAY_NAME,
+            CalendarContract.Instances.STATUS,
+            CalendarContract.Instances.SELF_ATTENDEE_STATUS,
+        )
+        val cursor = try {
+            app.contentResolver.query(uri, projection, null, null, CalendarContract.Instances.BEGIN + " ASC")
+        } catch (e: SecurityException) {
+            // l10n:keep agent tool result
+            return Either.Left("系统拒绝了日历查询（${e.message ?: "未知原因"}）。")
+        } ?: run {
+            // l10n:keep agent tool result
+            return Either.Left("这台设备没有日历提供方，读不到日程。")
+        }
+        val rows = ArrayList<CalendarRow>()
+        cursor.use { c ->
+            while (c.moveToNext() && rows.size < limit) {
+                val cancelled = c.getInt(6) == CalendarContract.Events.STATUS_CANCELED
+                val declined = c.getInt(7) == CalendarContract.Attendees.ATTENDEE_STATUS_DECLINED
+                rows += CalendarRow(
+                    beginMs = c.getLong(0),
+                    endMs = c.getLong(1),
+                    allDay = c.getInt(2) != 0,
+                    // l10n:keep agent tool result
+                    title = c.getString(3)?.trim().orEmpty().ifEmpty { "（无标题）" },
+                    location = c.getString(4)?.trim()?.takeIf { it.isNotEmpty() },
+                    calendar = c.getString(5)?.trim()?.takeIf { it.isNotEmpty() },
+                    busy = !cancelled && !declined,
+                )
+            }
+        }
+        return Either.Right(rows)
+    }
+
+    override fun lastLocation(): Either<String, LocationFix> {
+        val fine = app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val coarse = app.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (!fine && !coarse) {
+            // l10n:keep agent tool result
+            return Either.Left("没有位置权限，读不到定位。请用户到系统设置里给 DSH 打开「位置」权限后再试。")
+        }
+        val lm = app.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+            // l10n:keep agent tool result
+            ?: return Either.Left("这台设备没有定位服务。")
+        val fix = try {
+            lm.getProviders(true).asSequence()
+                .mapNotNull { provider -> runCatching { lm.getLastKnownLocation(provider) }.getOrNull() }
+                .maxByOrNull { it.time }
+        } catch (_: SecurityException) {
+            null
+        } ?: run {
+            // l10n:keep agent tool result
+            return Either.Left("还没有可用的定位结果：先在手机上打开一次地图或导航，再试一次。")
+        }
+        return Either.Right(LocationFix(fix.latitude, fix.longitude, fix.accuracy, System.currentTimeMillis() - fix.time))
+    }
+
+    override fun remind(title: String, text: String, atMs: Long): SysResult = ReminderAlarm.schedule(app, title, text, atMs)
 
     private fun <T> onMain(block: () -> T): T? {
         if (Looper.myLooper() == Looper.getMainLooper()) return runCatching(block).getOrNull()

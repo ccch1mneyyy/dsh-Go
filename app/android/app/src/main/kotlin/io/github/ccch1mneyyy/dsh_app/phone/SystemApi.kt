@@ -38,6 +38,21 @@ class SysResult(val ok: Boolean, val message: String, val target: SystemTarget? 
     val appLabel: String? get() = (target as? SystemTarget.Known)?.app?.label
 }
 
+/** One calendar event, already resolved to epoch milliseconds. Reading never edits the provider. */
+data class CalendarRow(
+    val beginMs: Long,
+    val endMs: Long,
+    val allDay: Boolean,
+    val title: String,
+    val location: String?,
+    val calendar: String?,
+    /** False for cancelled events and for events the person declined. */
+    val busy: Boolean,
+)
+
+/** The last known fix. [ageMs] is always reported: the provider may hand back an old value. */
+data class LocationFix(val lat: Double, val lon: Double, val accuracyM: Float, val ageMs: Long)
+
 /** System actions consumed by Core, implemented by Android and faked at the same boundary in tests. */
 interface SystemApi {
     fun apps(): List<AppEntry>
@@ -49,6 +64,23 @@ interface SystemApi {
     fun notify(title: String, text: String): SysResult
     fun clipboardSet(text: String): SysResult
     fun clipboardGet(): SysResult
+
+    /**
+     * Read-only: events overlapping [fromMs, toMs), at most [limit]. The default keeps existing
+     * fakes compiling; a platform that cannot read returns the reason instead of an empty page,
+     * because "no events" and "no permission" must not look the same to the model.
+     */
+    fun calendarRows(fromMs: Long, toMs: Long, limit: Int): Either<String, List<CalendarRow>> =
+        // l10n:keep agent tool result
+        Either.Left("这台设备没有接入日历读取。")
+
+    /** Read-only: the last known fix. Never starts a fresh location request on its own. */
+    // l10n:keep agent tool result
+    fun lastLocation(): Either<String, LocationFix> = Either.Left("这台设备没有接入位置读取。")
+
+    /** Schedules one notification so it still fires after this app's process ends. */
+    // l10n:keep agent tool result
+    fun remind(title: String, text: String, atMs: Long): SysResult = SysResult(false, "这台设备没有接入定时提醒。")
 }
 
 /** PM adapter data. No package-name heuristic can identify every platform/OEM resolver. */

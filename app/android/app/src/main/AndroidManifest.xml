@@ -24,6 +24,10 @@
          <intent><action android:name="android.speech.RecognitionService" /></intent> -->
     <!-- Phone control `intent kind=alarm/timer` (normal permission; some clock apps require it). -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <!-- Phone control `calendar` (read-only) and `location` (last known fix). Both are runtime
+         permissions and stay off until the person grants them; the tools explain how when denied. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Optional "访问手机文件" mode: shared storage is bind-mounted at /sdcard in the Linux env. -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -312,6 +316,8 @@
         </receiver>
 
         <receiver android:name=".notify.NotifyActionReceiver" android:exported="false" />
+        <!-- Phone control `remind`: the alarm this app scheduled itself (phone/ReminderAlarm.kt). -->
+        <receiver android:name=".phone.ReminderReceiver" android:exported="false" />
         <receiver android:name=".phone.a11y.A11yKeeper$Receiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />

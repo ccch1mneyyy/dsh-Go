@@ -14,6 +14,9 @@ object PhoneToolCatalog {
     const val INTENT = "intent"
     const val NOTIFY = "notify"
     const val CLIPBOARD = "clipboard"
+    const val CALENDAR = "calendar"
+    const val LOCATION = "location"
+    const val REMIND = "remind"
     const val SCREEN = "screen"
     const val COLLECT = "collect"
     const val TAP = "tap"
@@ -37,6 +40,7 @@ object PhoneToolCatalog {
     }
 
     val INTENT_KINDS = listOf("alarm", "timer", "calendar", "dial", "sms_draft", "share", "navigate", "settings")
+    val CALENDAR_RANGES = listOf("today", "tomorrow", "week")
     val SETTINGS_PAGES = listOf(
         "home", "wifi", "bluetooth", "mobile_network", "airplane", "display", "sound", "battery",
         "location", "date", "language", "storage", "nfc", "app_notifications",
@@ -163,6 +167,45 @@ object PhoneToolCatalog {
             // l10n:keep agent tool catalog
             linkedMapOf("set" to str("要写入的文字"), "get" to bool("读取剪贴板")),
             emptyList(),
+        ),
+        Tool(
+            CALENDAR,
+            // l10n:keep agent tool catalog
+            "只读系统日历：按 range（today / tomorrow / week）或 from+to 取一段时间里的日程，返回时间、标题、地点、日历名和是否占用。不改任何日程；要新建日程用 intent 的 calendar。没授予日历权限时会说明要开哪个开关，不会返回空列表冒充没有日程。",
+            linkedMapOf(
+                // l10n:keep agent tool catalog
+                "range" to enum(CALENDAR_RANGES, "时间范围，默认 today；给了 from 时忽略"),
+                // l10n:keep agent tool catalog
+                "from" to str("开始，如 2026-11-16 或 2026-11-16T09:00（手机时区）"),
+                // l10n:keep agent tool catalog
+                "to" to str("结束，省略时为开始后 1 小时，全天写日期时按 1 天"),
+                // l10n:keep agent tool catalog
+                "limit" to int("最多返回条数，1–100，默认 20"),
+            ),
+            emptyList(),
+        ),
+        Tool(
+            LOCATION,
+            // l10n:keep agent tool catalog
+            "只读手机最近一次的定位结果：纬度、经度、精度与距今多久。不主动发起定位、不打开任何界面，坐标系是 WGS-84；没有可用结果时返回要怎么让手机先定位一次。",
+            linkedMapOf<String, Any?>(),
+            emptyList(),
+        ),
+        Tool(
+            REMIND,
+            // l10n:keep agent tool catalog
+            "在指定时间发一条手机通知（系统闹钟调度，App 不在前台也会响）。after_min 与 at 二选一。不改系统闹钟、不写日历；系统省电策略可能让它晚几分钟，强制停止或重启会丢掉还没响的提醒。",
+            linkedMapOf(
+                // l10n:keep agent tool catalog
+                "title" to str("标题"),
+                // l10n:keep agent tool catalog
+                "text" to str("正文，省略时与标题相同"),
+                // l10n:keep agent tool catalog
+                "after_min" to int("多少分钟后提醒，1–10080"),
+                // l10n:keep agent tool catalog
+                "at" to str("提醒时间，如 2026-11-16T19:30（手机时区）"),
+            ),
+            listOf("title"),
         ),
         Tool(
             SCREEN,
