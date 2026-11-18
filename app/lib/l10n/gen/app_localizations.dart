@@ -17972,6 +17972,54 @@ abstract class L10n {
   /// **'重新准备画中画'**
   String get iosPetPipReopen;
 
+  /// No description provided for @lanAccessTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网访问'**
+  String get lanAccessTitle;
+
+  /// No description provided for @lanAccessEnable.
+  ///
+  /// In zh, this message translates to:
+  /// **'允许局域网访问'**
+  String get lanAccessEnable;
+
+  /// No description provided for @lanAccessHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认关闭。仅在可信 Wi-Fi 下开启；同一网络的设备可用短地址访问本机引擎。'**
+  String get lanAccessHint;
+
+  /// No description provided for @lanAccessHintOn.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅当前 Wi-Fi 的具体 IPv4 地址开放；网络变化会停止引擎。'**
+  String get lanAccessHintOn;
+
+  /// No description provided for @lanAccessWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网访问使用普通 HTTP，短地址会自动换取访问凭据，获得地址的人可管理本机引擎和文件。请只在可信 Wi-Fi 下开启，不要转发端口或把地址发给他人；用完请关闭。'**
+  String get lanAccessWarning;
+
+  /// No description provided for @lanAccessCopyAddress.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制电脑访问地址'**
+  String get lanAccessCopyAddress;
+
+  /// No description provided for @lanAccessUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前 Wi-Fi 没有可用的私有 IPv4 地址，或端口被占用，未开启局域网访问。'**
+  String get lanAccessUnavailable;
+
+  /// No description provided for @lanAccessFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'未能切换局域网访问，请停止本机引擎后重试。'**
+  String get lanAccessFailed;
+
   /// No description provided for @launchScreenTitle.
   ///
   /// In zh, this message translates to:

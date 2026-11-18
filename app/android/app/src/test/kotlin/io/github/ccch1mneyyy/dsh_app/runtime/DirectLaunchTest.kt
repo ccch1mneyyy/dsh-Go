@@ -20,6 +20,61 @@ class DirectLaunchTest {
         }
     }
 
+    @Test fun trustedLanHostIsConcretePrivateIpv4Only() {
+        val lan = command + " --trusted-host 192.168.110.71:3080"
+        assertEquals(
+            listOf("web", "--patch", "/etc/dsh-app/dsh-web.patch.yml", "--patch", "/opt/dsh-app/auth/auth.patch.yml",
+                "--host", "127.0.0.1", "--port", "3080", "--no-open", "--trusted-host", "192.168.110.71:3080"),
+            DirectLaunch.webArguments(lan),
+        )
+        assertEquals("--trusted-host 192.168.110.71:3080",
+            LaunchFlags.trustedHost(command, "192.168.110.71:3080").substringAfter("--no-open "))
+        for (bad in listOf("0.0.0.0:3080", "8.8.8.8:3080", "localhost:3080", "192.168.1.1:65536", "192.168.1.1")) {
+            assertThrows(IllegalArgumentException::class.java) { LaunchFlags.trustedHost(command, bad) }
+            assertThrows(IllegalArgumentException::class.java) { DirectLaunch.webArguments(command + " --trusted-host $bad") }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            LaunchFlags.trustedHost(command.replace("dsh web", "dsh --profile safe web"), "192.168.110.71:3080")
+        }
+        for (bad in listOf(command + "; echo bad", command + " \$(id)", command.replace("127.0.0.1", "0.0.0.0"))) {
+            assertThrows(IllegalArgumentException::class.java) {
+                LaunchFlags.trustedHost(bad, "192.168.110.71:3080")
+            }
+        }
+    }
+
+    @Test fun lanAddressSelectionRejectsPublicLoopbackAndIpv6() {
+        assertEquals("192.168.110.71", LaunchFlags.lanAddress(listOf("127.0.0.1", "192.168.110.71", "10.0.0.2")))
+        for (bad in listOf(listOf("8.8.8.8"), listOf("127.0.0.1"), listOf("169.254.1.2"), listOf("2408:8207::1"))) {
+            assertThrows(IllegalArgumentException::class.java) { LaunchFlags.lanAddress(bad) }
+        }
+    }
+
+    @Test fun lanAuthorityUsesTheEnginesOwnListeningPort() {
+        assertEquals(3081, LaunchFlags.authorityPort("192.168.110.71:3081"))
+        assertEquals("--trusted-host 192.168.110.71:3081",
+            LaunchFlags.trustedHost(command.replace("--port 3080", "--port 3081"), "192.168.110.71:3081")
+                .substringAfter("--no-open "))
+    }
+
+    @Test fun templatePortIsExpandedBeforeTheLanAuthorityIsChecked() {
+        val template = prefix + "web --patch /etc/dsh-app/dsh-web.patch.yml --host 127.0.0.1 --port {PORT} --no-open"
+        val (expanded, placed) = LaunchFlags.compose(template, "192.168.110.71:3080") { it.replace("{PORT}", "3080") }
+        assertTrue(placed)
+        assertTrue(expanded.endsWith("--port 3080 --no-open --trusted-host 192.168.110.71:3080"))
+        assertFalse(expanded.contains("{PORT}"))
+        assertThrows(IllegalArgumentException::class.java) {
+            LaunchFlags.compose(template, "192.168.110.71:3081") { it.replace("{PORT}", "3080") }
+        }
+    }
+
+    @Test fun unknownTemplateReportsNoTrustedHostPlacement() {
+        assertFalse(LaunchFlags.compose("proot -b /dev:/dev", "192.168.110.71:3080") { it }.second)
+        assertThrows(IllegalArgumentException::class.java) {
+            LaunchFlags.trustedHost("proot -b /dev:/dev", "192.168.110.71:3080")
+        }
+    }
+
     @Test fun shellQuoteRetainsSpacesAndApostropheWithoutExpansion() {
         assertEquals("'a b'\\''c\$d'", DirectLaunch.quote("a b'c\$d"))
         assertThrows(IllegalArgumentException::class.java) { DirectLaunch.quote("line\nbreak") }

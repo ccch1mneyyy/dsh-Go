@@ -42,6 +42,16 @@ abstract final class EngineControl {
     }
   }
 
+  /// LAN exposure is a launch-time decision: stop, save, then start with the
+  /// current Wi-Fi address and a matching trusted Host.
+  static Future<void> setLanAccess(ProviderContainer container, {required bool enabled}) async {
+    if (!await _stopAndWait(container)) throw PlatformException(code: 'runtime_not_stopped');
+    await container.read(runtimeBridgeProvider).setLanAccess(enabled);
+    if (!await _restart(container)) {
+      throw PlatformException(code: 'runtime_not_stopped_after_lan_access');
+    }
+  }
+
   /// Starts the engine unless it is already starting or running.
   static Future<void> ensureStarted(ProviderContainer container) async {
     final phase = container.read(localRuntimeProvider).status.phase;

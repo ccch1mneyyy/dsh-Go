@@ -84,7 +84,7 @@ class DshProcess(
      * [binds] are extra proot `-b host:guest` mounts, inserted before the guest command.
      * [safe] boots the rescue profile instead of `web` (see [SafeMode.profileArg]).
      */
-    fun start(guestEnv: Map<String, String>, binds: List<String> = emptyList(), safe: Boolean = false, phone: Boolean = false, directEngine: Boolean = false, directFailed: Boolean = false, searchOverlay: Boolean = false, authOverlay: Boolean = false, speechOverlay: Boolean = false, tawcEngine: Boolean = false, tawcFailed: Boolean = false, onLaunchMethod: ((Boolean) -> Unit)? = null) {
+    fun start(guestEnv: Map<String, String>, binds: List<String> = emptyList(), safe: Boolean = false, phone: Boolean = false, directEngine: Boolean = false, directFailed: Boolean = false, searchOverlay: Boolean = false, authOverlay: Boolean = false, speechOverlay: Boolean = false, lanAuthority: String? = null, port: Int? = null, tawcEngine: Boolean = false, tawcFailed: Boolean = false, onLaunchMethod: ((Boolean) -> Unit)? = null) {
         check(process == null) { "already started" }
         // tawcroot wins over Direct when both are on; like Direct it needs PRoot's fake hard links gone.
         val tawcWanted = tawcEngine && !safe
@@ -110,7 +110,8 @@ class DshProcess(
         val pidFile = File(rootfs, "tmp/dsh-web.pid")
         pidFile.delete() // also removes a stale/dangling symlink; never reuse a previous run's PID
         check(!java.nio.file.Files.exists(pidFile.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) { "cannot remove stale runtime pid file" }
-        port = pickPort()
+        val selectedPort = port?.takeIf { it in 1..65535 } ?: pickPort()
+        this.port = selectedPort
         val tmp = File(context.cacheDir, "proot-tmp").apply { mkdirs() }
         if (cleanup.canPruneTemp) {
             val reclaimed = ProotTempFiles.prune(tmp) { pid -> processReader.uid(pid) == null }
@@ -122,7 +123,7 @@ class DshProcess(
             "{ROOTFS}" to rootfs.canonicalPath,
             "{TMP}" to tmp.absolutePath,
             "{FILES_DIR}" to context.filesDir.absolutePath,
-            "{PORT}" to port.toString(),
+            "{PORT}" to selectedPort.toString(),
         )
         fun expand(s: String) = vars.entries.fold(s) { acc, (k, v) -> acc.replace(k, v) }
 
@@ -137,6 +138,7 @@ class DshProcess(
         check(manifest.launchArgv.isNotEmpty()) { "runtime manifest has no launch.argv" }
         var bindsPlaced = false
         var profileSelected = false
+        var trustedHostPlaced = 0
         // Only overlays successfully prepared for this launch; cleanup may leave an old file behind.
         // Also require the file in place (a missing --patch file stops DSH).
         var searchPending = !safe && searchOverlay && SessionSearchGuest.file(rootfs).isFile
@@ -164,9 +166,13 @@ class DshProcess(
                 if (withAuth != null) authPending = false
                 val withSpeech = if (speechPending) SpeechGuest.launchArg(withAuth ?: withSearch ?: withPhone ?: selected ?: arg) else null
                 if (withSpeech != null) speechPending = false
-                argv += expand(withSpeech ?: withAuth ?: withSearch ?: withPhone ?: selected ?: arg)
+                val composed = withSpeech ?: withAuth ?: withSearch ?: withPhone ?: selected ?: arg
+                val (expanded, placed) = LaunchFlags.compose(composed, lanAuthority, ::expand)
+                if (placed) trustedHostPlaced++
+                argv += expanded
             }
         }
+        check(lanAuthority == null || trustedHostPlaced == 1) { "unsupported trusted-host launch template" }
         check(!safe || profileSelected) { "safe mode: this runtime's launch command has no `dsh web` to replace" }
 
         val builder = ProcessBuilder(argv).directory(context.filesDir)

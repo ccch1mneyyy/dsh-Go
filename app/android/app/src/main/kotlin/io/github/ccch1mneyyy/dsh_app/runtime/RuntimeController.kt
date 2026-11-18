@@ -51,6 +51,7 @@ class RuntimeController private constructor(private val app: Context) : DshProce
     private val lkgFile = File(app.filesDir, "runtime/lkg/lkg.json")
     private val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val workspaceRecovery = WorkspaceRecoveryMode(prefs.getBoolean(K_WORKSPACE_RECOVERY, false))
+    private val lanAccess = LanAccess(app)
 
     val manifest: RuntimeManifest by lazy { RuntimeManifest.load(app) }
     private val installer by lazy { RuntimeInstaller(app, manifest, ::note) }
@@ -68,6 +69,9 @@ class RuntimeController private constructor(private val app: Context) : DshProce
     @Volatile private var pendingPhoneStorage = false
     /** Whether the managed AGENTS.md tells the model about ```dsh-ui views (settings, on by default). */
     @Volatile private var pendingVisualReplies = true
+    @Volatile private var lanEnabled = prefs.getBoolean(K_LAN_ACCESS, false)
+    @Volatile private var lanEndpoint: LanAccess.Endpoint? = null
+    @Volatile private var lanPending: LanAccess.Endpoint? = null
 
     // Safe mode and failure detection. State that must survive the app being killed lives in [prefs].
     @Volatile private var safeState = SafeState.parse(prefs.getString(K_SAFE_STATE, null))
@@ -141,6 +145,10 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         "strikes" to strikes,
         "autoSafe" to autoSafe(),
         "workspaceRecovery" to workspaceRecovery.enabled,
+        "lanAccessEnabled" to lanEnabled,
+        "lanAddress" to lanEndpoint?.host,
+        "lanPort" to lanEndpoint?.port,
+        "lanBaseUrl" to lanEndpoint?.baseUrl,
         "failure" to failure?.toMap(),
         "mainFailure" to mainFailure?.toMap(),
         "healthyAt" to healthyAt,
@@ -202,6 +210,20 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         val edit = prefs.edit().putBoolean(K_TAWC_ENGINE, enabled).remove(K_TAWC_FAILED)
         if (enabled) edit.putBoolean(K_DIRECT_ENGINE, false)
         edit.apply()
+        emitStatus()
+    }
+
+    /** The LAN switch is launch-time only: the trusted Host and bound IP are fixed at boot. */
+    @Synchronized fun setLanAccess(enabled: Boolean) {
+        check(process == null && phase !in setOf(Phase.STARTING, Phase.RUNNING, Phase.STOPPING, Phase.INSTALLING) && !resetting) {
+            "stop the engine before changing LAN access"
+        }
+        if (enabled) lanAccess.reserve(DshProcess.DEFAULT_PORT)
+        prefs.edit().putBoolean(K_LAN_ACCESS, enabled).commit()
+        lanEnabled = enabled
+        if (!enabled) {
+            retireLanLocked()
+        }
         emitStatus()
     }
 
@@ -502,6 +524,8 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         synchronized(runTail) { runTail.clear() }
         setPhase(Phase.STARTING)
         timeline.requested()
+        val requestedLan = lanEnabled && !safe
+        var openedLan: LanAccess.Endpoint? = null
         worker.execute {
             var launched: DshProcess? = null
             try {
@@ -510,6 +534,14 @@ class RuntimeController private constructor(private val app: Context) : DshProce
                 } catch (e: Exception) {
                     // The new engine is ready; a later start can retry only the retired payload.
                     log("[dsh-app] completed engine cleanup failed: ${e.message}", "system")
+                }
+                lanEndpoint = null
+                lanPending = null
+                lanAccess.close()
+                if (requestedLan) {
+                    openedLan = lanAccess.reserve(DshProcess.DEFAULT_PORT)
+                    lanPending = openedLan
+                    log("[dsh-app] LAN access selected ${openedLan.authority}; trusted Wi-Fi only", "system")
                 }
                 noteDns(GuestSetup.writeResolvConf(app, installer.rootfs), DnsConfigSource.START)
                 val storage = pendingPhoneStorage && PhoneStorage.isGranted(app) && PhoneStorage.binds().isNotEmpty()
@@ -575,10 +607,20 @@ class RuntimeController private constructor(private val app: Context) : DshProce
                     PhoneControl.get(app).onEngineStopped()
                     return@execute
                 }
+                val cancelled = synchronized(this@RuntimeController) {
+                    gen != runGen || stopGen >= gen
+                }
+                val forwarder = if (requestedLan && !cancelled && lanEnabled) openedLan else null
+                if (forwarder == null && requestedLan) retireLanLocked()
+                if (forwarder != null) {
+                    lanAccess.openBound(forwarder.host, forwarder.port)
+                    log("[dsh-app] LAN access selected ${forwarder.authority}; waiting for DSH to become ready", "system")
+                } else if (cancelled) p.stop()
                 timeline.spawned()
                 val direct = directEngine()
                 val tawc = tawcEngine()
                 p.start(env, if (storage) PhoneStorage.binds() else emptyList(), safe, phone, direct.requested, direct.failed, searchOverlay, authOverlay, speechOverlay,
+                    forwarder?.authority, forwarder?.port,
                     tawcEngine = tawc.saved == true, tawcFailed = tawc.failed) { actualDirect ->
                     // SafeMode.prepare writes its own briefing; leave the original home untouched.
                     if (!safe) GuestSetup.writeAgentsMd(
@@ -593,6 +635,7 @@ class RuntimeController private constructor(private val app: Context) : DshProce
                 launched?.launchDiagnostics?.failed("startFailed")
                 launched?.let { p -> p.failStart(e.message ?: e.javaClass.simpleName); p.awaitExit() }
                 synchronized(this) {
+                    retireLanLocked()
                     if (gen != runGen) return@execute
                     process = null
                     PhoneControl.get(app).onEngineStopped()
@@ -616,6 +659,7 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         if (expectedGeneration != null && expectedGeneration != runGen) return false
         if (phase == Phase.INSTALLING) return false
         stopGen = runGen
+        retireLanLocked()
         val p = process
         if (p == null) {
             if (phase == Phase.STARTING) {
@@ -640,6 +684,7 @@ class RuntimeController private constructor(private val app: Context) : DshProce
     internal fun refreshDns(watch: NetworkAccess.Watch, properties: LinkProperties) {
         val gen = runGen
         val servers = GuestSetup.pickDns(properties.dnsServers)
+        refreshLanAddress(watch, properties)
         worker.execute {
             if (phase == Phase.RUNNING || phase == Phase.STARTING) {
                 // Check ownership where this queued write executes, not only in the callback.
@@ -648,6 +693,34 @@ class RuntimeController private constructor(private val app: Context) : DshProce
                 noteDns(GuestSetup.writeResolvConf(installer.rootfs, servers), DnsConfigSource.NETWORK)
             }
         }
+    }
+
+    /** A changed Wi-Fi address invalidates both the bound socket and DSH's trusted Host. */
+    private fun refreshLanAddress(watch: NetworkAccess.Watch, properties: LinkProperties) {
+        if (!lanEnabled || !networkAccess.isCurrent(watch)) return
+        val snapshot = synchronized(this@RuntimeController) {
+            val endpoint = lanEndpoint ?: lanPending ?: return
+            runGen to endpoint
+        }
+        val gen = snapshot.first
+        val active = snapshot.second
+        val next = runCatching { lanAccess.address() }.getOrNull()
+        if (next == active.host) return
+        log("[dsh-app] LAN address ${active.host} is no longer current; stopping the engine to retire the old trusted host", "system")
+        main.post {
+            synchronized(this@RuntimeController) {
+                if (gen != runGen || (lanEndpoint ?: lanPending)?.host != active.host) return@post
+                retireLanLocked()
+                emitStatus()
+                if (phase != Phase.INSTALLING) stopProcess()
+            }
+        }
+    }
+
+    @Synchronized private fun retireLanLocked() {
+        lanAccess.close()
+        lanEndpoint = null
+        lanPending = null
     }
 
     private fun noteDns(report: DnsConfigReport, source: DnsConfigSource) {
@@ -1036,6 +1109,14 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         }
         if (!runSafe) healthyAt = System.currentTimeMillis() + SafePolicy.HEALTHY_MS
         log("[dsh-app] DSH is listening at $baseUrl${if (runSafe) " (safe mode)" else ""}", "system")
+        if (source.port == DshProcess.DEFAULT_PORT && !runSafe && lanEnabled) {
+            lanEndpoint = lanAccess.current
+            lanEndpoint?.let {
+                lanAccess.setToken(token)
+                log("[dsh-app] LAN access is ready at ${it.baseUrl}", "system")
+            }
+        }
+        lanPending = null
         timeline.ready()?.let { log(it, "system") }
         setPhase(Phase.RUNNING)
         PhoneControl.get(app).onEngineReady()
@@ -1053,6 +1134,7 @@ class RuntimeController private constructor(private val app: Context) : DshProce
             if (source.startupError != null) source.launchDiagnostics.failed("startFailed")
             else if (!expected && stopGen < runGen) source.launchDiagnostics.failed("exit:$code")
             process = null
+            retireLanLocked()
             PhoneControl.get(app).onEngineStopped()
             baseUrl = null
             token = null
@@ -1183,6 +1265,7 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         private const val K_MOVED = "movedAside"
         private const val K_AUTO_SAFE = "autoSafe"
         private const val K_WORKSPACE_RECOVERY = "workspaceRecovery"
+        private const val K_LAN_ACCESS = "lanAccess"
         private const val K_DIRECT_ENGINE = "directEngine"
         /** Runtime version Direct failed to launch with (see [SafePolicy.directLaunchFailed]). */
         private const val K_DIRECT_FAILED = "directEngineFailedRuntime"

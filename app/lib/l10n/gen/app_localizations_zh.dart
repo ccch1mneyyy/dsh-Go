@@ -9693,6 +9693,30 @@ class L10nZh extends L10n {
   String get iosPetPipReopen => '重新准备画中画';
 
   @override
+  String get lanAccessTitle => '局域网访问';
+
+  @override
+  String get lanAccessEnable => '允许局域网访问';
+
+  @override
+  String get lanAccessHint => '默认关闭。仅在可信 Wi-Fi 下开启；同一网络的设备可用短地址访问本机引擎。';
+
+  @override
+  String get lanAccessHintOn => '仅当前 Wi-Fi 的具体 IPv4 地址开放；网络变化会停止引擎。';
+
+  @override
+  String get lanAccessWarning => '局域网访问使用普通 HTTP，短地址会自动换取访问凭据，获得地址的人可管理本机引擎和文件。请只在可信 Wi-Fi 下开启，不要转发端口或把地址发给他人；用完请关闭。';
+
+  @override
+  String get lanAccessCopyAddress => '复制电脑访问地址';
+
+  @override
+  String get lanAccessUnavailable => '当前 Wi-Fi 没有可用的私有 IPv4 地址，或端口被占用，未开启局域网访问。';
+
+  @override
+  String get lanAccessFailed => '未能切换局域网访问，请停止本机引擎后重试。';
+
+  @override
   String get launchScreenTitle => '启动画面';
 
   @override

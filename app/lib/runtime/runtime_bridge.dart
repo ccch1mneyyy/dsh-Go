@@ -184,6 +184,10 @@ class RuntimeStatus {
     this.error,
     this.mode = EngineMode.normal,
     this.workspaceRecovery = false,
+    this.lanAccessEnabled = false,
+    this.lanAddress,
+    this.lanPort,
+    this.lanBaseUrl,
     this.safeState = SafeModeState.off,
     this.safeReason,
     this.strikes = 0,
@@ -242,6 +246,12 @@ class RuntimeStatus {
   /// Uses the persistent independent workspace index on this local runtime.
   /// This is a launch setting, not evidence that workspace services are ready.
   final bool workspaceRecovery;
+
+  /// Expose the loopback engine through one concrete private Wi-Fi IPv4.
+  final bool lanAccessEnabled;
+  final String? lanAddress;
+  final int? lanPort;
+  final String? lanBaseUrl;
   final SafeModeState safeState;
 
   /// Why safe mode is on: `manual`, `auto` (two failures in a row) or `probation` (normal mode failed again).
@@ -342,6 +352,10 @@ class RuntimeStatus {
     error: map['error'] as String?,
     mode: EngineMode.parse(map['mode']),
     workspaceRecovery: map['workspaceRecovery'] == true,
+    lanAccessEnabled: map['lanAccessEnabled'] == true,
+    lanAddress: map['lanAddress'] as String?,
+    lanPort: (map['lanPort'] as num?)?.toInt(),
+    lanBaseUrl: map['lanBaseUrl'] as String?,
     safeState: SafeModeState.parse(map['safeState']),
     safeReason: map['safeReason'] as String?,
     strikes: (map['strikes'] as num?)?.toInt() ?? 0,
@@ -686,6 +700,9 @@ class RuntimeBridge {
   /// verifies the engine is stopped; this call does not start or stop it.
   Future<void> setWorkspaceRecovery(bool enabled) =>
       _methods.invokeMethod<void>('setWorkspaceRecovery', {'enabled': enabled});
+
+  /// Explicit LAN entry; native code rejects changes while active.
+  Future<void> setLanAccess(bool enabled) => _methods.invokeMethod<void>('setLanAccess', {'enabled': enabled});
 
   /// Takes effect on the next start; native code rejects changes while active.
   Future<void> setDirectEngine(bool enabled) => _methods.invokeMethod<void>('setDirectEngine', {'enabled': enabled});

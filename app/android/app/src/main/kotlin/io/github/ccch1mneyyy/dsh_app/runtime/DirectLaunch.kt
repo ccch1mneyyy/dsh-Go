@@ -190,6 +190,7 @@ object DirectLaunch {
         var i = 1
         var port = false
         var host = false
+        var trustedHost = false
         while (i < args.size) {
             when (args[i]) {
                 "--no-open" -> i++
@@ -204,6 +205,12 @@ object DirectLaunch {
                 "--port" -> {
                     require(!port && args.getOrNull(i + 1)?.toIntOrNull() in 1..65535) { "direct engine: invalid port" }
                     port = true; i += 2
+                }
+                "--trusted-host" -> {
+                    require(!trustedHost && args.getOrNull(i + 1)?.let(LaunchFlags::authorityPort) != null) {
+                        "direct engine: invalid trusted host"
+                    }
+                    trustedHost = true; i += 2
                 }
                 else -> throw IllegalArgumentException("direct engine: unsupported web flag ${args[i]}")
             }

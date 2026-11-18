@@ -51,6 +51,7 @@ You can add DSH to this phone anytime: tap **Install runtime** on the engine pag
 - **Start in Safe mode**: enter Safe mode by hand. Once fixed, tap **Return to normal mode**. Entering and leaving both restart the engine.
 - **Logs**: the engine's live output.
 - **Background running** and **Diagnostics**: see [FAQ](11-faq.md).
+- **LAN access**: off by default. Enable only on trusted Wi-Fi; the switch stops and restarts the local engine, and listens on one concrete IPv4 address of the current Wi-Fi network. Tap **Copy computer access address** to copy a short address such as `http://phone-ip:3080/login`, then open it in a browser on a computer on the same network. The short address redirects to the one-time-token address and exchanges it for a login session. It uses plain HTTP and gives anyone with the address owner-level control of this phone's engine. Do not forward the port or share the address, and turn it off when finished. It refuses to enable without a usable private IPv4 address or when the LAN port is busy; an IP change or leaving that Wi-Fi stops the engine. Start it again for the new address.
 
 ## Updates and installed tools
 

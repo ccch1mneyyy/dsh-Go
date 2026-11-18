@@ -1,0 +1,10 @@
+{
+  "lanAccessTitle": "LAN access",
+  "lanAccessEnable": "Allow LAN access",
+  "lanAccessHint": "Off by default. Enable only on trusted Wi-Fi; devices on the same network can use a short address to reach this phone's engine.",
+  "lanAccessHintOn": "Only the current Wi-Fi IPv4 address is exposed. A network change stops the engine.",
+  "lanAccessWarning": "LAN access uses plain HTTP. The short address automatically obtains a session credential and grants owner access to this phone's engine and files. Enable it only on trusted Wi-Fi. Do not forward the port or share the address; turn it off when finished.",
+  "lanAccessCopyAddress": "Copy computer access address",
+  "lanAccessUnavailable": "This Wi-Fi has no usable private IPv4 address, or the LAN port is busy. LAN access was not enabled.",
+  "lanAccessFailed": "Could not change LAN access. Stop the local engine and try again."
+}

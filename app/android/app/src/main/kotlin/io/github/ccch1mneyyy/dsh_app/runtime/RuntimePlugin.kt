@@ -187,6 +187,16 @@ class RuntimePlugin :
                     )
                 }
             }
+            "setLanAccess" -> {
+                val enabled = (call.arguments as? Map<*, *>)?.get("enabled") as? Boolean
+                if (enabled == null) result.error("lan_access_invalid", "enabled must be a boolean", null)
+                else try {
+                    controller.setLanAccess(enabled)
+                    result.success(null)
+                } catch (error: IllegalStateException) {
+                    result.error("lan_access_unavailable", error.message, null)
+                }
+            }
             "setDirectEngine" -> {
                 try {
                     controller.setDirectEngine(call.argument<Boolean>("enabled") == true)

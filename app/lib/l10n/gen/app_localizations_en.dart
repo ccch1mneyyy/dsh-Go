@@ -10235,6 +10235,33 @@ class L10nEn extends L10n {
   String get iosPetPipReopen => 'Get picture-in-picture ready again';
 
   @override
+  String get lanAccessTitle => 'LAN access';
+
+  @override
+  String get lanAccessEnable => 'Allow LAN access';
+
+  @override
+  String get lanAccessHint =>
+      'Off by default. Enable only on trusted Wi-Fi; devices on the same network can use a short address to reach this phone\'s engine.';
+
+  @override
+  String get lanAccessHintOn => 'Only the current Wi-Fi IPv4 address is exposed. A network change stops the engine.';
+
+  @override
+  String get lanAccessWarning =>
+      'LAN access uses plain HTTP. The short address automatically obtains a session credential and grants owner access to this phone\'s engine and files. Enable it only on trusted Wi-Fi. Do not forward the port or share the address; turn it off when finished.';
+
+  @override
+  String get lanAccessCopyAddress => 'Copy computer access address';
+
+  @override
+  String get lanAccessUnavailable =>
+      'This Wi-Fi has no usable private IPv4 address, or the LAN port is busy. LAN access was not enabled.';
+
+  @override
+  String get lanAccessFailed => 'Could not change LAN access. Stop the local engine and try again.';
+
+  @override
   String get launchScreenTitle => 'Launch screen';
 
   @override
