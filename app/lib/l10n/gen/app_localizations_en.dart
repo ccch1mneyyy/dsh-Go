@@ -4499,6 +4499,21 @@ class L10nEn extends L10n {
   String get chatTakePhoto => 'Take photo';
 
   @override
+  String get photoCropFree => 'Free';
+
+  @override
+  String get photoCropRotate => 'Rotate';
+
+  @override
+  String get photoCropRetake => 'Retake';
+
+  @override
+  String get photoCropUnreadable => 'Can’t open this photo';
+
+  @override
+  String get photoCropUseOriginal => 'Use original';
+
+  @override
   String get chatAddAttachment => 'Add image or file';
 
   @override

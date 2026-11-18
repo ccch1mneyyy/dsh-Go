@@ -7862,6 +7862,36 @@ abstract class L10n {
   /// **'拍照'**
   String get chatTakePhoto;
 
+  /// No description provided for @photoCropFree.
+  ///
+  /// In zh, this message translates to:
+  /// **'自由'**
+  String get photoCropFree;
+
+  /// No description provided for @photoCropRotate.
+  ///
+  /// In zh, this message translates to:
+  /// **'旋转'**
+  String get photoCropRotate;
+
+  /// No description provided for @photoCropRetake.
+  ///
+  /// In zh, this message translates to:
+  /// **'重拍'**
+  String get photoCropRetake;
+
+  /// No description provided for @photoCropUnreadable.
+  ///
+  /// In zh, this message translates to:
+  /// **'这张照片打不开'**
+  String get photoCropUnreadable;
+
+  /// No description provided for @photoCropUseOriginal.
+  ///
+  /// In zh, this message translates to:
+  /// **'用原图'**
+  String get photoCropUseOriginal;
+
   /// No description provided for @chatAddAttachment.
   ///
   /// In zh, this message translates to:

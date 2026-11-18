@@ -384,6 +384,11 @@
   "chatInterrupted": "已中断",
   "chatGallery": "相册",
   "chatTakePhoto": "拍照",
+  "photoCropFree": "自由",
+  "photoCropRotate": "旋转",
+  "photoCropRetake": "重拍",
+  "photoCropUnreadable": "这张照片打不开",
+  "photoCropUseOriginal": "用原图",
   "chatAddAttachment": "添加图片或文件",
   "chatRemoveAttachment": "移除「{name}」",
   "@chatRemoveAttachment": {

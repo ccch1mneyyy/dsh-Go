@@ -4256,6 +4256,21 @@ class L10nZh extends L10n {
   String get chatTakePhoto => '拍照';
 
   @override
+  String get photoCropFree => '自由';
+
+  @override
+  String get photoCropRotate => '旋转';
+
+  @override
+  String get photoCropRetake => '重拍';
+
+  @override
+  String get photoCropUnreadable => '这张照片打不开';
+
+  @override
+  String get photoCropUseOriginal => '用原图';
+
+  @override
   String get chatAddAttachment => '添加图片或文件';
 
   @override

@@ -105,6 +105,7 @@ import 'mention/mention_controller.dart';
 import 'mention/mention_picker.dart';
 import 'mention/mention_text_controller.dart';
 import 'model_sheet.dart';
+import 'photo_crop_page.dart';
 import 'slash_palette.dart';
 import 'trajectory_sheet.dart';
 import 'usage_sheet.dart';
@@ -1094,7 +1095,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
       try {
         picked = switch (source) {
           AttachSource.gallery => PickedAttachments(await picker.pickImages(limit: room)),
-          AttachSource.camera => PickedAttachments([?await picker.takePhoto()]),
+          AttachSource.camera => PickedAttachments([?await _takePhoto(picker)]),
           AttachSource.files => await picker.pickFiles(limit: room, heldBytes: totalAttachmentBytes(_drafts)),
         };
       } on PlatformException catch (e) {
@@ -1115,6 +1116,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     } finally {
       hostChanges.close();
     }
+  }
+
+  /// 拍照:拍完先停在裁剪页,按 ✓ 的那一块才进输入框;取消、重拍后取消都不留
+  /// (docs/design/settings-ia.md §4.4)。
+  Future<DraftAttachment?> _takePhoto(AttachmentPicker picker) async {
+    final photo = await picker.takePhoto();
+    if (photo == null || !mounted) return null;
+    return showPhotoCropPage(context, photo: photo, retake: picker.takePhoto);
   }
 
   /// An image from the keyboard (screenshot, sticker): into the tray, not sent.
