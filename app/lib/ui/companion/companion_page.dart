@@ -330,11 +330,21 @@ class _CompanionPageState extends ConsumerState<CompanionPage> implements Compan
       mode: () => ref.read(voiceSettingsProvider.notifier).ready(),
       cloud: (mode) => ref.read(voiceCloudProvider)(mode),
       cloudLikely: () => ref.read(voiceCloudLikelyProvider)(),
-      modelReady: () =>
-          mounted &&
-          (ref.read(activeConnectionProvider).value?.isLocal ?? false) &&
-          ref.read(voiceModelProvider).status == VoiceModelStatus.ready,
+      modelReady: () {
+        if (!mounted || ref.read(voiceModelProvider).status != VoiceModelStatus.ready) return false;
+        final active = ref.read(activeConnectionProvider).value;
+        if (active?.isLocal ?? false) return true;
+        return active?.client.carrier.kind == 'remote-relay' &&
+            ref.read(localConnectionProvider).value?.client != null;
+      },
       client: () => mounted ? ref.read(activeConnectionProvider).value?.client : null,
+      speechClient: () {
+        if (!mounted) return null;
+        final active = ref.read(activeConnectionProvider).value?.client;
+        return active?.carrier.kind == 'remote-relay'
+            ? ref.read(localConnectionProvider).value?.client
+            : active;
+      },
       onRecognized: () {
         final current = _currentRoom();
         scheduleMicrotask(() {

@@ -9,6 +9,7 @@ import 'package:dsh_app/speech/speech_settings.dart';
 import 'package:dsh_app/speech/call/voice_call.dart';
 import 'package:dsh_app/speech/voice_cloud.dart';
 import 'package:dsh_app/state/app_notes.dart';
+import 'package:dsh_app/state/hosts_state.dart' show HostRef, activeHostProvider;
 import 'package:dsh_app/state/voice_state.dart';
 import 'package:dsh_app/ui/speech/call/call_backdrop.dart';
 import 'package:dsh_app/ui/speech/call/call_parts.dart';
@@ -23,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../chat/support/composer_fakes.dart';
 import '../chat/support/harness.dart';
+import '../phone/support.dart' show FixedActiveHost;
 import 'speech_fakes.dart';
 
 void main() {
@@ -35,6 +37,7 @@ void main() {
     bool still = false,
     void Function()? opened,
     String said = '这周末北京天气怎么样',
+    Future<VoiceCloud?> Function()? recognizer,
   }) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3;
@@ -64,7 +67,7 @@ void main() {
         ),
         overrides: [
           speechAudioProvider.overrideWithValue(audio),
-          callRecognizerProvider.overrideWithValue(() async => FakeCloud(said)),
+          callRecognizerProvider.overrideWithValue(recognizer ?? (() async => FakeCloud(said))),
           voiceBridgeProvider.overrideWithValue(FakeVoiceBridge()),
           deepSeekSpeechProvider.overrideWithValue(() async => FakeDeepSeek()),
           ...extra,
@@ -82,6 +85,20 @@ void main() {
     }
     return (audio, conversation);
   }
+
+  testWidgets('relay call without a recognizer explains the relay, not billing', (tester) async {
+    await pumpCall(
+      tester,
+      recognizer: () async => null,
+      extra: [activeHostProvider.overrideWith(() => FixedActiveHost(HostRef.relay('relay-host')))],
+    );
+    expect(
+      find.text(
+        'DSH Remote 中继上，账号付费语音和引擎语音模型都用不了，通话没法识别。在设置里填 DeepSeek API Key 或配置其他云端识别后可以通话；换成本机引擎或 SSH 远程主机也能用登录账号和语音模型',
+      ),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('a turn on the page: heard, sent, the reply arriving; hang up closes it', (tester) async {
     final (audio, conversation) = await pumpCall(tester);

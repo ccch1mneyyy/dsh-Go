@@ -34412,6 +34412,12 @@ abstract class L10n {
   /// **'通话需要能识别录音的方式：登录 DeepSeek 账号、填 API Key，或下载语音模型'**
   String get speechCallEndNoRecognizer;
 
+  /// No description provided for @speechCallEndRelayUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH Remote 中继上，账号付费语音和引擎语音模型都用不了，通话没法识别。在设置里填 DeepSeek API Key 或配置其他云端识别后可以通话；换成本机引擎或 SSH 远程主机也能用登录账号和语音模型'**
+  String get speechCallEndRelayUnsupported;
+
   /// No description provided for @speechCallEndBackground.
   ///
   /// In zh, this message translates to:
@@ -47167,6 +47173,12 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'系统识别用不了，可以在语音设置里下载语音模型'**
   String get voiceConfigureEither;
+
+  /// No description provided for @voiceRelayUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH Remote 中继上用不了引擎语音模型：这里只能用系统识别，或在设置里填 API Key / 配置其他云端识别。本机引擎和 SSH 远程主机可用语音模型'**
+  String get voiceRelayUnavailable;
 
   /// No description provided for @voiceErrorNetworkTimeout.
   ///

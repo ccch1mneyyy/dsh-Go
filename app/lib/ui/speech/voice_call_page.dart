@@ -32,6 +32,7 @@ import '../../speech/speech_settings.dart';
 import '../../speech/voice_cloud.dart';
 import '../../state/account_state.dart';
 import '../../state/app_notes.dart';
+import '../../state/hosts_state.dart' show HostKind, activeHostProvider;
 import '../../state/notify_state.dart';
 import '../../state/voice_settings.dart';
 import '../../state/voice_state.dart';
@@ -209,7 +210,11 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage> with WidgetsBindi
 
   int _settling = 0;
 
+  /// The Host this call began on: a later host switch must not relabel its ending.
+  bool _relayAtStart = false;
+
   Future<void> _start() async {
+    _relayAtStart = ref.read(activeHostProvider).kind == HostKind.relay;
     final pcm = ref.read(streamingPcmCaptureProvider);
     final asr = ref.read(streamingAsrProvider);
     final found = liveWordsModel(ref);
@@ -340,14 +345,15 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage> with WidgetsBindi
         switch (_call.ended) {
           CallEnd.permission => l10n.speechCallEndPermission,
           CallEnd.microphone => l10n.speechCallEndMicrophone,
-          CallEnd.noRecognizer =>
-            wordsForIos
-                ? (ref.read(accountProvider).signedIn
-                      ? l10n.iosSpeechCallEndNoRecognizerSignedIn
-                      : l10n.iosSpeechCallEndNoRecognizer)
-                : (ref.read(accountProvider).signedIn
-                      ? l10n.speechCallEndNoRecognizerSignedIn
-                      : l10n.speechCallEndNoRecognizer),
+          CallEnd.noRecognizer => _relayAtStart
+              ? l10n.speechCallEndRelayUnsupported
+              : wordsForIos
+              ? (ref.read(accountProvider).signedIn
+                    ? l10n.iosSpeechCallEndNoRecognizerSignedIn
+                    : l10n.iosSpeechCallEndNoRecognizer)
+              : (ref.read(accountProvider).signedIn
+                    ? l10n.speechCallEndNoRecognizerSignedIn
+                    : l10n.speechCallEndNoRecognizer),
           CallEnd.background => l10n.speechCallEndBackground,
           CallEnd.failed => l10n.speechCallEndFailed,
           CallEnd.hungUp || null => l10n.speechCallEnded,

@@ -10,6 +10,7 @@
   "voiceChooseSystem": "请在系统设置中选择语音识别服务",
   "voiceConfigureEngine": "请先在语音设置里下载语音模型",
   "voiceConfigureEither": "系统识别用不了，可以在语音设置里下载语音模型",
+  "voiceRelayUnavailable": "DSH Remote 中继上用不了引擎语音模型：这里只能用系统识别，或在设置里填 API Key / 配置其他云端识别。本机引擎和 SSH 远程主机可用语音模型",
   "voiceErrorNetworkTimeout": "语音识别连接超时，请检查网络",
   "voiceErrorNetwork": "语音识别网络连接失败",
   "voiceErrorAudio": "语音录音失败，请检查麦克风",

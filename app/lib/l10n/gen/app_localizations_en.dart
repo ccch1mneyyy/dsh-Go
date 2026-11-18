@@ -19774,6 +19774,10 @@ class L10nEn extends L10n {
       'A call needs a recognizer that takes recordings: sign in to DeepSeek, add an API key, or download the voice model';
 
   @override
+  String get speechCallEndRelayUnsupported =>
+      'On the DSH Remote relay, account-paid speech and the engine’s voice model can’t be reached, so the call has no recognizer. Add a DeepSeek API key or another cloud recognizer in Settings to make calls, or use the local engine / an SSH remote host to use your account and the voice model';
+
+  @override
   String get speechCallEndBackground => 'Calls end when the app goes to the background';
 
   @override
@@ -27275,6 +27279,10 @@ class L10nEn extends L10n {
 
   @override
   String get voiceConfigureEither => 'The phone’s service isn’t available. Download the voice model in voice settings.';
+
+  @override
+  String get voiceRelayUnavailable =>
+      'The engine’s voice model isn’t available over the DSH Remote relay: use the phone’s recognizer here, or add an API key / another cloud service in Settings. The voice model works on the local engine and over SSH remote hosts';
 
   @override
   String get voiceErrorNetworkTimeout => 'Speech recognition timed out. Check your connection.';

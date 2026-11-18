@@ -6,6 +6,7 @@
 
 import 'dart:convert';
 
+import 'package:dsh_app/state/voice_settings.dart' show VoiceMode;
 import 'package:dsh_app/ui/chat/composer.dart';
 import 'package:dsh_app/ui/chat/mention/mention_text_controller.dart';
 import 'package:dsh_app/ui/chat/voice/voice_bridge.dart';
@@ -20,11 +21,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/composer_fakes.dart';
 import 'support/harness.dart';
 
+/// Mirrors the relay carrier: `speech/*` is refused locally, and nothing on
+/// the Host can serve it.
+class _RelayCarrier extends FakeRpcCarrier {
+  _RelayCarrier() : super({});
+
+  @override
+  String get kind => 'remote-relay';
+
+  @override
+  bool allowsEndpoint(String endpoint) => false;
+}
+
 class _Rig {
-  _Rig({FakeVoiceBridge? bridge, this.client, this.modelReady = false}) : bridge = bridge ?? FakeVoiceBridge();
+  _Rig({FakeVoiceBridge? bridge, this.client, this.modelReady = false, this.mode, this.speechClient})
+      : bridge = bridge ?? FakeVoiceBridge();
 
   final FakeVoiceBridge bridge;
   final DshClient? client;
+  final Future<VoiceMode> Function()? mode;
+  final DshClient? Function()? speechClient;
 
   /// The on-device voice model is downloaded (voice settings).
   final bool modelReady;
@@ -33,6 +49,8 @@ class _Rig {
     input: input,
     bridge: bridge,
     client: () => client,
+    speechClient: speechClient,
+    mode: mode,
     modelReady: () => modelReady,
     observeLifecycle: false,
   );
@@ -74,6 +92,9 @@ Finder get _mic => find.byIcon(AppIcons.voice);
 Finder get _stop => find.byIcon(AppIcons.stopGenerating);
 Finder get _cancel => find.byIcon(AppIcons.close);
 
+const relayVoiceMessage =
+    'DSH Remote 中继上用不了引擎语音模型：这里只能用系统识别，或在设置里填 API Key / 配置其他云端识别。本机引擎和 SSH 远程主机可用语音模型';
+
 Future<void> _settle(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
@@ -106,6 +127,57 @@ void main() {
     final rig = _Rig(bridge: bridge, client: DshClient.withCarrier(FakeRpcCarrier({})));
     await rig.pump(tester);
     expect(_mic, findsNothing);
+  });
+
+  testWidgets('relay host explains why the voice model cannot answer, without recording', (tester) async {
+    final rig = _Rig(
+      bridge: FakeVoiceBridge(caps: const VoiceCapabilities(recognizer: true, recorder: true)),
+      client: DshClient.withCarrier(_RelayCarrier()),
+      mode: () async => VoiceMode.engine,
+    );
+    await rig.pump(tester);
+    await tester.tap(_mic);
+    await _settle(tester);
+    expect(find.text(relayVoiceMessage), findsOneWidget);
+    expect(rig.bridge.calls, ['permission']);
+  });
+
+  testWidgets('relay host records for the phone engine, not the relay', (tester) async {
+    final localCarrier = FakeRpcCarrier({
+      'speech/catalog': (_) => readySpeechCatalog(),
+      'speech/transcribe': (_) => {'text': '把测试再跑一遍', 'audioSeconds': 1.0},
+    });
+    final local = DshClient.withCarrier(localCarrier);
+    final bridge = FakeVoiceBridge(caps: const VoiceCapabilities(recognizer: false, recorder: true))
+      ..recording = silentWav(1);
+    final rig = _Rig(
+      bridge: bridge,
+      client: DshClient.withCarrier(_RelayCarrier()),
+      speechClient: () => local,
+      mode: () async => VoiceMode.engine,
+    );
+    await rig.pump(tester);
+    await tester.tap(_mic);
+    await _settle(tester);
+    expect(bridge.calls, ['permission', 'recorder:119']);
+    await tester.tap(_stop);
+    await _settle(tester);
+    expect(rig.input.text, '把测试再跑一遍');
+    expect(localCarrier.calls.map((call) => call.$1), contains('speech/transcribe'));
+  });
+
+  testWidgets('relay host: a failed system recognizer explains the limit on fallback', (tester) async {
+    final bridge = FakeVoiceBridge(caps: const VoiceCapabilities(recognizer: true, recorder: true));
+    final rig = _Rig(bridge: bridge, client: DshClient.withCarrier(_RelayCarrier()));
+    await rig.pump(tester);
+    await tester.tap(_mic);
+    await _settle(tester);
+    expect(rig.bridge.calls, ['permission', 'recognizer']);
+    // The ROM's service reports itself available, then fails on the first call.
+    bridge.emit(const VoiceError(5));
+    await _settle(tester);
+    expect(find.text(relayVoiceMessage), findsOneWidget);
+    expect(rig.bridge.calls.last, 'cancel');
   });
 
   testWidgets('system recognizer: partials stream in, the final stays', (tester) async {

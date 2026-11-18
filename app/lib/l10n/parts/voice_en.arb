@@ -10,6 +10,7 @@
   "voiceChooseSystem": "Select a speech recognition service in system settings",
   "voiceConfigureEngine": "Download the voice model in voice settings first",
   "voiceConfigureEither": "The phone’s service isn’t available. Download the voice model in voice settings.",
+  "voiceRelayUnavailable": "The engine’s voice model isn’t available over the DSH Remote relay: use the phone’s recognizer here, or add an API key / another cloud service in Settings. The voice model works on the local engine and over SSH remote hosts",
   "voiceErrorNetworkTimeout": "Speech recognition timed out. Check your connection.",
   "voiceErrorNetwork": "Speech recognition could not connect to the network",
   "voiceErrorAudio": "Audio recording failed. Check the microphone.",

@@ -76,6 +76,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
     required this.bridge,
     required this.client,
     Object? Function()? inputOwner,
+    DshClient? Function()? speechClient,
     Future<VoiceMode> Function()? mode,
     bool Function()? modelReady,
     bool Function()? harmony,
@@ -88,6 +89,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
     bool observeLifecycle = true,
   }) : _mode = mode ?? _automatic,
        _inputOwner = inputOwner ?? client,
+       _speechClientSource = speechClient,
        _modelReady = modelReady ?? _noModel,
        _harmony = harmony ?? _noModel,
        _observing = observeLifecycle {
@@ -101,7 +103,16 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
     unawaited(refresh());
   }
 
-  String get _noRecognizer => _harmony() ? appL10n.harmonyVoiceSystemUnavailable : appL10n.voiceConfigureEither;
+  /// The relay forwards no `speech/*` endpoints, so an engine model on the
+  /// remote Host can never answer. SSH and the local engine keep their
+  /// usual messages; only the relay gets its own explanation.
+  bool get _relay => client()?.carrier.kind == 'remote-relay';
+
+  String get _noRecognizer => _relay
+      ? appL10n.voiceRelayUnavailable
+      : _harmony()
+      ? appL10n.harmonyVoiceSystemUnavailable
+      : appL10n.voiceConfigureEither;
 
   static Future<VoiceMode> _automatic() async => VoiceMode.auto;
   static bool _noModel() => false;
@@ -111,6 +122,11 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
   final TextEditingController input;
   final VoiceBridge bridge;
   final DshClient? Function() client;
+
+  /// The engine that serves `speech/*`. On a relay host this is the phone's
+  /// own engine; the relay's allow-list has no speech endpoints.
+  final DshClient? Function()? _speechClientSource;
+  DshClient? get _speechClient => _speechClientSource != null ? _speechClientSource!() : client();
 
   /// The draft receiving phone recognition. Defaults to the client; the chat
   /// supplies its saved host selection, which survives transport replacement.
@@ -182,7 +198,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
   VoicePhase get phase => _phase;
   bool get active => _phase != VoicePhase.idle;
   VoiceEngine? get engine => _engine;
-  bool get engineReady => _caps.recorder && (_catalog?.current(client()) ?? false);
+  bool get engineReady => _caps.recorder && (_catalog?.current(_speechClient) ?? false);
   bool get available =>
       _caps.recognizer || engineReady || (_caps.recorder && _cloud != null && (_cloudLikely?.call() ?? false));
 
@@ -191,7 +207,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
   // before an engine is selected, recording and fallback keep the original link.
   bool get _hostCurrent => _engine == VoiceEngine.system || _engine == VoiceEngine.cloud
       ? _runInputOwner == _inputOwner()
-      : identical(_runClient, client()) && identical(_runGeneration, _runClient?.mux.generation);
+      : identical(_runClient, _speechClient) && identical(_runGeneration, _runClient?.mux.generation);
 
   Future<void> refresh() {
     if (_disposed) return Future.value();
@@ -202,10 +218,10 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
   /// Wait for that probe, without replaying the event onto a replacement host.
   Future<void> refreshAfterModelChange() async {
     if (_disposed) return;
-    final c = client();
+    final c = _speechClient;
     final generation = c?.mux.generation;
     await _refreshing;
-    if (_disposed || !identical(client(), c) || !identical(c?.mux.generation, generation)) return;
+    if (_disposed || !identical(_speechClient, c) || !identical(c?.mux.generation, generation)) return;
     await refresh();
   }
 
@@ -213,7 +229,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
     final caps = await bridge.capabilities();
     if (_disposed) return;
     _caps = caps;
-    final c = client();
+    final c = _speechClient;
     final generation = c?.mux.generation;
     _probedClient = c;
     _probedGeneration = generation;
@@ -226,7 +242,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<_VoiceTarget?> _readCatalog(DshClient? c, MuxGeneration? generation) async {
-    if (c == null || !_caps.recorder || !identical(client(), c) || !identical(c.mux.generation, generation)) {
+    if (c == null || !_caps.recorder || !identical(_speechClient, c) || !identical(c.mux.generation, generation)) {
       return null;
     }
     final probe = ++_catalogProbe;
@@ -248,7 +264,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {
       // Missing speech bundle, unavailable provider, or disconnected host.
     }
-    if (_disposed || !identical(client(), c) || !identical(c.mux.generation, generation)) return null;
+    if (_disposed || !identical(_speechClient, c) || !identical(c.mux.generation, generation)) return null;
     if (probe == _catalogProbe) _catalog = target;
     return target;
   }
@@ -264,7 +280,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
         if (_current(operation) && !_hostCurrent) unawaited(cancel());
       });
     }
-    final c = client();
+    final c = _speechClient;
     if (_refreshing != null || (identical(c, _probedClient) && identical(c?.mux.generation, _probedGeneration))) return;
     scheduleMicrotask(() => unawaited(refresh()));
   }
@@ -274,7 +290,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
     final operation = ++_operation;
     _fallbackTried = false;
     _switching = false;
-    _runClient = client();
+    _runClient = _speechClient;
     _runInputOwner = _inputOwner();
     _runGeneration = _runClient?.mux.generation;
     _setPhase(VoicePhase.starting);
@@ -394,7 +410,9 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
       if (!_current(operation)) return;
       if (target == null) {
         _finish();
-        _say(VoiceMessage(_runMode == VoiceMode.engine ? appL10n.voiceConfigureEngine : _noRecognizer, change: true));
+        final message =
+            _runMode == VoiceMode.engine && !_relay ? appL10n.voiceConfigureEngine : _noRecognizer;
+        _say(VoiceMessage(message, change: true));
         return;
       }
       await _startRecorder(operation, target);
@@ -429,7 +447,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _startRecorder(int operation, _VoiceTarget target, {bool fallback = false}) async {
-    if (!_current(operation) || !target.current(client())) return;
+    if (!_current(operation) || !target.current(_speechClient)) return;
     _target = target;
     _engine = VoiceEngine.engine;
     _switching = false;
@@ -444,7 +462,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     if (!_current(operation) || _phase != VoicePhase.starting) return;
-    if (!target.current(client())) {
+    if (!target.current(_speechClient)) {
       await cancel();
       return;
     }
@@ -614,7 +632,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     if (!_current(operation)) return;
-    if (target == null || !target.current(client())) {
+    if (target == null || !target.current(_speechClient)) {
       _finish();
       _say(VoiceMessage(appL10n.commonEngineUnreachable));
       return;
@@ -631,7 +649,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
         language: target.catalog.language,
       );
       if (!_current(operation)) return;
-      if (!target.current(client())) {
+      if (!target.current(_speechClient)) {
         _finish();
         return;
       }

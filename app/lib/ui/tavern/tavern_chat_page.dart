@@ -325,10 +325,20 @@ class _TavernChatPageState extends ConsumerState<TavernChatPage> {
       mode: () => ref.read(voiceSettingsProvider.notifier).ready(),
       cloud: (mode) => ref.read(voiceCloudProvider)(mode),
       cloudLikely: () => ref.read(voiceCloudLikelyProvider)(),
-      // The voice model lives in the on-device engine: it counts for that host only.
-      modelReady: () =>
-          (_connection?.isLocal ?? false) && ref.read(voiceModelProvider).status == VoiceModelStatus.ready,
+      // A relay cannot reach `speech/*`; the phone's engine still can.
+      modelReady: () {
+        if (ref.read(voiceModelProvider).status != VoiceModelStatus.ready) return false;
+        if (_connection?.isLocal ?? false) return true;
+        return _connection?.client.carrier.kind == 'remote-relay' &&
+            ref.read(localConnectionProvider).value?.client != null;
+      },
       client: () => _connection?.client,
+      speechClient: () {
+        final active = _connection?.client;
+        return active?.carrier.kind == 'remote-relay'
+            ? ref.read(localConnectionProvider).value?.client
+            : active;
+      },
     );
     _voiceFlag = ref.read(voiceInputActiveProvider.notifier);
     _voice.addListener(_reportVoice);

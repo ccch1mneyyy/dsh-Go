@@ -187,7 +187,13 @@ final callRecognizerProvider = Provider<Future<VoiceCloud?> Function()>((ref) {
     final mode = await ref.read(voiceSettingsProvider.notifier).ready();
     final cloud = ref.read(voiceCloudProvider);
     Future<VoiceCloud?> engine() async {
-      final client = ref.read(activeConnectionProvider).value?.client;
+      final active = ref.read(activeConnectionProvider).value?.client;
+      if (active == null) return null;
+      // The relay's allow-list has no `speech/*`. The phone's own engine is a
+      // separate HTTP connection and can still serve the downloaded model.
+      final client = active.carrier.kind == 'remote-relay'
+          ? ref.read(localConnectionProvider).value?.client
+          : active;
       if (client == null) return null;
       try {
         final catalog = await client.speechCatalog().timeout(const Duration(seconds: 4));

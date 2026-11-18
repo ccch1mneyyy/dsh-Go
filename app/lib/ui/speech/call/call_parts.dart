@@ -214,7 +214,7 @@ class CallStatus extends StatelessWidget {
         key: ValueKey('$text$dots'),
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(text, style: style),
+          Flexible(child: Text(text, style: style)),
           if (dots) _Dots(color: style?.color ?? CallInk.of(context).dim),
         ],
       ),

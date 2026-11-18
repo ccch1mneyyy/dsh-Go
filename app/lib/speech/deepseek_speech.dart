@@ -423,7 +423,12 @@ final deepSeekSpeechHttpProvider = Provider<http.Client Function()>((ref) => htt
 
 final deepSeekSpeechProvider = Provider<DeepSeekSpeechResolver>((ref) {
   return () async {
-    final client = ref.read(activeConnectionProvider).value?.client;
+    final active = ref.read(activeConnectionProvider).value?.client;
+    // The relay carries no `/dsh-go/*`. The signed-in account lives in the
+    // phone's own engine, whose HTTP bridge is reachable on a separate link.
+    final client = active != null && active.carrier.kind == 'remote-relay'
+        ? ref.read(localConnectionProvider).value?.client
+        : active;
     final bridge = client == null ? null : await _bridgeRoute(client);
     final carrier = client?.carrier;
     final key = ref.read(settingsProvider).apiKey.trim();

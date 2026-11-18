@@ -18731,6 +18731,10 @@ class L10nZh extends L10n {
   String get speechCallEndNoRecognizer => '通话需要能识别录音的方式：登录 DeepSeek 账号、填 API Key，或下载语音模型';
 
   @override
+  String get speechCallEndRelayUnsupported =>
+      'DSH Remote 中继上，账号付费语音和引擎语音模型都用不了，通话没法识别。在设置里填 DeepSeek API Key 或配置其他云端识别后可以通话；换成本机引擎或 SSH 远程主机也能用登录账号和语音模型';
+
+  @override
   String get speechCallEndBackground => '切到后台时通话会结束';
 
   @override
@@ -25867,6 +25871,10 @@ class L10nZh extends L10n {
 
   @override
   String get voiceConfigureEither => '系统识别用不了，可以在语音设置里下载语音模型';
+
+  @override
+  String get voiceRelayUnavailable =>
+      'DSH Remote 中继上用不了引擎语音模型：这里只能用系统识别，或在设置里填 API Key / 配置其他云端识别。本机引擎和 SSH 远程主机可用语音模型';
 
   @override
   String get voiceErrorNetworkTimeout => '语音识别连接超时，请检查网络';
