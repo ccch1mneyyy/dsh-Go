@@ -27377,4 +27377,74 @@ class L10nZh extends L10n {
 
   @override
   String get workspaceRecoveryFailed => '操作未完成，请查看本机引擎状态和日志。已切换的模式可在本页确认。';
+
+  @override
+  String get hubDeepSeekImportFromLink => '从链接导入';
+
+  @override
+  String get hubDeepSeekImportLinkHint => '把 DeepSeek 官网「导出数据」给出的下载链接粘到这里：App 自己下载、解压、解析，不用再去文件夹里找 zip。';
+
+  @override
+  String get hubDeepSeekImportLinkLabel => '下载链接';
+
+  @override
+  String get hubDeepSeekImportLinkStart => '下载并导入';
+
+  @override
+  String get hubDeepSeekImportLinkBad => '这不像 DeepSeek 的导出链接：要以 http 开头，并且指向 .zip。';
+
+  @override
+  String hubDeepSeekImportDownloading(int percent) {
+    return '下载中 $percent%';
+  }
+
+  @override
+  String get hubDeepSeekImportDownloadFailed => '下载失败：';
+
+  @override
+  String get shellSessionDetails => '详情';
+
+  @override
+  String get shellDetailsTitle => '对话详情';
+
+  @override
+  String get shellDetailsId => '会话 ID';
+
+  @override
+  String get shellDetailsSource => '来源';
+
+  @override
+  String get shellDetailsSourceImport => 'DeepSeek App 导入';
+
+  @override
+  String get shellDetailsSourceLocal => '本机会话';
+
+  @override
+  String get shellDetailsCreated => '创建时间';
+
+  @override
+  String get shellDetailsUpdated => '最后更新';
+
+  @override
+  String get shellDetailsMessages => '消息数';
+
+  @override
+  String get shellDetailsPinned => '置顶';
+
+  @override
+  String get shellDetailsCopyId => '复制 ID';
+
+  @override
+  String get shellDetailsCopied => '已复制';
+
+  @override
+  String get stateDrawerLast7 => '7 天内';
+
+  @override
+  String get stateDrawerLast30 => '30 天内';
+
+  @override
+  String stateDrawerMonthYear(int year, int month) {
+    return '$year年$month月';
+  }
 }

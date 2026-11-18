@@ -56,9 +56,10 @@ import 'drawer/drawer_filter_bar.dart';
 import 'drawer/drawer_list.dart';
 import 'drawer/selection_bars.dart';
 import 'drawer/session_deletion.dart';
+import 'drawer/session_details.dart';
 import 'session_search_page.dart';
 
-export '../../state/drawer_view_state.dart' show SessionDay, sessionDayOf;
+export '../../state/drawer_view_state.dart' show SessionBucket, sessionBucketOf;
 export 'drawer/drawer_destination.dart';
 export 'drawer/session_tile.dart' show SessionTile;
 
@@ -474,7 +475,12 @@ class _SessionList extends ConsumerWidget {
     // arrived (rather than flash every conversation).
     final scope = ref.watch(drawerScopeProvider);
     if (scope == null) {
-      if (ref.watch(readListLiveConnectionProvider) == null && !sessions.isLoading) return const _EmptyState();
+      final known = sessions.value;
+      if (ref.watch(readListLiveConnectionProvider) == null &&
+          !sessions.isLoading &&
+          (known == null || known.isEmpty)) {
+        return const _EmptyState();
+      }
       if (sessions.hasError) {
         return _Centered(
           child: EmptyView(
@@ -571,6 +577,11 @@ class _SessionList extends ConsumerWidget {
                         onTap: () => Navigator.pop(sheet, pinned ? 'unpin' : 'pin'),
                       ),
                     ListTile(
+                      leading: const Icon(AppIcons.info),
+                      title: Text(context.l10n.shellSessionDetails),
+                      onTap: () => Navigator.pop(sheet, 'details'),
+                    ),
+                    ListTile(
                       leading: const Icon(AppIcons.rename),
                       title: Text(context.l10n.commonRename),
                       onTap: () => Navigator.pop(sheet, 'rename'),
@@ -589,6 +600,12 @@ class _SessionList extends ConsumerWidget {
                       leading: const Icon(AppIcons.multiSelect),
                       title: Text(context.l10n.shellMultiSelect),
                       onTap: () => Navigator.pop(sheet, 'select'),
+                    ),
+                    // 删除导入的会话时,先一步就能把整列都选上。
+                    ListTile(
+                      leading: const Icon(AppIcons.multiSelect),
+                      title: Text(context.l10n.shellSelectAll),
+                      onTap: () => Navigator.pop(sheet, 'selectAll'),
                     ),
                     ListTile(
                       leading: const Icon(AppIcons.archive),
@@ -626,10 +643,19 @@ class _SessionList extends ConsumerWidget {
         }
       case 'share':
         await shareConversation(context, s.sessionId);
+      case 'details':
+        await showSessionDetails(context, ref, s);
       case 'folder':
         await moveToFolderFlow(context, ref, [s.sessionId]);
       case 'select':
         ref.read(drawerSelectionProvider.notifier).start(s.sessionId);
+      case 'selectAll':
+        final ids = drawerSelectableIds(watchDrawerBlocks(ref) ?? const []);
+        if (ids.isEmpty) return;
+        final selection = ref.read(drawerSelectionProvider.notifier)..start(ids.first);
+        for (final id in ids.skip(1)) {
+          selection.toggle(id);
+        }
       case 'rename':
         final next = await _askTitle(context, s.title?.trim() ?? '');
         if (next == null || next.isEmpty || next == s.title) return;

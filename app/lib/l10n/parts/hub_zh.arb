@@ -336,5 +336,19 @@
   "hubQuickPanelSwipe": "左滑打开",
   "hubQuickPanelSwipeHint": "在对话里从右向左滑。代码块、表格这些能横向滚动的内容不受影响。",
   "hubQuickPanelItems": "显示的入口",
-  "hubQuickPanelItemsNone": "没有选择，左滑不会打开"
+  "hubQuickPanelItemsNone": "没有选择，左滑不会打开",
+  "hubDeepSeekImportFromLink": "从链接导入",
+  "hubDeepSeekImportLinkHint": "把 DeepSeek 官网「导出数据」给出的下载链接粘到这里：App 自己下载、解压、解析，不用再去文件夹里找 zip。",
+  "hubDeepSeekImportLinkLabel": "下载链接",
+  "hubDeepSeekImportLinkStart": "下载并导入",
+  "hubDeepSeekImportLinkBad": "这不像 DeepSeek 的导出链接：要以 http 开头，并且指向 .zip。",
+  "hubDeepSeekImportDownloading": "下载中 {percent}%",
+  "@hubDeepSeekImportDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "hubDeepSeekImportDownloadFailed": "下载失败："
 }

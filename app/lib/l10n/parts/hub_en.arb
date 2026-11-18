@@ -181,5 +181,19 @@
   "hubQuickPanelSwipe": "Open with a left swipe",
   "hubQuickPanelSwipeHint": "Swipe right to left over the chat. Code blocks, tables and other content that scrolls sideways aren’t affected.",
   "hubQuickPanelItems": "What it lists",
-  "hubQuickPanelItemsNone": "Nothing chosen: a left swipe won't open it"
+  "hubQuickPanelItemsNone": "Nothing chosen: a left swipe won't open it",
+  "hubDeepSeekImportFromLink": "Import from a link",
+  "hubDeepSeekImportLinkHint": "Paste the download link DeepSeek's export page gives you: the app downloads, unzips and reads it for you, so there is no zip to find in a folder.",
+  "hubDeepSeekImportLinkLabel": "Download link",
+  "hubDeepSeekImportLinkStart": "Download and import",
+  "hubDeepSeekImportLinkBad": "That does not look like a DeepSeek export link: it must start with http and point at a .zip.",
+  "hubDeepSeekImportDownloading": "Downloading {percent}%",
+  "@hubDeepSeekImportDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "hubDeepSeekImportDownloadFailed": "Download failed: "
 }

@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/l10n.dart';
+import '../../import/imported_chats.dart';
 import '../../notify/chat_alerts.dart' show approvalText, questionText;
 import '../../runtime/local_footprint.dart' show RuntimeMissing;
 import '../../runtime/runtime_bridge.dart' show RuntimePhase;
@@ -79,6 +80,7 @@ import '../plugins/seats/plugin_overlay_layer.dart';
 import '../safe_mode/engine_failure_card.dart';
 import '../safe_mode/safe_mode_banner.dart';
 import '../session/session_detail_page.dart';
+import '../settings/imported_transcript_page.dart';
 import '../settings/media_settings_page.dart' show MediaSettingsPage, showMediaInstallSheet, showMediaUnavailableSheet;
 import '../settings/settings_widgets.dart' show SettingsTile;
 import '../shell/adaptive/adaptive_layout.dart' show WindowClass;
@@ -1630,6 +1632,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     // one fix rather than a blank list.
     final idleBlank =
         idle != null && sessionId != null && ref.watch(chatProvider(sessionId).select((s) => s.items.isEmpty));
+    // 从 DeepSeek App 导入的会话:主机里还没有任何轮次,但手机这边有整段历史 ——
+    // 打开它要看到历史,而不是一张白纸。
+    final importedBlank =
+        sessionId != null &&
+        ref.watch(importedIndexProvider).containsKey(sessionId) &&
+        ref.watch(chatProvider(sessionId).select((s) => s.items.isEmpty));
 
     // 只盯顶栏 / 输入条需要的几个字段:流式增量不重建整页。
     final chat = sessionId == null
@@ -1824,7 +1832,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                 children: [
                   LayoutId(
                     id: _Slot.body,
-                    child: sessionId == null || idleBlank
+                    child: sessionId == null || idleBlank || importedBlank
                         ? Padding(
                             padding: EdgeInsets.only(top: headerHeight, bottom: _ChatLayout.overlap),
                             child: Align(
@@ -1837,39 +1845,44 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                                     // own (a remote host has its own errors).
                                     if (failureCard)
                                       const EngineFailureCard(padding: EdgeInsets.fromLTRB(16, 0, 16, 20)),
-                                    ChatEmptyState(
-                                      connected: connected,
-                                      suggestions: ref.watch(settingsProvider.select((s) => s.chatSuggestions))
-                                          ? defaultSuggestions
-                                          : const [],
-                                      connecting: connAsync.isLoading,
-                                      starting: starting,
-                                      tidying: tidying,
-                                      idle: idle,
-                                      onReconnect: connAsync.hasError && !connAsync.isLoading && !failureCard
-                                          ? _reconnect
-                                          : null,
-                                      onSuggestion: _onSuggestion,
-                                      options: NewChatOptions(
-                                        folderLabel: !hasFolders
-                                            ? null
-                                            : newFolder == null
-                                            ? context.l10n.shellFolders
-                                            : context.l10n.shellFolderLabel(newFolder.name),
-                                        onFolder: hasFolders ? _pickNewChatFolder : null,
+                                    if (importedBlank)
+                                      ImportedHistoryInline(
+                                        key: ValueKey('imported-history-$sessionId'),
+                                        sessionId: sessionId,
+                                      )
+                                    else
+                                      ChatEmptyState(
+                                        connected: connected,
+                                        suggestions: ref.watch(settingsProvider.select((s) => s.chatSuggestions))
+                                            ? defaultSuggestions
+                                            : const [],
+                                        connecting: connAsync.isLoading,
+                                        starting: starting,
+                                        tidying: tidying,
+                                        idle: idle,
+                                        onReconnect: connAsync.hasError && !connAsync.isLoading && !failureCard
+                                            ? _reconnect
+                                            : null,
+                                        onSuggestion: _onSuggestion,
+                                        options: NewChatOptions(
+                                          folderLabel: !hasFolders
+                                              ? null
+                                              : newFolder == null
+                                              ? context.l10n.shellFolders
+                                              : context.l10n.shellFolderLabel(newFolder.name),
+                                          onFolder: hasFolders ? _pickNewChatFolder : null,
+                                        ),
+                                        workspace: workspace != null
+                                            ? workspaceTitle(workspace)
+                                            : inHostDefault
+                                            ? context.l10n.viewEmptyHostDefaultDirectory
+                                            : null,
+                                        onWorkspace: () => showWorkspaceSheet(
+                                          context,
+                                          onManage: () => Navigator.of(context)
+                                              .push(MaterialPageRoute<void>(builder: (_) => const WorkspacesPage())),
+                                        ),
                                       ),
-                                      workspace: workspace != null
-                                          ? workspaceTitle(workspace)
-                                          : inHostDefault
-                                          ? context.l10n.viewEmptyHostDefaultDirectory
-                                          : null,
-                                      onWorkspace: () => showWorkspaceSheet(
-                                        context,
-                                        onManage: () =>
-                                            Navigator.of(context)
-                                                .push(MaterialPageRoute<void>(builder: (_) => const WorkspacesPage())),
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ),

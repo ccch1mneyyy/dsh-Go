@@ -152,9 +152,9 @@ class DrawerConversationList extends ConsumerWidget {
               childrenBuilder: () => [for (final s in items) tile(s, inFolder: true)],
             ),
           );
-        case DayBlock(:final day, :final items):
-          final key = ValueKey('day-${day.name}');
-          add(key, (_) => DrawerEyebrow(sessionDayLabels[day]!, key: key));
+        case DayBlock(:final bucket, :final items):
+          final key = ValueKey(bucket.key);
+          add(key, (_) => DrawerEyebrow(bucket.label, key: key));
           addSessions(items);
       }
     }

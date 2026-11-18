@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../companion/companion_state.dart';
+import '../import/imported_chats.dart';
 import '../runtime/runtime_state.dart';
 import 'connection_state.dart';
 import 'hosts_state.dart';
@@ -197,6 +198,12 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
     ref.listen(companionSessionFilterProvider, (_, _) {
       if (state.hasValue && !state.isLoading) state = AsyncData(_visible());
     });
+    // 导入的 DeepSeek 会话在主机看来是「还没有对话轮次」的空白会话,列表默认
+    // 不显示它们;它们是我们的,所以存储一变就重新筛一遍。
+    ref.listen(importedIndexProvider, (_, _) {
+      if (ref.read(readListLiveConnectionProvider) == null) _all = _importedRows();
+      if (state.hasValue && !state.isLoading) state = AsyncData(_visible());
+    });
     final seq = ++_loadSeq;
     final host = ref.watch(activeHostProvider);
     if (host != _host) {
@@ -222,7 +229,11 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
     _titleReads?.ref = r;
     if (conn == null) {
       _buildRead = null;
-      return r.read(readListCacheProvider).stamp(<SessionSummary>[], null, Object());
+      // 引擎还没连上:导入的 DeepSeek 会话就在这台机器上,先把它们铺进列表,
+      // 别让人对着「引擎正在启动」等。连线之后主机列表会整份替换这一份。
+      _all = _importedRows();
+      if (_all.isEmpty) return r.read(readListCacheProvider).stamp(<SessionSummary>[], null, Object());
+      return r.read(readListCacheProvider).stamp(_visible(), null, Object());
     }
     final identity = r.watch(readListIdentityProvider);
     // Only a waiting or sending archive has anything to retire; otherwise a
@@ -331,8 +342,28 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
     return true;
   }
 
+  /// 导入的 DeepSeek 会话本身,做成主机那种行:同一个 sessionId、导入时记下的
+  /// 标题和时间,所以引擎起来前后列表里的行是同一批,不会跳。
+  List<SessionSummary> _importedRows() {
+    final index = ref.read(importedIndexProvider);
+    return [
+      for (final chat in index.values)
+        SessionSummary(
+          sessionId: chat.sessionId,
+          updatedAt: chat.shownUpdatedAt,
+          running: false,
+          blank: false,
+          agentAvailable: false,
+          projections: SessionProjections(0, {'title': chat.title}),
+        ),
+    ];
+  }
+
   List<SessionSummary> _visible() {
     final pendingIds = {for (final pending in _archives) ...pending.ids};
+    // 从 DeepSeek App 导入的会话还没有对话轮次,主机把它们当空白会话(blank),
+    // 但它们确实在对话列表里:按我们自己的存储放行。
+    final importedIds = ref.read(importedIndexProvider).keys.toSet();
     // Her conversation lives in 伙伴小屋, not the drawer.
     final companion = ref.read(companionSessionFilterProvider);
     final host = ref.read(activeHostProvider);
@@ -342,7 +373,7 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
           _rows()
               .where(
                 (s) =>
-                    !s.blank &&
+                    (!s.blank || importedIds.contains(s.sessionId)) &&
                     !s.isSubagent &&
                     !_archived.contains(s.sessionId) &&
                     !pendingIds.contains(s.sessionId) &&
@@ -354,8 +385,31 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
         );
   }
 
-  /// The last `session/list`, with the titles read since ([_readTitles]).
-  List<SessionSummary> _rows() => _titles.isEmpty ? _all : [for (final s in _all) _withTitle(s)];
+  /// The last `session/list`, with the titles read since ([_readTitles]) and what
+  /// the imported conversations carry that the host doesn't know.
+  List<SessionSummary> _rows() {
+    if (_all.isEmpty) return _all;
+    final imported = ref.read(importedIndexProvider);
+    return [
+      for (final s in _all)
+        if (imported[s.sessionId] case final chat?) _withTitle(_withImportedRow(s, chat)) else _withTitle(s),
+    ];
+  }
+
+  /// [s] carrying what its DeepSeek conversation had: the title (a session with
+  /// no turn yet comes back without one, and the drawer would say 「未命名」) and
+  /// the time it really moved (the host dates it the moment it was created, which
+  /// would put a year of imported chats in 今天 and sort them as one day).
+  SessionSummary _withImportedRow(SessionSummary s, ImportedChat chat) {
+    final trimmed = chat.title.trim();
+    final title = trimmed.isEmpty || !(s.title?.trim().isEmpty ?? true) ? s.title : trimmed;
+    return s.copyWith(
+      updatedAt: chat.shownUpdatedAt,
+      projections: title == s.title
+          ? s.projections
+          : SessionProjections(s.projections.asOfSeq, {...s.projections.values, 'title': title}),
+    );
+  }
 
   /// [s] with what was read for it: its title where the list had none (an
   /// older read beats 「未命名」 until the newer one lands), and blank only
@@ -810,7 +864,12 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
   /// authoritative about jobs, descendants and other writers.
   String? beginDeletion(String sessionId) {
     if (state.isLoading || !state.hasValue || _host != ref.read(activeHostProvider)) return 'inventory-changed';
-    final row = _all.where((s) => s.sessionId == sessionId && !s.blank && !s.isSubagent).firstOrNull;
+    // 导入的 DeepSeek 会话在主机看来没有对话轮次(blank),但它们就在列表里,
+    // 也该被删掉 —— 旧代码的 !s.blank 把它们全挡成了 inventory-changed。
+    final imported = ref.read(importedIndexProvider).containsKey(sessionId);
+    final row = _all
+        .where((s) => s.sessionId == sessionId && (!s.blank || imported) && !s.isSubagent)
+        .firstOrNull;
     if (row == null || _deleted.contains(sessionId)) return 'inventory-changed';
     if (row.running) return 'session-active';
     if (_archiveLeases.any((p) => p.ids.contains(sessionId))) return 'archive-pending';

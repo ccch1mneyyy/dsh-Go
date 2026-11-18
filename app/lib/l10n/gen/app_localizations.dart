@@ -50059,6 +50059,138 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'操作未完成，请查看本机引擎状态和日志。已切换的模式可在本页确认。'**
   String get workspaceRecoveryFailed;
+
+  /// No description provided for @hubDeepSeekImportFromLink.
+  ///
+  /// In zh, this message translates to:
+  /// **'从链接导入'**
+  String get hubDeepSeekImportFromLink;
+
+  /// No description provided for @hubDeepSeekImportLinkHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'把 DeepSeek 官网「导出数据」给出的下载链接粘到这里：App 自己下载、解压、解析，不用再去文件夹里找 zip。'**
+  String get hubDeepSeekImportLinkHint;
+
+  /// No description provided for @hubDeepSeekImportLinkLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载链接'**
+  String get hubDeepSeekImportLinkLabel;
+
+  /// No description provided for @hubDeepSeekImportLinkStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载并导入'**
+  String get hubDeepSeekImportLinkStart;
+
+  /// No description provided for @hubDeepSeekImportLinkBad.
+  ///
+  /// In zh, this message translates to:
+  /// **'这不像 DeepSeek 的导出链接：要以 http 开头，并且指向 .zip。'**
+  String get hubDeepSeekImportLinkBad;
+
+  /// No description provided for @hubDeepSeekImportDownloading.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载中 {percent}%'**
+  String hubDeepSeekImportDownloading(int percent);
+
+  /// No description provided for @hubDeepSeekImportDownloadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载失败：'**
+  String get hubDeepSeekImportDownloadFailed;
+
+  /// No description provided for @shellSessionDetails.
+  ///
+  /// In zh, this message translates to:
+  /// **'详情'**
+  String get shellSessionDetails;
+
+  /// No description provided for @shellDetailsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'对话详情'**
+  String get shellDetailsTitle;
+
+  /// No description provided for @shellDetailsId.
+  ///
+  /// In zh, this message translates to:
+  /// **'会话 ID'**
+  String get shellDetailsId;
+
+  /// No description provided for @shellDetailsSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'来源'**
+  String get shellDetailsSource;
+
+  /// No description provided for @shellDetailsSourceImport.
+  ///
+  /// In zh, this message translates to:
+  /// **'DeepSeek App 导入'**
+  String get shellDetailsSourceImport;
+
+  /// No description provided for @shellDetailsSourceLocal.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机会话'**
+  String get shellDetailsSourceLocal;
+
+  /// No description provided for @shellDetailsCreated.
+  ///
+  /// In zh, this message translates to:
+  /// **'创建时间'**
+  String get shellDetailsCreated;
+
+  /// No description provided for @shellDetailsUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'最后更新'**
+  String get shellDetailsUpdated;
+
+  /// No description provided for @shellDetailsMessages.
+  ///
+  /// In zh, this message translates to:
+  /// **'消息数'**
+  String get shellDetailsMessages;
+
+  /// No description provided for @shellDetailsPinned.
+  ///
+  /// In zh, this message translates to:
+  /// **'置顶'**
+  String get shellDetailsPinned;
+
+  /// No description provided for @shellDetailsCopyId.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制 ID'**
+  String get shellDetailsCopyId;
+
+  /// No description provided for @shellDetailsCopied.
+  ///
+  /// In zh, this message translates to:
+  /// **'已复制'**
+  String get shellDetailsCopied;
+
+  /// No description provided for @stateDrawerLast7.
+  ///
+  /// In zh, this message translates to:
+  /// **'7 天内'**
+  String get stateDrawerLast7;
+
+  /// No description provided for @stateDrawerLast30.
+  ///
+  /// In zh, this message translates to:
+  /// **'30 天内'**
+  String get stateDrawerLast30;
+
+  /// No description provided for @stateDrawerMonthYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年{month}月'**
+  String stateDrawerMonthYear(int year, int month);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

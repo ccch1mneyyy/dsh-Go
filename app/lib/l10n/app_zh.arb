@@ -16801,5 +16801,44 @@
   "workspaceRecoveryUnavailable": "当前版本尚不支持工作区索引救援，请检查本机引擎状态并更新应用。",
   "workspaceRecoveryRestartIncomplete": "索引模式已切换，但还无法确认引擎已停止，未重新启动。请等停止完成后再启动。",
   "workspaceRecoverySaveFailed": "索引模式保存失败，未请求重新启动。请查看本机引擎状态和日志。",
-  "workspaceRecoveryFailed": "操作未完成，请查看本机引擎状态和日志。已切换的模式可在本页确认。"
+  "workspaceRecoveryFailed": "操作未完成，请查看本机引擎状态和日志。已切换的模式可在本页确认。",
+  "hubDeepSeekImportFromLink": "从链接导入",
+  "hubDeepSeekImportLinkHint": "把 DeepSeek 官网「导出数据」给出的下载链接粘到这里：App 自己下载、解压、解析，不用再去文件夹里找 zip。",
+  "hubDeepSeekImportLinkLabel": "下载链接",
+  "hubDeepSeekImportLinkStart": "下载并导入",
+  "hubDeepSeekImportLinkBad": "这不像 DeepSeek 的导出链接：要以 http 开头，并且指向 .zip。",
+  "hubDeepSeekImportDownloading": "下载中 {percent}%",
+  "@hubDeepSeekImportDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "hubDeepSeekImportDownloadFailed": "下载失败：",
+  "shellSessionDetails": "详情",
+  "shellDetailsTitle": "对话详情",
+  "shellDetailsId": "会话 ID",
+  "shellDetailsSource": "来源",
+  "shellDetailsSourceImport": "DeepSeek App 导入",
+  "shellDetailsSourceLocal": "本机会话",
+  "shellDetailsCreated": "创建时间",
+  "shellDetailsUpdated": "最后更新",
+  "shellDetailsMessages": "消息数",
+  "shellDetailsPinned": "置顶",
+  "shellDetailsCopyId": "复制 ID",
+  "shellDetailsCopied": "已复制",
+  "stateDrawerLast7": "7 天内",
+  "stateDrawerLast30": "30 天内",
+  "stateDrawerMonthYear": "{year}年{month}月",
+  "@stateDrawerMonthYear": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      }
+    }
+  }
 }

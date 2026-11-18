@@ -273,5 +273,17 @@
         "type": "String"
       }
     }
-  }
+  },
+  "shellSessionDetails": "Details",
+  "shellDetailsTitle": "Chat details",
+  "shellDetailsId": "Session ID",
+  "shellDetailsSource": "Source",
+  "shellDetailsSourceImport": "Imported from the DeepSeek app",
+  "shellDetailsSourceLocal": "On this device",
+  "shellDetailsCreated": "Created",
+  "shellDetailsUpdated": "Last updated",
+  "shellDetailsMessages": "Messages",
+  "shellDetailsPinned": "Pinned",
+  "shellDetailsCopyId": "Copy ID",
+  "shellDetailsCopied": "Copied"
 }

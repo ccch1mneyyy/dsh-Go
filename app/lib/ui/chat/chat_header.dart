@@ -353,8 +353,9 @@ class _RenderChipSlot extends RenderProxyBox {}
 ///
 /// The pill's content ([_PillContent]) reads step 5 off the width it gets.
 ///
-/// The title pill sits 8 after the left key; the trailing pieces end at the
-/// 新对话 key (they carry their own 8s); everything centred on one line.
+/// The title pill is centred on the bar (8 clear of the left key, and never
+/// under the trailing pieces); the trailing pieces end at the 新对话 key (they
+/// carry their own 8s); everything centred on one line.
 class _HeaderRow extends MultiChildRenderObjectWidget {
   const _HeaderRow({required this.titleFloor, required this.clockExtra, required super.children})
     : assert(children.length == 4);
@@ -483,7 +484,11 @@ class _RenderHeaderRow extends RenderBox
     void place(RenderBox child, double x) =>
         (child.parentData! as _HeaderRowParentData).offset = Offset(x, (height - child.size.height) / 2);
     place(lead, 0);
-    place(title, leadEnd);
+    // 标题胶囊居中在整条栏上,左右留白一样多;窄屏或长标题时退到左键右边,
+    // 但不压到右边那几个键。
+    final centered = (width - title.size.width) / 2;
+    final rightmost = width - fresh.size.width - trailing.size.width - title.size.width - _gap;
+    place(title, centered.clamp(leadEnd, math.max(leadEnd, rightmost)).toDouble());
     place(fresh, width - fresh.size.width);
     place(trailing, width - fresh.size.width - trailing.size.width);
     size = constraints.constrain(Size(width, height));

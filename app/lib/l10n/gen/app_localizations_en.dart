@@ -28841,4 +28841,76 @@ class L10nEn extends L10n {
   @override
   String get workspaceRecoveryFailed =>
       'The operation did not finish. Check the local engine status and logs. This page shows whether the index mode changed.';
+
+  @override
+  String get hubDeepSeekImportFromLink => 'Import from a link';
+
+  @override
+  String get hubDeepSeekImportLinkHint =>
+      'Paste the download link DeepSeek\'s export page gives you: the app downloads, unzips and reads it for you, so there is no zip to find in a folder.';
+
+  @override
+  String get hubDeepSeekImportLinkLabel => 'Download link';
+
+  @override
+  String get hubDeepSeekImportLinkStart => 'Download and import';
+
+  @override
+  String get hubDeepSeekImportLinkBad =>
+      'That does not look like a DeepSeek export link: it must start with http and point at a .zip.';
+
+  @override
+  String hubDeepSeekImportDownloading(int percent) {
+    return 'Downloading $percent%';
+  }
+
+  @override
+  String get hubDeepSeekImportDownloadFailed => 'Download failed: ';
+
+  @override
+  String get shellSessionDetails => 'Details';
+
+  @override
+  String get shellDetailsTitle => 'Chat details';
+
+  @override
+  String get shellDetailsId => 'Session ID';
+
+  @override
+  String get shellDetailsSource => 'Source';
+
+  @override
+  String get shellDetailsSourceImport => 'Imported from the DeepSeek app';
+
+  @override
+  String get shellDetailsSourceLocal => 'On this device';
+
+  @override
+  String get shellDetailsCreated => 'Created';
+
+  @override
+  String get shellDetailsUpdated => 'Last updated';
+
+  @override
+  String get shellDetailsMessages => 'Messages';
+
+  @override
+  String get shellDetailsPinned => 'Pinned';
+
+  @override
+  String get shellDetailsCopyId => 'Copy ID';
+
+  @override
+  String get shellDetailsCopied => 'Copied';
+
+  @override
+  String get stateDrawerLast7 => 'Previous 7 days';
+
+  @override
+  String get stateDrawerLast30 => 'Previous 30 days';
+
+  @override
+  String stateDrawerMonthYear(int year, int month) {
+    return '$year-$month';
+  }
 }

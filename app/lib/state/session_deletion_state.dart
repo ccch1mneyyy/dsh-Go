@@ -142,49 +142,57 @@ class SessionDeletionController extends Notifier<bool> {
       // No pre-flight capability call: the delete request itself answers
       // `unavailable` on a Host without the route, and that is the only place
       // that answer is needed. One intent, one request.
-      for (final id in ids) {
-        if (!owned()) break;
+      var aborted = false;
+
+      Future<void> deleteOne(String id) async {
+        if (aborted || !owned()) return;
         final sessions = ref.read(sessionsProvider.notifier);
         final rejection = sessions.beginDeletion(id);
         if (rejection != null) {
           failures[id] = rejection;
-          continue;
+          return;
         }
         try {
-          if (!owned()) break;
           await backend.delete(client, id);
           // A late response belongs to its old Host, never to a new screen.
-          if (!owned()) break;
+          if (!owned()) return;
           deleted.add(id);
           ref.read(readListCacheProvider).invalidateKind(ReadListKind.sessions, identity);
           ref.read(draftStoreProvider.notifier).forget(id);
-          if (!owned()) break;
           ref.read(composerQuoteProvider.notifier).clear(id);
-          if (!owned()) break;
           sessions.confirmDeleted(id);
-          if (!owned()) break;
           if (ref.read(currentSessionProvider) == id) ref.read(currentSessionProvider.notifier).select(null);
-          if (!owned()) break;
-          await ref.read(drawerViewProvider.notifier).forgetSessions({id}, isCurrent: owned);
         } catch (error) {
-          if (!owned()) break;
           // A cleanup failure must not relabel an acknowledged deletion as a
           // failed destructive request. UI refresh can recover local metadata.
           if (!deleted.contains(id)) {
             final code = _failureCode(error);
             failures[id] = code;
-            if (code == 'connection-lost' || code == 'protocol-error') {
-              // The server may have committed before its reply was lost. Stop
-              // the batch; further deletes require another explicit intent.
-              for (final remaining in ids.skip(ids.indexOf(id) + 1)) {
-                failures[remaining] = 'not-attempted';
-              }
-              break;
-            }
+            // The server may have committed before its reply was lost. Stop
+            // the batch; further deletes require another explicit intent.
+            if (code == 'connection-lost' || code == 'protocol-error') aborted = true;
           }
         } finally {
           if (owned()) sessions.endDeletion(id);
         }
+      }
+
+      // Four at a time: each delete is one request the host answers on its own,
+      // and a batch of twenty used to wait out twenty round trips in a row.
+      const width = 4;
+      for (var i = 0; i < ids.length && !aborted; i += width) {
+        if (!owned()) break;
+        final end = i + width > ids.length ? ids.length : i + width;
+        await Future.wait([for (final id in ids.sublist(i, end)) deleteOne(id)]);
+      }
+      if (aborted) {
+        for (final id in ids) {
+          if (!deleted.contains(id) && !failures.containsKey(id)) failures[id] = 'not-attempted';
+        }
+      }
+      // One write for the whole batch instead of one per row.
+      if (deleted.isNotEmpty) {
+        await ref.read(drawerViewProvider.notifier).forgetSessions(deleted.toSet(), isCurrent: owned);
       }
       return SessionDeletionResult(
         deleted: List.unmodifiable(deleted),

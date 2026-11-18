@@ -601,5 +601,17 @@
         "type": "String"
       }
     }
-  }
+  },
+  "shellSessionDetails": "详情",
+  "shellDetailsTitle": "对话详情",
+  "shellDetailsId": "会话 ID",
+  "shellDetailsSource": "来源",
+  "shellDetailsSourceImport": "DeepSeek App 导入",
+  "shellDetailsSourceLocal": "本机会话",
+  "shellDetailsCreated": "创建时间",
+  "shellDetailsUpdated": "最后更新",
+  "shellDetailsMessages": "消息数",
+  "shellDetailsPinned": "置顶",
+  "shellDetailsCopyId": "复制 ID",
+  "shellDetailsCopied": "已复制"
 }

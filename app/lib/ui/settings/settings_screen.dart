@@ -8,7 +8,6 @@ import '../../runtime/local_footprint.dart';
 import '../../runtime/runtime_state.dart';
 import '../../state/account_state.dart';
 import '../../state/android_features.dart';
-import '../../state/ask_ai.dart' show askAiAvailableProvider;
 import '../../state/balance_state.dart';
 import '../../state/connection_state.dart';
 import '../../state/engine_settings_state.dart';
@@ -20,11 +19,9 @@ import '../../state/sessions_state.dart';
 import '../../state/settings_state.dart';
 import '../../state/system_actions_state.dart';
 import '../../state/ui_mode_state.dart';
-import '../../state/update_state.dart';
 import '../account/account_page.dart';
 import '../account/account_widgets.dart';
 import '../chat/balance_widgets.dart' show formatMoney;
-import '../common/ask_ai.dart';
 import '../common/overview_card.dart';
 import '../common/search_capsule.dart';
 import '../common/status_chip.dart';
@@ -32,8 +29,8 @@ import '../engine/engine_screen.dart';
 import '../engine/engine_status.dart';
 import '../engine_settings/engine_settings_hub.dart';
 import '../engine_settings/web_search_page.dart';
+import 'deepseek_import_page.dart';
 import 'media_settings_page.dart';
-import '../features/feature_catalog.dart' show communityPage;
 import '../features/feature_format.dart' show permissionName;
 import '../features/permission_page.dart';
 import '../onboarding/api_key_page.dart' show maskApiKey;
@@ -46,12 +43,9 @@ import '../plugins/seats/seat_probe.dart';
 import '../providers/providers_page.dart';
 import '../remote/host_status.dart';
 import '../remote/remote_screen.dart';
-import '../shell/brand_mark.dart';
 import '../shell/page_frame.dart';
 import '../theme/app_icons.dart';
 import '../theme/theme.dart';
-import '../update/update_tiles.dart' show UpdateBadge;
-import 'about_page.dart';
 import 'appearance/appearance_page.dart';
 import 'background_guide_page.dart';
 import 'diagnostics_page.dart';
@@ -128,9 +122,6 @@ class SettingsScreen extends ConsumerWidget {
     // 主机.
     final ssh = ref.watch(hostsProvider.select((s) => s.ssh.length));
     final hostName = host.isLocal ? l10n.commonThisPhone : ref.watch(hostNameProvider(host)) ?? l10n.commonRemoteHost;
-    // 帮助与关于.
-    final update = ref.watch(appUpdateProvider);
-    final newVersion = update.hasUpdate && !update.isSkipped;
 
     final page = AppPage.list(
       title: l10n.commonSettings,
@@ -278,6 +269,12 @@ class SettingsScreen extends ConsumerWidget {
               spot: SettingsIndex.entry(SettingsPageId.privacy),
               onTap: () => _push(context, const PrivacyPage()),
             ),
+            SettingsTile(
+              icon: AppIcons.download,
+              tint: SettingsHues.general,
+              title: l10n.hubDeepSeekImport,
+              onTap: () => _push(context, const DeepSeekImportPage()),
+            ),
           ],
         ),
         SettingsSection(
@@ -309,41 +306,13 @@ class SettingsScreen extends ConsumerWidget {
         SettingsSection(
           title: l10n.hubGroupHelp,
           children: [
-            if (ref.watch(askAiAvailableProvider))
-              SettingsTile(
-                key: const ValueKey('settings-ask-ai'),
-                icon: AppIcons.askAi,
-                tint: SettingsHues.help,
-                spot: Spots.askAi,
-                value: Text(l10n.askAiTooltip),
-                onTap: () => unawaited(askAi(context, AskAiTopic.overview)),
-              ),
-            SettingsTile(
-              icon: AppIcons.community,
-              tint: SettingsHues.help,
-              spot: Spots.community,
-              onTap: () => _push(context, communityPage()),
-            ),
             SettingsTile(
               icon: AppIcons.diagnostics,
               tint: SettingsHues.help,
               spot: SettingsIndex.entry(SettingsPageId.diagnostics),
               onTap: () => _push(context, const DiagnosticsPage()),
             ),
-            SettingsTile(
-              icon: AppIcons.info,
-              tint: SettingsHues.help,
-              spot: SettingsIndex.entry(SettingsPageId.about),
-              value: newVersion
-                  ? UpdateBadge(l10n.hubAboutNewVersion)
-                  : Text(update.current.name, style: AppType.tabular(Theme.of(context).textTheme.bodyMedium!)),
-              onTap: () => _push(context, const AboutPage()),
-            ),
           ],
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Center(child: BrandMark(size: 18, color: colors.textDisabled)),
         ),
       ],
     );

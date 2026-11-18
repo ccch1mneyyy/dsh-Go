@@ -16,6 +16,7 @@ import 'package:flutter/widgets.dart' show StringCharacters;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../import/imported_chats.dart';
 import '../l10n/l10n.dart';
 import 'bots_state.dart';
 import 'hosts_state.dart';
@@ -106,7 +107,12 @@ enum DrawerSort {
 
 /// The drawer's view of one host: folders in display order and the sort.
 class DrawerView {
-  const DrawerView({this.loaded = false, this.folders = const [], this.sort = DrawerSort.activity});
+  const DrawerView({
+    this.loaded = false,
+    this.folders = const [],
+    this.sort = DrawerSort.activity,
+    this.ascending = false,
+  });
 
   factory DrawerView.fromJson(Object? json) {
     final map = json is Map ? json : const {};
@@ -120,6 +126,7 @@ class DrawerView {
             if (DrawerFolder.fromJson(raw) case final f? when seen.add(f.id)) f,
       ],
       sort: map['sort'] == 'created' ? DrawerSort.created : DrawerSort.activity,
+      ascending: map['ascending'] == true,
     );
   }
 
@@ -127,9 +134,14 @@ class DrawerView {
   final List<DrawerFolder> folders;
   final DrawerSort sort;
 
+  /// Oldest first. Applies to whichever sort is on: 最近活动 counts each
+  /// conversation's latest turn, 创建时间 its first.
+  final bool ascending;
+
   Map<String, Object?> toJson() => {
     'folders': [for (final f in folders) f.toJson()],
     'sort': sort.name,
+    if (ascending) 'ascending': true,
   };
 
   DrawerFolder? byId(String? id) {
@@ -146,8 +158,12 @@ class DrawerView {
       for (final id in f.sessionIds) id: f.id,
   };
 
-  DrawerView copyWith({List<DrawerFolder>? folders, DrawerSort? sort}) =>
-      DrawerView(loaded: loaded, folders: folders ?? this.folders, sort: sort ?? this.sort);
+  DrawerView copyWith({List<DrawerFolder>? folders, DrawerSort? sort, bool? ascending}) => DrawerView(
+    loaded: loaded,
+    folders: folders ?? this.folders,
+    sort: sort ?? this.sort,
+    ascending: ascending ?? this.ascending,
+  );
 }
 
 /// [DrawerView] of the active host, in shared preferences.
@@ -355,6 +371,11 @@ class DrawerViewController extends Notifier<DrawerView> {
 
   Future<void> setSort(DrawerSort sort) => _update((view) => view.copyWith(sort: sort));
 
+  /// 正序 / 倒序 for whichever sort is on.
+  Future<void> setAscending(bool ascending) => _update((view) => view.copyWith(ascending: ascending));
+
+  Future<void> toggleAscending() => _update((view) => view.copyWith(ascending: !view.ascending));
+
   /// Drops only confirmed deleted members, including the last session in a
   /// folder; unlike a guessed empty inventory this is authoritative.
   Future<void> forgetSessions(Set<String> ids, {required bool Function() isCurrent}) => _update(
@@ -463,28 +484,75 @@ final drawerSelectionProvider = NotifierProvider<DrawerSelectionController, Set<
 
 // ── What the list shows ──────────────────────────────────────────────────────
 
-enum SessionDay { today, yesterday, thisWeek, earlier }
+enum SessionDay { today, yesterday, last7, last30 }
 
-/// Calendar grouping in local time; weeks start on Monday.
-SessionDay sessionDayOf(DateTime at, DateTime now) {
+/// One date bucket of the drawer: 今天, 昨天, 7 天内, 30 天内, then one calendar
+/// month each — the shape the DeepSeek app lists a year of chats in.
+sealed class SessionBucket {
+  const SessionBucket();
+
+  /// Where the eyebrow sits and how it is keyed (stable across rebuilds).
+  String get key;
+
+  String get label;
+}
+
+final class DayBucket extends SessionBucket {
+  const DayBucket(this.day);
+
+  final SessionDay day;
+
+  @override
+  String get key => 'day-${day.name}';
+
+  @override
+  String get label => switch (day) {
+    SessionDay.today => appL10n.stateDrawerToday,
+    SessionDay.yesterday => appL10n.commonYesterday,
+    SessionDay.last7 => appL10n.stateDrawerLast7,
+    SessionDay.last30 => appL10n.stateDrawerLast30,
+  };
+
+  @override
+  bool operator ==(Object other) => other is DayBucket && other.day == day;
+
+  @override
+  int get hashCode => day.hashCode;
+}
+
+final class MonthBucket extends SessionBucket {
+  const MonthBucket(this.year, this.month);
+
+  final int year;
+  final int month;
+
+  @override
+  String get key => 'month-$year-$month';
+
+  @override
+  String get label => appL10n.stateDrawerMonthYear(year, month);
+
+  @override
+  bool operator ==(Object other) => other is MonthBucket && other.year == year && other.month == month;
+
+  @override
+  int get hashCode => Object.hash(year, month);
+}
+
+/// Calendar grouping in local time: calendar days, not 24-hour windows, so a
+/// message from 23:50 is 昨天 at 00:10.
+SessionBucket sessionBucketOf(DateTime at, DateTime now) {
   final local = at.toLocal();
   // Compare calendar dates on a fixed-length day axis, including across DST.
   final today = DateTime.utc(now.year, now.month, now.day);
   final day = DateTime.utc(local.year, local.month, local.day);
   final diff = today.difference(day).inDays;
-  if (diff <= 0) return SessionDay.today;
-  if (diff == 1) return SessionDay.yesterday;
-  final monday = today.subtract(Duration(days: today.weekday - DateTime.monday));
-  if (!day.isBefore(monday)) return SessionDay.thisWeek;
-  return SessionDay.earlier;
+  if (diff <= 0) return const DayBucket(SessionDay.today);
+  if (diff == 1) return const DayBucket(SessionDay.yesterday);
+  if (diff <= 7) return const DayBucket(SessionDay.last7);
+  if (diff <= 30) return const DayBucket(SessionDay.last30);
+  return MonthBucket(local.year, local.month);
 }
-
-Map<SessionDay, String> get sessionDayLabels => {
-  SessionDay.today: appL10n.stateDrawerToday,
-  SessionDay.yesterday: appL10n.commonYesterday,
-  SessionDay.thisWeek: appL10n.stateDrawerThisWeek,
-  SessionDay.earlier: appL10n.stateDrawerEarlier,
-};
 
 /// The drawer's conversations of the active host after the workspace scope,
 /// with DS Bot's own conversations split out (they fold into one row).
@@ -540,7 +608,14 @@ final drawerScopeProvider = Provider<DrawerScope?>((ref) {
   final workspaceKnown = prefs.selected == null || registryCurrent && registry.ready && workspace != null;
   if (!validSource || pending || !workspaceKnown || cache.origin(all) != null && !prefs.loaded) {
     final cached = cache.get<CachedSessions>(key);
-    if (cached == null) return null;
+    if (cached == null) {
+      // 引擎还没连上、也没有上一次的缓存:本机已知的行(导入的 DeepSeek 会话)
+      // 照样列出来,只读即可 —— 打开就能看见,不必等引擎。
+      if (all != null && all.isNotEmpty && (!workspaceKnown || prefs.selected == null)) {
+        return DrawerScope(sessions: all, bots: const [], scoped: false, readOnly: true, status: status);
+      }
+      return null;
+    }
     // Once a registry is known, deletion or a changed path/membership version
     // invalidates the old projection. Offline, only the exact last confirmed
     // selected workspace may be shown; never fall back to all sessions.
@@ -649,9 +724,9 @@ final class FolderBlock extends DrawerBlock {
 
 /// The rest, by day of the sort key.
 final class DayBlock extends DrawerBlock {
-  const DayBlock(this.day, super.items);
+  const DayBlock(this.bucket, super.items);
 
-  final SessionDay day;
+  final SessionBucket bucket;
 }
 
 /// A status filter's matches, flat (no folders or days).
@@ -678,7 +753,7 @@ List<DrawerBlock> drawerBlocks({
       view.sort == DrawerSort.created ? (createdAt[s.sessionId] ?? s.updatedAt) : s.updatedAt;
   final sorted = [...sessions]
     ..sort((a, b) {
-      final byKey = keyOf(b).compareTo(keyOf(a));
+      final byKey = view.ascending ? keyOf(a).compareTo(keyOf(b)) : keyOf(b).compareTo(keyOf(a));
       return byKey != 0 ? byKey : a.sessionId.compareTo(b.sessionId);
     });
   if (filter != DrawerFilter.all) {
@@ -721,13 +796,16 @@ List<DrawerBlock> drawerBlocks({
       ]),
     );
   }
-  final days = <SessionDay, List<SessionSummary>>{};
+  final days = <SessionBucket, List<SessionSummary>>{};
   for (final s in sorted) {
     if (folderOf.containsKey(s.sessionId) || pinnedSet.contains(s.sessionId)) continue;
-    days.putIfAbsent(sessionDayOf(keyOf(s), now), () => []).add(s);
+    days.putIfAbsent(sessionBucketOf(keyOf(s), now), () => []).add(s);
   }
-  for (final day in SessionDay.values) {
-    if (days[day] case final items?) blocks.add(DayBlock(day, items));
+  // sorted is newest first, so the buckets came out in reading order already;
+  // an ascending list reads them the other way round.
+  final order = view.ascending ? days.keys.toList().reversed : days.keys;
+  for (final bucket in order) {
+    if (days[bucket] case final items?) blocks.add(DayBlock(bucket, items));
   }
   return blocks;
 }
@@ -748,6 +826,14 @@ List<DrawerBlock>? watchDrawerBlocks(WidgetRef ref, {DateTime? now}) {
   final scope = ref.watch(drawerScopeProvider);
   if (scope == null) return null;
   final view = ref.watch(drawerViewProvider);
+  // 导入的 DeepSeek 会话按它们在 DeepSeek 里的时间排,不是导入这一刻。
+  final imported = ref.watch(importedIndexProvider);
+  final created = view.sort == DrawerSort.created
+      ? {
+          ...ref.watch(sessionCreatedProvider),
+          for (final entry in imported.entries) entry.key: entry.value.shownCreatedAt,
+        }
+      : const <String, DateTime>{};
   return drawerBlocks(
     sessions: scope.sessions,
     pinnedIds: ref.watch(workspacesProvider.select((s) => s.pinnedSessionIds)),
@@ -755,7 +841,7 @@ List<DrawerBlock>? watchDrawerBlocks(WidgetRef ref, {DateTime? now}) {
     filter: ref.watch(drawerFilterProvider),
     pending: scope.readOnly ? const {} : ref.watch(pendingInteractionsProvider),
     unread: scope.readOnly ? const {} : ref.watch(unreadSessionIdsProvider),
-    createdAt: view.sort == DrawerSort.created ? ref.watch(sessionCreatedProvider) : const {},
+    createdAt: created,
     now: now ?? ref.watch(drawerClockProvider)(),
     scoped: scope.scoped,
   );
