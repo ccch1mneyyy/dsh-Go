@@ -93,10 +93,11 @@ def load_segment(dirs, size, colors):
         timing = json.load(fh)
     if isinstance(timing, list):                  # bare frame list: files are frames/ in order
         timing = {'frames': timing}
-    files = next((f for f in (sorted(glob.glob(os.path.join(x, 'frames', '*.png'))) for x in dirs) if f), [])
+    # Bare frame lists index the whole sequence of frame names across deliveries.
+    files = sorted({os.path.basename(f) for x in dirs for f in glob.glob(os.path.join(x, 'frames', '*.png'))})
     frames, durs = [], []
     for i, f in enumerate(timing['frames']):
-        path = frame_path(dirs, f['file']) if 'file' in f else files[f.get('index', i)]
+        path = frame_path(dirs, f['file'] if 'file' in f else files[f.get('index', i)])
         frames.append(shrink(path, size))
         durs.append(int(f['duration_ms']))
     if colors:

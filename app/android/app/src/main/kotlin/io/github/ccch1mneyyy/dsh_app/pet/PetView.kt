@@ -5,7 +5,6 @@ import io.github.ccch1mneyyy.dsh_app.R
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
-import android.animation.ValueAnimator
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
@@ -67,6 +66,16 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
     private var sprites: PetSprites.Loaded? = null
     private var anim: PetAnimation? = null
     private var cell = -1
+
+    /** Whether an animation change may crossfade: the overlay's motion policy (reduce motion, paused). */
+    var blends = true
+        set(value) {
+            field = value
+            if (!value && fromAnim != null) {
+                fromAnim = null
+                invalidate()
+            }
+        }
 
     /** The picture fading out after an animation change (smooth art only), and since when. */
     private var fromAnim: PetAnimation? = null
@@ -148,9 +157,7 @@ internal class PetView(context: Context, private val listener: Listener) : Frame
         val c = animation.frames.getOrNull(frameIndex)?.cell ?: return false
         if (animation === anim && c == cell) return true
         val previous = anim
-        if (previous != null && previous !== animation && cell >= 0 && !s.pack.pixelArt &&
-            ValueAnimator.areAnimatorsEnabled()
-        ) {
+        if (blends && previous != null && previous !== animation && cell >= 0 && !s.pack.pixelArt) {
             fromAnim = previous
             fromCell = cell
             fadeStart = SystemClock.uptimeMillis()

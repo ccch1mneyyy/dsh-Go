@@ -165,6 +165,7 @@ class PetSpriteState extends State<PetSprite> with WidgetsBindingObserver, Singl
       if (first) {
         _start();
       } else {
+        if (_still) _settleFade();
         _schedule();
       }
     }
@@ -247,6 +248,13 @@ class PetSpriteState extends State<PetSprite> with WidgetsBindingObserver, Singl
     _repaint.value++;
   }
 
+  /// Ends a fade at once on the new picture (playback paused, or motion turned off).
+  void _settleFade() {
+    if (_fromImage == null) return;
+    _stopFade();
+    _repaint.value++;
+  }
+
   void _stopFade() {
     _fade?.stop();
     _fromImage?.dispose();
@@ -300,6 +308,7 @@ class PetSpriteState extends State<PetSprite> with WidgetsBindingObserver, Singl
 
   void _pauseChanged() {
     if (_paused) {
+      _settleFade();
       final due = _due;
       if (due != null) {
         final left = due - _clock.elapsed;

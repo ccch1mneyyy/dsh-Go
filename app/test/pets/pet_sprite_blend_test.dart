@@ -10,13 +10,13 @@ import 'support.dart';
 
 final fish = diskPack('pink-fish');
 
-Future<void> show(WidgetTester tester, PetPack pack, PetAnimation anim) => tester.pumpWidget(
+Future<void> show(WidgetTester tester, PetPack pack, PetAnimation anim, {bool paused = false}) => tester.pumpWidget(
   MediaQuery(
     data: const MediaQueryData(),
     child: Directionality(
       textDirection: TextDirection.ltr,
       child: Center(
-        child: PetSprite(pack: pack, anim: anim, scale: 0.5),
+        child: PetSprite(pack: pack, anim: anim, scale: 0.5, paused: paused),
       ),
     ),
   ),
@@ -47,6 +47,20 @@ void main() {
     expect(sprite(tester).blending, isTrue);
     await tester.pump(petBlend);
     expect(sprite(tester).blending, isFalse);
+  });
+
+  testWidgets('pausing mid-fade lands on the new picture at once', (tester) async {
+    final idle = fish.animFor(PetStateName.idle);
+    final next = fish.animFor(PetStateName.thinking);
+    await warmSheets(tester, fish, [idle, next]);
+
+    await show(tester, fish, idle);
+    await tester.pump();
+    await show(tester, fish, next);
+    expect(sprite(tester).blending, isTrue);
+    await show(tester, fish, next, paused: true);
+    expect(sprite(tester).blending, isFalse);
+    expect(sprite(tester).shown, same(next));
   });
 
   testWidgets('pixel art switches at once', (tester) async {
