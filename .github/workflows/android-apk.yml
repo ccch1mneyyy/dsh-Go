@@ -1,0 +1,135 @@
+name: Android APK
+
+# 在 GitHub 的 4 核机器上构建，取代本机 2C8G 的 20–70 分钟构建。
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "构建模式"
+        type: choice
+        default: release
+        options: [release, debug]
+      abi:
+        description: "目标 ABI（all = arm64 + x86_64，耗时约翻倍）"
+        type: choice
+        default: android-arm64
+        options: [android-arm64, android-x64, all]
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.50.0"
+  JAVA_VERSION: "17"
+  APP_DIR: app
+
+jobs:
+  build:
+    name: Build ${{ inputs.mode || 'release' }} · ${{ inputs.abi || 'android-arm64' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # Gradle 缓存：命中后 dex/R8 可以复用，首轮之后通常能省一半以上时间。
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('app/android/**/*.gradle*', 'app/android/gradle/wrapper/gradle-wrapper.properties', 'app/android/gradle.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Cache pub
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('app/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Restore release keystore (optional)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$APP_DIR/android/app/release.keystore"
+          printf '%s\n' "$KEY_PROPERTIES" > "$APP_DIR/android/key.properties"
+          # key.properties 里的 storeFile 统一指向仓库内的相对路径
+          sed -i 's|^storeFile=.*|storeFile=release.keystore|' "$APP_DIR/android/key.properties"
+
+      - name: flutter pub get
+        working-directory: ${{ env.APP_DIR }}
+        run: flutter pub get
+
+      - name: Resolve build flags
+        id: flags
+        shell: bash
+        run: |
+          MODE="${{ inputs.mode || 'release' }}"
+          ABI="${{ inputs.abi || 'android-arm64' }}"
+          FLAGS="--$MODE --android-skip-build-dependency-validation"
+          if [ "$ABI" != "all" ]; then
+            FLAGS="$FLAGS --target-platform $ABI"
+          fi
+          echo "flags=$FLAGS" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -o pipefail
+          flutter build apk ${{ steps.flags.outputs.flags }} 2>&1 | tee build-ci.log
+
+      - name: Collect APKs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p out
+          shopt -s nullglob
+          for f in "$APP_DIR"/build/app/outputs/flutter-apk/*.apk; do
+            cp -f "$f" out/
+          done
+          ls -lh out || true
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dshgo-${{ steps.flags.outputs.mode || 'release' }}-${{ github.sha }}
+          path: out/*.apk
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ github.sha }}
+          path: ${{ env.APP_DIR }}/build-ci.log
+          retention-days: 7
