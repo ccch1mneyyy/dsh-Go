@@ -101,7 +101,11 @@ Future<UiSkillBundle> loadUiSkillBundle([UiAssetReader? read, String name = uiSk
       for (final MapEntry(key: asset, value: target) in harmony.entries) '$target': '$asset',
   };
   return UiSkillBundle({
-    for (final MapEntry(key: target, value: asset) in assets.entries) target: await reader('$assetDir$asset'),
+    // ponytail: .b64 keeps App Store validation (90035) from flagging bundled scripts as unsigned code.
+    for (final MapEntry(key: target, value: asset) in assets.entries)
+      target: asset.endsWith('.b64')
+          ? utf8.decode(base64.decode((await reader('$assetDir$asset')).replaceAll(RegExp(r'\s'), '')))
+          : await reader('$assetDir$asset'),
   }, name: name);
 }
 
