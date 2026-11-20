@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "id": "xmas-narwhal",
+  "name": "雪独角鲸",
+  "author": "dsh-Go",
+  "license": "CC0-1.0",
+  "source": "original pixel art generated for dsh-Go",
+  "pixelArt": true,
+  "scale": 1,
+  "canvas": {
+    "w": 32,
+    "h": 32
+  },
+  "anchor": {
+    "x": 16,
+    "baseline": 28
+  },
+  "contentBox": {
+    "x": 6,
+    "y": 10,
+    "w": 20,
+    "h": 14
+  },
+  "animations": {
+    "idle": {
+      "sheet": "idle.png",
+      "frameW": 32,
+      "frameH": 32,
+      "cols": 2,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "loop": true,
+      "frames": [
+        {
+          "i": 0,
+          "ms": 400
+        },
+        {
+          "i": 1,
+          "ms": 400
+        }
+      ]
+    },
+    "working": {
+      "sheet": "working.png",
+      "frameW": 32,
+      "frameH": 32,
+      "cols": 2,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "loop": true,
+      "frames": [
+        {
+          "i": 0,
+          "ms": 400
+        },
+        {
+          "i": 1,
+          "ms": 400
+        }
+      ]
+    },
+    "thinking": {
+      "sheet": "thinking.png",
+      "frameW": 32,
+      "frameH": 32,
+      "cols": 2,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "loop": true,
+      "frames": [
+        {
+          "i": 0,
+          "ms": 400
+        },
+        {
+          "i": 1,
+          "ms": 400
+        }
+      ]
+    }
+  },
+  "states": {
+    "idle": [
+      "idle"
+    ],
+    "working": [
+      "working"
+    ],
+    "thinking": [
+      "thinking"
+    ]
+  }
+}
