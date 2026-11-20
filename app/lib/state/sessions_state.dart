@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../companion/companion_state.dart';
 import '../runtime/runtime_state.dart';
+import 'acp_state.dart' show acpClaudeSessionsProvider;
 import 'connection_state.dart';
 import 'hosts_state.dart';
 import '../runtime/local_paths.dart';
@@ -135,6 +136,10 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
   int _loadSeq = 0;
   int _appliedRefreshSeq = 0;
   List<SessionSummary> _all = const [];
+
+  /// ACP（Claude）会话投影，合并进 [_all] 供顶层列表展示；它们不在 Host
+  /// 的标准 `session/list` 注册表里，单独来自 [acpClaudeSessionsProvider]。
+  List<SessionSummary> _acpRows = const [];
   Set<String> _archived = const {};
   ReadListOrigin? _origin;
   Future<List<SessionSummary>>? _buildRead;
@@ -268,6 +273,18 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
       // While a list loads, it picks the new set up itself.
       if (state.hasValue && !state.isLoading) state = AsyncData(_visible());
     }, onError: (_) {});
+
+    // ACP（Claude）会话来自另一条 RPC 通道，单独合并进列表。
+    ref.listen(acpClaudeSessionsProvider, (previous, next) {
+      final rows = (next.hasValue ? next.value : null) ?? const <SessionSummary>[];
+      if (!_sameAcpRows(_acpRows, rows)) {
+        _acpRows = rows;
+        if (state.hasValue && !state.isLoading) state = AsyncData(_visible());
+      }
+    });
+    final acpNow = ref.read(acpClaudeSessionsProvider);
+    _acpRows = (acpNow.hasValue ? acpNow.value : null) ?? const <SessionSummary>[];
+
     ref.onDispose(() {
       _debounce?.cancel();
       _titlesLanded?.cancel();
@@ -276,6 +293,18 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
       unawaited(workspaces.cancel());
     });
     return _buildRead = _load(r, conn.client, seq, identity);
+  }
+
+  static bool _sameAcpRows(List<SessionSummary> a, List<SessionSummary> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i];
+      final y = b[i];
+      if (x.sessionId != y.sessionId || x.updatedAt != y.updatedAt || x.title != y.title) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<List<SessionSummary>> _load(Ref r, DshClient client, int seq, ReadListIdentity? identity) async {
@@ -355,7 +384,12 @@ class SessionsController extends AsyncNotifier<List<SessionSummary>> {
   }
 
   /// The last `session/list`, with the titles read since ([_readTitles]).
-  List<SessionSummary> _rows() => _titles.isEmpty ? _all : [for (final s in _all) _withTitle(s)];
+  List<SessionSummary> _rows() {
+    final base = _titles.isEmpty ? _all : [for (final s in _all) _withTitle(s)];
+    if (_acpRows.isEmpty) return base;
+    final ids = {for (final s in base) s.sessionId};
+    return [...base, ..._acpRows.where((s) => !ids.contains(s.sessionId))];
+  }
 
   /// [s] with what was read for it: its title where the list had none (an
   /// older read beats 「未命名」 until the newer one lands), and blank only

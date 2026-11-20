@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:dsh_client/dsh_client.dart';
+import 'package:dsh_remote/dsh_remote.dart'
+    show AcpEventBridge, AcpStream, RemoteAcpClient, RemoteTunnelCarrier, backendFromSessionId, nativeAcpId;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../diagnostics/app_error_log.dart';
@@ -465,6 +467,21 @@ class ChatController extends Notifier<ChatState> {
   final ChatTranscript _transcript = ChatTranscript();
   StreamSubscription<DshEvent>? _sub;
   StreamSubscription<DshConnectionState>? _states;
+
+  // ---- ACP（Claude Code 等）分流 ----
+  // ACP 会话不在标准 session/list 注册表里，走 agent.acp.* 顶层 RPC。
+  // 这里用一个合成事件流把它投影成 DshEvent，复用现有 ChatTranscript。
+  RemoteAcpClient? _acp;
+  AcpEventBridge? _acpBridge;
+  StreamController<DshEvent>? _acpEvents;
+  AcpStream? _acpStream;
+
+  /// ACP 的 prompt 会开一个 turn，单个 bridge 只持有一组 turn/attempt 状态，
+  /// 因此同一时刻只允许一条 ACP 消息在途，避免并发踩踏事件流。
+  bool _acpSending = false;
+
+  String? get _acpBackend => backendFromSessionId(sessionId);
+  bool get _isAcp => _acpBackend != null;
   Timer? _flush;
   Timer? _stopTimeout;
   _ChatOperation? _stoppingOperation;
@@ -620,6 +637,8 @@ class ChatController extends Notifier<ChatState> {
       _awayTimer?.cancel();
       unawaited(_sub?.cancel());
       unawaited(_states?.cancel());
+      unawaited(_acpStream?.close());
+      unawaited(_acpEvents?.close());
     });
     // Not connected is a screen state (the composer explains it), not an
     // error. What was loaded stays until a new snapshot replaces it.
@@ -633,7 +652,11 @@ class ChatController extends Notifier<ChatState> {
     }
     // Token speed and compaction for the activity pill (see run_pulse.dart).
     final pulse = ref.watch(runPulseProvider(sessionId));
-    _listen(client, pulse, building: true);
+    if (_isAcp) {
+      unawaited(_listenAcp(client, pulse, building: true));
+    } else {
+      _listen(client, pulse, building: true);
+    }
     // The stream gives up after a long outage: follow again once reconnected.
     final buildOwner = ref;
     _states = client.mux.states.listen((connection) {
@@ -642,7 +665,11 @@ class ChatController extends Notifier<ChatState> {
       final stopping = _stoppingOperation;
       if (stopping != null && !_currentOperation(stopping)) _endStopping();
       if (connection == DshConnectionState.connected && _watchEnded) {
-        _listen(client, pulse);
+        if (_isAcp) {
+          unawaited(_listenAcp(client, pulse));
+        } else {
+          _listen(client, pulse);
+        }
       }
     });
     return _retained(loading: _transcript.items.isEmpty);
@@ -682,7 +709,14 @@ class ChatController extends Notifier<ChatState> {
 
   void _relisten() {
     final client = _client;
-    if (client != null) _listen(client, ref.read(runPulseProvider(sessionId)));
+    if (client == null) return;
+    final pulse = ref.read(runPulseProvider(sessionId));
+    if (_isAcp) {
+      // ACP 会话不在标准 session 注册表里，必须走 ACP 专用监听。
+      unawaited(_listenAcp(client, pulse));
+    } else {
+      _listen(client, pulse);
+    }
   }
 
   /// The loaded conversation without its live parts (running, approvals,
@@ -817,97 +851,7 @@ class ChatController extends Notifier<ChatState> {
           ),
         )
         .listen(
-          (event) {
-            if (!current()) return;
-            if (event is SessionErrorEvent) {
-              // Remote hosts have no local engine log in the diagnostics ZIP.
-              appErrorLog.record(AppErrorSource.session, event.message, StackTrace.empty);
-            }
-            if (event is SessionSyncEvent) {
-              _markSyncing(epoch: event.epoch);
-              return;
-            }
-            if (event is ConnectionStateEvent && event.state != DshConnectionState.connected) {
-              _markSyncing();
-            }
-            if (event is SessionSnapshotEvent) {
-              if (!identical(event.followEpoch, _followEpoch) || !(event.followEpoch?.isCurrent ?? true)) return;
-              // Recheck at delivery, not only when watch() emitted the frame.
-              // A queued old snapshot cannot adopt a newer (or null) mux.
-              if (event.followEpoch case final epoch?) {
-                final generation = client.mux.generation;
-                if (generation == null || !identical(epoch.generation, generation)) return;
-              }
-            }
-            _trackClock(event);
-            pulse.observe(event, skew: _sameClock ? Duration.zero : _skew);
-            _trackModel(event);
-            _trackCommands(event);
-            _countTokens(event);
-            final reconcile =
-                (event is InboxSplicedEvent && event.seq > _transcript.cursor) ||
-                (event is SessionSnapshotEvent && event.isResync);
-            final before = reconcile ? _inboxIds() : const <String>{};
-            if (event is SessionSnapshotEvent) _trackSnapshotClaims(event.events);
-            final changed = _transcript.apply(event);
-            if (_awayLong && !_quiet && _transcript.running) scheduleMicrotask(_quietIfRunning);
-            if (reconcile) {
-              final removed = before.difference(_inboxIds());
-              if (event is InboxSplicedEvent && !event.canceled) {
-                for (final prompt in _pending) {
-                  if (removed.contains(prompt.requestId)) _claimedAt[prompt.requestId] = event.seq;
-                }
-              } else if (event is! SessionSnapshotEvent) {
-                _withdrawn.addAll(removed);
-              }
-              // A restored claim is waiting again, not a failed submission.
-              // The recovery splice can arrive before or after turn/end.
-              final inbox = {for (final q in _transcript.inbox) ?q.requestId: q};
-              _claimedAt.removeWhere((id, _) => inbox.containsKey(id));
-              _withdrawn.removeAll(inbox.keys);
-              _pending = List.unmodifiable([
-                for (final prompt in _pending)
-                  if (prompt.failed && inbox.containsKey(prompt.requestId))
-                    // Keep local prompts unplaced: _placePending derives the
-                    // current inbox slot, or hides it while a move is in flight.
-                    prompt.placed(null, null)
-                  else
-                    prompt,
-              ]);
-            }
-            // A plugin may deliberately consume input without a user echo.
-            // Only failed/cancelled claims need the older-Host recovery card.
-            final endings = switch (event) {
-              final TurnEndedEvent end => [end],
-              SessionSnapshotEvent(:final events) =>
-                events.whereType<TurnEndedEvent>().toList()..sort((a, b) => a.seq.compareTo(b.seq)),
-              _ => <TurnEndedEvent>[],
-            };
-            for (final end in endings) {
-              _settleClaims(end);
-            }
-            if (event is UserMessageEvent) {
-              _dropEchoed([event]);
-            } else if (event is SessionSnapshotEvent) {
-              _dropEchoed(event.events);
-            }
-            // The stopped turn is over, even when what waited in the inbox
-            // starts the next one at once (running never reads false).
-            if (event is TurnEndedEvent && state.stopping) _endStopping();
-            _trackApprovals(event);
-            if (event is SessionSnapshotEvent) {
-              // A replacement transcript may have the same sequence bounds.
-              _lookupKey = null;
-              _snapshotGeneration = client.mux.generation;
-              _synchronized = true;
-              // One publication: no ready state containing the old inbox.
-              _publish(freshSnapshot: true);
-              if (!_syncReady.isCompleted) _syncReady.complete(true);
-              _activateInteraction();
-            } else if (changed) {
-              _schedule();
-            }
-          },
+          (event) => _handleEvent(event, client, pulse, current),
           onError: (Object e, StackTrace stack) {
             if (!current()) return;
             _watchEnded = true;
@@ -932,6 +876,213 @@ class ChatController extends Notifier<ChatState> {
             state = state.copyWith(streamLost: true, loading: false);
           },
         );
+  }
+
+  /// Shared event handler for both the standard DSH watch and the ACP stream.
+  /// ACP frames are translated into standard [DshEvent]s by [AcpEventBridge],
+  /// so the whole transcript/UI stack below stays identical for both backends.
+  void _handleEvent(DshEvent event, DshClient client, RunPulse pulse, bool Function() current) {
+    if (!current()) return;
+    if (event is SessionErrorEvent) {
+      // Remote hosts have no local engine log in the diagnostics ZIP.
+      appErrorLog.record(AppErrorSource.session, event.message, StackTrace.empty);
+    }
+    if (event is SessionSyncEvent) {
+      _markSyncing(epoch: event.epoch);
+      return;
+    }
+    if (event is ConnectionStateEvent && event.state != DshConnectionState.connected) {
+      _markSyncing();
+    }
+    if (event is SessionSnapshotEvent) {
+      if (!identical(event.followEpoch, _followEpoch) || !(event.followEpoch?.isCurrent ?? true)) return;
+      // Recheck at delivery, not only when watch() emitted the frame.
+      // A queued old snapshot cannot adopt a newer (or null) mux.
+      if (event.followEpoch case final epoch?) {
+        final generation = client.mux.generation;
+        if (generation == null || !identical(epoch.generation, generation)) return;
+      }
+    }
+    _trackClock(event);
+    pulse.observe(event, skew: _sameClock ? Duration.zero : _skew);
+    _trackModel(event);
+    _trackCommands(event);
+    _countTokens(event);
+    final reconcile =
+        (event is InboxSplicedEvent && event.seq > _transcript.cursor) ||
+        (event is SessionSnapshotEvent && event.isResync);
+    final before = reconcile ? _inboxIds() : const <String>{};
+    if (event is SessionSnapshotEvent) _trackSnapshotClaims(event.events);
+    final changed = _transcript.apply(event);
+    if (_awayLong && !_quiet && _transcript.running) scheduleMicrotask(_quietIfRunning);
+    if (reconcile) {
+      final removed = before.difference(_inboxIds());
+      if (event is InboxSplicedEvent && !event.canceled) {
+        for (final prompt in _pending) {
+          if (removed.contains(prompt.requestId)) _claimedAt[prompt.requestId] = event.seq;
+        }
+      } else if (event is! SessionSnapshotEvent) {
+        _withdrawn.addAll(removed);
+      }
+      // A restored claim is waiting again, not a failed submission.
+      // The recovery splice can arrive before or after turn/end.
+      final inbox = {for (final q in _transcript.inbox) ?q.requestId: q};
+      _claimedAt.removeWhere((id, _) => inbox.containsKey(id));
+      _withdrawn.removeAll(inbox.keys);
+      _pending = List.unmodifiable([
+        for (final prompt in _pending)
+          if (prompt.failed && inbox.containsKey(prompt.requestId))
+            // Keep local prompts unplaced: _placePending derives the
+            // current inbox slot, or hides it while a move is in flight.
+            prompt.placed(null, null)
+          else
+            prompt,
+      ]);
+    }
+    // A plugin may deliberately consume input without a user echo.
+    // Only failed/cancelled claims need the older-Host recovery card.
+    final endings = switch (event) {
+      final TurnEndedEvent end => [end],
+      SessionSnapshotEvent(:final events) =>
+        events.whereType<TurnEndedEvent>().toList()..sort((a, b) => a.seq.compareTo(b.seq)),
+      _ => <TurnEndedEvent>[],
+    };
+    for (final end in endings) {
+      _settleClaims(end);
+    }
+    if (event is UserMessageEvent) {
+      _dropEchoed([event]);
+    } else if (event is SessionSnapshotEvent) {
+      _dropEchoed(event.events);
+    }
+    // The stopped turn is over, even when what waited in the inbox
+    // starts the next one at once (running never reads false).
+    if (event is TurnEndedEvent && state.stopping) _endStopping();
+    _trackApprovals(event);
+    if (event is SessionSnapshotEvent) {
+      // A replacement transcript may have the same sequence bounds.
+      _lookupKey = null;
+      _snapshotGeneration = client.mux.generation;
+      _synchronized = true;
+      // One publication: no ready state containing the old inbox.
+      _publish(freshSnapshot: true);
+      if (!_syncReady.isCompleted) _syncReady.complete(true);
+      _activateInteraction();
+    } else if (changed) {
+      _schedule();
+    }
+  }
+
+  /// Subscribe to an ACP (Claude Code, etc.) session. Reads its history once
+  /// into a synthetic snapshot, then translates live ACP frames into standard
+  /// [DshEvent]s and feeds them through the same handler as a normal watch.
+  Future<void> _listenAcp(DshClient client, RunPulse pulse, {bool building = false}) async {
+    final owner = ref;
+    final listener = _listenOwner = Object();
+    _watchEnded = false;
+    bool current() => owner.mounted && identical(listener, _listenOwner) && identical(client, _client);
+    if (!_syncReady.isCompleted) _syncReady.complete(false);
+    _syncReady = Completer<bool>();
+    _markSyncing(building: building);
+    unawaited(_sub?.cancel());
+    // 关闭旧的 ACP 流与事件总线，避免重连时泄漏 RPC 订阅/StreamController。
+    unawaited(_acpStream?.close());
+    _acpStream = null;
+    unawaited(_acpEvents?.close());
+    _acpEvents = null;
+    _retireHostRequests();
+
+    final backend = _acpBackend;
+    if (backend == null) return;
+    final carrier = client.carrier;
+    if (carrier is! RemoteTunnelCarrier || carrier.session == null) {
+      if (current()) {
+        _watchEnded = true;
+        _markSyncing();
+        if (!_syncReady.isCompleted) _syncReady.complete(false);
+        state = state.copyWith(error: 'ACP host unavailable', syncError: 'ACP host unavailable', streamLost: true, loading: false);
+      }
+      return;
+    }
+
+    final acp = _acp = RemoteAcpClient(carrier.session!);
+    final bridge = _acpBridge = AcpEventBridge(
+      sessionId: sessionId,
+      title: state.title ?? '',
+    );
+
+    // Load durable history once so the transcript is not empty on open.
+    // Each history row is {event: {type, seq, time, data}}; inner event is a
+    // standard SessionWireEvent we can hand straight to SessionLogEvent.fromJson.
+    try {
+      final rawHistory = await acp.loadSessionHistory(nativeAcpId(sessionId), backend);
+      final history = <SessionLogEvent>[];
+      for (final row in rawHistory) {
+        final map = row is Map ? row : null;
+        final inner = map?['event'] ?? row;
+        final event = SessionLogEvent.fromJson(inner);
+        if (event.seq >= 0) history.add(event);
+      }
+      history.sort((a, b) => a.seq.compareTo(b.seq));
+      bridge.adoptHistory(history);
+      if (current()) {
+        _acpEvents = StreamController<DshEvent>.broadcast(sync: true);
+        _sub = _acpEvents!.stream.listen(
+          (event) => _handleEvent(event, client, pulse, current),
+          onError: (Object e, StackTrace stack) {
+            if (!current()) return;
+            _watchEnded = true;
+            _markSyncing();
+            if (!_syncReady.isCompleted) _syncReady.complete(false);
+            appErrorLog.record(AppErrorSource.session, e, stack);
+            final message = chatErrorText(e, action: appL10n.stateChatSyncInterrupted);
+            state = state.copyWith(error: message, syncError: message, streamLost: true, loading: false);
+          },
+          onDone: () {
+            if (!current()) return;
+            _watchEnded = true;
+            _markSyncing();
+            if (!_syncReady.isCompleted) _syncReady.complete(false);
+            state = state.copyWith(streamLost: true, loading: false);
+          },
+        );
+        // Snapshot first: the shared handler marks the controller synchronized.
+        _acpEvents!.add(bridge.initialSnapshot(events: history));
+        // Incremental assistant text arrives on the ACP stream. If the Host
+        // closes the stream, reopen it so streaming can recover.
+        var reopenScheduled = false;
+        void reopen() {
+          if (!current() || reopenScheduled) return;
+          reopenScheduled = true;
+          _watchEnded = true;
+          _markSyncing();
+          if (!_syncReady.isCompleted) _syncReady.complete(false);
+          state = state.copyWith(streamLost: true, loading: false);
+          Timer(const Duration(seconds: 1), () {
+            if (current()) unawaited(_listenAcp(client, pulse));
+          });
+        }
+
+        _acpStream = await acp.openStream(sessionId, (frame) {
+          if (!current()) return;
+          for (final event in bridge.onFrame(frame)) {
+            _acpEvents?.add(event);
+          }
+        }, onClosed: (_) => reopen());
+        if (!current()) {
+          unawaited(_acpStream?.close());
+          _acpStream = null;
+        }
+      }
+    } catch (e, stack) {
+      if (!current()) return;
+      _watchEnded = true;
+      _markSyncing();
+      if (!_syncReady.isCompleted) _syncReady.complete(false);
+      appErrorLog.record(AppErrorSource.session, e, stack);
+      final message = chatErrorText(e, action: appL10n.stateChatSyncInterrupted);
+      state = state.copyWith(error: message, syncError: message, streamLost: true, loading: false);
+    }
   }
 
   Set<String> _inboxIds() => {for (final q in _transcript.inbox) ?q.requestId};
@@ -1570,7 +1721,7 @@ class ChatController extends Notifier<ChatState> {
       for (final a in attachments)
         if (a.isImage) PromptImage.fromBytes(a.bytes, mediaType: a.mediaType!, name: a.name),
     ];
-    Future<void> prompt(List<PromptImage> images, ({List<String> receipts, List<String> paths}) files) {
+    Future<void> prompt(List<PromptImage> images, ({List<String> receipts, List<String> paths}) files) async {
       _requireCurrent(operation);
       if (deliveryAllowed != null && !deliveryAllowed()) {
         throw const DshClosedException('Prepared phone route source changed');
@@ -1579,7 +1730,48 @@ class ChatController extends Notifier<ChatState> {
       final content = paths.isEmpty
           ? text
           : [if (text.isNotEmpty) text, '${appL10n.stateWorkspaceFilesHint}\n$paths'].join('\n\n');
-      return client.prompt(
+
+      // ACP (Claude Code, etc.): prompt is a dedicated top-level RPC and the
+      // incremental text comes from the already-open agent stream. Images and
+      // receipt IDs have no ACP equivalent; uploaded file paths are folded into
+      // the text above. Feed the user turn before the call so its seq stays
+      // below the assistant chunks that arrive while the call is in flight,
+      // then close the turn once it returns.
+      if (_isAcp) {
+        final backend = _acpBackend;
+        final acp = _acp;
+        final bridge = _acpBridge;
+        final events = _acpEvents;
+        if (backend == null || acp == null || bridge == null || events == null) {
+          throw DshRemoteException('ACP_NOT_READY', 'ACP session is not connected');
+        }
+        if (_acpSending) {
+          // 单个 bridge 只持一组 turn 状态；并发发送会踩踏事件流，直接拒绝。
+          throw DshRemoteException('ACP_BUSY', '上一条 Claude 消息仍在生成，请稍后再发');
+        }
+        _acpSending = true;
+        var turnFailed = false;
+        try {
+          for (final event in bridge.beginTurn(content, requestId: requestId)) {
+            events.add(event);
+          }
+          try {
+            await acp.prompt(sessionId, content, backend);
+          } on Object {
+            turnFailed = true;
+            rethrow;
+          }
+        } finally {
+          // 无论成功或失败都要收口，否则 transcript 的 running 永久为真。
+          for (final event in bridge.endTurn(failed: turnFailed)) {
+            events.add(event);
+          }
+          _acpSending = false;
+        }
+        return;
+      }
+
+      await client.prompt(
         sessionId,
         content,
         images: images,
@@ -1684,7 +1876,20 @@ class ChatController extends Notifier<ChatState> {
     if (!_currentOperation(operation)) return false;
     _beginStopping(operation);
     try {
-      await operation.client.cancel(sessionId);
+      if (_isAcp) {
+        final acp = _acp;
+        final bridge = _acpBridge;
+        final events = _acpEvents;
+        if (acp == null || bridge == null || events == null) throw StateError('ACP session is not connected');
+        await acp.cancel(sessionId);
+        // ACP cancel may arrive without a prompt_failed frame; close the turn
+        // locally so the transcript does not stay running forever.
+        for (final event in bridge.endTurn(failed: true)) {
+          events.add(event);
+        }
+      } else {
+        await operation.client.cancel(sessionId);
+      }
       return _currentOperation(operation);
     } catch (_) {
       if (_currentOperation(operation)) _endStopping(failure);
