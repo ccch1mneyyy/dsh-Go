@@ -2,9 +2,9 @@
   "name": "pet-theme",
   "files": {
     "SKILL.md": "SKILL.md",
-    "pet_theme_convert.py": "scripts/pet_theme_convert.py",
-    "pet_svg_frames.py": "scripts/pet_svg_frames.py",
-    "make_pet_pack.py": "scripts/make_pet_pack.py",
-    "pet_pack_check.py": "scripts/pet_pack_check.py"
+    "pet_theme_convert.py.txt": "scripts/pet_theme_convert.py",
+    "pet_svg_frames.py.txt": "scripts/pet_svg_frames.py",
+    "make_pet_pack.py.txt": "scripts/make_pet_pack.py",
+    "pet_pack_check.py.txt": "scripts/pet_pack_check.py"
   }
 }

@@ -350,7 +350,7 @@ private final class IOSPhonePairingFileReader {
     init(ownerID: UUID) { self.ownerID = ownerID }
   }
 
-  private let queue = DispatchQueue(label: "io.github.ccch1mneyyy.dshgo.pairing-read", qos: .userInitiated)
+  private let queue = DispatchQueue(label: "com.danilo.dshgo.pairing-read", qos: .userInitiated)
   private var active: Read?
   var isBusy: Bool { active != nil }
 

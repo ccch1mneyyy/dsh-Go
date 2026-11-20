@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // dsh-go ui.json checker — zero dependencies, Node 18+.
 //
 //   node check.mjs                 checks $DSH_HOME/dsh-go/ui.json

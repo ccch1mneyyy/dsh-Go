@@ -215,7 +215,7 @@ private final class LinksChannel {
 /// The home screen's quick actions. 新对话 and 语音输入 are declared in Info.plist, the
 /// latest conversations are set from Dart, and the system shows four in all.
 private final class ShortcutsChannel {
-  private static let prefix = "io.github.ccch1mneyyy.dshgo."
+  private static let prefix = "com.danilo.dshgo."
   private static let recentShown = 2
 
   private let channel: FlutterMethodChannel

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Checks a dsh-Go pet pack directory against the app's import gates.
 
     python3 pet_pack_check.py <pack-dir> [--compat-reactions]

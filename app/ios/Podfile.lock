@@ -1,0 +1,94 @@
+PODS:
+  - connectivity_plus (0.0.1):
+    - Flutter
+  - file_picker_darwin (1.0.0):
+    - Flutter
+    - FlutterMacOS
+  - Flutter (1.0.0)
+  - flutter_secure_storage_darwin (10.0.0):
+    - Flutter
+    - FlutterMacOS
+  - flutter_webrtc (1.6.3):
+    - Flutter
+    - WebRTC-SDK (= 150.7871.04)
+  - image_picker_ios (0.0.1):
+    - Flutter
+  - mobile_scanner (7.0.0):
+    - Flutter
+    - FlutterMacOS
+  - share_plus (0.0.1):
+    - Flutter
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - sherpa_onnx_ios (1.13.8):
+    - Flutter
+  - url_launcher_ios (0.0.1):
+    - Flutter
+  - WebRTC-SDK (150.7871.04)
+  - webview_flutter_wkwebview (0.0.1):
+    - Flutter
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
+  - file_picker_darwin (from `.symlinks/plugins/file_picker_darwin/darwin`)
+  - Flutter (from `Flutter`)
+  - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
+  - flutter_webrtc (from `.symlinks/plugins/flutter_webrtc/ios`)
+  - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
+  - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - sherpa_onnx_ios (from `.symlinks/plugins/sherpa_onnx_ios/ios`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
+  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
+
+SPEC REPOS:
+  trunk:
+    - WebRTC-SDK
+
+EXTERNAL SOURCES:
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/ios"
+  file_picker_darwin:
+    :path: ".symlinks/plugins/file_picker_darwin/darwin"
+  Flutter:
+    :path: Flutter
+  flutter_secure_storage_darwin:
+    :path: ".symlinks/plugins/flutter_secure_storage_darwin/darwin"
+  flutter_webrtc:
+    :path: ".symlinks/plugins/flutter_webrtc/ios"
+  image_picker_ios:
+    :path: ".symlinks/plugins/image_picker_ios/ios"
+  mobile_scanner:
+    :path: ".symlinks/plugins/mobile_scanner/darwin"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  sherpa_onnx_ios:
+    :path: ".symlinks/plugins/sherpa_onnx_ios/ios"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
+  webview_flutter_wkwebview:
+    :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
+
+SPEC CHECKSUMS:
+  connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
+  file_picker_darwin: 4c2b9a50ea44cb3b071381ea0cf48591bdd80251
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  flutter_secure_storage_darwin: 46e401699982ee74142909676535e0f6a7321e58
+  flutter_webrtc: 7948417965923736a584f9a1c5eeccaccf3372cf
+  image_picker_ios: 9285ee31b06d6e15629dd5713b890f0c457a0a8b
+  mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
+  share_plus: eccd7beb7cea61271aeed1800e8ccb2b952c0c7f
+  shared_preferences_foundation: a7c3904f2dedb3701dd1903cb152ef5e7df92422
+  sherpa_onnx_ios: 11c4152cbeb113aebbfaa15f8c4720cc9618d281
+  url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
+  WebRTC-SDK: 71bce2be85c3082d24bbfd1a9930ea07d0c494c1
+  webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
+
+PODFILE CHECKSUM: 3ba3a73b1b12adcf321a227a745625fe0888cc82
+
+COCOAPODS: 1.16.2

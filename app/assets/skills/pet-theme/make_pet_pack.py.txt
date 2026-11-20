@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Builds the runtime pet packs in assets/pets/<id>/ from the source art in tool/pet_src.
 
 Run from app/ (needs Pillow and numpy):

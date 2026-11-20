@@ -4,12 +4,12 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.io.github.ccch1mneyyy.dshgo</string>
+		<string>group.com.danilo.dshgo</string>
 	</array>
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-		<string>$(AppIdentifierPrefix)io.github.ccch1mneyyy.dshgo.companion-widget</string>
+		<string>$(AppIdentifierPrefix)com.danilo.dshgo.companion-widget</string>
 	</array>
 </dict>
 </plist>

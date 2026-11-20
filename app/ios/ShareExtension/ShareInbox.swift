@@ -3,7 +3,7 @@ import Foundation
 /// What the share extension leaves for the app, in the App Group's container: one
 /// folder per share, renamed into place once it's whole. Compiled into both targets.
 enum ShareInbox {
-  static let group = "group.io.github.ccch1mneyyy.dshgo"
+  static let group = "group.com.danilo.dshgo"
 
   /// Brings the app forward; what it opens with is the folder, not this address.
   static let wakeUp = URL(string: "dshgo://ios-share-inbox")!

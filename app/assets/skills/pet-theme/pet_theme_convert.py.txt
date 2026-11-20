@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Turns pet art into a dsh-Go pet pack (docs/design/pets.md section 3).
 
     python3 tool/pet_theme_convert.py --input DIR --out DIR [--id ID] [--input-name NAME]

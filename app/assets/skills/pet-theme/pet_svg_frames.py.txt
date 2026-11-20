@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """把 clawd-dev-life 主题渲染成 dsh-Go 宠物包的过渡层。
 
 - APNG -> 逐帧解码 -> 6x6 块降采样到 48x48 画布（1 逻辑单位 = 2 画布像素）

@@ -57,7 +57,7 @@ protocol IOSPhonePairingKeychain {
 final class IOSPhoneDeviceKeychain: IOSPhonePairingKeychain {
   private var query: [String: Any] {
     [kSecClass as String: kSecClassGenericPassword,
-     kSecAttrService as String: "io.github.ccch1mneyyy.dshgo.remote-pairing.v1",
+     kSecAttrService as String: "com.danilo.dshgo.remote-pairing.v1",
      kSecAttrAccount as String: "current-device",
      kSecAttrSynchronizable as String: false]
   }

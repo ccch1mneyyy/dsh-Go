@@ -21,7 +21,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>DSHCompanionAccessGroup</key>
-	<string>$(AppIdentifierPrefix)io.github.ccch1mneyyy.dshgo.companion-widget</string>
+	<string>$(AppIdentifierPrefix)com.danilo.dshgo.companion-widget</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
