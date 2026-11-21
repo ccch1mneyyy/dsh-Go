@@ -154,9 +154,19 @@ deepseek-refusal.diff
 deepseek-unnamed-stream-error.diff
 web-empty-reply-notice.diff
 profile-root-installation-precedence.diff
-# HarmonyOS-only overlays (pins.json targetSets.ohos), after the whole common chain.
 messages-usage-evidence.diff
 piai-usage-evidence.diff
+companion-phone-memory-request.diff
+companion-auxiliary-single-request.diff
+companion-chat-usage-receipts.diff
+# Fixed Companion work belongs to the shared Android prefix.
+companion-task-approval-turn.diff
+companion-notes-files.diff
+companion-task-storage.diff
+# Public lookup: direct observation and complete-input answer estimate.
+companion-public-lookup-observer.diff
+companion-lookup-answer-window.diff
+# HarmonyOS-only overlays (pins.json targetSets.ohos), after the whole common chain.
 ohos-attachment-publication.diff
 ohos-attachment-diagnostic.diff
 ohos-hap-native-libraries.diff

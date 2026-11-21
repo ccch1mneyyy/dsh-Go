@@ -5383,7 +5383,7 @@ class L10nEn extends L10n {
 
   @override
   String get companionContextUnsupported =>
-      'This host can\'t take her context yet: her name, persona and what just happened won\'t reach her, only what you say. Update the host or switch to light mode.';
+      'This host can\'t take her context yet: her name, persona, recent events and memories on your phone won\'t reach her, only what you say. Update the host or switch to light mode.';
 
   @override
   String get companionLogEmpty => 'Nothing said yet.';
@@ -5597,14 +5597,14 @@ class L10nEn extends L10n {
 
   @override
   String companionMemoryScope(String host) {
-    return 'Kept on $host. She doesn\'t bring these up by herself yet; a later version will.';
+    return 'Saved on $host, shared by both modes. You can edit or forget these anytime.';
   }
 
   @override
   String get companionMemoryAdd => 'Add';
 
   @override
-  String get companionMemoryEdit => 'Edit';
+  String get companionMemoryEdit => 'Update current details';
 
   @override
   String get companionMemorySave => 'Save';
@@ -5623,7 +5623,7 @@ class L10nEn extends L10n {
 
   @override
   String get companionMemoryEmptyHint =>
-      'Write down what you\'d like her to remember. It stays on the current host, and you can edit or delete it anytime.';
+      'She picks up what you talk about on her own. If there is something you want her to keep in mind, you can write it here.';
 
   @override
   String get companionMemoryUnsupported => 'This host can\'t keep her memories yet';
@@ -5712,11 +5712,11 @@ class L10nEn extends L10n {
       'I can\'t reach the host right now. If you just want to chat, switch to Light in the menu at the top right.';
 
   @override
-  String get companionMenuRestartLightHint => 'Clear the chat on this phone';
+  String get companionMenuRestartLightHint => 'Start a new conversation and keep earlier records';
 
   @override
   String get companionMenuRestartLightConfirm =>
-      'She will forget this conversation, and the chat on this phone is deleted.';
+      'Start a new conversation. Memories and earlier chat records will be kept.';
 
   @override
   String get companionInviteRest => 'Rest on the cushion with me for a bit?';
@@ -6223,6 +6223,596 @@ class L10nEn extends L10n {
 
   @override
   String get companionAdaptNetwork => 'no connection';
+
+  @override
+  String get companionMemoryMigrationPending =>
+      'Some older memories have not moved yet. The originals are still kept. You can try again later.';
+
+  @override
+  String get companionMemoryWaiting => 'Memory extraction is waiting. Your original words are saved on this phone.';
+
+  @override
+  String get companionMemoryWidgetPending => 'The old line on the widget will clear shortly.';
+
+  @override
+  String get companionMemoryConfiguration =>
+      'This channel is not ready to save new memories automatically. Your words are kept; you can still edit memories.';
+
+  @override
+  String get companionMemoryWording => 'Edit wording only';
+
+  @override
+  String get companionMemoryPin => 'Pin';
+
+  @override
+  String get companionMemoryUnpin => 'Unpin';
+
+  @override
+  String get companionMemoryConfirmReality => 'This is true of my real life';
+
+  @override
+  String get companionMemorySources => 'My original words';
+
+  @override
+  String get companionMemoryEditSource => 'Edit these words';
+
+  @override
+  String get companionMemoryDeleteSource => 'Delete the phone copy';
+
+  @override
+  String get companionMemoryDeleteSourceHint =>
+      'Delete these words from the phone and memories supported only by them. Old host conversations and separate copies remain.';
+
+  @override
+  String get companionMemoryNoSource => 'This was written by hand, or its original source is no longer available.';
+
+  @override
+  String get companionMemoryCleanupUnknown =>
+      'I can\'t confirm all the original messages that should be deleted. Nothing was deleted.';
+
+  @override
+  String get companionMemoryTooLong => 'Too long to extract automatically from this version';
+
+  @override
+  String get companionMemoryNotExtracted => 'This batch was not saved as memories';
+
+  @override
+  String get companionMemoryPending => 'Not processed yet';
+
+  @override
+  String get companionMemorySourceKept => 'Original words kept';
+
+  @override
+  String get companionMemoryDisplayOnly => 'Old record, kept for viewing';
+
+  @override
+  String get companionMemoryCancelled => 'Plan cancelled';
+
+  @override
+  String get companionMemoryLess => 'Bring this up less';
+
+  @override
+  String get companionMemoryNever => 'Do not bring this up';
+
+  @override
+  String get companionMemoryNormal => 'Okay to bring up again';
+
+  @override
+  String get companionMemoryCancelPlan => 'Cancel this plan';
+
+  @override
+  String get companionMemoryActions => 'Options for this memory';
+
+  @override
+  String get companionMemoryWhich => 'Which one do you mean?';
+
+  @override
+  String get companionMemoryForgotten => 'Okay, it\'s forgotten.';
+
+  @override
+  String get companionMemoryNeverDone => 'Okay, I won\'t bring it up.';
+
+  @override
+  String get companionMemoryLessDone => 'Okay, I\'ll mention it less.';
+
+  @override
+  String get companionMemoryNormalDone => 'Sure, we can talk about it whenever you like.';
+
+  @override
+  String get companionMemoryCancelledDone => 'Okay, I won\'t wait to ask you about it.';
+
+  @override
+  String get companionMemoryCorrected => 'Oh, I had that mixed up.';
+
+  @override
+  String get companionMemoryHostSourceRemaining =>
+      'The phone copy is deleted. The old host conversation remains; you can delete that conversation from the chat list.';
+
+  @override
+  String get companionMemoryHostRestarted =>
+      'The host has restarted. Your message is saved; tap Send again to continue.';
+
+  @override
+  String get companionMemoryUsage => 'Model usage';
+
+  @override
+  String get companionMemoryUsageHint =>
+      'Recent request records. Unknown does not mean free; costs are estimates using verified rates, not provider bills. Host records cover only captured companion chat calls.';
+
+  @override
+  String get companionMemoryUsageUnknown => 'Unknown';
+
+  @override
+  String get companionMemoryUsageExtract => 'Memory extraction';
+
+  @override
+  String get companionMemoryUsageOrganize => 'Memory consolidation';
+
+  @override
+  String get companionMemoryUsageChat => 'Chat';
+
+  @override
+  String get companionMemoryUsageWaiting => 'Waiting for usage records';
+
+  @override
+  String get companionMemoryUsageIncomplete => 'Usage coverage is incomplete; known records are kept';
+
+  @override
+  String get companionMemoryUsageInput => 'Uncached input';
+
+  @override
+  String get companionMemoryUsageCacheRead => 'Cache read';
+
+  @override
+  String get companionMemoryUsageCacheWrite => 'Cache write';
+
+  @override
+  String get companionMemoryUsageOutput => 'Output';
+
+  @override
+  String get companionMemoryUsageCost => 'Estimated cost';
+
+  @override
+  String get companionMemoryUsageNotSent => 'Not sent locally';
+
+  @override
+  String get companionMemoryUsageEmpty => 'No usage recorded yet';
+
+  @override
+  String get companionMemoryHostUnsupported =>
+      'This host is a bit out of date, so here she can\'t recall what you\'ve talked about. Updating the host fixes it.';
+
+  @override
+  String get companionMemoryPostponedDone => 'Okay, let\'s pick it up once you have a new time.';
+
+  @override
+  String get companionTasksTitle => 'Errands';
+
+  @override
+  String get companionTasksEmpty => 'You haven\'t asked me to do anything yet.';
+
+  @override
+  String get companionTaskMissing => 'I can\'t find this one anymore.';
+
+  @override
+  String get companionTaskChanged => 'This was changed later. I\'m going with the latest.';
+
+  @override
+  String get companionReminderEdit => 'Change reminder';
+
+  @override
+  String get companionReminderCancel => 'Don\'t remind me';
+
+  @override
+  String get companionReminderText => 'Remind you about';
+
+  @override
+  String get companionReminderWhen => 'Date and time';
+
+  @override
+  String get companionReminderWhenHint => 'Like 2026-11-21 08:00';
+
+  @override
+  String get companionReminderZone => 'Time zone';
+
+  @override
+  String get companionReminderZoneHint => 'Like Asia/Shanghai or +08:00';
+
+  @override
+  String get companionReminderQueued => 'Okay, got it. I\'m setting it up.';
+
+  @override
+  String get companionReminderDone => 'All set. I\'ll ping you on time.';
+
+  @override
+  String get companionReminderUnknown => 'I\'m not sure this one got set. Mind checking your system alarms?';
+
+  @override
+  String get companionReminderFailed => 'Sorry, I couldn\'t set this one.';
+
+  @override
+  String get companionReminderCancelled => 'Okay, I won\'t remind you about this.';
+
+  @override
+  String get companionReminderTextMissing => 'What should I remind you about?';
+
+  @override
+  String get companionReminderDateMissing => 'Which day should I remind you?';
+
+  @override
+  String get companionReminderTimeMissing => 'What time that day?';
+
+  @override
+  String get companionReminderZoneMissing => 'Which time zone should I use?';
+
+  @override
+  String get companionReminderGap => 'That time gets skipped that day (daylight saving). Pick another time?';
+
+  @override
+  String get companionReminderOverlap => 'That time happens twice that day. Which one?';
+
+  @override
+  String get companionReminderFirst => 'The first one';
+
+  @override
+  String get companionReminderSecond => 'The second one';
+
+  @override
+  String get companionReminderExactMissing =>
+      'Your phone won\'t let me remind you on the dot yet, so this isn\'t set. Turn on “Alarms & reminders” in system settings.';
+
+  @override
+  String get companionReminderNotificationsMissing =>
+      'Notifications are off, so this isn\'t set yet. Turn them on in system settings.';
+
+  @override
+  String get companionReminderChannelMissing =>
+      'Reminder notifications are turned off, so this isn\'t set yet. Turn them on in system settings.';
+
+  @override
+  String get companionReminderGroupMissing =>
+      'The notification group for reminders is turned off, so this isn\'t set yet. Turn it on in system settings.';
+
+  @override
+  String get companionReminderTimePassed => 'That time has already passed, so I didn\'t ring late.';
+
+  @override
+  String get companionReminderInvalidTime =>
+      'I didn\'t quite get that time. Tell me the date, time and time zone again?';
+
+  @override
+  String get companionReminderCancelUnknown =>
+      'I\'m taking it off, but I\'m not sure it\'s fully gone. If it still rings, just ignore it.';
+
+  @override
+  String get companionReminderWhich => 'Which one do you mean? Tap it in Errands.';
+
+  @override
+  String get companionReminderSyntax => 'Tell me the day and time, like “Remind me at tomorrow 08:00 to bring my ID”.';
+
+  @override
+  String get companionReminderSaveFailed => 'That didn\'t save. What you wrote is still here. Try again?';
+
+  @override
+  String get companionReminderSettings => 'Open system settings';
+
+  @override
+  String get companionReminderCheck => 'Refresh';
+
+  @override
+  String get companionReminderUnknownNotification => 'This reminder may have gone off already. I\'m not sure.';
+
+  @override
+  String companionReminderUnhandled(String text) {
+    return 'I can\'t help with this part yet: $text';
+  }
+
+  @override
+  String companionReminderCancelSource(String text) {
+    return 'Cancel the reminder to $text';
+  }
+
+  @override
+  String get companionReminderNotHere => 'This one wasn\'t set on this phone, so I can\'t change or cancel it here.';
+
+  @override
+  String get companionReminderPlatformUnavailable =>
+      'I can\'t see your phone\'s reminders right now. Check back in a bit?';
+
+  @override
+  String get companionReminderPastRegistration => 'It was set up before.';
+
+  @override
+  String get companionLookupAccepted => 'Okay, I\'ll look it up and leave what I find in Errands.';
+
+  @override
+  String get companionLookupSyntax => 'Which museum or library, and which day? Tell me its full name and the date.';
+
+  @override
+  String get companionLookupDateMissing => 'Which day should I check? Give me a specific date.';
+
+  @override
+  String get companionLookupZoneMissing => 'What time zone is it in? Tell me the date and time zone together.';
+
+  @override
+  String get companionLookupWhich => 'Which lookup should I drop? Tap it in Errands.';
+
+  @override
+  String get companionLookupQueued => 'I\'m looking it up. One moment.';
+
+  @override
+  String get companionLookupDone => 'Found it. Where I read it is below.';
+
+  @override
+  String get companionLookupPartial => 'I found some of it, but I still can\'t say for sure about that day.';
+
+  @override
+  String get companionLookupFailed => 'I couldn\'t find anything solid this time, so I can\'t say.';
+
+  @override
+  String get companionLookupUnknown => 'I didn\'t get a clear answer this time. I won\'t look it up again for now.';
+
+  @override
+  String get companionLookupCancelled => 'Okay, I won\'t look it up.';
+
+  @override
+  String get companionLookupCancelUnknown => 'I asked it to stop, but I\'m not sure it has yet.';
+
+  @override
+  String get companionLookupUnavailable => 'I can\'t reach anywhere to look this up right now, so no answer yet.';
+
+  @override
+  String get companionLookupDeadline => 'The time we agreed on has passed, so I stopped here.';
+
+  @override
+  String get companionLookupInputLimit => 'There\'s too much to read at once, so here\'s where I looked.';
+
+  @override
+  String get companionLookupQueryLong => 'That name is a bit long. Is there a shorter name I won\'t mix up?';
+
+  @override
+  String get companionLookupAnswerIncomplete =>
+      'I found the pages but haven\'t pieced it together yet. Here\'s where I looked.';
+
+  @override
+  String get companionLookupNotHere => 'This wasn\'t looked up on this phone, so I can only show you what I found.';
+
+  @override
+  String get companionLookupSources => 'Where I looked';
+
+  @override
+  String get companionLookupSearchOnly => 'Only saw the search snippet; didn\'t open the page';
+
+  @override
+  String get companionLookupNoTitle => 'No title';
+
+  @override
+  String get companionLookupCancel => 'Don\'t look it up';
+
+  @override
+  String get companionLookupSaveFailed => 'That didn\'t go through. Try again in a bit?';
+
+  @override
+  String companionLookupCancelSource(String name) {
+    return 'Cancel the lookup for $name';
+  }
+
+  @override
+  String companionLookupObservedAt(String time) {
+    return 'Read at $time';
+  }
+
+  @override
+  String companionLookupViewSources(String name) {
+    return 'See where I looked · $name';
+  }
+
+  @override
+  String get companionNotesTitle => 'Turn notes into a to-do list';
+
+  @override
+  String get companionNotesView => 'Take a look';
+
+  @override
+  String get companionNotesSyntax =>
+      'Which day’s notes should I tidy up, and should the computer keep going after you leave? Then you can pick the folder.';
+
+  @override
+  String get companionNotesDateMissing => 'The date, time zone or deadline isn\'t clear yet. Tell me again?';
+
+  @override
+  String get companionNotesConnect => 'Connect the computer with your notes first, then pick the folder.';
+
+  @override
+  String get companionNotesOriginalHost =>
+      'This lives on the computer you used before. Connect to it and I\'ll pick it back up.';
+
+  @override
+  String get companionNotesUnavailable => 'This computer can\'t take this on right now.';
+
+  @override
+  String get companionNotesNoDirectory => 'No folder picked yet, so I haven\'t started.';
+
+  @override
+  String get companionNotesChooseDirectory => 'Pick the notes folder';
+
+  @override
+  String get companionNotesChooseOutput => 'Pick where to save it';
+
+  @override
+  String get companionNotesKeepDirectory => 'Same notes folder';
+
+  @override
+  String get companionNotesKeepOutput => 'Same save folder';
+
+  @override
+  String get companionNotesWhich => 'Which one should I drop? Tap it in Errands.';
+
+  @override
+  String get companionNotesQueued => 'Got it. Waiting for the computer to pick it up.';
+
+  @override
+  String get companionNotesRunning => 'The computer has it and is working on it.';
+
+  @override
+  String get companionNotesDone => 'Done. The to-do list is saved as a new file. Tap to read it.';
+
+  @override
+  String get companionNotesPartial => 'It stopped partway. You can look at what’s there so far.';
+
+  @override
+  String get companionNotesFailed => 'This one didn\'t work out.';
+
+  @override
+  String get companionNotesWaiting => 'The computer is waiting on something. It may need your okay.';
+
+  @override
+  String get companionNotesUnknown => 'I\'m not sure what\'s happening on the computer right now.';
+
+  @override
+  String get companionNotesCancelUnknown =>
+      'I asked the computer to stop, but I\'m not sure it has. Files it already wrote will stay.';
+
+  @override
+  String get companionNotesCancelled => 'Okay, I\'ve stopped. Files already written are still there.';
+
+  @override
+  String get companionNotesPauseUnavailable =>
+      'You said to stop when you leave, but I can\'t tell right now whether you\'ve left, so I haven\'t started. Want it to keep going after you leave instead?';
+
+  @override
+  String get companionNotesOpportunityLost =>
+      'I missed handing it to the computer, and you said not to wait for it to come online. Tell me if you still want it done.';
+
+  @override
+  String get companionNotesDeadline => 'The deadline we agreed on has passed, so I won\'t keep going.';
+
+  @override
+  String get companionNotesOriginalPending => 'The computer got your change. Give it a moment to catch up.';
+
+  @override
+  String get companionNotesSaveFailed => 'That didn\'t go through. It\'s still here. Try again in a bit?';
+
+  @override
+  String get companionNotesModifiedDay =>
+      'I\'ll turn the notes in this folder changed that day (Markdown and plain text) into a to-do list. Your files stay as they are.';
+
+  @override
+  String get companionNotesNoInputs => 'No notes in this folder changed that day, so there\'s no to-do list.';
+
+  @override
+  String get companionNotesOutputExists => 'A file with that name already exists, so I left it alone. Pick a new name.';
+
+  @override
+  String get companionNotesFileCountLimit =>
+      'More than 20 notes match. That’s a lot. Try a smaller folder, or split it up?';
+
+  @override
+  String get companionNotesFileSizeLimit =>
+      'One note is over 64 KiB, too long for me. Narrow it down; I\'d rather not read just half.';
+
+  @override
+  String get companionNotesTotalSizeLimit => 'These notes add up to more than 256 KiB. Narrow it down, or split it up?';
+
+  @override
+  String get companionNotesModelLimit =>
+      'That\'s more than I can read at once. Narrow it down; I\'d rather not read just half.';
+
+  @override
+  String get companionNotesPause => 'Stop when I leave';
+
+  @override
+  String get companionNotesContinue => 'Keep going after I leave';
+
+  @override
+  String get companionNotesAllowQueue => 'If the computer is offline, wait for it';
+
+  @override
+  String get companionNotesNoQueue => 'If the computer is offline, don\'t wait';
+
+  @override
+  String get companionNotesApproval => 'The computer needs your okay to keep going.';
+
+  @override
+  String get companionNotesOpenFile => 'Read the to-do list';
+
+  @override
+  String get companionNotesFileMissing => 'I can\'t find this file anymore, and I didn\'t remake it.';
+
+  @override
+  String get companionNotesFileChanged => 'This file was changed later; it\'s not what I wrote anymore.';
+
+  @override
+  String get companionNotesFileUnknown => 'I can\'t open this file right now.';
+
+  @override
+  String get companionNotesCancel => 'Don\'t do it';
+
+  @override
+  String get companionNotesEdit => 'Change it';
+
+  @override
+  String get companionNotesDate => 'Which day’s notes';
+
+  @override
+  String get companionNotesFilename => 'New file name (.md or .txt)';
+
+  @override
+  String get companionNotesDeadlineField => 'New deadline (leave blank to keep it)';
+
+  @override
+  String get companionNotesClearDeadline => 'No deadline';
+
+  @override
+  String get companionNotesKeepDeadline => 'Same deadline';
+
+  @override
+  String companionNotesSourceDirectory(String path) {
+    return 'Notes in: $path';
+  }
+
+  @override
+  String companionNotesOutputDirectory(String path) {
+    return 'Saved to: $path';
+  }
+
+  @override
+  String companionNotesDue(String time) {
+    return 'Done by $time';
+  }
+
+  @override
+  String companionNotesCancelSource(String name) {
+    return 'Cancel the notes task for “$name”';
+  }
+
+  @override
+  String companionNotesAmendSource(
+    String date,
+    String name,
+    String deadline,
+    String afterExit,
+    String queue,
+    String source,
+    String output,
+  ) {
+    return 'Change the notes task: notes from $date, save as “$name”, deadline: $deadline; $afterExit; $queue; $source; $output.';
+  }
+
+  @override
+  String get companionNotesRetry => 'Let the computer keep going';
+
+  @override
+  String get companionNotesSubmitSaved => 'Hand it to the computer now';
+
+  @override
+  String get companionNotesResendOriginal => 'Hand it to the computer again';
+
+  @override
+  String get companionNotesResendCancel => 'Tell the computer to stop again';
+
+  @override
+  String get companionNotesResendAmend => 'Send the change to the computer again';
 
   @override
   String get automaticDiagnosticsRecover => 'Recover local records';
