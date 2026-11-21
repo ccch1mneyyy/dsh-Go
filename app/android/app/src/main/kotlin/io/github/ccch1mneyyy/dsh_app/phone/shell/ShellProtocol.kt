@@ -27,6 +27,7 @@ object ShellProtocol {
     fun validUid(backend: String, uid: Int): Boolean = when (backend) {
         "adb" -> uid == 2000
         "shizuku" -> uid == 2000 || uid == 0
+        "root" -> uid == 0
         else -> false
     }
 

@@ -109,6 +109,17 @@ void main() {
     expect(find.byKey(const ValueKey('android-shell-pair')), findsOneWidget);
   });
 
+  testWidgets('root backend needs no install step and connects through su', (tester) async {
+    final native = ShellNative(
+      status: shellStatus(enabled: true, backend: 'root', reasonCode: 'notConnected'),
+    );
+    await _pump(tester, native: native);
+    expect(find.byKey(const ValueKey('android-shell-authorize')), findsNothing);
+    expect(find.byKey(const ValueKey('android-shell-pair')), findsNothing);
+    await _tap(tester, 'android-shell-connect-root');
+    expect(native.callsOf('androidShellConnect'), hasLength(1));
+  });
+
   testWidgets('stop failure and unknown outcome remain visible with recovery actions', (tester) async {
     final native = ShellNative(status: shellStatus(enabled: false, reasonCode: 'transportLost'))
       ..replies['androidShellStop'] = false;

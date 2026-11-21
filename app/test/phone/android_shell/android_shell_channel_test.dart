@@ -31,12 +31,26 @@ void main() {
     expect(status.limits['maxCommandBytes'], 2048);
   });
 
+  test('root backend reports its own channel and uid', () async {
+    ShellNative(
+      status: {
+        ...shellStatus(enabled: true, backend: 'root', ready: true, uid: 0, reasonCode: null),
+        'root': {'connected': true, 'reasonCode': null},
+      },
+    ).install();
+    final status = await channel.status();
+    expect(status.backend, AndroidShellBackend.root);
+    expect(status.uid, 0);
+    expect(status.root.connected, isTrue);
+    expect(status.root.reasonCode, isNull);
+  });
+
   test('absent, malformed or unknown protocols fail closed without fallback', () {
     for (final value in <Map<Object?, Object?>>[
       {},
       {...shellStatus(), 'v': 2},
       {...shellStatus(), 'v': 1.0},
-      {...shellStatus(), 'backend': 'root'},
+      {...shellStatus(), 'backend': 'sui'},
       {...shellStatus(), 'enabled': 1},
       {...shellStatus(), 'ready': 'yes'},
     ]) {

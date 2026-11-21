@@ -9,11 +9,13 @@ int? _nonNegativeInt(Object? value) => value is int && value >= 0 ? value : null
 
 enum AndroidShellBackend {
   shizuku,
-  adb;
+  adb,
+  root;
 
   static AndroidShellBackend? parse(Object? value) => switch (value) {
     'shizuku' => shizuku,
     'adb' => adb,
+    'root' => root,
     _ => null,
   };
 }
@@ -30,6 +32,19 @@ class AndroidShellShizukuStatus {
   final bool installed;
   final bool running;
   final bool granted;
+}
+
+/// Root has no third-party app to install: the device's root manager answers `su`.
+class AndroidShellRootStatus {
+  const AndroidShellRootStatus({this.connected = false, this.reasonCode});
+
+  factory AndroidShellRootStatus.fromMap(Map<Object?, Object?> value) => AndroidShellRootStatus(
+    connected: value['connected'] == true,
+    reasonCode: _code(value['reasonCode']),
+  );
+
+  final bool connected;
+  final String? reasonCode;
 }
 
 class AndroidShellAdbStatus {
@@ -53,6 +68,7 @@ class AndroidShellStatus {
     this.reasonCode,
     this.shizuku = const AndroidShellShizukuStatus(),
     this.adb = const AndroidShellAdbStatus(),
+    this.root = const AndroidShellRootStatus(),
     this.limits = const {},
   });
 
@@ -76,6 +92,7 @@ class AndroidShellStatus {
       reasonCode: _code(value['reasonCode']),
       shizuku: AndroidShellShizukuStatus.fromMap(_map(value['shizuku'])),
       adb: AndroidShellAdbStatus.fromMap(_map(value['adb'])),
+      root: AndroidShellRootStatus.fromMap(_map(value['root'])),
       limits: Map.unmodifiable({
         for (final key in const ['defaultTimeoutMs', 'maxTimeoutMs', 'maxOutputBytes', 'maxCommandBytes'])
           key: ?_nonNegativeInt(limits[key]),
@@ -91,6 +108,7 @@ class AndroidShellStatus {
   final String? reasonCode;
   final AndroidShellShizukuStatus shizuku;
   final AndroidShellAdbStatus adb;
+  final AndroidShellRootStatus root;
   final Map<String, int> limits;
 }
 

@@ -1,0 +1,106 @@
+# Fork-only build of the root-shell branch: an arm64 "side" APK
+# (io.github.ccch1mneyyy.dsh_app.test, "DSH Go 测试") that installs next to the
+# released app with its own data, so a local root backend can be tried without
+# touching the installed build or its API keys.
+#
+# The APK and, when the build fails, the tail of the build log are published as
+# GitHub Releases: a public download needs no token, and the log is readable
+# from outside the runner.
+name: Fork APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [root-shell]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      FLUTTER_VERSION: 3.47.7
+      TAG: side-root-shell-${{ github.run_number }}
+      LOG_TAG: side-root-shell-log-${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      # gradlew is not tracked in this repository; Flutter falls back to gradle on PATH.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.3.1
+      - name: Toolchain notes
+        run: |
+          java -version 2>&1 | head -3
+          flutter --version
+          gradle --version | sed -n '3,6p'
+          echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
+
+      - name: Android SDK pieces
+        run: |
+          set -o pipefail
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          yes | "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" --licenses >/dev/null 2>&1 || true
+          "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" \
+            "ndk;28.2.13676358" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" 2>&1 | tail -5 || true
+          ls "$sdk/ndk" 2>/dev/null || true
+
+      - name: Cache runtime downloads
+        uses: actions/cache@v4
+        with:
+          path: runtime/.cache
+          key: runtime-downloads-fork-${{ hashFiles('runtime/build-runtime.sh', 'runtime/locks/**') }}
+          restore-keys: runtime-downloads-fork-
+
+      - name: Runtime (arm64)
+        run: |
+          set -o pipefail
+          runtime/build-runtime.sh arm64-v8a 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+
+      - name: App dependencies
+        working-directory: app
+        run: |
+          set -o pipefail
+          flutter pub get --enforce-lockfile 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+          printf 'sdk.dir=%s\nflutter.sdk=%s\n' "$ANDROID_HOME" "$FLUTTER_ROOT" > android/local.properties
+
+      - name: Build side APK
+        run: |
+          set -o pipefail
+          tooling/build-apk.sh --side --no-companion 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+          ls -l app/build/app/outputs/flutter-apk/
+
+      - name: Publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          apk=app/build/app/outputs/flutter-apk/app-arm64-release.apk
+          test -f "$apk"
+          cp "$apk" "$RUNNER_TEMP/dsh-go-side-root-shell.apk"
+          gh release create "$TAG" "$RUNNER_TEMP/dsh-go-side-root-shell.apk" \
+            --title "DSH Go 测试包 (root shell, run ${{ github.run_number }})" \
+            --notes "侧装包：包名 io.github.ccch1mneyyy.dsh_app.test，可与正式版共存。含 android_shell 的 root/su 后端。"
+
+      - name: Publish failure log
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body="$RUNNER_TEMP/failure.md"
+          { echo "构建失败。日志尾部："; echo '```'; tail -c 50000 "$RUNNER_TEMP/build.log" 2>/dev/null || echo "(no log)"; echo '```'; } > "$body"
+          gh release create "$LOG_TAG" --title "build log ${{ github.run_number }}" --notes-file "$body" || true

@@ -11,6 +11,8 @@ Map<String, Object?> shellStatus({
   bool ready = false,
   bool shizukuGranted = false,
   bool adbPaired = false,
+  bool rootConnected = false,
+  String? rootReasonCode,
   int? uid,
   String? reasonCode = 'disabled',
 }) => {
@@ -22,6 +24,7 @@ Map<String, Object?> shellStatus({
   'reasonCode': reasonCode,
   'shizuku': {'installed': true, 'running': true, 'granted': shizukuGranted},
   'adb': {'paired': adbPaired, 'connected': false},
+  'root': {'connected': rootConnected, 'reasonCode': rootReasonCode},
   'limits': {'defaultTimeoutMs': 10000, 'maxTimeoutMs': 30000, 'maxOutputBytes': 65536, 'maxCommandBytes': 2048},
 };
 
