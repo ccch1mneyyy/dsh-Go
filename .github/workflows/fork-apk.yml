@@ -52,15 +52,35 @@ jobs:
 
       - name: Android SDK pieces
         run: |
-          set -o pipefail
+          set -uo pipefail
           sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           # Later steps read local.properties from this, and the runner may not export it.
           echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
-          yes | "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" --licenses >/dev/null 2>&1 || true
-          "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" \
-            "ndk;28.2.13676358" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" 2>&1 | tail -5 || true
-          ls "$sdk/ndk" 2>/dev/null || true
+          sm="$sdk/cmdline-tools/latest/bin/sdkmanager"
+          if [ -x "$sm" ]; then
+            yes | "$sm" --sdk_root="$sdk" --licenses >/dev/null 2>&1 || true
+            "$sm" --sdk_root="$sdk" "ndk;28.2.13676358" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" || true
+          else
+            echo "no sdkmanager at $sm; using the direct NDK download"
+          fi
+          # The pinned NDK the tawcroot build requires, whichever route put it there.
+          ndk="$sdk/ndk/28.2.13676358"
+          if [ ! -f "$ndk/source.properties" ]; then
+            echo "NDK 28.2.13676358 missing; fetching r28c"
+            curl -fL --retry 3 -o /tmp/ndk.zip https://dl.google.com/android/repository/android-ndk-r28c-linux.zip
+            rm -rf /tmp/ndk-unpack && mkdir -p /tmp/ndk-unpack
+            unzip -q /tmp/ndk.zip -d /tmp/ndk-unpack
+            if ! { mkdir -p "$sdk/ndk" 2>/dev/null && mv /tmp/ndk-unpack/android-ndk-r28c "$ndk" 2>/dev/null; }; then
+              sudo mkdir -p "$sdk/ndk"
+              sudo mv /tmp/ndk-unpack/android-ndk-r28c "$ndk"
+            fi
+          fi
+          test -f "$ndk/source.properties"
+          grep Pkg.Revision "$ndk/source.properties"
+          echo "ANDROID_NDK_HOME=$ndk" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$ndk" >> "$GITHUB_ENV"
+          ls "$sdk/ndk"
 
       - name: Cache runtime downloads
         uses: actions/cache@v4
