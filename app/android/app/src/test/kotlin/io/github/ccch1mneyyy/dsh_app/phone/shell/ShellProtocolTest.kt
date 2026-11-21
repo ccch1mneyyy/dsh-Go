@@ -43,7 +43,8 @@ class ShellProtocolTest {
         assertTrue(ShellProtocol.validUid("shizuku", 2000))
         assertTrue(ShellProtocol.validUid("shizuku", 0))
         assertFalse(ShellProtocol.validUid("shizuku", 10_000))
-        assertFalse(ShellProtocol.validUid("root", 0))
+        assertTrue(ShellProtocol.validUid("root", 0))
+        assertFalse(ShellProtocol.validUid("root", 2000))
     }
 
     @Test fun failureHasConsistentSafeResultShape() {
