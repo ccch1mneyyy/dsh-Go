@@ -54,6 +54,9 @@ jobs:
         run: |
           set -o pipefail
           sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          # Later steps read local.properties from this, and the runner may not export it.
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
           yes | "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" --licenses >/dev/null 2>&1 || true
           "$sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$sdk" \
             "ndk;28.2.13676358" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" 2>&1 | tail -5 || true
