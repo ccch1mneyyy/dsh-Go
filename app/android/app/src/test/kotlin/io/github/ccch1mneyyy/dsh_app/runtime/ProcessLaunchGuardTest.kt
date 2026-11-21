@@ -119,6 +119,9 @@ class ProcessLaunchGuardTest {
         "app/android/app/src/main/kotlin/io/github/ccch1mneyyy/dsh_app/phone/background/RootProcess.kt",
         // Explicitly authorized Android Shell: Java-owned helper and its bounded child shell.
         "app/android/app/src/main/kotlin/io/github/ccch1mneyyy/dsh_app/phone/shell/AndroidShellProcess.kt",
+        // The root channel's fixed `su -c` host launch. The test below keeps it to one
+        // ProcessBuilder whose command is built from the APK paths and a fixed class name.
+        "app/android/app/src/main/kotlin/io/github/ccch1mneyyy/dsh_app/phone/shell/ShellRootBackend.kt",
         // The bounded privileged logcat reader also uses Java's fd-closing launcher.
         // The test below restricts this owner to one fixed-command ProcessBuilder.
         diagnosticJavaOwner,
@@ -251,6 +254,15 @@ class ProcessLaunchGuardTest {
             ".", "redirectErrorStream", "(", "true", ")", ".", "start", "(", ")")
         val actual = Code(source.substring(calls.single().offset), "kt").read().take(expected.size).map { it.text }
         assertEquals(expected, actual)
+    }
+
+    @Test fun rootOwnerOnlyLaunchesTheFixedSuHost() {
+        val path = "app/android/app/src/main/kotlin/io/github/ccch1mneyyy/dsh_app/phone/shell/ShellRootBackend.kt"
+        val source = File(repository(), path).readText()
+        assertEquals(listOf("ProcessBuilder"), nativeCalls(source, "kt").map { it.text })
+        assertTrue(source.contains("\"su\", \"-c\","))
+        assertTrue(source.contains(
+            "CLASSPATH=\$quoted exec /system/bin/app_process /system/bin \${AndroidShellMain::class.java.name}"))
     }
 
     @Test fun shellOwnerOnlyLaunchesItsReviewedHelperAndAndroidSh() {
