@@ -400,8 +400,8 @@ app/tool/pet_theme_convert.py 把素材转成 schema 1 宠物包，按目录内�
     python3 tool/pet_theme_convert.py --input DIR --out DIR [--id ID] [--input-name NAME] [--source URL] [--crisp]
     python3 -I tool/test_pet_theme_convert.py
 
-技能 app/assets/skills/pet-theme/ 随 App 安装（脚本是 app/tool 的副本，测试会查一致性），
-宠物页的「让 AI 做一只宠物」把 /pet-theme 填进新对话。
+技能 app/assets/skills/theme-maker/ 随 App 安装（宠物脚本是 app/tool 的副本，测试会查一致性），
+宠物页的「让 AI 做一只宠物」把 /theme-maker 填进新对话；外观页的「用对话创建主题」也用它。
 
 两个固定决定（改之前先看 §5 渲染）：
 

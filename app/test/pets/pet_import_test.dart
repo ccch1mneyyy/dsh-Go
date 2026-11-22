@@ -136,7 +136,7 @@ void main() {
     await tester.pump();
     final pending = container.read(composeInboxProvider);
     expect(pending, isNotEmpty);
-    expect(pending.first.text, '/pet-theme ');
+    expect(pending.first.text, '/theme-maker ');
   });
 
   testWidgets('让 AI 做一只宠物 in web mode: the page opens a new chat with it', (tester) async {
@@ -145,7 +145,7 @@ void main() {
     await tester.pump();
     final request = container.read(webOpenProvider)!;
     expect(request.target.newSession, isTrue);
-    expect(request.compose!.text, '/pet-theme ');
+    expect(request.compose!.text, '/theme-maker ');
     expect(container.read(composeInboxProvider), isEmpty);
   });
 

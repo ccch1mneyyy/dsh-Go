@@ -17,7 +17,7 @@ import '../../state/android_features.dart';
 import '../../state/compose_inbox.dart';
 import '../../state/ui_mode_state.dart';
 import '../../state/web_target.dart';
-import '../../ui_config/ui_skill.dart' show petThemeSkillName;
+import '../../ui_config/ui_skill.dart' show themeMakerSkillName;
 import '../common/expand_reveal.dart';
 import '../settings/settings_widgets.dart';
 import '../theme/app_icons.dart';
@@ -72,7 +72,7 @@ class PetSettingsPage extends ConsumerWidget {
           footer: Text(_source(l10n, prefs.packId, ref.watch(petPackProvider(prefs.packId)).value)),
           children: const [PetPicker(importable: true)],
         ),
-        // 自己带来的素材：交给新对话里的 AI，用 pet-theme 技能转成宠物包.
+        // 自己带来的素材：交给新对话里的 AI，用 theme-maker 技能转成宠物包.
         SettingsSection(
           children: [
             SettingsTile(
@@ -143,7 +143,7 @@ class PetSettingsPage extends ConsumerWidget {
   static void _makePet(BuildContext context) {
     final container = ProviderScope.containerOf(context, listen: false);
     Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-    final request = ComposeRequest(text: '/$petThemeSkillName ');
+    final request = ComposeRequest(text: '/$themeMakerSkillName ');
     if (container.read(uiModeProvider).web) {
       // The web home has no native composer: the page opens a new chat with it.
       container.read(webOpenProvider.notifier).request(const DshWebTarget(newSession: true), compose: request);
