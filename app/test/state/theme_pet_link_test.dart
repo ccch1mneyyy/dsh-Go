@@ -14,7 +14,6 @@ import 'package:dsh_app/pets/pet_state.dart' show noPetId;
 import 'package:dsh_app/state/appearance_state.dart';
 import 'package:dsh_app/state/theme_pet_link.dart';
 import 'package:dsh_app/themes/theme_library.dart';
-import 'package:dsh_app/themes/theme_pack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';

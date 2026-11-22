@@ -15454,6 +15454,43 @@
       }
     }
   },
+  "themePackPetBadge": "含宠物 {name}",
+  "@themePackPetBadge": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackUsePet": "使用配套宠物「{name}」",
+  "@themePackUsePet": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackPetReplaceTitle": "宠物已存在",
+  "themePackPetReplaceBody": "宠物「{name}」已存在，导入会替换它。",
+  "@themePackPetReplaceBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackThemeReplaceBody": "同名主题也会被替换。",
+  "themePackNewerApp": "这个主题包需要更新版本的 App",
+  "themePackInvalidPet": "配套宠物包无效（{code}）",
+  "@themePackInvalidPet": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "themePackPetInstallFailed": "配套宠物安装失败，主题未改动",
+  "themePackUsePetHint": "这个主题包自带的宠物",
   "updateCheck": "检查更新",
   "updateAutoCheck": "自动检查更新",
   "updateAutoCheckDaily": "每天检查一次",

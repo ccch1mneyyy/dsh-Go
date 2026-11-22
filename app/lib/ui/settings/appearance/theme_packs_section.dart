@@ -11,7 +11,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../../pets/overlay_channel.dart' show petOverlayChannelProvider;
+import '../../../pets/pet_library.dart' show petLibraryProvider;
+import '../../../pets/pet_prefs.dart' show petPrefsProvider;
+import '../../../pets/pet_sheets.dart' show PetSheets;
+import '../../../pets/pet_signals.dart' show petPackProvider, userPetsProvider;
 import '../../../state/appearance_state.dart';
+import '../../../state/theme_pet_link.dart' show themePetLinkProvider;
 import '../../../state/artifacts.dart' show filesChannelProvider;
 import '../../../state/workshop_catalog_state.dart';
 import '../../../themes/theme_library.dart';
@@ -64,8 +70,15 @@ Future<Uint8List?> _pickBoundedFile(List<String> extensions, int maxBytes) async
   return builder.takeBytes();
 }
 
-String themeImportProblemText(ThemeImportException error, {required bool english}) =>
-    switch (error.problem) {
+String themeImportProblemText(ThemeImportException error, {required bool english}) {
+  final detail = error.detail;
+  if (detail == 'theme-schema-version') return appL10n.themePackNewerApp;
+  if (detail != null && detail.startsWith('theme-pet-')) {
+    return error.problem == ThemeImportProblem.storage
+        ? appL10n.themePackPetInstallFailed
+        : appL10n.themePackInvalidPet(detail);
+  }
+  return switch (error.problem) {
       ThemeImportProblem.notAZip =>
         english ? 'Selected file is not a valid ZIP archive.' : '所选文件不是有效的 ZIP 压缩包。',
       ThemeImportProblem.noPack =>
@@ -87,6 +100,7 @@ String themeImportProblemText(ThemeImportException error, {required bool english
       ThemeImportProblem.storage =>
         english ? 'Could not write theme pack to local storage.' : '无法写入本地存储。',
     };
+}
 
 class ThemePacksSection extends ConsumerStatefulWidget {
   const ThemePacksSection({super.key});
@@ -105,6 +119,28 @@ class _ThemePacksSectionState extends ConsumerState<ThemePacksSection> {
     );
   }
 
+  Future<bool> _confirmPetReplace(ThemePackPreview preview) async {
+    final l10n = context.l10n;
+    final pet = preview.petName ?? preview.petId ?? '';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(l10n.themePackPetReplaceTitle),
+        content: Text(
+          [
+            l10n.themePackPetReplaceBody(pet),
+            if (preview.replaced) l10n.themePackThemeReplaceBody,
+          ].join('\n\n'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.pop(dialog, true), child: Text(l10n.commonConfirm)),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   Future<void> _importZip() async {
     if (_busy) return;
     final english = AppLocale.isEnglish;
@@ -113,6 +149,15 @@ class _ThemePacksSectionState extends ConsumerState<ThemePacksSection> {
     try {
       zip = await ref.read(themePackPickerProvider)();
       if (zip == null || !mounted) return;
+      // Read first: a bundled pet that is already here asks before replacing
+      // it. Cancelling here writes nothing at all.
+      final preview = await ref.read(themeLibraryProvider).inspect(zip);
+      if (!mounted) return;
+      if (preview.petId != null && await ref.read(petLibraryProvider).contains(preview.petId!)) {
+        if (!mounted) return;
+        if (!await _confirmPetReplace(preview)) return;
+        if (!mounted) return;
+      }
       final installed = await ref.read(themeLibraryProvider).install(
         zip,
         replaceExisting: true,
@@ -122,6 +167,12 @@ class _ThemePacksSectionState extends ConsumerState<ThemePacksSection> {
       ref.invalidate(userThemesProvider);
       ref.invalidate(themePackByIdProvider(id));
       ref.invalidate(themeLoadedFontsProvider(id));
+      if (installed.petId case final petId?) {
+        PetSheets.instance.forget(petId);
+        ref.invalidate(petPackProvider(petId));
+        ref.invalidate(userPetsProvider);
+        unawaited(ref.read(petOverlayChannelProvider).reloadPack(petId));
+      }
       if (!mounted) return;
       await _selectPack(id);
       if (!mounted) return;
@@ -240,6 +291,13 @@ class _ThemePacksSectionState extends ConsumerState<ThemePacksSection> {
     final activeId = ref.watch(appearanceProvider.select((s) => s.themePackId));
     final userThemes = ref.watch(userThemesProvider).value ?? const <ThemePack>[];
     final workshopAvailable = ref.watch(workshopAvailableProvider);
+    final currentPet = ref.watch(petPrefsProvider.select((p) => p.packId));
+    final bundled = ref.watch(activeThemePackProvider)?.pet;
+    // Only an installed pet can be offered; the theme row says which one it
+    // is even when it is not installed (or the person chose another pet).
+    final bundledInstalled = bundled != null && ref.watch(petPackProvider(bundled.id)).value != null;
+    final offerBundled = bundled != null && bundledInstalled && currentPet != bundled.id;
+    final l10n = context.l10n;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -281,6 +339,17 @@ class _ThemePacksSectionState extends ConsumerState<ThemePacksSection> {
             onExport: () => unawaited(_exportZip(pack)),
             onDelete: () => unawaited(_removePack(pack)),
           ),
+          if (offerBundled && activeId == pack.id) ...[
+            const SizedBox(height: 2),
+            ListPageRow(
+              key: ValueKey('theme-pack-use-pet-${pack.id}'),
+              icon: AppIcons.pet,
+              title: l10n.themePackUsePet(bundled.name ?? bundled.id),
+              subtitle: l10n.themePackUsePetHint,
+              chevron: true,
+              onTap: () => ref.read(themePetLinkProvider.notifier).useBundledPet(pack),
+            ),
+          ],
         ],
         const SizedBox(height: 2),
         ListPageRow(
@@ -360,13 +429,17 @@ class _ThemePackRow extends StatelessWidget {
     final bgDot = bgOverride != null
         ? Color(bgOverride)
         : (dark ? NeutralTones.forAccent(accent).night : NeutralTones.forAccent(accent).mist);
-    final subtitle = pack.description.isNotEmpty
+    final baseSubtitle = pack.description.isNotEmpty
         ? pack.description
         : [
             pack.surfaces.preset.name,
             if (pack.typography.readingFont != 'system') pack.typography.readingFont,
             ...pack.tags,
           ].join(' · ');
+    final pet = pack.pet;
+    final subtitle = pet == null
+        ? baseSubtitle
+        : '$baseSubtitle · ${context.l10n.themePackPetBadge(pet.name ?? pet.id)}';
     final english = languageCode == 'en';
 
     return ListPageRow(

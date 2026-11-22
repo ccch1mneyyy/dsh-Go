@@ -47022,6 +47022,60 @@ abstract class L10n {
   /// **'{count} 个脚本没有运行'**
   String tavernChatScriptsSkipped(int count);
 
+  /// No description provided for @themePackPetBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'含宠物 {name}'**
+  String themePackPetBadge(String name);
+
+  /// No description provided for @themePackUsePet.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用配套宠物「{name}」'**
+  String themePackUsePet(String name);
+
+  /// No description provided for @themePackPetReplaceTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'宠物已存在'**
+  String get themePackPetReplaceTitle;
+
+  /// No description provided for @themePackPetReplaceBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'宠物「{name}」已存在，导入会替换它。'**
+  String themePackPetReplaceBody(String name);
+
+  /// No description provided for @themePackThemeReplaceBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'同名主题也会被替换。'**
+  String get themePackThemeReplaceBody;
+
+  /// No description provided for @themePackNewerApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个主题包需要更新版本的 App'**
+  String get themePackNewerApp;
+
+  /// No description provided for @themePackInvalidPet.
+  ///
+  /// In zh, this message translates to:
+  /// **'配套宠物包无效（{code}）'**
+  String themePackInvalidPet(String code);
+
+  /// No description provided for @themePackPetInstallFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'配套宠物安装失败，主题未改动'**
+  String get themePackPetInstallFailed;
+
+  /// No description provided for @themePackUsePetHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个主题包自带的宠物'**
+  String get themePackUsePetHint;
+
   /// No description provided for @updateCheck.
   ///
   /// In zh, this message translates to:

@@ -123,6 +123,22 @@ void main() {
     expect(Directory('${temp.path}/pets').existsSync(), isFalse);
   });
 
+  test('exporting a pet theme leaves the pet and pet.zip out', () async {
+    await themes.install(writeZip('theme.zip', _themeZip()));
+    final out = File('${temp.path}/export.zip');
+    await themes.exportZip('user-xmas', out);
+
+    final decoded = ZipDecoder().decodeBytes(await out.readAsBytes());
+    expect(decoded.files.map((f) => f.name), ['theme.json']);
+    final json = jsonDecode(utf8.decode(decoded.files.single.content as List<int>)) as Map<String, Object?>;
+    expect(json['schema'], 1, reason: 'the exported pack imports on older apps');
+    expect(json.containsKey('pet'), isFalse);
+    expect(decoded.files.any((f) => f.name == 'pet.zip'), isFalse);
+    // And it installs as a plain theme on any phone.
+    final plain = ThemeLibrary(() async => Directory('${temp.path}/reimport'), pets: pets);
+    expect((await plain.install(out)).petId, isNull);
+  });
+
   test('a pet that cannot be written leaves the theme uninstalled', () async {
     final broken = ThemeLibrary(
       () async => Directory('${temp.path}/other-themes'),

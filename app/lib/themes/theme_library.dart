@@ -763,6 +763,14 @@ Future<void> _exportThemePack((String, String, Map<String, String>) args) async 
       if (attribution['license'] != null) 'license': attribution['license'],
       if (attribution['source'] != null) 'source': attribution['source'],
     };
+    // A Workshop copy is the theme alone. The pet belongs to the phone that
+    // installed it (it may be someone else's art), so `pet` is stripped and
+    // the manifest returns to schema 1, which older apps still import. The
+    // archive is built from theme.json and the referenced images/fonts only,
+    // so a pet.zip left in the folder is never exported either.
+    mergedJson
+      ..remove('pet')
+      ..['schema'] = 1;
     final pack = ThemePack.parse(mergedJson);
     final assets = <String, Uint8List>{};
     var total = 0;
@@ -778,6 +786,7 @@ Future<void> _exportThemePack((String, String, Map<String, String>) args) async 
       assets[name] = bytes;
     }
     final checked = ThemePackValidator.validateParts(mergedJson, assets);
+    // theme.json plus its referenced assets: nothing else (no pet.zip).
     final archive = Archive()
       ..add(ArchiveFile.bytes('theme.json', utf8.encode(jsonEncode(checked.json))));
     for (final entry in checked.assets.entries) {

@@ -25628,6 +25628,41 @@ class L10nZh extends L10n {
   }
 
   @override
+  String themePackPetBadge(String name) {
+    return '含宠物 $name';
+  }
+
+  @override
+  String themePackUsePet(String name) {
+    return '使用配套宠物「$name」';
+  }
+
+  @override
+  String get themePackPetReplaceTitle => '宠物已存在';
+
+  @override
+  String themePackPetReplaceBody(String name) {
+    return '宠物「$name」已存在，导入会替换它。';
+  }
+
+  @override
+  String get themePackThemeReplaceBody => '同名主题也会被替换。';
+
+  @override
+  String get themePackNewerApp => '这个主题包需要更新版本的 App';
+
+  @override
+  String themePackInvalidPet(String code) {
+    return '配套宠物包无效（$code）';
+  }
+
+  @override
+  String get themePackPetInstallFailed => '配套宠物安装失败，主题未改动';
+
+  @override
+  String get themePackUsePetHint => '这个主题包自带的宠物';
+
+  @override
   String get updateCheck => '检查更新';
 
   @override

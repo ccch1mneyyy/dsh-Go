@@ -1,0 +1,39 @@
+{
+  "themePackPetBadge": "含宠物 {name}",
+  "themePackUsePet": "使用配套宠物「{name}」",
+  "themePackPetReplaceTitle": "宠物已存在",
+  "themePackPetReplaceBody": "宠物「{name}」已存在，导入会替换它。",
+  "themePackThemeReplaceBody": "同名主题也会被替换。",
+  "themePackNewerApp": "这个主题包需要更新版本的 App",
+  "themePackInvalidPet": "配套宠物包无效（{code}）",
+  "themePackPetInstallFailed": "配套宠物安装失败，主题未改动",
+  "themePackUsePetHint": "这个主题包自带的宠物",
+  "@themePackPetBadge": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@themePackUsePet": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@themePackPetReplaceBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@themePackInvalidPet": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  }
+}

@@ -27027,6 +27027,41 @@ class L10nEn extends L10n {
   }
 
   @override
+  String themePackPetBadge(String name) {
+    return 'Pet: $name';
+  }
+
+  @override
+  String themePackUsePet(String name) {
+    return 'Use bundled pet “$name”';
+  }
+
+  @override
+  String get themePackPetReplaceTitle => 'Pet already installed';
+
+  @override
+  String themePackPetReplaceBody(String name) {
+    return 'The pet “$name” is already installed. Importing will replace it.';
+  }
+
+  @override
+  String get themePackThemeReplaceBody => 'The theme with the same name will be replaced too.';
+
+  @override
+  String get themePackNewerApp => 'This theme pack needs a newer app';
+
+  @override
+  String themePackInvalidPet(String code) {
+    return 'Invalid bundled pet ($code)';
+  }
+
+  @override
+  String get themePackPetInstallFailed => 'The bundled pet could not be installed; the theme was left as it was';
+
+  @override
+  String get themePackUsePetHint => 'Bundled with this theme pack';
+
+  @override
   String get updateCheck => 'Check for updates';
 
   @override
