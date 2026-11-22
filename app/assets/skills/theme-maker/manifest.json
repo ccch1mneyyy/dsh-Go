@@ -1,0 +1,14 @@
+{
+  "name": "theme-maker",
+  "files": {
+    "SKILL.md": "SKILL.md",
+    "references/appearance-theme.md": "references/appearance-theme.md",
+    "references/pet-pack.md": "references/pet-pack.md",
+    "scripts/check_theme_pack.py": "scripts/check_theme_pack.py",
+    "scripts/make_theme_pack.py": "scripts/make_theme_pack.py",
+    "scripts/pet_theme_convert.py": "scripts/pet_theme_convert.py",
+    "scripts/pet_pack_check.py": "scripts/pet_pack_check.py",
+    "scripts/make_pet_pack.py": "scripts/make_pet_pack.py",
+    "scripts/pet_svg_frames.py": "scripts/pet_svg_frames.py"
+  }
+}
