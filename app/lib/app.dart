@@ -13,6 +13,7 @@ import 'performance/refresh_rate.dart';
 import 'state/app_info.dart';
 import 'state/appearance_state.dart';
 import 'state/locale_state.dart';
+import 'state/theme_pet_link.dart' show themePetLinkProvider;
 import 'state/star_prompt.dart' show starPromptGateProvider, starPromptProvider;
 import 'state/tile_style_state.dart';
 import 'ui/chat/dsh_ui/dsh_ui_model.dart' show DshUiAppAccent;
@@ -190,6 +191,9 @@ class _DshAppState extends ConsumerState<DshApp> with WidgetsBindingObserver {
         performance.reduceMotion || WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.disableAnimations;
     final fluid = performance.fluidMotion && !reduced;
     FrameClock.instance.enabled = fluid;
+    // Keep watching, so a theme's bundled pet is selected and restored even
+    // when the settings page is not open (a shop install, a restart).
+    ref.watch(themePetLinkProvider);
     _themesFor(
       ref.watch(accentProvider),
       locale.languageCode == 'en',

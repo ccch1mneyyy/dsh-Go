@@ -13,6 +13,7 @@ import 'package:flutter/services.dart' show FontLoader;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../pets/pet_library.dart' show PetImportException, PetImportProblem, PetLibrary, petLibraryProvider;
 import '../pets/pet_pack_validator.dart' show PetArchive, PetValidationException, decodePetJson, petArchiveByteCap;
 import '../workshop/workshop_export.dart';
 import '../workshop/workshop_models.dart';
@@ -47,6 +48,7 @@ final _backupThemeName = RegExp(r'^\.old-(\d+)-(user-[a-z0-9-]+)$');
 final themeLibraryProvider = Provider<ThemeLibrary>(
   (ref) => ThemeLibrary(
     () async => Directory('${(await getApplicationSupportDirectory()).path}/themes'),
+    pets: ref.watch(petLibraryProvider),
   ),
 );
 
@@ -113,16 +115,39 @@ final themeLoadedFontsProvider = FutureProvider.family<Map<String, String>, Stri
   return ThemeFonts.instance.loadFor(pack);
 });
 
+/// What a theme zip would do, read without writing anything: used to ask
+/// before a bundled pet replaces one already on the phone.
+class ThemePackPreview {
+  const ThemePackPreview({
+    required this.id,
+    required this.name,
+    required this.replaced,
+    this.petId,
+    this.petName,
+  });
+
+  /// The installed (local) theme id, as [ThemeLibrary.install] returns it.
+  final String id;
+  final String name;
+
+  /// A theme with this id is already installed and would be replaced.
+  final bool replaced;
+  final String? petId;
+  final String? petName;
+}
+
 class ThemeLibrary {
-  ThemeLibrary(this._root) : _readWorkshopReceipt = WorkshopReceipt.read;
+  ThemeLibrary(this._root, {required this.pets}) : _readWorkshopReceipt = WorkshopReceipt.read;
 
   @visibleForTesting
   ThemeLibrary.withWorkshopReceiptReader(
     this._root, {
+    required this.pets,
     required Future<WorkshopReceipt?> Function(Directory) readReceipt,
   }) : _readWorkshopReceipt = readReceipt;
 
   final Future<Directory> Function() _root;
+  final PetLibrary pets;
   final Future<WorkshopReceipt?> Function(Directory) _readWorkshopReceipt;
 
   Future<void> _queue = Future.value();
@@ -169,27 +194,82 @@ class ThemeLibrary {
     return _load(root, id);
   });
 
-  Future<({String id, bool replaced})> install(
+  /// Checks what [zip] would install without writing anything.
+  Future<ThemePackPreview> inspect(File zip) => _exclusive(() async {
+    final root = await _root();
+    await _tidy(root);
+    final found = await compute(_inspectThemeArchive, zip.path);
+    return ThemePackPreview(
+      id: found.id,
+      name: found.name,
+      replaced: await Directory('${root.path}/${found.id}').exists(),
+      petId: found.petId,
+      petName: found.petName,
+    );
+  });
+
+  /// Installs [zip]. A bundled pet is installed first, so a failure never
+  /// leaves a theme pointing at a pet that is not there; [replaceExisting]
+  /// covers the theme only, the bundled pet is always replaced by its own id.
+  Future<({String id, bool replaced, String? petId})> install(
     File zip, {
     WorkshopReceipt? workshop,
     bool replaceExisting = false,
   }) => _exclusive(() async {
     final root = await _root();
     await _tidy(root);
-    final (:id, :backup) = await compute(
-      _installThemeArchive,
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final staged = await compute(
+      _stageThemeArchive,
       (
         zip.path,
         root.path,
-        DateTime.now().microsecondsSinceEpoch,
+        stamp,
         workshop == null ? null : jsonEncode(workshop.toJson()),
         replaceExisting,
       ),
     );
-    ThemeFonts.instance.forget(id);
-    await _evictFolderImages(Directory('${root.path}/$id'));
-    if (backup != null) await _discard(Directory(backup));
-    return (id: id, replaced: backup != null);
+    final id = staged.id;
+    final staging = Directory('${root.path}/.staging-$stamp');
+    var installed = false;
+    try {
+      if (staged.petId != null) {
+        final petZip = File('${staging.path}/$themePetMemberName');
+        try {
+          await pets.install(petZip, replaceExisting: true);
+        } on PetImportException catch (error) {
+          throw _mapPetImportProblem(error);
+        }
+        try {
+          await petZip.delete();
+        } on FileSystemException {
+          // Worst case it stays beside theme.json; nothing reads it there.
+        }
+      }
+      final live = Directory('${root.path}/$id');
+      final old = Directory('${root.path}/.old-$stamp-$id');
+      final replaced = await live.exists();
+      if (replaced) await live.rename(old.path);
+      try {
+        await staging.rename(live.path);
+        installed = true;
+      } on FileSystemException {
+        if (replaced) await old.rename(live.path);
+        rethrow;
+      }
+      ThemeFonts.instance.forget(id);
+      await _evictFolderImages(live);
+      if (replaced) await _discard(old);
+      return (id: id, replaced: replaced, petId: staged.petId);
+    } on FileSystemException catch (error) {
+      throw ThemeImportException(
+        ThemeImportProblem.storage,
+        error.osError?.message,
+        error.osError?.errorCode,
+      );
+    } finally {
+      if (!installed && await staging.exists()) await _discard(staging);
+    }
   });
 
   /// Saves a user-created or edited theme pack directly into the local library.
@@ -548,11 +628,12 @@ ThemeImportException _mapValidationProblem(ThemeValidationException error) {
   return ThemeImportException(ThemeImportProblem.notAZip, detail);
 }
 
-Future<({String id, String? backup})> _installThemeArchive(
+Future<({String id, String? petId})> _stageThemeArchive(
   (String, String, int, String?, bool) args,
 ) async {
   final (zipPath, rootPath, stamp, receiptJson, replaceExisting) = args;
   final staging = Directory('$rootPath/.staging-$stamp');
+  var staged = false;
   try {
     final bytes = await _readArchiveBytes(File(zipPath));
     final archive = PetArchive.read(bytes);
@@ -576,6 +657,9 @@ Future<({String id, String? backup})> _installThemeArchive(
     if (receiptJson != null) {
       await File('${staging.path}/$workshopReceiptName').writeAsString(receiptJson, flush: true);
     }
+    if (validated.petZip != null) {
+      await File('${staging.path}/$themePetMemberName').writeAsBytes(validated.petZip!, flush: true);
+    }
     final live = Directory('$rootPath/$id');
     if (receiptJson != null) {
       await workshopCheckReplacement(
@@ -584,16 +668,10 @@ Future<({String id, String? backup})> _installThemeArchive(
         replaceExisting: replaceExisting,
       );
     }
-    final old = Directory('$rootPath/.old-$stamp-$id');
-    final replaced = await live.exists();
-    if (replaced) await live.rename(old.path);
-    try {
-      await staging.rename(live.path);
-    } on FileSystemException {
-      if (replaced) await old.rename(live.path);
-      rethrow;
-    }
-    return (id: id, backup: replaced ? old.path : null);
+    // The pet is installed between this staging and the swap in install(),
+    // so the validated bytes stay here unused only for that moment.
+    staged = true;
+    return (id: id, petId: pack.pet?.id);
   } on ThemeValidationException catch (error) {
     throw _mapValidationProblem(error);
   } on ThemeImportException {
@@ -607,8 +685,39 @@ Future<({String id, String? backup})> _installThemeArchive(
       error.osError?.errorCode,
     );
   } finally {
-    if (await staging.exists()) await _discard(staging);
+    if (!staged && await staging.exists()) await _discard(staging);
   }
+}
+
+/// Reads a theme zip's identity and bundled pet without writing anything.
+Future<({String id, String name, String? petId, String? petName})> _inspectThemeArchive(String zipPath) async {
+  try {
+    final archive = PetArchive.read(await _readArchiveBytes(File(zipPath)));
+    if (archive.manifestPaths('theme.json').isEmpty) {
+      throw const ThemeImportException(ThemeImportProblem.noPack);
+    }
+    final pack = ThemePackValidator.validateThemeArchive(archive).pack;
+    return (id: userThemeIdFor(pack.id), name: pack.name, petId: pack.pet?.id, petName: pack.pet?.name);
+  } on ThemeValidationException catch (error) {
+    throw _mapValidationProblem(error);
+  } on PetValidationException catch (error) {
+    throw _mapValidationProblem(ThemeValidationException(error.code, error.path));
+  } on FileSystemException catch (error) {
+    throw ThemeImportException(
+      ThemeImportProblem.storage,
+      error.osError?.message,
+      error.osError?.errorCode,
+    );
+  }
+}
+
+ThemeImportException _mapPetImportProblem(PetImportException error) {
+  final problem = switch (error.problem) {
+    PetImportProblem.tooLarge => ThemeImportProblem.tooLarge,
+    PetImportProblem.storage => ThemeImportProblem.storage,
+    _ => ThemeImportProblem.badPack,
+  };
+  return ThemeImportException(problem, 'theme-pet-${error.problem.name}', error.osErrorCode);
 }
 
 Future<Uint8List> _themeExportRead(File file, int cap) async {

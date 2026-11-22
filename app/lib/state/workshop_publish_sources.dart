@@ -190,7 +190,10 @@ final workshopFileStagerProvider = Provider<WorkshopFileStager>((ref) {
           author: character.author, license: character.license, source: character.source, store: store);
       }
       if (await _hasThemeManifest(zip)) {
-        final themeLib = ThemeLibrary(() async => Directory('${root.path}/themes'));
+        final themeLib = ThemeLibrary(
+          () async => Directory('${root.path}/themes'),
+          pets: PetLibrary(() async => Directory('${root.path}/pets')),
+        );
         final installed = await themeLib.install(zip);
         final pack = await themeLib.load(installed.id);
         return WorkshopPublishSource(kind: 'theme', localId: installed.id, name: pack.name,

@@ -113,10 +113,12 @@ class _ThemePacksSectionState extends ConsumerState<ThemePacksSection> {
     try {
       zip = await ref.read(themePackPickerProvider)();
       if (zip == null || !mounted) return;
-      final (:id, :replaced) = await ref.read(themeLibraryProvider).install(
+      final installed = await ref.read(themeLibraryProvider).install(
         zip,
         replaceExisting: true,
       );
+      final id = installed.id;
+      final replaced = installed.replaced;
       ref.invalidate(userThemesProvider);
       ref.invalidate(themePackByIdProvider(id));
       ref.invalidate(themeLoadedFontsProvider(id));

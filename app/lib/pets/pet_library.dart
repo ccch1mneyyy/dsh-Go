@@ -139,6 +139,15 @@ class PetLibrary {
     return [for (final (_, pack) in found) pack];
   });
 
+  /// Whether a brought pet is installed under [id]. A folder that no longer
+  /// parses still counts: importing over it is how it is put right.
+  Future<bool> contains(String id) => _exclusive(() async {
+    if (!isUserPet(id) || !userPetIdPattern.hasMatch(id)) return false;
+    final root = await _root();
+    await _tidy(root);
+    return Directory('${root.path}/$id').exists();
+  });
+
   /// One brought pet, reading its sheets from its folder.
   Future<PetPack> load(String id) => _exclusive(() async {
     final root = await _root();

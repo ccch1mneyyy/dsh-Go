@@ -157,6 +157,9 @@ class PetPrefsController extends Notifier<PetPrefs> {
 
   late Future<void> _loaded;
 
+  /// Completes when the stored values (or the no-backend defaults) are in.
+  Future<void> get ready => _loaded;
+
   @override
   PetPrefs build() {
     ref.listen(performanceDefaultsProvider.select((p) => p.petEnabled), (_, next) {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:dsh_app/pets/pet_library.dart';
 import 'package:dsh_app/state/appearance_state.dart';
 import 'package:dsh_app/themes/theme_library.dart';
 import 'package:dsh_app/themes/theme_pack_validator.dart';
@@ -140,7 +141,10 @@ void main() {
       if (await temp.exists()) await temp.delete(recursive: true);
     });
 
-    final library = ThemeLibrary(() async => Directory('${temp.path}/themes'));
+    final library = ThemeLibrary(
+      () async => Directory('${temp.path}/themes'),
+      pets: PetLibrary(() async => Directory('${temp.path}/pets')),
+    );
     final custom = ThemePack.paper.copyWith(
       id: 'warm-editorial',
       name: '暖纸手稿',
