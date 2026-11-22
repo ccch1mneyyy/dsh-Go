@@ -522,16 +522,20 @@ ThemeImportException _mapValidationProblem(ThemeValidationException error) {
     'theme-size',
     'theme-asset-too-large',
     'theme-asset-total-size',
+    'theme-pet-too-large',
   }.contains(code)) {
     return ThemeImportException(ThemeImportProblem.tooLarge, detail);
   }
-  if (code == 'theme-asset-missing' || code == 'archive-member-missing') {
+  if (code == 'theme-asset-missing' ||
+      code == 'theme-pet-missing' ||
+      code == 'archive-member-missing') {
     return ThemeImportException(ThemeImportProblem.missingAsset, detail);
   }
   if (code == 'archive-path' ||
       code == 'theme-asset-alias' ||
       code.startsWith('theme-png-') ||
       code.startsWith('theme-font-') ||
+      code == 'theme-pet-asset' ||
       code.startsWith('png-')) {
     return ThemeImportException(ThemeImportProblem.badAsset, detail);
   }

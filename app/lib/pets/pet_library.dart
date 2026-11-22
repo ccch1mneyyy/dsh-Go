@@ -20,27 +20,23 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
-import 'package:crypto/crypto.dart' show sha256;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'codex_pet_converter.dart';
 import 'overlay_channel.dart' show petOverlayChannelProvider;
+import 'pet_ids.dart';
 import 'pet_pack.dart';
 import 'pet_pack_validator.dart';
 import '../workshop/workshop_models.dart';
 import '../workshop/workshop_receipt.dart';
 import '../workshop/workshop_export.dart';
 
+export 'pet_ids.dart';
 export 'pet_pack_validator.dart' show petSheetDecodedCap, petSheetSideCap, overlayPackProblem, pngSize, pngIntact;
 
 part 'pet_library_export.dart';
-
-/// Ids of brought pets start with this; the built-in ones never do.
-const userPetPrefix = 'user-';
-
-bool isUserPet(String id) => id.startsWith(userPetPrefix);
 
 /// Why a zip was turned away.
 enum PetImportProblem {
@@ -76,9 +72,6 @@ class PetImportException implements Exception {
   @override
   String toString() => 'PetImportException(${problem.name}${detail == null ? '' : ': $detail'})';
 }
-
-/// A folder name as kept here: lower-case letters and digits in dash-joined runs.
-final _plainId = RegExp(r'^[a-z0-9]+(?:-[a-z0-9]+)*$');
 
 /// A replaced pet's folder while its replacement goes in: `.old-<stamp>-<id>`.
 final _backupName = RegExp(r'^\.old-(\d+)-(user-[a-z0-9-]+)$');
@@ -167,7 +160,7 @@ class PetLibrary {
   });
 
   Future<WorkshopReceipt?> workshopReceipt(String id) => _exclusive(() async {
-    if (!isUserPet(id) || !_plainId.hasMatch(id)) workshopInvalid('workshop_install_record');
+    if (!isUserPet(id) || !userPetIdPattern.hasMatch(id)) workshopInvalid('workshop_install_record');
     final root = await _root();
     await _tidy(root);
     final receipt = await WorkshopReceipt.read(Directory('${root.path}/$id'));
@@ -186,7 +179,7 @@ class PetLibrary {
     await for (final dir in root.list(followLinks: false)) {
       if (dir is! Directory) continue;
       final id = _nameOf(dir);
-      if (!isUserPet(id) || !_plainId.hasMatch(id)) continue;
+      if (!isUserPet(id) || !userPetIdPattern.hasMatch(id)) continue;
       WorkshopReceipt? receipt;
       try {
         receipt = await _readWorkshopReceipt(dir);
@@ -215,7 +208,7 @@ class PetLibrary {
   /// referenced PNGs. Unknown metadata and local workshop receipts stay out.
   /// Public attribution overrides are explicit, for a new workshop submission.
   Future<File> exportZip(String id, File destination, {String? publicId, String? author, String? license, String? source}) => _exclusive(() async {
-    if (!isUserPet(id) || !_plainId.hasMatch(id)) throw const PetImportException(PetImportProblem.noPack);
+    if (!isUserPet(id) || !userPetIdPattern.hasMatch(id)) throw const PetImportException(PetImportProblem.noPack);
     final root = await _root();
     await _tidy(root);
     final target = await workshopExportTarget(destination);
@@ -234,7 +227,7 @@ class PetLibrary {
   /// of it an earlier replacement couldn't delete are moved to the trash
   /// first: left as `.old-*`, the next tidy would bring the pet back.
   Future<void> remove(String id, {WorkshopReceipt? expectedWorkshop}) async {
-    if (!isUserPet(id) || !_plainId.hasMatch(id)) return;
+    if (!isUserPet(id) || !userPetIdPattern.hasMatch(id)) return;
     await _exclusive(() async {
       final root = await _root();
       if (!await root.exists()) return;
@@ -317,21 +310,6 @@ Future<void> _discard(Directory dir) async {
   } on FileSystemException {
     // Busy or not allowed right now.
   }
-}
-
-/// The id a pack is kept under, after [userPetPrefix]. An id that already is
-/// a plain folder name is kept as it is (with the prefix, which a pack
-/// exported from here already has), so the same pet brought again replaces
-/// itself. Any other is made folder-safe and told apart by a short hash of
-/// the whole id: 「小猫」 and 「小狗」, `my cat` and `My Cat` stay two pets.
-@visibleForTesting
-String userPetIdFor(String packId) {
-  final bare = packId.startsWith(userPetPrefix) ? packId.substring(userPetPrefix.length) : packId;
-  if (bare.length <= 48 && _plainId.hasMatch(bare)) return '$userPetPrefix$bare';
-  var slug = bare.toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '');
-  if (slug.length > 32) slug = slug.substring(0, 32).replaceAll(RegExp(r'-+$'), '');
-  final hash = sha256.convert(utf8.encode(packId)).toString().substring(0, 8);
-  return '$userPetPrefix${slug.isEmpty ? 'pet' : slug}-$hash';
 }
 
 Future<Uint8List> _readArchive(File file) async {

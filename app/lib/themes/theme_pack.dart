@@ -1,8 +1,10 @@
-// Declarative theme pack model (schema 1).
-// Lives outside ui/ so state/, workshop/ and validators can import it without
-// crossing the ui/ dependency boundary.
+// Declarative theme pack model (schema 1, or schema 2 when the pack carries a
+// pet). Lives outside ui/ so state/, workshop/ and validators can import it
+// without crossing the ui/ dependency boundary.
 
 import 'package:flutter/foundation.dart';
+
+import '../pets/pet_ids.dart';
 
 const userThemePrefix = 'user-';
 
@@ -22,6 +24,12 @@ final _assetNamePattern = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$');
 
 bool isValidThemeId(Object? value) =>
     value is String && value.length <= 40 && _themeIdPattern.hasMatch(value);
+
+/// The newest theme.json schema this app writes and reads. A pack with a
+/// `pet` uses it so an older app rejects the pack as a version mismatch (the
+/// field it does not know is never reported as an unknown field); a petless
+/// pack stays on schema 1 and keeps importing everywhere.
+const themePackSchema = 2;
 
 bool isSafeThemeAssetName(Object? value, List<String> allowedExtensions) {
   if (value is! String || value.isEmpty || value.length > 80) return false;
@@ -903,6 +911,57 @@ class ThemeEmptyStateSpec {
   );
 }
 
+/// The id an installed brought pet is kept under, as written in theme.json.
+bool isValidThemePetId(Object? value) =>
+    value is String &&
+    isUserPet(value) &&
+    value.length <= 64 &&
+    userPetIdPattern.hasMatch(value.substring(userPetPrefix.length));
+
+/// The optional `pet` block: the brought pet a theme pack installs and shows
+/// with it. [id] is the installed id (`user-…`), not the pet pack's own id;
+/// [name] is only display text and may be filled from the pet pack at install.
+@immutable
+class ThemePetRef {
+  const ThemePetRef({required this.id, this.name});
+
+  final String id;
+  final String? name;
+
+  static ThemePetRef? parse(Object? raw) {
+    if (raw == null) return null;
+    if (raw is! Map) throw const FormatException('theme.json pet must be an object');
+    for (final key in raw.keys) {
+      if (key != 'id' && key != 'name') {
+        throw FormatException('theme.json pet.$key is not supported');
+      }
+    }
+    final id = raw['id'];
+    if (!isValidThemePetId(id)) {
+      throw const FormatException('theme.json pet.id must be an installed user pet id (user-…)');
+    }
+    final name = raw['name'];
+    if (name != null &&
+        (name is! String ||
+            name.trim().isEmpty ||
+            name.runes.length > 120 ||
+            name.runes.any((r) => r < 32 || (r >= 0xD800 && r <= 0xDFFF)))) {
+      throw const FormatException('theme.json pet.name is invalid');
+    }
+    return ThemePetRef(id: id as String, name: name as String?);
+  }
+
+  ThemePetRef withName(String value) => ThemePetRef(id: id, name: value);
+
+  Map<String, Object?> toJson() => {'id': id, if (name != null) 'name': name};
+
+  @override
+  bool operator ==(Object other) => other is ThemePetRef && other.id == id && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(id, name);
+}
+
 @immutable
 class ThemePack {
   const ThemePack({
@@ -921,6 +980,7 @@ class ThemePack {
     this.shapes = const ThemeShapeSpec(),
     this.components = const ThemeComponentSpec(),
     this.emptyState = const ThemeEmptyStateSpec(),
+    this.pet,
     this.folderPath,
     this.assetRevision = 0,
   });
@@ -940,6 +1000,9 @@ class ThemePack {
   final ThemeShapeSpec shapes;
   final ThemeComponentSpec components;
   final ThemeEmptyStateSpec emptyState;
+
+  /// The brought pet this pack carries, if any (schema 2).
+  final ThemePetRef? pet;
 
   /// Local folder path when loaded from disk. Never serialized into theme.json.
   final String? folderPath;
@@ -983,6 +1046,7 @@ class ThemePack {
     'shapes',
     'components',
     'emptyState',
+    'pet',
   };
 
   static bool _nonBlankText(Object? value, int maxRunes) =>
@@ -997,8 +1061,13 @@ class ThemePack {
         throw FormatException('Unknown theme.json field: $key');
       }
     }
-    if (raw['schema'] != 1) {
-      throw const FormatException('theme.json schema must be 1');
+    final schema = raw['schema'];
+    if (schema is! int || schema < 1 || schema > themePackSchema) {
+      throw const FormatException('theme.json schema must be 1 or 2');
+    }
+    final pet = ThemePetRef.parse(raw['pet']);
+    if (pet != null && schema != themePackSchema) {
+      throw const FormatException('theme.json pet requires schema 2');
     }
     final rawId = raw['id'];
     if (!isValidThemeId(rawId)) {
@@ -1089,6 +1158,7 @@ class ThemePack {
       shapes: ThemeShapeSpec.parse(raw['shapes']),
       components: ThemeComponentSpec.parse(raw['components']),
       emptyState: ThemeEmptyStateSpec.parse(raw['emptyState']),
+      pet: pet,
       folderPath: folderPath,
     );
   }
@@ -1109,6 +1179,7 @@ class ThemePack {
     ThemeShapeSpec? shapes,
     ThemeComponentSpec? components,
     ThemeEmptyStateSpec? emptyState,
+    ThemePetRef? pet,
     String? folderPath,
     int? assetRevision,
   }) => ThemePack(
@@ -1127,12 +1198,13 @@ class ThemePack {
     shapes: shapes ?? this.shapes,
     components: components ?? this.components,
     emptyState: emptyState ?? this.emptyState,
+    pet: pet ?? this.pet,
     folderPath: folderPath ?? this.folderPath,
     assetRevision: assetRevision ?? this.assetRevision,
   );
 
   Map<String, Object?> toJson() => {
-    'schema': 1,
+    'schema': pet == null ? 1 : themePackSchema,
     'id': id,
     'name': name,
     if (titleZh != null || titleEn != null)
@@ -1151,6 +1223,7 @@ class ThemePack {
     if (shapes.toJson().isNotEmpty) 'shapes': shapes.toJson(),
     if (components.toJson().isNotEmpty) 'components': components.toJson(),
     if (emptyState.toJson().isNotEmpty) 'emptyState': emptyState.toJson(),
+    if (pet != null) 'pet': pet!.toJson(),
   };
 
   /// Built-in showcase theme packs that demonstrate the declarative engine's
@@ -1532,6 +1605,7 @@ class ThemePack {
       other.shapes == shapes &&
       other.components == components &&
       other.emptyState == emptyState &&
+      other.pet == pet &&
       other.folderPath == folderPath &&
       other.assetRevision == assetRevision;
 
@@ -1552,6 +1626,7 @@ class ThemePack {
     shapes,
     components,
     emptyState,
+    pet,
     folderPath,
     assetRevision,
   );
