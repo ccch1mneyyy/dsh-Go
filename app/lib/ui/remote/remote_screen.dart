@@ -11,6 +11,7 @@ import '../../runtime/runtime_state.dart';
 import '../../state/account_api.dart' show AccountProfile;
 import '../../state/app_info.dart';
 import '../../state/connection_state.dart';
+import '../../state/fnos_host_state.dart';
 import '../../state/hosts_state.dart';
 import '../account/account_widgets.dart' show AccountAvatar;
 import '../common/app_dialog.dart';
@@ -23,6 +24,8 @@ import '../theme/app_icons.dart';
 import '../theme/theme.dart';
 import '../web/web_view_page.dart';
 import 'host_key_dialog.dart';
+import '../fnos/fnos_host_page.dart';
+import '../fnos/fnos_setup_page.dart';
 import 'host_status.dart';
 import 'link_progress.dart';
 import 'network_details_sheet.dart';
@@ -134,6 +137,7 @@ class _RemoteScreenState extends ConsumerState<RemoteScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final ssh = ref.watch(hostsProvider.select((s) => s.ssh));
+    final fnos = ref.watch(fnosHostProvider);
     final active = ref.watch(activeHostProvider);
     final (signedIn, refreshing) = ref.watch(
       relayAccountProvider.select((a) => (a.value?.signedIn ?? false, a.value?.refreshing ?? false)),
@@ -155,6 +159,28 @@ class _RemoteScreenState extends ConsumerState<RemoteScreen> {
         const _AccountCard(),
         _ActiveCard(active: active),
         if (signedIn) _RelayHostsSection(onUse: (h) => unawaited(_use(h)), onOffline: _useOffline),
+        SettingsSection(
+          title: l10n.fnosHostSection,
+          footer: fnos.config == null ? Text(l10n.fnosHostIntro) : null,
+          children: [
+            if (fnos.config case final config?)
+              SettingsTile(
+                icon: hostKindIcon(HostKind.fnos),
+                tinted: false,
+                title: l10n.fnosHostTitle,
+                subtitle: config.target.dshBaseUri.toString(),
+                value: Text(fnos.session == null ? l10n.fnosNotSignedIn : l10n.fnosSignedIn),
+                onTap: () => push(const FnosHostPage()),
+              ),
+            SettingsTile(
+              icon: AppIcons.add,
+              tinted: false,
+              title: l10n.fnosAddHost,
+              subtitle: fnos.config == null ? l10n.fnosAddHostHint : null,
+              onTap: () => push(const FnosSetupPage()),
+            ),
+          ],
+        ),
         SettingsSection(
           title: l10n.remoteSshHosts,
           footer: Text(l10n.remoteSshRequirements),
@@ -179,7 +205,7 @@ class _RemoteScreenState extends ConsumerState<RemoteScreen> {
           title: l10n.remoteConnectionSettings,
           children: [
             // Only meaningful once there is a host to come back to.
-            if (ssh.isNotEmpty || signedIn)
+            if (ssh.isNotEmpty || signedIn || fnos.config != null)
               SettingsSwitchTile(
                 key: const ValueKey('remote-auto-connect'),
                 spot: Spots.remoteAutoConnect,

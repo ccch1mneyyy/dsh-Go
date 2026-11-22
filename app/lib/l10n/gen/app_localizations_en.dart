@@ -10224,6 +10224,155 @@ class L10nEn extends L10n {
   String get fileUploadFailed => 'Couldn’t send to the computer';
 
   @override
+  String get fnosWebLoginTitle => 'Sign in to fnOS';
+
+  @override
+  String get fnosWebLoginHint => 'Sign in once; the app reconnects automatically afterwards';
+
+  @override
+  String get fnosWebLoginOpening => 'Opening the fnOS sign-in page…';
+
+  @override
+  String get fnosWebLoginGotCredentials => 'Got the fnOS sign-in credentials; verifying the DSH connection…';
+
+  @override
+  String get fnosWebLoginVerifyFailed => 'DSH verification did not pass; make sure you are signed in to fnOS';
+
+  @override
+  String get fnosWebLoginConnected => 'Connected to fnOS';
+
+  @override
+  String get fnosWebLoginTimeout => 'Sign-in timed out after 5 minutes. Check your network, then tap Retry.';
+
+  @override
+  String get fnosWebLoginLoadFailed => 'Could not load the sign-in page. Check your network and try again.';
+
+  @override
+  String get fnosWebLoginUnavailable => 'Could not open the fnOS sign-in page (the WebView failed to start).';
+
+  @override
+  String get fnosWebLoginInitializing => 'Starting the WebView…';
+
+  @override
+  String get fnosWebLoginRetryHint => 'Tap Retry to reopen the sign-in page';
+
+  @override
+  String get fnosProbeNoCredentials => 'No fnOS sign-in credentials';
+
+  @override
+  String get fnosProbeTimeout => 'The fnOS gateway timed out (10 seconds)';
+
+  @override
+  String get fnosProbeInvalidToken =>
+      'The gateway returned \"invalid token\": the fnOS sign-in has expired, sign in again';
+
+  @override
+  String fnosProbeUnauthorized(int status) {
+    return 'HTTP $status: the fnOS sign-in has expired, sign in again';
+  }
+
+  @override
+  String get fnosProbeNotFound =>
+      'HTTP 404: no DSH entry point found (DSH may not be installed or running on this NAS)';
+
+  @override
+  String fnosProbeHttp(int status) {
+    return 'HTTP $status: the gateway did not return the DSH page';
+  }
+
+  @override
+  String get fnosProbeTlsFailed => 'TLS handshake failed; cannot connect securely to the fnOS gateway';
+
+  @override
+  String get fnosProbeUnreachable => 'Cannot reach the fnOS gateway (no network, or the device is offline)';
+
+  @override
+  String get fnosProbeBadResponse => 'The fnOS gateway returned an unreadable HTTP response';
+
+  @override
+  String get fnosProbeFailed => 'Failed to probe the fnOS gateway';
+
+  @override
+  String get stateFnosHost => 'fnOS';
+
+  @override
+  String get fnosHostTitle => 'fnOS NAS (fnconnect)';
+
+  @override
+  String get fnosAddHost => 'Add fnOS NAS';
+
+  @override
+  String get fnosAddHostHint => 'Connect to DSH on a NAS through fnconnect; sign in to fnOS once';
+
+  @override
+  String get fnosRelogin => 'Sign in to fnOS again';
+
+  @override
+  String get fnosForget => 'Forget this fnOS NAS';
+
+  @override
+  String get fnosGatewayPath => 'DSH gateway path';
+
+  @override
+  String get fnosNotSignedIn => 'Not signed in to fnOS';
+
+  @override
+  String get fnosSignedIn => 'Signed in to fnOS';
+
+  @override
+  String get fnosHostSection => 'fnOS NAS';
+
+  @override
+  String get fnosFnconnectId => 'fnOS fnconnect ID';
+
+  @override
+  String get fnosFnconnectIdHint => 'Just the ID, e.g. mynas; a fnos.net name or full URL also works';
+
+  @override
+  String get fnosGatewayAdvanced => 'Advanced: DSH gateway path';
+
+  @override
+  String get fnosGatewayHint =>
+      'The default fits App Center installs; for a reverse proxy or Docker use its path, e.g. /dsh';
+
+  @override
+  String get fnosLoginNext => 'Next: sign in to fnOS';
+
+  @override
+  String get fnosLoginHint => 'Sign in to fnOS once in the page that opens; after that the app connects by itself';
+
+  @override
+  String get fnosLoginIncomplete => 'Sign-in did not finish: complete it in the fnOS page and wait for the connection';
+
+  @override
+  String get fnosIdInvalid => 'Enter a valid fnOS fnconnect ID';
+
+  @override
+  String get fnosGatewayInvalid => 'Invalid gateway path: it must start with /';
+
+  @override
+  String get fnosForgetConfirm => 'Forget this NAS? You will need its fnconnect ID and a fnOS sign-in again.';
+
+  @override
+  String get fnosHostIntro =>
+      'Reach DSH on a NAS through fnOS fnconnect: enter the fnconnect ID and sign in to fnOS once';
+
+  @override
+  String get fnosChangeId => 'Change fnconnect ID';
+
+  @override
+  String get fnosForgetHint => 'Remove the saved fnconnect ID and fnOS sign-in';
+
+  @override
+  String get fnosStatus => 'Connection';
+
+  @override
+  String get fnosGatewayDefaultLabel => 'Default';
+
+  @override
+  String get fnosWebUnavailable => 'Opening DSH Web is not available for fnOS hosts yet';
+
+  @override
   String get harmonyUnknownResults =>
       'Some tool calls never got a result. They may or may not have run. This conversation can\'t call tools until you deal with them.';
 

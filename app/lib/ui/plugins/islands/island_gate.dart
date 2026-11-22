@@ -44,6 +44,7 @@ bool islandHostAllowed(
 }) => switch (kind) {
   HostKind.relay => false,
   HostKind.ssh => true,
+  HostKind.fnos => false,
   HostKind.local => override || (reported == true && probed == RouteGuard.present),
 };
 
@@ -143,6 +144,7 @@ final islandHostUrlProvider = Provider.autoDispose.family<Uri?, HostRef>((ref, h
       if (port == null || token == null) return null;
       return islandLaunchUri('http://127.0.0.1:$port', token);
     case HostKind.relay:
+    case HostKind.fnos:
       return null;
   }
 });

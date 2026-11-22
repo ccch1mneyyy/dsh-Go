@@ -12,6 +12,7 @@ import '../runtime/runtime_bridge.dart';
 import '../runtime/runtime_state.dart';
 import 'account_state.dart';
 import 'connection_state.dart';
+import 'fnos_host_state.dart';
 import 'hosts_state.dart';
 import 'read_list_epoch.dart';
 import 'settings_state.dart';
@@ -213,6 +214,22 @@ final readListIdentityProvider = Provider<ReadListIdentity?>((ref) {
       if ((connection?.workingDirectory?.length ?? 0) > 4096) return null;
       final resolved = ref.watch(_resolvedDirectoriesProvider).observe(config.digest, connection);
       return ReadListIdentity.of([config.digest, resolved]);
+    case HostKind.fnos:
+      final fnos = ref.watch(fnosHostProvider);
+      final config = fnos.config;
+      final session = fnos.session;
+      if (!fnos.loaded || config == null || session == null) return null;
+      final base = config.target.dshBaseUri.toString();
+      if (config.fnconnectId.length > 256 || base.length > 4096 || config.target.gatewayPath.length > 512) {
+        return null;
+      }
+      return ReadListIdentity.of([
+        'fnos',
+        config.fnconnectId,
+        config.target.gatewayPath,
+        '${session.savedAt.millisecondsSinceEpoch}',
+        epoch,
+      ]);
     case HostKind.relay:
       final account = ref.watch(relayAccountProvider);
       if (account.isLoading || account.hasError) return null;

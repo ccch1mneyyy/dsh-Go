@@ -9676,6 +9676,151 @@ class L10nZh extends L10n {
   String get fileUploadFailed => '没能传到电脑';
 
   @override
+  String get fnosWebLoginTitle => '登录飞牛 fnOS';
+
+  @override
+  String get fnosWebLoginHint => '登录一次即可，之后自动连接';
+
+  @override
+  String get fnosWebLoginOpening => '正在打开飞牛登录页…';
+
+  @override
+  String get fnosWebLoginGotCredentials => '已拿到飞牛登录凭据，正在验证 DSH 连接…';
+
+  @override
+  String get fnosWebLoginVerifyFailed => 'DSH 验证未通过，请确认已登录飞牛账号';
+
+  @override
+  String get fnosWebLoginConnected => '已连接飞牛 fnOS';
+
+  @override
+  String get fnosWebLoginTimeout => '登录超时（5 分钟）。请检查网络后点「重试」。';
+
+  @override
+  String get fnosWebLoginLoadFailed => '登录页加载失败，请检查网络后重试';
+
+  @override
+  String get fnosWebLoginUnavailable => '无法打开飞牛登录页（WebView 初始化失败）';
+
+  @override
+  String get fnosWebLoginInitializing => '正在初始化 WebView…';
+
+  @override
+  String get fnosWebLoginRetryHint => '请点「重试」重新打开登录页';
+
+  @override
+  String get fnosProbeNoCredentials => '没有飞牛登录凭据';
+
+  @override
+  String get fnosProbeTimeout => '连接飞牛网关超时（10 秒）';
+
+  @override
+  String get fnosProbeInvalidToken => '网关返回 invalid token：飞牛登录已失效，请重新登录';
+
+  @override
+  String fnosProbeUnauthorized(int status) {
+    return 'HTTP $status：飞牛登录已失效，请重新登录';
+  }
+
+  @override
+  String get fnosProbeNotFound => 'HTTP 404：未找到 DSH 入口（这台 NAS 上可能没装或没启动 DSH）';
+
+  @override
+  String fnosProbeHttp(int status) {
+    return 'HTTP $status：网关没有返回 DSH 页面';
+  }
+
+  @override
+  String get fnosProbeTlsFailed => 'TLS 握手失败，无法安全连接飞牛网关';
+
+  @override
+  String get fnosProbeUnreachable => '无法连接飞牛网关（网络不可用或设备离线）';
+
+  @override
+  String get fnosProbeBadResponse => '飞牛网关返回了无法解析的 HTTP 响应';
+
+  @override
+  String get fnosProbeFailed => '探测飞牛网关失败';
+
+  @override
+  String get stateFnosHost => '飞牛';
+
+  @override
+  String get fnosHostTitle => '飞牛 NAS（fnconnect）';
+
+  @override
+  String get fnosAddHost => '添加飞牛 NAS';
+
+  @override
+  String get fnosAddHostHint => '通过飞牛 fnconnect 连接 NAS 上的 DSH，登录一次飞牛账号即可';
+
+  @override
+  String get fnosRelogin => '重新登录飞牛';
+
+  @override
+  String get fnosForget => '忘记这台飞牛 NAS';
+
+  @override
+  String get fnosGatewayPath => 'DSH 网关路径';
+
+  @override
+  String get fnosNotSignedIn => '未登录飞牛';
+
+  @override
+  String get fnosSignedIn => '已登录飞牛';
+
+  @override
+  String get fnosHostSection => '飞牛 NAS';
+
+  @override
+  String get fnosFnconnectId => '飞牛 fnconnect ID';
+
+  @override
+  String get fnosFnconnectIdHint => '只填 ID，如 mynas；也支持 fnos.net 域名或完整地址';
+
+  @override
+  String get fnosGatewayAdvanced => '高级：DSH 网关路径';
+
+  @override
+  String get fnosGatewayHint => '应用中心安装一般用默认值；自建反代/Docker 时填反代路径，如 /dsh';
+
+  @override
+  String get fnosLoginNext => '下一步：登录飞牛';
+
+  @override
+  String get fnosLoginHint => '首次使用需要在弹出的页面里登录飞牛账号，登录一次后自动连接';
+
+  @override
+  String get fnosLoginIncomplete => '登录没有完成：请在弹出的飞牛登录页登录并等待连接成功';
+
+  @override
+  String get fnosIdInvalid => '请输入正确的飞牛 fnconnect ID';
+
+  @override
+  String get fnosGatewayInvalid => '网关路径不合法：需要以 / 开头的路径';
+
+  @override
+  String get fnosForgetConfirm => '忘记后需要重新输入 fnconnect ID 并登录飞牛，确定吗？';
+
+  @override
+  String get fnosHostIntro => '通过飞牛 fnconnect 访问 NAS 上的 DSH：只填 fnconnect ID，登录一次飞牛账号';
+
+  @override
+  String get fnosChangeId => '更改 fnconnect ID';
+
+  @override
+  String get fnosForgetHint => '清除保存的 fnconnect ID 和飞牛登录';
+
+  @override
+  String get fnosStatus => '连接状态';
+
+  @override
+  String get fnosGatewayDefaultLabel => '默认';
+
+  @override
+  String get fnosWebUnavailable => '飞牛网关暂不支持在 App 内打开网页版';
+
+  @override
   String get harmonyUnknownResults => '有工具调用没等到结果，可能已经执行，也可能没有。处理之前，这个对话不能再调用工具。';
 
   @override

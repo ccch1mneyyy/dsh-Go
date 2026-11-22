@@ -5941,6 +5941,67 @@
     }
   },
   "fileUploadFailed": "没能传到电脑",
+  "fnosWebLoginTitle": "登录飞牛 fnOS",
+  "fnosWebLoginHint": "登录一次即可，之后自动连接",
+  "fnosWebLoginOpening": "正在打开飞牛登录页…",
+  "fnosWebLoginGotCredentials": "已拿到飞牛登录凭据，正在验证 DSH 连接…",
+  "fnosWebLoginVerifyFailed": "DSH 验证未通过，请确认已登录飞牛账号",
+  "fnosWebLoginConnected": "已连接飞牛 fnOS",
+  "fnosWebLoginTimeout": "登录超时（5 分钟）。请检查网络后点「重试」。",
+  "fnosWebLoginLoadFailed": "登录页加载失败，请检查网络后重试",
+  "fnosWebLoginUnavailable": "无法打开飞牛登录页（WebView 初始化失败）",
+  "fnosWebLoginInitializing": "正在初始化 WebView…",
+  "fnosWebLoginRetryHint": "请点「重试」重新打开登录页",
+  "fnosProbeNoCredentials": "没有飞牛登录凭据",
+  "fnosProbeTimeout": "连接飞牛网关超时（10 秒）",
+  "fnosProbeInvalidToken": "网关返回 invalid token：飞牛登录已失效，请重新登录",
+  "fnosProbeUnauthorized": "HTTP {status}：飞牛登录已失效，请重新登录",
+  "@fnosProbeUnauthorized": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "fnosProbeNotFound": "HTTP 404：未找到 DSH 入口（这台 NAS 上可能没装或没启动 DSH）",
+  "fnosProbeHttp": "HTTP {status}：网关没有返回 DSH 页面",
+  "@fnosProbeHttp": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "fnosProbeTlsFailed": "TLS 握手失败，无法安全连接飞牛网关",
+  "fnosProbeUnreachable": "无法连接飞牛网关（网络不可用或设备离线）",
+  "fnosProbeBadResponse": "飞牛网关返回了无法解析的 HTTP 响应",
+  "fnosProbeFailed": "探测飞牛网关失败",
+  "stateFnosHost": "飞牛",
+  "fnosHostTitle": "飞牛 NAS（fnconnect）",
+  "fnosAddHost": "添加飞牛 NAS",
+  "fnosAddHostHint": "通过飞牛 fnconnect 连接 NAS 上的 DSH，登录一次飞牛账号即可",
+  "fnosRelogin": "重新登录飞牛",
+  "fnosForget": "忘记这台飞牛 NAS",
+  "fnosGatewayPath": "DSH 网关路径",
+  "fnosNotSignedIn": "未登录飞牛",
+  "fnosSignedIn": "已登录飞牛",
+  "fnosHostSection": "飞牛 NAS",
+  "fnosFnconnectId": "飞牛 fnconnect ID",
+  "fnosFnconnectIdHint": "只填 ID，如 mynas；也支持 fnos.net 域名或完整地址",
+  "fnosGatewayAdvanced": "高级：DSH 网关路径",
+  "fnosGatewayHint": "应用中心安装一般用默认值；自建反代/Docker 时填反代路径，如 /dsh",
+  "fnosLoginNext": "下一步：登录飞牛",
+  "fnosLoginHint": "首次使用需要在弹出的页面里登录飞牛账号，登录一次后自动连接",
+  "fnosLoginIncomplete": "登录没有完成：请在弹出的飞牛登录页登录并等待连接成功",
+  "fnosIdInvalid": "请输入正确的飞牛 fnconnect ID",
+  "fnosGatewayInvalid": "网关路径不合法：需要以 / 开头的路径",
+  "fnosForgetConfirm": "忘记后需要重新输入 fnconnect ID 并登录飞牛，确定吗？",
+  "fnosHostIntro": "通过飞牛 fnconnect 访问 NAS 上的 DSH：只填 fnconnect ID，登录一次飞牛账号",
+  "fnosChangeId": "更改 fnconnect ID",
+  "fnosForgetHint": "清除保存的 fnconnect ID 和飞牛登录",
+  "fnosStatus": "连接状态",
+  "fnosGatewayDefaultLabel": "默认",
+  "fnosWebUnavailable": "飞牛网关暂不支持在 App 内打开网页版",
   "harmonyUnknownResults": "有工具调用没等到结果，可能已经执行，也可能没有。处理之前，这个对话不能再调用工具。",
   "harmonyUnknownResultsReview": "处理",
   "harmonyUnknownResultsTitle": "这些工具调用的结果未知",

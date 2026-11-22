@@ -1,0 +1,37 @@
+{
+  "fnosWebLoginTitle": "登录飞牛 fnOS",
+  "fnosWebLoginHint": "登录一次即可，之后自动连接",
+  "fnosWebLoginOpening": "正在打开飞牛登录页…",
+  "fnosWebLoginGotCredentials": "已拿到飞牛登录凭据，正在验证 DSH 连接…",
+  "fnosWebLoginVerifyFailed": "DSH 验证未通过，请确认已登录飞牛账号",
+  "fnosWebLoginConnected": "已连接飞牛 fnOS",
+  "fnosWebLoginTimeout": "登录超时（5 分钟）。请检查网络后点「重试」。",
+  "fnosWebLoginLoadFailed": "登录页加载失败，请检查网络后重试",
+  "fnosWebLoginUnavailable": "无法打开飞牛登录页（WebView 初始化失败）",
+  "fnosWebLoginInitializing": "正在初始化 WebView…",
+  "fnosWebLoginRetryHint": "请点「重试」重新打开登录页",
+  "fnosProbeNoCredentials": "没有飞牛登录凭据",
+  "fnosProbeTimeout": "连接飞牛网关超时（10 秒）",
+  "fnosProbeInvalidToken": "网关返回 invalid token：飞牛登录已失效，请重新登录",
+  "fnosProbeUnauthorized": "HTTP {status}：飞牛登录已失效，请重新登录",
+  "@fnosProbeUnauthorized": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "fnosProbeNotFound": "HTTP 404：未找到 DSH 入口（这台 NAS 上可能没装或没启动 DSH）",
+  "fnosProbeHttp": "HTTP {status}：网关没有返回 DSH 页面",
+  "@fnosProbeHttp": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "fnosProbeTlsFailed": "TLS 握手失败，无法安全连接飞牛网关",
+  "fnosProbeUnreachable": "无法连接飞牛网关（网络不可用或设备离线）",
+  "fnosProbeBadResponse": "飞牛网关返回了无法解析的 HTTP 响应",
+  "fnosProbeFailed": "探测飞牛网关失败"
+}

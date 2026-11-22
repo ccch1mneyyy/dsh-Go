@@ -15,6 +15,8 @@ import '../runtime/container_paths.dart';
 import 'workspaces_state.dart';
 import '../runtime/runtime_state.dart';
 import '../usage/usage_stats.dart';
+import '../fnos/fnos_client.dart';
+import 'fnos_host_state.dart';
 import 'hosts_state.dart';
 import 'permission_default_repair.dart';
 import 'provider_backend.dart';
@@ -195,6 +197,7 @@ final sshLinkFactoryProvider = Provider<SshLinkFactory>(
 final hostLinkProvider = Provider.autoDispose.family<HostLink?, HostRef>((ref, host) {
   switch (host.kind) {
     case HostKind.local:
+    case HostKind.fnos:
       return null;
     case HostKind.ssh:
       // Reconnect only for changes that matter to the session (not a rename
@@ -292,6 +295,9 @@ final hostNameProvider = Provider.autoDispose.family<String?, HostRef>((ref, hos
     HostKind.local => appL10n.commonThisPhone,
     HostKind.ssh => ref.watch(hostsProvider.select((s) => s.sshById(host.id)?.name)),
     HostKind.relay => ref.watch(relayAccountProvider.select((a) => a.value?.hostById(host.id)?.name)) ?? host.name,
+    HostKind.fnos => ref.watch(
+      fnosHostProvider.select((s) => s.config?.name ?? s.config?.fnconnectId),
+    ) ?? host.name,
   };
 });
 
@@ -303,6 +309,7 @@ class RemoteConnectionController extends AsyncNotifier<HostConnection?> {
 
   @override
   Future<HostConnection?> build() async {
+    if (host.kind == HostKind.fnos) return _buildFnos();
     final link = ref.watch(hostLinkProvider(host));
     if (link == null) return null;
     var name = ref.read(hostNameProvider(host));
@@ -352,8 +359,38 @@ class RemoteConnectionController extends AsyncNotifier<HostConnection?> {
     return wrap(await link.open());
   }
 
+  /// 飞牛主机：没有 SSH / 中继那样的 [HostLink]，连接本身就是一次
+  /// DshClient.connect；网关用保存的飞牛会话 Cookie 鉴权。
+  Future<HostConnection?> _buildFnos() async {
+    final loaded = ref.watch(fnosHostProvider.select((s) => s.loaded));
+    final config = ref.watch(fnosHostProvider.select((s) => s.config));
+    final session = ref.watch(fnosHostProvider.select((s) => s.session));
+    if (!loaded || config == null || session == null) return null;
+    final client = await connectFnosDsh(
+      target: config.target,
+      cookieHeader: session.cookieHeader,
+      backgroundLists: false,
+    );
+    if (!ref.mounted) {
+      await client.close();
+      return null;
+    }
+    ref.onDispose(() => unawaited(client.close()));
+    return HostConnection(
+      client: client,
+      name: config.name ?? config.fnconnectId,
+      isLocal: false,
+      kind: HostKind.fnos,
+      hostId: host.id,
+    );
+  }
+
   /// Gives up any backoff and connects again now.
   void retry() {
+    if (host.kind == HostKind.fnos) {
+      ref.invalidateSelf();
+      return;
+    }
     final link = ref.read(hostLinkProvider(host));
     if (link == null) return;
     final phase = link.status.phase;
@@ -591,6 +628,8 @@ AsyncValue<HostConnection?> _connectionForHost(Ref ref, HostRef host) {
       if (!loaded) return const AsyncLoading();
       return ref.watch(remoteConnectionProvider(host));
     case HostKind.relay:
+      return ref.watch(remoteConnectionProvider(host));
+    case HostKind.fnos:
       return ref.watch(remoteConnectionProvider(host));
   }
 }

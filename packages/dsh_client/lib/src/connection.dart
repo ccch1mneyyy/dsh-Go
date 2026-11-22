@@ -198,6 +198,7 @@ class DshConnection {
     Uri baseUri, {
     this.hostHeader,
     this.cookie,
+    this.cookieHeader,
     HttpClient? httpClient,
     this.connectTimeout = const Duration(seconds: 10),
     this.requestTimeout = const Duration(seconds: 120),
@@ -220,6 +221,14 @@ class DshConnection {
 
   /// Overrides the `Host` header (`host:port`); defaults to [baseUri]'s authority.
   final String? hostHeader;
+
+  /// A ready-made `Cookie` header, for hosts behind a gateway that holds the
+  /// session itself (for example a DSH behind the fnOS fnconnect gateway).
+  /// Takes precedence over [cookie] for every request and the WebSocket.
+  final String? cookieHeader;
+
+  String? get _authCookieHeader =>
+      (cookieHeader != null && cookieHeader!.isNotEmpty) ? cookieHeader : cookie?.header;
   final Duration connectTimeout;
   final Duration requestTimeout;
   DshTracer? _tracer;
@@ -257,7 +266,7 @@ class DshConnection {
         connectTimeout: connectTimeout,
         requestTimeout: requestTimeout,
         hostHeader: hostHeader,
-        cookieHeader: cookie?.header,
+        cookieHeader: _authCookieHeader,
         credentialRefs: List.unmodifiable(credentialRefs),
       ),
     );
@@ -273,7 +282,7 @@ class DshConnection {
   /// Authority the Host sees, which is also what the cookie is bound to.
   String get authority => hostHeader ?? _authorityOf(baseUri);
 
-  bool get hasCookie => cookie != null;
+  bool get hasCookie => (cookieHeader?.isNotEmpty ?? false) || cookie != null;
 
   Uri resolve(String path, [Map<String, String>? query]) {
     final normalized = path.startsWith('/') ? path : '/$path';
@@ -487,7 +496,8 @@ class DshConnection {
       req.followRedirects = false;
       req.persistentConnection = false;
       _applyHost(req.headers);
-      if (cookie != null) req.headers.set(HttpHeaders.cookieHeader, cookie!.header);
+      final authCookie = _authCookieHeader;
+      if (authCookie != null) req.headers.set(HttpHeaders.cookieHeader, authCookie);
       final response = await req.close();
       if (response.statusCode >= 300 && response.statusCode < 400) {
         throw DshHttpException(response.statusCode, 'GET ${uri.path}: redirects are not followed');
@@ -529,7 +539,7 @@ class DshConnection {
   /// A missing/expired cookie fails the upgrade with HTTP 401 and a fence
   /// failure with 403; both surface as [DshHttpException].
   Future<WebSocket> connectWebSocket(String path, {Duration? timeout}) async {
-    final headers = <String, Object>{if (cookie != null) 'Cookie': cookie!.header, 'Host': ?hostHeader};
+    final headers = <String, Object>{'Cookie': ?_authCookieHeader, 'Host': ?hostHeader};
     final uri = webSocketUri(path);
     var abandoned = false;
     try {
@@ -626,7 +636,8 @@ class DshConnection {
       }
       req.followRedirects = followRedirects;
       _applyHost(req.headers);
-      if (cookie != null) req.headers.set(HttpHeaders.cookieHeader, cookie!.header);
+      final authCookie = _authCookieHeader;
+      if (authCookie != null) req.headers.set(HttpHeaders.cookieHeader, authCookie);
       if (contentType != null) req.headers.set(HttpHeaders.contentTypeHeader, contentType);
       headers?.forEach(req.headers.set);
       if (body != null) {
@@ -798,8 +809,8 @@ final class _DshHttpStream {
     }
     request.followRedirects = false;
     connection._applyHost(request.headers);
-    final cookie = connection.cookie;
-    if (cookie != null) request.headers.set(HttpHeaders.cookieHeader, cookie.header);
+    final authCookie = connection._authCookieHeader;
+    if (authCookie != null) request.headers.set(HttpHeaders.cookieHeader, authCookie);
     request.headers.contentType = ContentType.json;
     request.contentLength = payload.length;
     request.add(payload);

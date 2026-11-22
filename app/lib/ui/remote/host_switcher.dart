@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../../runtime/local_footprint.dart';
 import '../../runtime/runtime_state.dart';
 import '../../state/connection_state.dart';
+import '../../state/fnos_host_state.dart';
 import '../../state/hosts_state.dart';
 import '../common/app_sheet.dart';
 import '../common/sheet_title_bar.dart';
@@ -84,6 +85,7 @@ class HostSheet extends ConsumerWidget {
     final l10n = context.l10n;
     final active = ref.watch(activeHostProvider);
     final ssh = ref.watch(hostsProvider.select((s) => s.ssh));
+    final fnos = ref.watch(fnosHostProvider);
     final account = ref.watch(relayAccountProvider).value;
     final relayHosts = account?.signedIn == true ? account!.hosts : const <RelayHost>[];
 
@@ -136,6 +138,14 @@ class HostSheet extends ConsumerWidget {
                       subtitle: 'SSH · ${h.address}',
                       active: active == HostRef.ssh(h.id),
                       onTap: () => pick(HostRef.ssh(h.id)),
+                    ),
+                  if (fnos.config case final config?)
+                    _HostRow(
+                      host: HostRef.fnos(config.fnconnectId, name: config.name),
+                      title: l10n.fnosHostTitle,
+                      subtitle: fnos.session == null ? l10n.fnosNotSignedIn : l10n.fnosSignedIn,
+                      active: active.kind == HostKind.fnos && active.id == config.fnconnectId,
+                      onTap: () => pick(HostRef.fnos(config.fnconnectId, name: config.name)),
                     ),
                   for (final h in relayHosts)
                     _HostRow(

@@ -17868,6 +17868,288 @@ abstract class L10n {
   /// **'没能传到电脑'**
   String get fileUploadFailed;
 
+  /// No description provided for @fnosWebLoginTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录飞牛 fnOS'**
+  String get fnosWebLoginTitle;
+
+  /// No description provided for @fnosWebLoginHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录一次即可，之后自动连接'**
+  String get fnosWebLoginHint;
+
+  /// No description provided for @fnosWebLoginOpening.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在打开飞牛登录页…'**
+  String get fnosWebLoginOpening;
+
+  /// No description provided for @fnosWebLoginGotCredentials.
+  ///
+  /// In zh, this message translates to:
+  /// **'已拿到飞牛登录凭据，正在验证 DSH 连接…'**
+  String get fnosWebLoginGotCredentials;
+
+  /// No description provided for @fnosWebLoginVerifyFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH 验证未通过，请确认已登录飞牛账号'**
+  String get fnosWebLoginVerifyFailed;
+
+  /// No description provided for @fnosWebLoginConnected.
+  ///
+  /// In zh, this message translates to:
+  /// **'已连接飞牛 fnOS'**
+  String get fnosWebLoginConnected;
+
+  /// No description provided for @fnosWebLoginTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录超时（5 分钟）。请检查网络后点「重试」。'**
+  String get fnosWebLoginTimeout;
+
+  /// No description provided for @fnosWebLoginLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录页加载失败，请检查网络后重试'**
+  String get fnosWebLoginLoadFailed;
+
+  /// No description provided for @fnosWebLoginUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法打开飞牛登录页（WebView 初始化失败）'**
+  String get fnosWebLoginUnavailable;
+
+  /// No description provided for @fnosWebLoginInitializing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在初始化 WebView…'**
+  String get fnosWebLoginInitializing;
+
+  /// No description provided for @fnosWebLoginRetryHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请点「重试」重新打开登录页'**
+  String get fnosWebLoginRetryHint;
+
+  /// No description provided for @fnosProbeNoCredentials.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有飞牛登录凭据'**
+  String get fnosProbeNoCredentials;
+
+  /// No description provided for @fnosProbeTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接飞牛网关超时（10 秒）'**
+  String get fnosProbeTimeout;
+
+  /// No description provided for @fnosProbeInvalidToken.
+  ///
+  /// In zh, this message translates to:
+  /// **'网关返回 invalid token：飞牛登录已失效，请重新登录'**
+  String get fnosProbeInvalidToken;
+
+  /// No description provided for @fnosProbeUnauthorized.
+  ///
+  /// In zh, this message translates to:
+  /// **'HTTP {status}：飞牛登录已失效，请重新登录'**
+  String fnosProbeUnauthorized(int status);
+
+  /// No description provided for @fnosProbeNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'HTTP 404：未找到 DSH 入口（这台 NAS 上可能没装或没启动 DSH）'**
+  String get fnosProbeNotFound;
+
+  /// No description provided for @fnosProbeHttp.
+  ///
+  /// In zh, this message translates to:
+  /// **'HTTP {status}：网关没有返回 DSH 页面'**
+  String fnosProbeHttp(int status);
+
+  /// No description provided for @fnosProbeTlsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'TLS 握手失败，无法安全连接飞牛网关'**
+  String get fnosProbeTlsFailed;
+
+  /// No description provided for @fnosProbeUnreachable.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法连接飞牛网关（网络不可用或设备离线）'**
+  String get fnosProbeUnreachable;
+
+  /// No description provided for @fnosProbeBadResponse.
+  ///
+  /// In zh, this message translates to:
+  /// **'飞牛网关返回了无法解析的 HTTP 响应'**
+  String get fnosProbeBadResponse;
+
+  /// No description provided for @fnosProbeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'探测飞牛网关失败'**
+  String get fnosProbeFailed;
+
+  /// No description provided for @stateFnosHost.
+  ///
+  /// In zh, this message translates to:
+  /// **'飞牛'**
+  String get stateFnosHost;
+
+  /// No description provided for @fnosHostTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'飞牛 NAS（fnconnect）'**
+  String get fnosHostTitle;
+
+  /// No description provided for @fnosAddHost.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加飞牛 NAS'**
+  String get fnosAddHost;
+
+  /// No description provided for @fnosAddHostHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过飞牛 fnconnect 连接 NAS 上的 DSH，登录一次飞牛账号即可'**
+  String get fnosAddHostHint;
+
+  /// No description provided for @fnosRelogin.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新登录飞牛'**
+  String get fnosRelogin;
+
+  /// No description provided for @fnosForget.
+  ///
+  /// In zh, this message translates to:
+  /// **'忘记这台飞牛 NAS'**
+  String get fnosForget;
+
+  /// No description provided for @fnosGatewayPath.
+  ///
+  /// In zh, this message translates to:
+  /// **'DSH 网关路径'**
+  String get fnosGatewayPath;
+
+  /// No description provided for @fnosNotSignedIn.
+  ///
+  /// In zh, this message translates to:
+  /// **'未登录飞牛'**
+  String get fnosNotSignedIn;
+
+  /// No description provided for @fnosSignedIn.
+  ///
+  /// In zh, this message translates to:
+  /// **'已登录飞牛'**
+  String get fnosSignedIn;
+
+  /// No description provided for @fnosHostSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'飞牛 NAS'**
+  String get fnosHostSection;
+
+  /// No description provided for @fnosFnconnectId.
+  ///
+  /// In zh, this message translates to:
+  /// **'飞牛 fnconnect ID'**
+  String get fnosFnconnectId;
+
+  /// No description provided for @fnosFnconnectIdHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'只填 ID，如 mynas；也支持 fnos.net 域名或完整地址'**
+  String get fnosFnconnectIdHint;
+
+  /// No description provided for @fnosGatewayAdvanced.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级：DSH 网关路径'**
+  String get fnosGatewayAdvanced;
+
+  /// No description provided for @fnosGatewayHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用中心安装一般用默认值；自建反代/Docker 时填反代路径，如 /dsh'**
+  String get fnosGatewayHint;
+
+  /// No description provided for @fnosLoginNext.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一步：登录飞牛'**
+  String get fnosLoginNext;
+
+  /// No description provided for @fnosLoginHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'首次使用需要在弹出的页面里登录飞牛账号，登录一次后自动连接'**
+  String get fnosLoginHint;
+
+  /// No description provided for @fnosLoginIncomplete.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录没有完成：请在弹出的飞牛登录页登录并等待连接成功'**
+  String get fnosLoginIncomplete;
+
+  /// No description provided for @fnosIdInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入正确的飞牛 fnconnect ID'**
+  String get fnosIdInvalid;
+
+  /// No description provided for @fnosGatewayInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'网关路径不合法：需要以 / 开头的路径'**
+  String get fnosGatewayInvalid;
+
+  /// No description provided for @fnosForgetConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'忘记后需要重新输入 fnconnect ID 并登录飞牛，确定吗？'**
+  String get fnosForgetConfirm;
+
+  /// No description provided for @fnosHostIntro.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过飞牛 fnconnect 访问 NAS 上的 DSH：只填 fnconnect ID，登录一次飞牛账号'**
+  String get fnosHostIntro;
+
+  /// No description provided for @fnosChangeId.
+  ///
+  /// In zh, this message translates to:
+  /// **'更改 fnconnect ID'**
+  String get fnosChangeId;
+
+  /// No description provided for @fnosForgetHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除保存的 fnconnect ID 和飞牛登录'**
+  String get fnosForgetHint;
+
+  /// No description provided for @fnosStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接状态'**
+  String get fnosStatus;
+
+  /// No description provided for @fnosGatewayDefaultLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认'**
+  String get fnosGatewayDefaultLabel;
+
+  /// No description provided for @fnosWebUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'飞牛网关暂不支持在 App 内打开网页版'**
+  String get fnosWebUnavailable;
+
   /// No description provided for @harmonyUnknownResults.
   ///
   /// In zh, this message translates to:

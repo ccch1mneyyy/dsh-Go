@@ -69,6 +69,8 @@ class MainActivity : FlutterActivity() {
             engine.plugins.add(io.github.ccch1mneyyy.dsh_app.nativemedia.NativeMediaPlugin())
             engine.plugins.add(io.github.ccch1mneyyy.dsh_app.nativefiles.NativeFilesPlugin())
             engine.plugins.add(io.github.ccch1mneyyy.dsh_app.web.WebFilesPlugin())
+            // 飞牛 fnOS 会话 Cookie 桥（登录页 WebView ↔ Dart，lib/fnos/）。
+            engine.plugins.add(io.github.ccch1mneyyy.dsh_app.fnos.FnosCookiePlugin())
             engine.plugins.add(io.github.ccch1mneyyy.dsh_app.launch.LaunchPlugin())
             engine.plugins.add(io.github.ccch1mneyyy.dsh_app.launch.LaunchClipPlugin())
             engine.plugins.add(io.github.ccch1mneyyy.dsh_app.icons.PictureShortcutPlugin())
