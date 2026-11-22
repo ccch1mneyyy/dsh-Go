@@ -27062,6 +27062,12 @@ class L10nEn extends L10n {
   String get themePackUsePetHint => 'Bundled with this theme pack';
 
   @override
+  String get themePackMakeWithAi => 'Create a theme with AI';
+
+  @override
+  String get themePackMakeWithAiSubtitle => 'Tell the AI the style you want; it generates an importable theme pack';
+
+  @override
   String get updateCheck => 'Check for updates';
 
   @override

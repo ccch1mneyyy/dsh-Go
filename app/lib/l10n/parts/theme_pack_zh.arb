@@ -8,6 +8,8 @@
   "themePackInvalidPet": "配套宠物包无效（{code}）",
   "themePackPetInstallFailed": "配套宠物安装失败，主题未改动",
   "themePackUsePetHint": "这个主题包自带的宠物",
+  "themePackMakeWithAi": "用对话创建主题",
+  "themePackMakeWithAiSubtitle": "告诉 AI 你想要的风格，它会生成可导入的主题包",
   "@themePackPetBadge": {
     "placeholders": {
       "name": {

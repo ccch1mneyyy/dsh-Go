@@ -13,6 +13,7 @@ import 'package:dsh_app/pets/pet_library.dart';
 import 'package:dsh_app/pets/pet_prefs.dart';
 import 'package:dsh_app/pets/pet_state.dart' show noPetId;
 import 'package:dsh_app/state/appearance_state.dart';
+import 'package:dsh_app/state/compose_inbox.dart';
 import 'package:dsh_app/state/theme_pet_link.dart';
 import 'package:dsh_app/themes/theme_library.dart';
 import 'package:dsh_app/ui/settings/appearance/theme_packs_section.dart';
@@ -200,5 +201,16 @@ void main() {
           container.read(petPrefsProvider).packId == noPetId,
     );
     expect(container.read(petPrefsProvider).packId, noPetId);
+  });
+
+  testWidgets('用对话创建主题 starts a new chat with the theme-maker skill', (tester) async {
+    final container = await open(tester, zipFile('theme.zip'));
+    expect(find.text('用对话创建主题'), findsOneWidget);
+    expect(find.textContaining('告诉 AI 你想要的风格'), findsOneWidget);
+    await tester.tap(find.text('用对话创建主题'));
+    await tester.pump();
+    final pending = container.read(composeInboxProvider);
+    expect(pending, isNotEmpty);
+    expect(pending.first.text, '/theme-maker ');
   });
 }

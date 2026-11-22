@@ -8,6 +8,8 @@
   "themePackInvalidPet": "Invalid bundled pet ({code})",
   "themePackPetInstallFailed": "The bundled pet could not be installed; the theme was left as it was",
   "themePackUsePetHint": "Bundled with this theme pack",
+  "themePackMakeWithAi": "Create a theme with AI",
+  "themePackMakeWithAiSubtitle": "Tell the AI the style you want; it generates an importable theme pack",
   "@themePackPetBadge": {
     "placeholders": {
       "name": {

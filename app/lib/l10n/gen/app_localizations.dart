@@ -47076,6 +47076,18 @@ abstract class L10n {
   /// **'这个主题包自带的宠物'**
   String get themePackUsePetHint;
 
+  /// No description provided for @themePackMakeWithAi.
+  ///
+  /// In zh, this message translates to:
+  /// **'用对话创建主题'**
+  String get themePackMakeWithAi;
+
+  /// No description provided for @themePackMakeWithAiSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'告诉 AI 你想要的风格，它会生成可导入的主题包'**
+  String get themePackMakeWithAiSubtitle;
+
   /// No description provided for @updateCheck.
   ///
   /// In zh, this message translates to:

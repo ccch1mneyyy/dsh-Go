@@ -17,11 +17,15 @@ import '../../../pets/pet_prefs.dart' show petPrefsProvider;
 import '../../../pets/pet_sheets.dart' show PetSheets;
 import '../../../pets/pet_signals.dart' show petPackProvider, userPetsProvider;
 import '../../../state/appearance_state.dart';
+import '../../../state/compose_inbox.dart';
 import '../../../state/theme_pet_link.dart' show themePetLinkProvider;
+import '../../../state/ui_mode_state.dart';
+import '../../../state/web_target.dart';
 import '../../../state/artifacts.dart' show filesChannelProvider;
 import '../../../state/workshop_catalog_state.dart';
 import '../../../themes/theme_library.dart';
 import '../../../themes/theme_pack_validator.dart';
+import '../../../ui_config/ui_skill.dart' show themeMakerSkillName;
 import '../../common/app_sheet.dart';
 import '../../common/brief_notice.dart';
 import '../../common/capsule_chip.dart';
@@ -111,6 +115,19 @@ class ThemePacksSection extends ConsumerStatefulWidget {
 
 class _ThemePacksSectionState extends ConsumerState<ThemePacksSection> {
   bool _busy = false;
+
+  /// 「用对话创建主题」: the skill word waits in a new conversation's composer;
+  /// sending it, with a reference or files, is the person's call.
+  void _makeTheme() {
+    final request = ComposeRequest(text: '/$themeMakerSkillName ');
+    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    if (ref.read(uiModeProvider).web) {
+      // The web home has no native composer: the page opens a new chat with it.
+      ref.read(webOpenProvider.notifier).request(const DshWebTarget(newSession: true), compose: request);
+    } else {
+      ref.read(composeInboxProvider.notifier).push(request);
+    }
+  }
 
   Future<void> _selectPack(String? id) async {
     await ThemeRevealHost.run(
@@ -361,6 +378,14 @@ class _ThemePacksSectionState extends ConsumerState<ThemePacksSection> {
               : '实时预览 · 任意色号、材质、本地字体与背景/插画自由组合',
           chevron: true,
           onTap: () => unawaited(_openStudio(ref.read(activeThemePackProvider))),
+        ),
+        const SizedBox(height: 2),
+        ListPageRow(
+          key: const ValueKey('theme-pack-make-with-ai'),
+          icon: AppIcons.skill,
+          title: l10n.themePackMakeWithAi,
+          subtitle: l10n.themePackMakeWithAiSubtitle,
+          onTap: _makeTheme,
         ),
         const SizedBox(height: 2),
         ListPageRow(

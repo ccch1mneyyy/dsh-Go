@@ -15491,6 +15491,8 @@
   },
   "themePackPetInstallFailed": "配套宠物安装失败，主题未改动",
   "themePackUsePetHint": "这个主题包自带的宠物",
+  "themePackMakeWithAi": "用对话创建主题",
+  "themePackMakeWithAiSubtitle": "告诉 AI 你想要的风格，它会生成可导入的主题包",
   "updateCheck": "检查更新",
   "updateAutoCheck": "自动检查更新",
   "updateAutoCheckDaily": "每天检查一次",

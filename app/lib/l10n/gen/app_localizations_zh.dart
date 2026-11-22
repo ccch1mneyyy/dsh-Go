@@ -25663,6 +25663,12 @@ class L10nZh extends L10n {
   String get themePackUsePetHint => '这个主题包自带的宠物';
 
   @override
+  String get themePackMakeWithAi => '用对话创建主题';
+
+  @override
+  String get themePackMakeWithAiSubtitle => '告诉 AI 你想要的风格，它会生成可导入的主题包';
+
+  @override
   String get updateCheck => '检查更新';
 
   @override
