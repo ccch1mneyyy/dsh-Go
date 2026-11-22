@@ -5,11 +5,16 @@ Draws everything from primitives (no reference artwork, no downloaded assets) an
 writes a schema-1 pet pack in the format of `docs/pets/README.md`:
 
     pack.json + idle.png + working.png + thinking.png
+              + react-left.png + react-right.png + react-double.png + react-drag.png
 
 Each sheet is 64x32: two 32x32 cells side by side. The canvas is 32x32 at
-`scale: 1` / `pixelArt: true`. Every animation is two frames at 400 ms and the
-two frames differ (breathing bob and tail sway), with the hat baked into every
-frame so it moves with the head.
+`scale: 1` / `pixelArt: true`. The three state animations are two frames at
+400 ms (breathing bob and tail sway). The four reactions are two frames at
+220-260 ms with `loop: false`, wired through `reactions` so a poke, a tickle and
+a drag play them: the body leans left/right and blinks, hops with raised fins, or
+hangs 2 px off the foot line with drooping fins. In every frame the hat is baked
+in and rides the head, and the two frames really differ (the lean settles, the
+body hops, the hanging body swings).
 
 The animation `box` is the whole 32x32 canvas cell, not `contentBox`: the app
 requires `frameW == trunc(box.w * scale)` / `frameH == trunc(box.h * scale)`
@@ -35,6 +40,7 @@ import json
 import os
 import sys
 import zipfile
+from dataclasses import dataclass
 
 from PIL import Image
 
@@ -64,6 +70,20 @@ ICE = (196, 240, 250, 255)
 W = H = 32
 ANIMS = ("idle", "working", "thinking")
 FRAME_MS = 400
+
+# Reactions: `pack.json` key -> (animation name, ms per frame). Two frames each,
+# `loop: false` (the App plays one pass and returns to the state animation; a
+# drag is driven by the pointer, so its two frames repeat while held).
+#   tap      2 x 220 = 440 ms: a quick recoil that stays readable at 4.5 fps.
+#   tickle   2 x 240 = 480 ms: a little more hang time on the hop.
+#   drag     2 x 260 = 520 ms: a slow dangle rather than a twitch.
+REACTIONS = {
+    "tapLeft": ("react-left", 220),
+    "tapRight": ("react-right", 220),
+    "tickle": ("react-double", 240),
+    "drag": ("react-drag", 260),
+}
+ALL_ANIMS = ANIMS + tuple(name for name, _ in REACTIONS.values())
 
 
 # ---------------------------------------------------------------- drawing ---
@@ -121,6 +141,91 @@ def outline_of(mask):
     return dilate(mask) - mask
 
 
+def shift(mask, dx, dy):
+    """The same pixel mask moved by whole pixels."""
+    if dx == 0 and dy == 0:
+        return set(mask)
+    return {(x + dx, y + dy) for x, y in mask}
+
+
+@dataclass(frozen=True)
+class Pose:
+    """Where the parts sit in one frame.
+
+    `dx`/`dy` move the whole character (lean, hop, hang); `head_dx`/`head_dy`
+    move only the head and what rides it (tusk, eye, hat, head spots); `sway`
+    tips the tail; `flipper` picks the pectoral fin pose; `blink` closes the eye
+    for that frame; `horn` lifts the horn tip by extra pixels.
+    """
+
+    dx: int = 0
+    dy: int = 0
+    head_dx: int = 0
+    head_dy: int = 0
+    sway: int = 0
+    flipper: str = "rest"  # rest | lift | raised | droop
+    blink: bool = False
+    horn: int = 0
+
+
+def pose_for(kind, index):
+    """The pose of frame `index` of `kind` (react-right reuses react-left)."""
+    if kind == "react-left":
+        # A poke from the left: lean 1 px and blink on the hit, then settle back
+        # upright with the tail kicked the other way.
+        if index == 0:
+            return Pose(dx=-1, sway=1, blink=True)
+        return Pose(sway=-1)
+    if kind == "react-double":
+        # Tickle: both fins up and the horn raised; frame 1 is the 1 px hop.
+        return Pose(
+            dy=0 if index == 0 else -1,
+            sway=0 if index == 0 else 1,
+            flipper="raised",
+            horn=1,
+        )
+    if kind == "react-drag":
+        # Held up: 2 px off the foot line, head tipped forward, fins hanging,
+        # the hanging body swinging 1 px between the two frames.
+        return Pose(
+            dx=0 if index == 0 else -1,
+            dy=-2,
+            head_dx=-1,
+            head_dy=1,
+            sway=1 if index == 0 else -1,
+            flipper="droop",
+        )
+    # State animations: the body stays on the baseline, the head lifts 1 px on
+    # frame 1 (breathing) and the tail sways.
+    head_dy = 0 if index == 0 else -1
+    sway = 0 if index == 0 else (1 if kind != "working" else -1)
+    return Pose(
+        head_dy=head_dy,
+        sway=sway,
+        flipper="lift" if kind == "working" and index == 1 else "rest",
+    )
+
+
+def near_flipper(style):
+    """The pectoral fin on camera: at rest, lifted a little, up, or hanging."""
+    if style == "raised":
+        # Up off the chest and out front, clear of the tusk's outline.
+        return ellipse(4.6, 20.6, 3.0, 1.6) | ellipse(2.8, 19.4, 1.6, 1.2)
+    if style == "droop":
+        # Hanging from the chest down past the belly while the pet is held up.
+        return polygon([(5, 23), (8, 24), (7, 28), (5, 27)])
+    if style == "lift":
+        return ellipse(8.0, 23.4, 2.8, 1.8)
+    return ellipse(8.0, 24.4, 2.8, 1.8)
+
+
+def far_flipper(style):
+    """The far fin peeks over the back, only while both fins are up."""
+    if style != "raised":
+        return set()
+    return ellipse(20.8, 13.2, 2.4, 1.6)
+
+
 # -------------------------------------------------------------- character ---
 
 def tail_mask(sway=0):
@@ -131,33 +236,45 @@ def tail_mask(sway=0):
     return upper | lower
 
 
-def tusk_pixels(dy=0, down=False):
-    """Ivory horn, one pixel column at a time: 2 px at the base, 1 px at the tip."""
+def tusk_pixels(horn=0, down=False):
+    """Ivory horn, one pixel column at a time: 2 px at the base, 1 px at the tip.
+
+    `horn` lifts the tip by extra pixels (a tickle swings the horn up), leaving
+    the base where it grows out of the forehead, so the horn tilts rather than
+    floats.
+    """
     out = []
     for i in range(7):
         x = 7 - i
-        base_y = 17 + i if down else 17 - i
+        tip_lift = horn if i >= 3 else 0
+        base_y = 17 + i if down else 17 - i - tip_lift
         for t in range(2 if i < 4 else 1):
-            out.append((x, base_y + t + dy))
+            out.append((x, base_y + t))
     return out
 
 
 def render_frame(kind, index):
-    """One 32x32 RGBA frame. `kind` in ANIMS, `index` 0/1.
+    """One 32x32 RGBA frame. `kind` in ALL_ANIMS, `index` 0/1.
 
-    The body stays on the baseline; the head (and with it the hat, tusk, eye and
-    spots on the head) lifts 1 px on frame 1, which reads as breathing without
-    lifting the pet off its perch. The tail sways sideways.
+    State frames keep the body on the baseline while the head (and with it the
+    hat, tusk, eye and head spots) lifts 1 px on frame 1; the tail sways.
+    Reaction frames move the whole character (lean, hop, hang) as `pose_for`
+    describes. `react-right` is the `react-left` pose mirrored about `anchor.x`
+    (16 px), so a poke from the right is a true mirror, not a second drawing.
     """
-    frame = blank()
-    head_dy = 0 if index == 0 else -1  # breathing: the head rises 1 px
-    sway = 0 if index == 0 else (1 if kind != "working" else -1)
+    flip = kind == "react-right"
+    pose = pose_for("react-left" if flip else kind, index)
+    dx, dy = pose.dx, pose.dy
+    head_x, head_y = dx + pose.head_dx, dy + pose.head_dy
 
-    torso = ellipse(16.0, 21.0, 9.4, 5.8)
-    head = ellipse(11.5, 19.5 + head_dy, 6.2, 5.7)
-    raised = kind == "working" and index == 1
-    flank = ellipse(8.0, (23.4 if raised else 24.4), 2.8, 1.8)
-    body = torso | head | tail_mask(sway) | polygon([(23, 19), (26, 20), (26, 24), (23, 25)]) | flank
+    frame = blank()
+    torso = shift(ellipse(16.0, 21.0, 9.4, 5.8), dx, dy)
+    head = shift(ellipse(11.5, 19.5, 6.2, 5.7), head_x, head_y)
+    tail = shift(tail_mask(pose.sway), dx, dy)
+    root = shift(polygon([(23, 19), (26, 20), (26, 24), (23, 25)]), dx, dy)
+    near = shift(near_flipper(pose.flipper), dx, dy)
+    far = shift(far_flipper(pose.flipper), dx, dy)
+    body = torso | head | tail | root | near | far
 
     # ---- silhouette: outline outside, then the teal body with rims.
     for x, y in outline_of(body):
@@ -176,41 +293,46 @@ def render_frame(kind, index):
             put(frame, x, y, BODY_MAIN)
 
     # ---- white belly on the front-bottom of the head/chest.
-    belly = ellipse(12.5, 23.0, 5.2, 3.0) & body
+    belly = shift(ellipse(12.5, 23.0, 5.2, 3.0), dx, dy) & body
     for x, y in belly:
         put(frame, x, y, BELLY)
     for x, y in belly:
         if (x, y + 1) not in body:
             put(frame, x, y, BELLY_SHADE)
 
-    # ---- pectoral flipper shaded onto the silhouette's lower front (raised
-    # while working). No ink line: it is part of the body outline.
-    for x, y in flank & body:
-        put(frame, x, y, BODY_SHADE if (x, y + 1) not in flank else BODY_MID)
+    # ---- pectoral fin shaded onto the silhouette, and the far fin that a
+    # tickle lifts over the back. No ink line: both are part of the outline.
+    for x, y in near & body:
+        put(frame, x, y, BODY_SHADE if (x, y + 1) not in near else BODY_MID)
+    for x, y in far & body:
+        put(frame, x, y, BODY_SHADE if (x, y + 1) not in far else BODY_MID)
 
     # ---- mottled spots on the back.
     for x, y in ((14, 16), (16, 17), (13, 18)):
-        if (x, y + head_dy) in body:
-            put(frame, x, y + head_dy, SPOT)
+        if (x + dx, y + head_y) in body:
+            put(frame, x + dx, y + head_y, SPOT)
 
     # ---- tusk: a solid ivory horn from the forehead, up-left (idle/thinking)
     # or down-left (working), with faint cross bands for the spiral.
-    tusk = set(tusk_pixels(head_dy, down=kind == "working"))
+    tusk = shift(set(tusk_pixels(pose.horn, down=kind == "working")), head_x, head_y)
     for x, y in outline_of(tusk):
         put(frame, x, y, OUTLINE)
     for x, y in tusk:
         put(frame, x, y, TUSK_SHADE if (x + y) % 5 == 0 else TUSK)
 
-    # ---- face: one 2x2 eye with a shine. It sits in the open head, away from
-    # the tusk base and the hat brim's outline.
-    eye_x, eye_y = 10, 16 + head_dy
-    for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
-        put(frame, eye_x + dx, eye_y + dy, EYE)
-    put(frame, eye_x, eye_y, EYE_SHINE)
+    # ---- face: one 2x2 eye with a shine, squashed to a 2 px line on a blink.
+    eye_x, eye_y = 10 + head_x, 16 + head_y
+    if pose.blink:
+        for dxx in (0, 1):
+            put(frame, eye_x + dxx, eye_y + 1, EYE)
+    else:
+        for ddx, ddy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+            put(frame, eye_x + ddx, eye_y + ddy, EYE)
+        put(frame, eye_x, eye_y, EYE_SHINE)
 
     # ---- Santa hat: white brim, red cone, white pom-pom; baked every frame and
-    # riding the same 1 px head lift as the eye.
-    cone = polygon([(8, 12 + head_dy), (16, 12 + head_dy), (16, 4 + head_dy)])
+    # riding the head (so it lifts, leans and hangs with it).
+    cone = shift(polygon([(8, 12), (16, 12), (16, 4)]), head_x, head_y)
     for x, y in outline_of(cone):
         put(frame, x, y, OUTLINE)
     for x, y in cone:
@@ -220,7 +342,7 @@ def render_frame(kind, index):
             put(frame, x, y, HAT_DARK)
         elif (x - 1, y) not in cone:
             put(frame, x, y, HAT_LIGHT)
-    brim = ellipse(12.0, 13.0 + head_dy, 4.9, 1.4)
+    brim = shift(ellipse(12.0, 13.0, 4.9, 1.4), head_x, head_y)
     for x, y in outline_of(brim):
         put(frame, x, y, OUTLINE)
     for x, y in brim:
@@ -228,7 +350,7 @@ def render_frame(kind, index):
     for x, y in brim:
         if (x, y + 1) not in brim:
             put(frame, x, y, TRIM_SHADE)
-    pom = ellipse(16.2, 3.6 + head_dy, 1.9, 1.6)
+    pom = shift(ellipse(16.2, 3.6, 1.9, 1.6), head_x, head_y)
     for x, y in outline_of(pom):
         put(frame, x, y, OUTLINE)
     for x, y in pom:
@@ -239,7 +361,7 @@ def render_frame(kind, index):
 
     # ---- per-state props (off the body; never inside contentBox).
     if kind == "thinking":
-        d = head_dy
+        d = head_y
         cloud = (
             ellipse(25.0, 7.0 + d, 3.5, 2.7)
             | ellipse(27.8, 8.2 + d, 2.0, 1.7)
@@ -265,6 +387,8 @@ def render_frame(kind, index):
         for x, y in sparks:
             put(frame, x, y, TRIM)
 
+    if flip:
+        frame = [row[::-1] for row in frame]
     return frame
 
 
@@ -278,6 +402,19 @@ def sheet(kind):
 
 
 # ------------------------------------------------------------------- pack ---
+
+def animation(name, ms, loop):
+    """One animation block: two 32x32 cells, `ms` per frame, looping or one-shot."""
+    return {
+        "sheet": f"{name}.png",
+        "frameW": 32,
+        "frameH": 32,
+        "cols": 2,
+        "box": {"x": 0, "y": 0, "w": 32, "h": 32},
+        "loop": loop,
+        "frames": [{"i": 0, "ms": ms}, {"i": 1, "ms": ms}],
+    }
+
 
 def pack_json():
     return {
@@ -293,18 +430,11 @@ def pack_json():
         "anchor": {"x": 16, "baseline": 28},
         "contentBox": {"x": 6, "y": 10, "w": 20, "h": 14},
         "animations": {
-            name: {
-                "sheet": f"{name}.png",
-                "frameW": 32,
-                "frameH": 32,
-                "cols": 2,
-                "box": {"x": 0, "y": 0, "w": 32, "h": 32},
-                "loop": True,
-                "frames": [{"i": 0, "ms": FRAME_MS}, {"i": 1, "ms": FRAME_MS}],
-            }
-            for name in ANIMS
+            **{name: animation(name, FRAME_MS, True) for name in ANIMS},
+            **{name: animation(name, ms, False) for name, ms in REACTIONS.values()},
         },
         "states": {"idle": ["idle"], "working": ["working"], "thinking": ["thinking"]},
+        "reactions": {key: name for key, (name, _) in REACTIONS.items()},
     }
 
 
@@ -312,7 +442,7 @@ def pack_json():
 
 def write_fixture(out_dir):
     os.makedirs(out_dir, exist_ok=True)
-    for name in ANIMS:
+    for name in ALL_ANIMS:
         sheet(name).save(os.path.join(out_dir, f"{name}.png"))
     with open(os.path.join(out_dir, "pack.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(pack_json(), f, ensure_ascii=False, indent=2)
@@ -321,7 +451,7 @@ def write_fixture(out_dir):
 
 def write_zip(zip_path, out_dir):
     os.makedirs(os.path.dirname(os.path.abspath(zip_path)) or ".", exist_ok=True)
-    names = ["pack.json", *(f"{name}.png" for name in ANIMS)]
+    names = ["pack.json", *(f"{name}.png" for name in ALL_ANIMS)]
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for name in names:
             info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
@@ -332,19 +462,40 @@ def write_zip(zip_path, out_dir):
 
 
 def write_preview(preview_path, out_dir):
-    """256x256 nearest-neighbour contact sheet: idle 0/1, working 0, thinking 0."""
+    """3x2 nearest-neighbour contact sheet at 8x.
+
+    Row 1: idle frames 0/1. Row 2: one frame of each reaction, i.e. the left
+    poke (frame 0), its mirror on the right, the tickle hop (frame 1) and the
+    drag hang (frame 0).
+    """
     os.makedirs(os.path.dirname(os.path.abspath(preview_path)) or ".", exist_ok=True)
-    picks = [("idle", 0), ("idle", 1), ("working", 0), ("thinking", 0)]
+    picks = [
+        ("idle", 0),
+        ("idle", 1),
+        ("react-left", 0),
+        ("react-right", 0),
+        ("react-double", 1),
+        ("react-drag", 0),
+    ]
+    cell = 32 * 8
+    cols = 3
+    rows = 2
     cells = []
     for name, index in picks:
         with Image.open(os.path.join(out_dir, f"{name}.png")) as sheet_img:
             cells.append(sheet_img.convert("RGBA").crop((index * 32, 0, index * 32 + 32, 32)))
-    bg = Image.new("RGBA", (256, 256), (20, 32, 42, 255))
-    for i, cell in enumerate(cells):
-        bg.paste(cell.resize((128, 128), Image.NEAREST), ((i % 2) * 128, (i // 2) * 128))
-    for p in range(256):  # thin cross separating the four cells
-        bg.putpixel((128, p), (60, 86, 98, 255))
-        bg.putpixel((p, 128), (60, 86, 98, 255))
+    bg = Image.new("RGBA", (cols * cell, rows * cell), (20, 32, 42, 255))
+    for i, art in enumerate(cells):
+        scaled = art.resize((cell, cell), Image.NEAREST)
+        # Composite the transparent cell over the backdrop instead of punching
+        # its transparent pixels through it.
+        bg.paste(scaled, ((i % cols) * cell, (i // cols) * cell), scaled)
+    for x in range(1, cols):  # thin lines separating the cells
+        for p in range(rows * cell):
+            bg.putpixel((x * cell, p), (60, 86, 98, 255))
+    for y in range(1, rows):
+        for p in range(cols * cell):
+            bg.putpixel((p, y * cell), (60, 86, 98, 255))
     bg.save(preview_path)
     return preview_path
 
@@ -355,10 +506,10 @@ def main(argv=None):
     parser.add_argument(
         "--out",
         default=os.path.join(repo_root, "app", "test", "fixtures", "pets", "xmas-narwhal"),
-        help="directory for pack.json and the three sheets (default: the test fixture)",
+        help="directory for pack.json and the seven sheets (default: the test fixture)",
     )
     parser.add_argument("--zip", help="also write an importable zip (pack.json + PNGs at its root)")
-    parser.add_argument("--preview", help="also write a 256x256 nearest-neighbour preview PNG")
+    parser.add_argument("--preview", help="also write a 3x2 nearest-neighbour preview PNG (8x)")
     args = parser.parse_args(argv)
 
     write_fixture(args.out)

@@ -90,6 +90,98 @@
           "ms": 400
         }
       ]
+    },
+    "react-left": {
+      "sheet": "react-left.png",
+      "frameW": 32,
+      "frameH": 32,
+      "cols": 2,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "loop": false,
+      "frames": [
+        {
+          "i": 0,
+          "ms": 220
+        },
+        {
+          "i": 1,
+          "ms": 220
+        }
+      ]
+    },
+    "react-right": {
+      "sheet": "react-right.png",
+      "frameW": 32,
+      "frameH": 32,
+      "cols": 2,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "loop": false,
+      "frames": [
+        {
+          "i": 0,
+          "ms": 220
+        },
+        {
+          "i": 1,
+          "ms": 220
+        }
+      ]
+    },
+    "react-double": {
+      "sheet": "react-double.png",
+      "frameW": 32,
+      "frameH": 32,
+      "cols": 2,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "loop": false,
+      "frames": [
+        {
+          "i": 0,
+          "ms": 240
+        },
+        {
+          "i": 1,
+          "ms": 240
+        }
+      ]
+    },
+    "react-drag": {
+      "sheet": "react-drag.png",
+      "frameW": 32,
+      "frameH": 32,
+      "cols": 2,
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "loop": false,
+      "frames": [
+        {
+          "i": 0,
+          "ms": 260
+        },
+        {
+          "i": 1,
+          "ms": 260
+        }
+      ]
     }
   },
   "states": {
@@ -102,5 +194,11 @@
     "thinking": [
       "thinking"
     ]
+  },
+  "reactions": {
+    "tapLeft": "react-left",
+    "tapRight": "react-right",
+    "tickle": "react-double",
+    "drag": "react-drag"
   }
 }
