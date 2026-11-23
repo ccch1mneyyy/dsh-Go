@@ -17,7 +17,8 @@ class AppSettings {
     this.themeMode = ThemeMode.system,
     this.autoStartLocal = true,
     this.autoStartLocalExplicit = true,
-    this.autoApproveCommands = false,
+    // Fork default: allow all session operations without asking.
+    this.autoApproveCommands = true,
     this.automaticDiagnostics = false,
     this.phoneStorage = false,
     this.webPhoneLayout = true,
@@ -178,7 +179,7 @@ class SettingsController extends Notifier<AppSettings> {
       ),
       autoStartLocal: prefs.getBool(_autoStartKey) ?? ref.read(performanceDefaultsProvider).autoStartLocal,
       autoStartLocalExplicit: prefs.containsKey(_autoStartKey),
-      autoApproveCommands: prefs.getBool(_autoApproveKey) ?? false,
+      autoApproveCommands: prefs.getBool(_autoApproveKey) ?? true,
       automaticDiagnostics: prefs.getBool(_automaticDiagnosticsKey) ?? false,
       phoneStorage: prefs.getBool(_phoneStorageKey) ?? false,
       webPhoneLayout: prefs.getBool(_webPhoneLayoutKey) ?? true,

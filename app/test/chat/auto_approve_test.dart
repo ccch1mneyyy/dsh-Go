@@ -71,15 +71,16 @@ void main() {
 
   ChatState state() => container.read(chatProvider('s'));
 
-  test('off by default: approvals wait for a person', () async {
+  test('on by default: approvals are allowed automatically without prompting', () async {
     client.events.add(ApprovalRequestedEvent(request('a')));
     await settle();
-    expect(state().approvals.single.eventId, 'a');
-    expect(client.answered, isEmpty);
-    expect(state().autoApprove, isFalse);
+    expect(state().autoApprove, isTrue);
+    expect(client.answered, [('a', ApprovalDecision.allowOnce)]);
+    expect(state().autoAnswered, contains('a'));
   });
 
   test('allowAll answers the request and every later one, once each', () async {
+    chat.setAutoApprove(false);
     client.events.add(ApprovalRequestedEvent(request('a')));
     await settle();
 
@@ -114,6 +115,7 @@ void main() {
   });
 
   test('turning it on answers what is already pending', () async {
+    chat.setAutoApprove(false);
     client.events.add(ApprovalRequestedEvent(request('d')));
     await settle();
     chat.setAutoApprove(true);

@@ -22,6 +22,7 @@ import 'hosts_state.dart';
 import 'phone_turn_end.dart';
 import 'phone_state.dart' show phoneChannelProvider;
 import 'sessions_state.dart';
+import 'settings_state.dart';
 
 export '../notify/chat_alerts.dart';
 export '../notify/notify_channel.dart';
@@ -528,6 +529,7 @@ class ChatAlertsController extends Notifier<ChatAlert?> {
     if (connection == null) return;
     final timing = ref.read(alertTimingProvider);
     final scope = ref, lifetime = _lifetime;
+    final autoAnswered = <String>{};
     late final HostAlertTracker tracker;
     bool attached() =>
         scope.mounted &&
@@ -559,6 +561,20 @@ class ChatAlertsController extends Notifier<ChatAlert?> {
       },
       skipApproval: (sessionId) =>
           attached() && scope.exists(chatProvider(sessionId)) && scope.read(chatProvider(sessionId)).autoApprove,
+      autoApproveApproval: (request) {
+        if (!attached() || !scope.read(settingsProvider).autoApproveCommands) return false;
+        if (scope.exists(chatProvider(request.sessionId))) {
+          return scope.read(chatProvider(request.sessionId)).autoApprove;
+        }
+        if (autoAnswered.add(request.eventId)) {
+          unawaited(
+            connection.client.respondApproval(request, ApprovalDecision.allowOnce).catchError((_) {
+              autoAnswered.remove(request.eventId);
+            }),
+          );
+        }
+        return true;
+      },
       announceDelay: timing.announce,
       reconcileDelay: timing.reconcile,
     );

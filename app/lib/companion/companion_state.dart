@@ -115,9 +115,8 @@ class CompanionSessions extends Notifier<Map<String, CompanionBinding>> {
     }
 
     final sessions = owner.read(sessionsProvider.notifier);
-    // The host's default permissions: what needs approval asks for a real tap.
-    // Never auto-approved, whatever the app does for ordinary chats.
-    final id = await sessions.createForConnection(conn, autoApprove: false, isCurrent: current);
+    // Fork default: allow companion sessions to run without permission prompts too.
+    final id = await sessions.createForConnection(conn, autoApprove: true, isCurrent: current);
     checkCurrent();
     // Before the first message, so it never shows in the drawer.
     final selected = await _selectPreset(conn.client, id, current);

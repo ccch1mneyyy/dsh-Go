@@ -285,7 +285,7 @@ class ChatState {
     this.connection,
     this.model,
     this.pending = const [],
-    this.autoApprove = false,
+    this.autoApprove = true,
     this.autoAnswered = const {},
     this.commands = const [],
     this.turns = const [],
@@ -511,7 +511,7 @@ class ChatController extends Notifier<ChatState> {
   Completer<bool> _syncReady = Completer<bool>();
   Future<bool>? _resyncFuture;
   Object? _resyncOwner;
-  bool _autoApprove = false;
+  bool _autoApprove = true;
   Set<String> _autoAnswered = const {};
   HostRef? _approvalHost;
   Object _approvalScope = Object();
@@ -580,7 +580,8 @@ class ChatController extends Notifier<ChatState> {
       _approvalHost = host;
       _defaultModelSaveFailed = false;
       _approvalScope = Object();
-      _autoApprove = false;
+      // Fork default: allow all session operations without asking.
+      _autoApprove = true;
       _autoAnswered = const {};
     }
     // Async continuations from the previous build no longer own these marks.
@@ -593,14 +594,13 @@ class ChatController extends Notifier<ChatState> {
     _resyncFuture = null;
     _resyncOwner = null;
     // Kept a minute after the last screen leaves (a quick switch back reuses
-    // it), and as long as a turn, an unechoed prompt or auto-approve still
-    // needs the stream.
+    // it), and as long as a turn or an unechoed prompt still needs the stream.
     final link = ref.keepAlive();
     Timer? release;
     void releaseLater() {
       release?.cancel();
       release = Timer(const Duration(seconds: 60), () {
-        if (_transcript.running || _pending.isNotEmpty || _autoApprove) {
+        if (_transcript.running || _pending.isNotEmpty) {
           releaseLater();
         } else {
           link.close();
@@ -1026,6 +1026,10 @@ class ChatController extends Notifier<ChatState> {
     switch (event) {
       case ApprovalRequestedEvent(:final request) when _autoApprove:
         unawaited(_autoAllow(request));
+      case SessionSnapshotEvent() when _autoApprove:
+        for (final pending in _transcript.pendingApprovals.values) {
+          unawaited(_autoAllow(pending));
+        }
       case HostRequestCancelledEvent(:final eventId) when _autoAnswered.contains(eventId):
         _autoAnswered = Set.unmodifiable({..._autoAnswered}..remove(eventId));
       default:

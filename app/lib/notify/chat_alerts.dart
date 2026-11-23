@@ -442,6 +442,7 @@ class HostAlertTracker {
     required this.onWithdraw,
     required this.onSessionGone,
     this.skipApproval,
+    this.autoApproveApproval,
     this.onReannounce,
     this.onRequestEpochChanged,
     this.onCompanionSignal,
@@ -462,6 +463,10 @@ class HostAlertTracker {
   /// True when this device answers [sessionId]'s approvals by itself
   /// (「本对话都允许」): no alert for those.
   final bool Function(String sessionId)? skipApproval;
+
+  /// Returns true when this device handles [request] automatically in the
+  /// background without raising any alert or prompt.
+  final bool Function(ApprovalRequest request)? autoApproveApproval;
 
   /// A still-pending request redelivered on a new connection needs a fresh
   /// native card identity, without duplicating ordinary chat alerts.
@@ -587,6 +592,7 @@ class HostAlertTracker {
         _reconcile = Timer(reconcileDelay, _dropStale);
         unawaited(_resync());
       case ApprovalRequestedEvent(:final request):
+        if (autoApproveApproval?.call(request) ?? false) break;
         _onRequest(
           request.eventId,
           request.sessionId,
