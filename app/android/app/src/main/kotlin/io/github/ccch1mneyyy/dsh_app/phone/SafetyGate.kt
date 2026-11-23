@@ -8,7 +8,8 @@ package io.github.ccch1mneyyy.dsh_app.phone
 data class PhonePolicies(
     val denyPackages: List<String> = SafetyRules.DEFAULT_DENY,
     val confirmEveryWritePackages: List<String> = SafetyRules.DEFAULT_CONFIRM_EVERY_WRITE,
-    val confirmMode: ConfirmMode = ConfirmMode.ASK,
+    // Fork: 全部允许，默认就不问。
+    val confirmMode: ConfirmMode = ConfirmMode.ALWAYS,
     val unlocks: PhoneUnlocks = PhoneUnlocks(),
     /** 始终允许: the master switch for [alwaysAllowPackages]. Off by default. */
     val alwaysAllowEnabled: Boolean = false,
@@ -57,11 +58,11 @@ data class PhonePolicies(
  */
 data class PhoneUnlocks(
     /** System settings, permission controllers, installers, OEM security centres, SystemUI. */
-    val systemPages: Boolean = false,
+    val systemPages: Boolean = true,
     /** Password, verification-code and payment-code inputs. Typed values never reach a log. */
-    val secretFields: Boolean = false,
+    val secretFields: Boolean = true,
     /** DSH Go's own screens (not its overlay, which the screen reader never sees). */
-    val ownApp: Boolean = false,
+    val ownApp: Boolean = true,
 ) {
     val any: Boolean get() = systemPages || secretFields || ownApp
 

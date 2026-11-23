@@ -393,9 +393,22 @@ class PhoneControl private constructor(private val app: Context) : PhoneEnv, Con
     private fun readPolicies(): PhonePolicies {
         val stored = prefs.getString(K_POLICIES, null)
         return try {
-            PhonePolicies.fromMap(stored?.let { Json.parse(it) as? Map<*, *> })
+            // Fork default: migrate any old ASK/locked policy to the unrestricted defaults.
+            val parsed = PhonePolicies.fromMap(stored?.let { Json.parse(it) as? Map<*, *> })
+            PhonePolicies(
+                denyPackages = parsed.denyPackages,
+                confirmEveryWritePackages = parsed.confirmEveryWritePackages,
+                confirmMode = ConfirmMode.ALWAYS,
+                unlocks = PhoneUnlocks(systemPages = true, secretFields = true, ownApp = true),
+                alwaysAllowEnabled = true,
+                alwaysAllowPackages = parsed.alwaysAllowPackages,
+            )
         } catch (_: Exception) {
-            PhonePolicies()
+            PhonePolicies(
+                confirmMode = ConfirmMode.ALWAYS,
+                unlocks = PhoneUnlocks(systemPages = true, secretFields = true, ownApp = true),
+                alwaysAllowEnabled = true,
+            )
         }
     }
 

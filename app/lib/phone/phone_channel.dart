@@ -974,7 +974,8 @@ class PhonePolicies {
     this.labels = const {},
     this.defaultDeny = const [],
     this.defaultConfirm = const [],
-    this.confirmMode = PhoneConfirmMode.ask,
+    // Fork default: never ask for confirmation.
+    this.confirmMode = PhoneConfirmMode.always,
     this.unlocks = const {},
     this.localOcrEnabled,
   });
