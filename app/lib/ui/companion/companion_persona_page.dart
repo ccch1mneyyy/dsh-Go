@@ -38,30 +38,54 @@ class _CompanionPersonaPageState extends ConsumerState<CompanionPersonaPage> {
   late final CompanionNameSetting _names = ref.read(companionNameProvider.notifier);
   late final CompanionPersonaController _personas = ref.read(companionPersonaProvider.notifier);
   late final CompanionRenamed _renamed = ref.read(companionRenamedProvider.notifier);
-  late final String? _nameBefore = ref.read(companionNameProvider);
+
+  /// What she went by when the page opened. Filled once the stored name and
+  /// persona are read, not from the providers' empty first values.
+  String? _nameBefore;
+
+  /// The form is filled only after the saved settings are read. The providers
+  /// start empty and load asynchronously; closing the page writes the fields
+  /// back, so filling it too early would overwrite the saved persona.
+  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
+    // Bind now, not on first use (dispose can't).
+    (_names, _personas, _renamed);
+    unawaited(_fill());
+  }
+
+  Future<void> _fill() async {
+    try {
+      await Future.wait([_names.ready, _personas.ready]);
+    } on Object {
+      // Unreadable: leave the fields on what the providers have.
+    }
+    if (!mounted) return;
     final persona = ref.read(companionPersonaProvider);
+    _nameBefore = ref.read(companionNameProvider);
     _name.text = _nameBefore ?? '';
     _callMe.text = persona.callMe;
     _persona.text = persona.custom.trim().isNotEmpty ? persona.custom : _defaultFor(_nameBefore);
-    // Bind now, not on first use (dispose can't).
-    (_names, _personas, _renamed);
+    setState(() => _ready = true);
   }
 
   @override
   void dispose() {
     _saveTimer?.cancel();
-    final (name, settings) = _values();
-    final renamed = name != _nameBefore && name != null;
-    // Providers can't change while the tree is being torn down: right after.
-    scheduleMicrotask(() {
-      _write(name, settings);
-      // Back in the room, she answers to it.
-      if (renamed) _renamed.set(name);
-    });
+    // Nothing was read, so nothing is written back: a page opened before the
+    // settings finished loading must leave them as they are.
+    if (_ready) {
+      final (name, settings) = _values();
+      final renamed = name != _nameBefore && name != null;
+      // Providers can't change while the tree is being torn down: right after.
+      scheduleMicrotask(() {
+        _write(name, settings);
+        // Back in the room, she answers to it.
+        if (renamed) _renamed.set(name);
+      });
+    }
     _name.dispose();
     _callMe.dispose();
     _persona.dispose();
@@ -106,6 +130,14 @@ class _CompanionPersonaPageState extends ConsumerState<CompanionPersonaPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    if (!_ready) {
+      return AppPage.list(
+        title: l10n.companionMenuPersona,
+        children: const [
+          SizedBox(height: 160, child: Center(child: CircularProgressIndicator())),
+        ],
+      );
+    }
     return AppPage.list(
       title: l10n.companionMenuPersona,
       children: [

@@ -338,6 +338,17 @@ class _CompanionFullSession {
     bool Function() current,
   ) async {
     if (prepared?.requestId != req) {
+      // The providers start empty and load asynchronously: her first message
+      // after a cold start would otherwise carry the default persona.
+      try {
+        await Future.wait([
+          visit.ref.read(companionPersonaProvider.notifier).ready,
+          visit.ref.read(companionNameProvider.notifier).ready,
+        ]);
+      } on Object {
+        // Unreadable settings: carry on with what the providers have.
+      }
+      if (!current()) return;
       final persona = visit.ref.read(companionPersonaProvider);
       final name = visit.ref.read(companionNameProvider) ?? visit.character.name;
       final whale = companionIsWhale(visit.characterSourceKey, visit.character.name);

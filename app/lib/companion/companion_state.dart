@@ -425,9 +425,15 @@ const _nameKey = 'companion_name';
 
 /// The name the person gave her; null for the pack's own.
 class CompanionNameSetting extends Notifier<String?> {
+  late Future<void> _ready;
+
+  /// Whether the stored name has been read (once, when the provider is first
+  /// read). Callers that must not use the empty start value await this.
+  Future<void> get ready => _ready;
+
   @override
   String? build() {
-    unawaited(_load());
+    _ready = _load();
     return null;
   }
 
