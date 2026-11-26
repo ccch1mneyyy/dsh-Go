@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/l10n.dart';
 import '../remote/link_status.dart';
 import '../remote/network_watch.dart';
+import '../remote/remote_connection_keep_alive.dart';
 import '../remote/relay/relay_backend.dart';
 import '../remote/ssh/ssh_link.dart';
 import '../remote/ssh/ssh_transport.dart';
@@ -586,6 +587,7 @@ final activeConnectionProvider = Provider<AsyncValue<HostConnection?>>((ref) {
   final connection = _connectionForHost(ref, host);
   ref.read(connectionDiagnosticsProvider)._observe(ref, host, connection);
   // Rebuilds can retain the previous value after its client has been disposed.
+  RemoteConnectionKeepAlive.setEnabled(host.kind != HostKind.local && !connection.hasError);
   return connection;
 });
 

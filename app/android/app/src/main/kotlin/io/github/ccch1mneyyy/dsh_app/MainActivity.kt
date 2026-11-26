@@ -27,6 +27,7 @@ import io.github.ccch1mneyyy.dsh_app.launch.LaunchScreen
 import io.github.ccch1mneyyy.dsh_app.launch.LaunchThemeSync
 import io.github.ccch1mneyyy.dsh_app.runtime.AndroidBackgroundProtection
 import io.github.ccch1mneyyy.dsh_app.runtime.LaunchStart
+import io.github.ccch1mneyyy.dsh_app.remote.RemoteConnectionService
 import io.github.ccch1mneyyy.dsh_app.text.CachedTextActions
 import java.lang.ref.WeakReference
 import java.util.TimeZone
@@ -186,6 +187,14 @@ class MainActivity : FlutterActivity() {
         appChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dsh/app")
         appChannel!!.setMethodCallHandler { call, result ->
             when (call.method) {
+                "setRemoteConnectionKeepAlive" -> {
+                    val enabled = call.argument<Boolean>("enabled") == true
+                    val intent = Intent(this, RemoteConnectionService::class.java).apply {
+                        action = if (enabled) RemoteConnectionService.ACTION_START else RemoteConnectionService.ACTION_STOP
+                    }
+                    if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent) else startService(intent)
+                    result.success(null)
+                }
                 "getTimeZoneId" -> result.success(TimeZone.getDefault().id)
                 "companionAssistantStatus" -> result.success(mapOf(
                     "selected" to CompanionAssistant.selected(this),

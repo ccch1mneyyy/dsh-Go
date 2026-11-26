@@ -142,6 +142,7 @@ class _RemoteScreenState extends ConsumerState<RemoteScreen> {
     return AppPage.list(
       title: l10n.commonRemoteHost,
       subtitle: Text(l10n.remoteHostsIntro),
+      onRefresh: signedIn ? () => ref.read(relayAccountProvider.notifier).refresh() : null,
       actions: [
         if (signedIn)
           GlassIconButton(
@@ -414,16 +415,23 @@ class _ActiveCard extends ConsumerWidget {
 
 /// Dot + word on the right of a host row.
 class _HostState extends StatelessWidget {
-  const _HostState(this.view);
+  const _HostState(this.view, {this.busy = false});
 
   final HostStatusView view;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AnimatedStatusDot(tone: view.tone, size: 7),
+        if (busy)
+          const SizedBox.square(
+            dimension: 12,
+            child: CircularProgressIndicator(strokeWidth: 1.8),
+          )
+        else
+          AnimatedStatusDot(tone: view.tone, size: 7),
         const SizedBox(width: 6),
         Text(view.label),
       ],
@@ -753,6 +761,8 @@ class _RelayRow extends ConsumerWidget {
     final hostRef = HostRef.relay(host.id, name: host.name);
     final status = active ? ref.watch(hostLinkStatusProvider(hostRef)).value : null;
     final view = status == null ? HostStatusView.ofRelayHost(host) : HostStatusView.ofLink(status);
+    final canRetry = active && status != null &&
+        (status.phase == HostLinkPhase.failed || status.phase == HostLinkPhase.reconnecting);
     return Semantics(
       key: ValueKey('remote-row-${host.id}'),
       selected: active,
@@ -775,9 +785,18 @@ class _RelayRow extends ConsumerWidget {
                     label: Text((status!.network?.path ?? status.path)?.label ?? context.l10n.remoteNetworkDetails),
                   ),
                 )
-              : _HostState(view),
+              : _HostState(view, busy: status?.isBusy == true),
         ),
-        trailing: active ? Icon(AppIcons.selected, size: 20, color: scheme.primary) : const SizedBox(width: 20),
+        trailing: canRetry
+            ? IconButton(
+                tooltip: context.l10n.remoteReconnect,
+                icon: const Icon(AppIcons.refresh, size: 19),
+                visualDensity: VisualDensity.compact,
+                onPressed: () => ref.read(remoteConnectionProvider(hostRef).notifier).retry(),
+              )
+            : active
+            ? Icon(AppIcons.selected, size: 20, color: scheme.primary)
+            : const SizedBox(width: 20),
         chevron: false,
       ),
     );

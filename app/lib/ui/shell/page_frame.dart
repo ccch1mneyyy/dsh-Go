@@ -37,6 +37,7 @@ class AppPage extends StatefulWidget {
     this.padBottom = true,
     this.solidBar = true,
     this.leading,
+    this.onRefresh,
   });
 
   final String title;
@@ -66,6 +67,7 @@ class AppPage extends StatefulWidget {
   /// Takes the back button's seat (a page that is the app's home, with
   /// nothing to go back to: 网页模式's native handle).
   final Widget? leading;
+  final Future<void> Function()? onRefresh;
 
   /// The widest the page's column gets: the chat's reading width.
   static const contentWidth = AppSpace.readingWidth;
@@ -83,6 +85,7 @@ class AppPage extends StatefulWidget {
     required List<Widget> children,
     List<Widget> actions = const [],
     bool solidBar = true,
+    Future<void> Function()? onRefresh,
   }) => AppPage(
     key: key,
     title: title,
@@ -90,6 +93,7 @@ class AppPage extends StatefulWidget {
     actions: actions,
     solidBar: solidBar,
     slivers: [SliverList.list(children: children)],
+    onRefresh: onRefresh,
   );
 
   @override
@@ -190,10 +194,12 @@ class _AppPageState extends State<AppPage> {
           backgroundColor: Colors.transparent,
           body: Stack(
             children: [
-              CustomScrollView(
-                controller: _controller,
-                physics: AppMotion.scrollPhysics(context),
-                slivers: [
+              Builder(
+                builder: (context) {
+                  final scroll = CustomScrollView(
+                    controller: _controller,
+                    physics: AppMotion.scrollPhysics(context),
+                    slivers: [
                   SliverToBoxAdapter(child: SizedBox(height: top)),
                   if (header != null)
                     SliverPadding(
@@ -221,8 +227,12 @@ class _AppPageState extends State<AppPage> {
                       ),
                     ),
                   for (final sliver in widget.slivers) SliverPadding(padding: side, sliver: sliver),
-                  if (widget.padBottom) SliverToBoxAdapter(child: SizedBox(height: padding.bottom + 32)),
-                ],
+                      if (widget.padBottom) SliverToBoxAdapter(child: SizedBox(height: padding.bottom + 32)),
+                    ],
+                  );
+                  final refresh = widget.onRefresh;
+                  return refresh == null ? scroll : RefreshIndicator.adaptive(onRefresh: refresh, child: scroll);
+                },
               ),
               Positioned(
                 left: 0,
