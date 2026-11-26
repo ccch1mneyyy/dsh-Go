@@ -39,6 +39,10 @@ runtime/ohos/node/build-tools/node_modules/
 app/test/promo_capture/
 site/build/
 
+# Local IDE and HarmonyOS build state
+.vscode/
+.hvigor/
+
 # Release assets (tooling/release_assets.py)
 /dist/
 
