@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/l10n.dart';
 import '../remote/link_status.dart';
 import '../remote/network_watch.dart';
-import '../remote/remote_connection_keep_alive.dart';
 import '../remote/relay/relay_backend.dart';
 import '../remote/ssh/ssh_link.dart';
 import '../remote/ssh/ssh_transport.dart';
@@ -349,17 +348,26 @@ class RemoteConnectionController extends AsyncNotifier<HostConnection?> {
         }
       });
     }
-    final clients = link.clients.listen((client) => state = AsyncData(wrap(client)));
-    // After a failed first open, the link may still come back on its own
-    // (network kick, "重试"): pick the client up then.
+    final clients = link.clients.listen((client) {
+      if (identical(link.currentClient, client)) state = AsyncData(wrap(client));
+    });
     final statuses = link.statuses.listen((s) {
-      if (s.isConnected && state.hasError && !state.isLoading) ref.invalidateSelf();
+      if (state.isLoading) return;
+      if (s.phase == HostLinkPhase.failed || s.phase == HostLinkPhase.idle) {
+        // The carrier can fail after open completed. Stop new requests using it.
+        if (state.value != null) state = const AsyncData(null);
+      } else if (s.isConnected) {
+        final client = link.currentClient;
+        if (client != null && !identical(state.value?.client, client)) state = AsyncData(wrap(client));
+      }
     });
     ref.onDispose(() {
       unawaited(clients.cancel());
       unawaited(statuses.cancel());
     });
-    return wrap(await link.open());
+    final client = await link.open();
+    if (link.status.phase == HostLinkPhase.failed || link.status.phase == HostLinkPhase.idle) return null;
+    return wrap(client);
   }
 
   /// Gives up any backoff and connects again now.
@@ -586,8 +594,6 @@ final activeConnectionProvider = Provider<AsyncValue<HostConnection?>>((ref) {
   final host = ref.watch(activeHostProvider);
   final connection = _connectionForHost(ref, host);
   ref.read(connectionDiagnosticsProvider)._observe(ref, host, connection);
-  // Rebuilds can retain the previous value after its client has been disposed.
-  RemoteConnectionKeepAlive.setEnabled(host.kind != HostKind.local && !connection.hasError);
   return connection;
 });
 

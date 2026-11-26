@@ -7,17 +7,19 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.IBinder
-import android.content.pm.ServiceInfo
+import android.os.PowerManager
 import io.github.ccch1mneyyy.dsh_app.MainActivity
 
-/** Keeps the Flutter process and remote relay/WebRTC sockets resident while connected. */
+/** Keeps the CPU awake for the selected remote link while its Flutter engine is running. */
 class RemoteConnectionService : Service() {
+    private var wakeLock: PowerManager.WakeLock? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
+        val message = intent?.getStringExtra(EXTRA_MESSAGE)
+        if (message == null) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf(startId)
             return START_NOT_STICKY
@@ -26,25 +28,35 @@ class RemoteConnectionService : Service() {
         val notification = Notification.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
             .setContentTitle("DSH Remote")
-            .setContentText("远程主机连接保持中")
+            .setContentText(message)
+            .setOnlyAlertOnce(true)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
             .build()
-        if (Build.VERSION.SDK_INT >= 29) startForeground(ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        else startForeground(ID, notification)
-        return START_STICKY
+        startForeground(ID, notification)
+        if (wakeLock == null) {
+            val power = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "dsh-app:remote").apply {
+                acquire()
+            }
+        }
+        return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        wakeLock?.release()
+        wakeLock = null
+        super.onDestroy()
     }
 
     private fun ensureChannel() {
-        if (Build.VERSION.SDK_INT < 26) return
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(NotificationChannel(CHANNEL, "DSH Remote", NotificationManager.IMPORTANCE_LOW))
     }
 
     companion object {
-        const val ACTION_START = "io.github.ccch1mneyyy.dsh_app.remote.START"
-        const val ACTION_STOP = "io.github.ccch1mneyyy.dsh_app.remote.STOP"
+        const val EXTRA_MESSAGE = "message"
         private const val CHANNEL = "dsh_remote_connection"
         private const val ID = 4207
     }

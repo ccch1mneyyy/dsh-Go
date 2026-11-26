@@ -468,6 +468,28 @@ void main() {
       expect(host.handshakes, hasLength(1));
     });
 
+    test('a late frame for a retired tunnel triggers fresh authorization and Noise', () async {
+      final client = await connect();
+      final old = server.links.values.single;
+      final peer = server.peers[await clientId()]!;
+      server.links.remove(old.id);
+      peer.ws.add(
+        jsonEncode(
+          ControlFrame('error', {
+            'code': 'CONNECTION_NOT_FOUND',
+            'message': 'Retired tunnel',
+            'connectionId': old.id,
+            'retryable': false,
+          }).toJson(),
+        ),
+      );
+      await _eventually(
+        () => host.handshakes.length == 2 && client.remoteCarrier!.state!.phase == RemoteConnectionPhase.connected,
+      );
+      expect(host.handshakes.last, isNot(old.id));
+      expect(await client.listSessions(), isEmpty);
+    });
+
     test('a closed DataChannel reconnects over Relay instead of retrying the recently failed direct path', () async {
       final client = await connect();
       expect(await client.listSessions(), isEmpty);

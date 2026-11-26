@@ -88,11 +88,15 @@ class HostSheet extends ConsumerWidget {
     final relayHosts = account?.signedIn == true ? account!.hosts : const <RelayHost>[];
 
     Future<void> pick(HostRef host) async {
+      final navigator = Navigator.of(context);
       if (host == active) {
-        Navigator.of(context).pop();
+        if (!host.isLocal && ref.read(hostLinkStatusProvider(host)).value?.phase == HostLinkPhase.failed) {
+          if (!await activateHost(context, ref, host) || !context.mounted) return;
+          ref.read(remoteConnectionProvider(host).notifier).retry();
+        }
+        navigator.pop();
         return;
       }
-      final navigator = Navigator.of(context);
       final ok = await activateHost(context, ref, host);
       if (ok && navigator.mounted) navigator.pop();
     }
@@ -108,86 +112,93 @@ class HostSheet extends ConsumerWidget {
       unawaited(navigator.push(MaterialPageRoute<void>(builder: (_) => const LocalInstallPage(useWhenDone: true))));
     }
 
+    final signedIn = account?.signedIn == true;
+    final list = SingleChildScrollView(
+      physics: signedIn ? const AlwaysScrollableScrollPhysics() : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SheetTitleBar(l10n.remoteSwitchHost),
+          SheetGroup(
+            margin: const EdgeInsets.fromLTRB(SheetTitleBar.inset, 0, SheetTitleBar.inset, 12),
+            children: [
+              if (localAvailable)
+                _HostRow(
+                  host: HostRef.local,
+                  title: l10n.commonThisPhone,
+                  subtitle: l10n.remoteThisPhoneDsh,
+                  active: active.isLocal,
+                  onTap: localMissing ? installLocal : () => pick(HostRef.local),
+                ),
+              for (final h in ssh)
+                _HostRow(
+                  host: HostRef.ssh(h.id),
+                  title: h.name,
+                  subtitle: 'SSH · ${h.address}',
+                  active: active == HostRef.ssh(h.id),
+                  onTap: () => pick(HostRef.ssh(h.id)),
+                ),
+              for (final h in relayHosts)
+                _HostRow(
+                  host: HostRef.relay(h.id, name: h.name),
+                  title: h.name,
+                  subtitle: h.platform == null
+                      ? l10n.remoteRemoteLabel
+                      : l10n.remoteRemotePlatform(RelayHost.platformLabel(h.platform!)),
+                  active: active == HostRef.relay(h.id),
+                  relay: h,
+                  onTap: () => pick(HostRef.relay(h.id, name: h.name)),
+                ),
+            ],
+          ),
+          if (relayHosts.length > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(SheetTitleBar.inset + 8, 0, SheetTitleBar.inset + 8, 12),
+              child: Text(
+                l10n.remoteRelaySwitchWarning,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: DshColors.of(context).textTertiary),
+              ),
+            ),
+          SheetGroup(
+            margin: const EdgeInsets.fromLTRB(SheetTitleBar.inset, 0, SheetTitleBar.inset, 12),
+            children: [
+              SettingsTile(
+                icon: AppIcons.pet,
+                tinted: false,
+                title: l10n.companionTitle,
+                subtitle: l10n.companionEntrySubtitle,
+                onTap: () {
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  unawaited(
+                    navigator.push(MaterialPageRoute<void>(builder: (_) => const CompanionPage(sections: true))),
+                  );
+                },
+              ),
+              SettingsTile(
+                icon: ssh.isEmpty && relayHosts.isEmpty ? AppIcons.add : AppIcons.configure,
+                tinted: false,
+                title: ssh.isEmpty && relayHosts.isEmpty ? l10n.remoteConnectComputer : l10n.remoteManageHosts,
+                subtitle: ssh.isEmpty && relayHosts.isEmpty ? l10n.remoteConnectionMethods : null,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onManage();
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
     return SafeArea(
       top: false,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.8),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SheetTitleBar(l10n.remoteSwitchHost),
-              SheetGroup(
-                margin: const EdgeInsets.fromLTRB(SheetTitleBar.inset, 0, SheetTitleBar.inset, 12),
-                children: [
-                  if (localAvailable)
-                    _HostRow(
-                      host: HostRef.local,
-                      title: l10n.commonThisPhone,
-                      subtitle: l10n.remoteThisPhoneDsh,
-                      active: active.isLocal,
-                      onTap: localMissing ? installLocal : () => pick(HostRef.local),
-                    ),
-                  for (final h in ssh)
-                    _HostRow(
-                      host: HostRef.ssh(h.id),
-                      title: h.name,
-                      subtitle: 'SSH · ${h.address}',
-                      active: active == HostRef.ssh(h.id),
-                      onTap: () => pick(HostRef.ssh(h.id)),
-                    ),
-                  for (final h in relayHosts)
-                    _HostRow(
-                      host: HostRef.relay(h.id, name: h.name),
-                      title: h.name,
-                      subtitle: h.platform == null
-                          ? l10n.remoteRemoteLabel
-                          : l10n.remoteRemotePlatform(RelayHost.platformLabel(h.platform!)),
-                      active: active == HostRef.relay(h.id),
-                      relay: h,
-                      onTap: () => pick(HostRef.relay(h.id, name: h.name)),
-                    ),
-                ],
-              ),
-              if (relayHosts.length > 1)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(SheetTitleBar.inset + 8, 0, SheetTitleBar.inset + 8, 12),
-                  child: Text(
-                    l10n.remoteRelaySwitchWarning,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: DshColors.of(context).textTertiary),
-                  ),
-                ),
-              SheetGroup(
-                margin: const EdgeInsets.fromLTRB(SheetTitleBar.inset, 0, SheetTitleBar.inset, 12),
-                children: [
-                  SettingsTile(
-                    icon: AppIcons.pet,
-                    tinted: false,
-                    title: l10n.companionTitle,
-                    subtitle: l10n.companionEntrySubtitle,
-                    onTap: () {
-                      final navigator = Navigator.of(context);
-                      navigator.pop();
-                      unawaited(navigator.push(MaterialPageRoute<void>(builder: (_) => const CompanionPage(sections: true))));
-                    },
-                  ),
-                  SettingsTile(
-                    icon: ssh.isEmpty && relayHosts.isEmpty ? AppIcons.add : AppIcons.configure,
-                    tinted: false,
-                    title: ssh.isEmpty && relayHosts.isEmpty ? l10n.remoteConnectComputer : l10n.remoteManageHosts,
-                    subtitle: ssh.isEmpty && relayHosts.isEmpty ? l10n.remoteConnectionMethods : null,
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      onManage();
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-            ],
-          ),
-        ),
+        child: signedIn
+            ? RefreshIndicator.adaptive(onRefresh: ref.read(relayAccountProvider.notifier).refresh, child: list)
+            : list,
       ),
     );
   }
@@ -216,11 +227,17 @@ class _HostRow extends ConsumerWidget {
     // Live state for 本机 and the active remote host; presence for relay
     // hosts; nothing for idle SSH hosts (connecting just to show a dot
     // would cost a login).
-    final HostStatusView? view = host.isLocal || active
-        ? watchHostStatus(ref, host)
-        : relay != null
-        ? HostStatusView.ofRelayHost(relay!)
-        : null;
+    final HostStatusView? view;
+    var description = subtitle;
+    if (relay case final listed?) {
+      final status = active ? ref.watch(hostLinkStatusProvider(host)).value : null;
+      if (status?.phase == HostLinkPhase.failed) description = '$subtitle · ${status!.summary}';
+      view = status != null && (status.isBusy || status.isConnected)
+          ? HostStatusView.ofLink(status)
+          : HostStatusView.ofRelayHost(listed);
+    } else {
+      view = host.isLocal || active ? watchHostStatus(ref, host) : null;
+    }
     return Semantics(
       key: ValueKey('host-row-${host.kind.name}-${host.id}'),
       selected: active,
@@ -229,7 +246,7 @@ class _HostRow extends ConsumerWidget {
         icon: hostKindIcon(host.kind),
         tinted: false,
         title: title,
-        subtitle: subtitle,
+        subtitle: description,
         onTap: onTap,
         value: view == null
             ? null

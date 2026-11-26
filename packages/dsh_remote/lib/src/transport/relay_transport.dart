@@ -482,12 +482,16 @@ class RelayTransport implements LeaseAwareTransport {
           _recoverAuthentication();
           return;
         }
+        // A late frame for a retired tunnel cannot be retried on that id.
+        // A new, independently authorized tunnel can still reach the Host.
+        final retired = code == 'CONNECTION_NOT_FOUND' && connectionId != null && connectionId == _connectionId;
         _fail(
           RemoteTransportClosed(
             code,
             p['message']! as String,
             retryable:
-                !_incompatibleCodes.contains(code) && ((p['retryable'] as bool?) ?? _retryableCodes.contains(code)),
+                retired ||
+                (!_incompatibleCodes.contains(code) && ((p['retryable'] as bool?) ?? _retryableCodes.contains(code))),
           ),
         );
       case 'relay':

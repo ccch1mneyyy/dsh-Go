@@ -358,7 +358,7 @@ class RelayHostLink implements HostLink, NetworkInspectableHostLink {
     final opened = _client != null;
     switch (state) {
       case RelayConnectionState.connecting:
-        if (!opened) _emit(_status.withStep(HostLinkStep.connect));
+        if (!opened) _emit(_status.withStep(HostLinkStep.tunnel));
       case RelayConnectionState.handshaking:
         if (!opened) _emit(_status.withStep(HostLinkStep.login));
       case RelayConnectionState.connected:

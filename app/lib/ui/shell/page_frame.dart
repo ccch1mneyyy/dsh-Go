@@ -198,40 +198,44 @@ class _AppPageState extends State<AppPage> {
                 builder: (context) {
                   final scroll = CustomScrollView(
                     controller: _controller,
-                    physics: AppMotion.scrollPhysics(context),
+                    physics:
+                        AppMotion.scrollPhysics(context) ??
+                        (widget.onRefresh == null ? null : const AlwaysScrollableScrollPhysics()),
                     slivers: [
-                  SliverToBoxAdapter(child: SizedBox(height: top)),
-                  if (header != null)
-                    SliverPadding(
-                      padding: side,
-                      sliver: SliverToBoxAdapter(
-                        child: ValueListenableBuilder<double>(
-                          valueListenable: _offset,
-                          // Pulled past the top (only the fluid tier's lists go there), the
-                          // headline swells a little with the pull. Faded out, its
-                          // animations (the engine's status ring) hold still.
-                          builder: (context, offset, child) => Opacity(
-                            opacity: _headerOpacity(offset),
-                            alwaysIncludeSemantics: true,
-                            child: TickerMode(
-                              enabled: _headerOpacity(offset) > 0,
-                              child: Transform.scale(
-                                scale: 1 + (-offset / 900).clamp(0.0, 0.1),
-                                alignment: AlignmentDirectional.topStart,
-                                child: child,
+                      SliverToBoxAdapter(child: SizedBox(height: top)),
+                      if (header != null)
+                        SliverPadding(
+                          padding: side,
+                          sliver: SliverToBoxAdapter(
+                            child: ValueListenableBuilder<double>(
+                              valueListenable: _offset,
+                              // Pulled past the top (only the fluid tier's lists go there), the
+                              // headline swells a little with the pull. Faded out, its
+                              // animations (the engine's status ring) hold still.
+                              builder: (context, offset, child) => Opacity(
+                                opacity: _headerOpacity(offset),
+                                alwaysIncludeSemantics: true,
+                                child: TickerMode(
+                                  enabled: _headerOpacity(offset) > 0,
+                                  child: Transform.scale(
+                                    scale: 1 + (-offset / 900).clamp(0.0, 0.1),
+                                    alignment: AlignmentDirectional.topStart,
+                                    child: child,
+                                  ),
+                                ),
                               ),
+                              child: KeyedSubtree(key: _headerKey, child: header),
                             ),
                           ),
-                          child: KeyedSubtree(key: _headerKey, child: header),
                         ),
-                      ),
-                    ),
-                  for (final sliver in widget.slivers) SliverPadding(padding: side, sliver: sliver),
+                      for (final sliver in widget.slivers) SliverPadding(padding: side, sliver: sliver),
                       if (widget.padBottom) SliverToBoxAdapter(child: SizedBox(height: padding.bottom + 32)),
                     ],
                   );
                   final refresh = widget.onRefresh;
-                  return refresh == null ? scroll : RefreshIndicator.adaptive(onRefresh: refresh, child: scroll);
+                  return refresh == null
+                      ? scroll
+                      : RefreshIndicator.adaptive(onRefresh: refresh, edgeOffset: top, child: scroll);
                 },
               ),
               Positioned(

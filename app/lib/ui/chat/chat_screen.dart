@@ -70,6 +70,7 @@ import '../common/status_dot.dart';
 import '../features/all_features_page.dart';
 import '../features/session_export_page.dart';
 import '../onboarding/local_install.dart';
+import '../remote/host_status.dart';
 import '../pets/pet_perch.dart';
 import '../pets/pet_stage.dart';
 import '../plugins/native/composer_strip.dart' show ComposerStripSlot;
@@ -1615,7 +1616,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     final connAsync = ref.watch(activeConnectionProvider);
     final conn = connAsync.value;
     final connected = conn != null;
-    final local = ref.watch(activeHostProvider.select((h) => h.kind == HostKind.local));
+    final host = ref.watch(activeHostProvider);
+    final local = host.isLocal;
+    final link = local ? null : ref.watch(hostLinkStatusProvider(host)).value;
     final starting = local && ref.watch(localRuntimeProvider.select((s) => s.status.phase == RuntimePhase.starting));
     final tidying = starting && ref.watch(localRuntimeProvider.select((s) => s.status.tidyingFiles));
     // The engine stopped on its own: the failure card above the empty state
@@ -1735,6 +1738,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     final approval = chat?.approval;
     final question = chat?.question;
     final status = _status(
+      remoteStatus: link != null && !link.isConnected ? HostStatusView.ofLink(link) : null,
+      hostName: local ? null : ref.watch(hostNameProvider(host)),
       connecting: connAsync.isLoading && conn == null,
       starting: starting,
       connected: connected,
@@ -2397,6 +2402,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
   }
 
   static HeaderStatus _status({
+    required HostStatusView? remoteStatus,
+    required String? hostName,
     required bool connecting,
     required bool starting,
     required bool connected,
@@ -2410,6 +2417,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     required String? waiting,
     String? spoken,
   }) {
+    if (remoteStatus != null) {
+      return HeaderStatus(remoteStatus.tone, [if (hostName != null) hostName, remoteStatus.label].join(' · '));
+    }
     if (!connected) {
       if (starting) return HeaderStatus(StatusTone.busy, appL10n.chatStarting);
       return connecting

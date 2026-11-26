@@ -1,5 +1,6 @@
 package io.github.ccch1mneyyy.dsh_app.runtime
 
+import io.github.ccch1mneyyy.dsh_app.remote.RemoteConnectionService
 import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
@@ -61,6 +62,7 @@ class RuntimePlugin :
             controller.detachManagedSkillOwner(owner)
         }
         managedSkillOwner = null
+        appContext.stopService(Intent(appContext, RemoteConnectionService::class.java))
         protection.setTurnRunning(false)
         methods.setMethodCallHandler(null)
         events.setStreamHandler(null)
@@ -109,6 +111,13 @@ class RuntimePlugin :
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
+            "setRemoteConnectionStatus" -> {
+                val intent = Intent(appContext, RemoteConnectionService::class.java)
+                val message = call.argument<String>("message")
+                if (message == null) appContext.stopService(intent)
+                else appContext.startForegroundService(intent.putExtra(RemoteConnectionService.EXTRA_MESSAGE, message))
+                result.success(null)
+            }
             "getStatus" -> result.success(controller.status())
             "publishDiagnostics" -> {
                 val markdown = call.argument<String>("markdown")

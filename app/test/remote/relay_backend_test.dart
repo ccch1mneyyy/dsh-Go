@@ -1,13 +1,20 @@
 // The dsh_remote adapter's failure mapping, and RelayHostLink following the
 // relay client's own reconnect states.
 
+import 'package:dsh_app/l10n/l10n.dart';
+import 'package:dsh_app/remote/remote_connection_keep_alive.dart';
+import 'package:dsh_app/state/connection_state.dart';
+import 'package:dsh_app/state/hosts_state.dart' show HostRef, activeHostProvider;
 import 'package:dsh_app/remote/link_status.dart';
 import 'package:dsh_app/remote/relay/dsh_remote_backend.dart';
 import 'package:dsh_app/remote/relay/relay_backend.dart';
 import 'package:dsh_app/remote/secret_store.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:dsh_remote/dsh_remote.dart' as remote;
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_relay.dart';
 import 'support/wait.dart';
@@ -143,6 +150,40 @@ void main() {
       relay.onState!(RelayConnectionState.connected, null);
       expect(link.status.isConnected, isTrue);
       expect(relay.connects, 1, reason: 'the relay client reconnects by itself');
+    });
+
+    testWidgets('Android service follows the selected link through loss, failure and host switch', (tester) async {
+      const channel = MethodChannel('dsh/runtime');
+      final messages = <String?>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        expect(call.method, 'setRemoteConnectionStatus');
+        messages.add(call.arguments['message'] as String?);
+        return null;
+      });
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer(overrides: [hostLinkProvider.overrideWith((ref, host) => link)]);
+      try {
+        container.read(activeHostProvider.notifier).select(const HostRef.relay('mac'));
+        container.listen(remoteConnectionKeepAliveProvider, (_, _) {});
+        await link.open();
+        relay.onState!(RelayConnectionState.reconnecting, null);
+        relay.onState!(RelayConnectionState.failed, const HostLinkError(HostLinkErrorKind.other, 'failed'));
+        relay.onState!(RelayConnectionState.connected, null);
+        container.read(activeHostProvider.notifier).select(HostRef.local);
+        await tester.pump();
+        expect(messages, [
+          appL10n.remoteConnecting,
+          appL10n.remoteConnected,
+          appL10n.remoteReconnecting,
+          null,
+          appL10n.remoteConnected,
+          null,
+        ]);
+      } finally {
+        container.dispose();
+        messenger.setMockMethodCallHandler(channel, null);
+      }
     });
 
     test('a terminal failure stops; 重新连接 restarts the same client in place', () async {

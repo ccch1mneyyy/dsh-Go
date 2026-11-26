@@ -130,6 +130,7 @@ enum HostLinkDiagnosticCode {
   remoteSecureChannelFailed,
   remoteRpcTimeout,
   remoteConnectionFailed,
+  remoteConnectionNotFound,
   remoteRateLimited,
   remoteHistoryModeChanged,
 }

@@ -155,6 +155,30 @@ void main() {
     expect(find.byTooltip('刷新主机列表'), findsOneWidget, reason: 'refresh lives in the bar now');
   });
 
+  testWidgets('pull refresh updates presence even when the selected tunnel failed', (tester) async {
+    SharedPreferences.setMockInitialValues({ActiveHostController.prefsKey: const HostRef.relay('mac').encode()});
+    linkStatus = const HostLinkStatus(HostLinkPhase.failed);
+    relay.hosts = [const RelayHost(id: 'mac', name: 'Mac', online: false)];
+    await pump(tester, const RemoteScreen());
+    await frames(tester);
+    final row = find.byKey(const ValueKey('remote-status-mac'));
+    expect(find.descendant(of: row, matching: find.text(appL10n.remoteOffline)), findsOneWidget);
+    relay.hosts = [const RelayHost(id: 'mac', name: 'Mac', online: true)];
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, 450));
+    await frames(tester, 20);
+    expect(find.descendant(of: row, matching: find.text(appL10n.remoteOnline)), findsOneWidget);
+    expect(find.text(appL10n.commonConnectionFailed), findsWidgets);
+  });
+
+  testWidgets('connecting host shows its current step and progress', (tester) async {
+    SharedPreferences.setMockInitialValues({ActiveHostController.prefsKey: const HostRef.relay('mac').encode()});
+    linkStatus = const HostLinkStatus(HostLinkPhase.connecting, step: HostLinkStep.tunnel);
+    await pump(tester, const RemoteScreen());
+    await frames(tester, 3);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.textContaining(appL10n.remoteStepTunnel), findsWidgets);
+  });
+
   testWidgets('an offline host is checked again when tapped, then used once it is online', (tester) async {
     relay.hosts = [
       const RelayHost(

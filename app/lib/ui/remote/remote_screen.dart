@@ -81,9 +81,9 @@ class _RemoteScreenState extends ConsumerState<RemoteScreen> {
     if (ref.read(activeHostProvider) == host) {
       // Tapping the active host after a failure: confirm trust if that was
       // the problem, then connect again.
-      final failed = ref.read(hostLinkStatusProvider(host)).value?.phase == HostLinkPhase.failed;
-      if (!failed) {
-        navigator.maybePop();
+      final status = ref.read(hostLinkStatusProvider(host)).value;
+      if (status?.phase != HostLinkPhase.failed) {
+        if (status?.isConnected == true) navigator.maybePop();
         return;
       }
       if (await activateHost(context, ref, host)) {
@@ -91,8 +91,21 @@ class _RemoteScreenState extends ConsumerState<RemoteScreen> {
       }
       return;
     }
-    final ok = await activateHost(context, ref, host);
-    if (ok && navigator.mounted) navigator.maybePop();
+    if (!await activateHost(context, ref, host) || !mounted) return;
+    // Keep progress and any failure on this page until the link is ready.
+    try {
+      await ref.read(remoteConnectionProvider(host).future);
+    } catch (error) {
+      // Switching hosts can dispose the previous provider while its open is pending.
+      if (mounted && ref.read(activeHostProvider) == host && error is! HostLinkError) rethrow;
+      return;
+    }
+    if (mounted &&
+        ModalRoute.of(context)?.isCurrent == true &&
+        ref.read(activeHostProvider) == host &&
+        ref.read(hostLinkProvider(host))?.status.isConnected == true) {
+      navigator.maybePop();
+    }
   }
 
   /// An offline host may have come online since the list was read: look
@@ -349,7 +362,12 @@ class _ActiveCard extends ConsumerWidget {
               onPressed: () => ref.read(activeHostProvider.notifier).select(HostRef.local),
             )
           : null,
-      footer: failed
+      footer: status.isBusy
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: OverviewCard.inset, vertical: 8),
+              child: LinearProgressIndicator(semanticsLabel: status.summary),
+            )
+          : failed
           ? Padding(
               padding: const EdgeInsets.only(left: OverviewCard.inset, right: OverviewCard.inset - 12),
               child: LinkErrorBox(
@@ -426,10 +444,7 @@ class _HostState extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (busy)
-          const SizedBox.square(
-            dimension: 12,
-            child: CircularProgressIndicator(strokeWidth: 1.8),
-          )
+          const SizedBox.square(dimension: 12, child: CircularProgressIndicator(strokeWidth: 1.8))
         else
           AnimatedStatusDot(tone: view.tone, size: 7),
         const SizedBox(width: 6),
@@ -760,8 +775,10 @@ class _RelayRow extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final hostRef = HostRef.relay(host.id, name: host.name);
     final status = active ? ref.watch(hostLinkStatusProvider(hostRef)).value : null;
-    final view = status == null ? HostStatusView.ofRelayHost(host) : HostStatusView.ofLink(status);
-    final canRetry = active && status != null &&
+    final view = status?.isBusy == true ? HostStatusView.ofLink(status!) : HostStatusView.ofRelayHost(host);
+    final canRetry =
+        active &&
+        status != null &&
         (status.phase == HostLinkPhase.failed || status.phase == HostLinkPhase.reconnecting);
     return Semantics(
       key: ValueKey('remote-row-${host.id}'),

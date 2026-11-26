@@ -441,6 +441,7 @@ class DshRemoteRelayBackend implements RelayBackend, RelayNetworkBackend, RelayP
     'SECURE_CHANNEL_FAILED' => HostLinkDiagnosticCode.remoteSecureChannelFailed,
     'RPC_TIMEOUT' => HostLinkDiagnosticCode.remoteRpcTimeout,
     'CONNECTION_FAILED' => HostLinkDiagnosticCode.remoteConnectionFailed,
+    'CONNECTION_NOT_FOUND' => HostLinkDiagnosticCode.remoteConnectionNotFound,
     'RATE_LIMITED' => HostLinkDiagnosticCode.remoteRateLimited,
     'HISTORY_MODE_CHANGED' => HostLinkDiagnosticCode.remoteHistoryModeChanged,
     _ => HostLinkDiagnosticCode.unknown,
