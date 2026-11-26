@@ -13,6 +13,7 @@ import 'package:dsh_app/ui/settings/settings_widgets.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../shell/golden_harness.dart';
@@ -61,6 +62,24 @@ class _InspectableLink extends HostLink implements NetworkInspectableHostLink {
 }
 
 void main() {
+  test('status updates during initial snapshot delivery are not lost', () async {
+    final link = _InspectableLink(const HostLinkStatus(HostLinkPhase.connecting));
+    final container = ProviderContainer(overrides: [hostLinkProvider.overrideWith((ref, host) => link)]);
+    addTearDown(container.dispose);
+    addTearDown(link.changes.close);
+    final ready = Completer<void>();
+    final subscription = container.listen(hostLinkStatusProvider(_host), (_, next) {
+      if (next.value?.phase == HostLinkPhase.connecting) {
+        link.emit(const HostLinkStatus(HostLinkPhase.connected));
+      } else if (next.value?.isConnected == true && !ready.isCompleted) {
+        ready.complete();
+      }
+    });
+    addTearDown(subscription.close);
+    await ready.future.timeout(const Duration(seconds: 2));
+    expect(container.read(hostLinkStatusProvider(_host)).value?.isConnected, isTrue);
+  });
+
   setUp(() {
     AppLocale.use(AppLocale.zhCN);
     SharedPreferences.setMockInitialValues({ActiveHostController.prefsKey: _host.encode()});
