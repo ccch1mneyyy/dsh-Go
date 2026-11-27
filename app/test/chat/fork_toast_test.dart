@@ -13,6 +13,7 @@ import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/harness.dart';
 
@@ -54,6 +55,7 @@ double _gap(WidgetTester tester) => tester.getRect(find.byType(Composer)).top - 
 
 void main() {
   setUpAll(loadTestFonts);
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets('重新回答: the toast floats above the composer and leaves on its own', (tester) async {
     await _pump(tester);
