@@ -7,6 +7,7 @@ import java.io.FileOutputStream
 import java.io.FilterInputStream
 import java.io.IOException
 import java.io.InputStream
+import java.nio.ByteBuffer
 import java.util.zip.GZIPInputStream
 import org.tukaani.xz.XZInputStream
 
@@ -218,21 +219,39 @@ class TarExtractor(
         return String(buf, 0, end, Charsets.UTF_8)
     }
 
+    /** Writes [size] bytes; file-aligned 4 KiB runs of zeros (the blanked DWARF in node and ORT) become holes. */
     private fun copyExactly(input: InputStream, out: FileOutputStream, size: Long) {
         val buf = copyBuffer
+        val channel = out.channel
         var left = size
         while (left > 0) {
-            val n = input.read(buf, 0, minOf(buf.size.toLong(), left).toInt())
-            if (n < 0) throw IOException("truncated tar entry")
-            out.write(buf, 0, n)
-            left -= n
+            val len = minOf(buf.size.toLong(), left).toInt()
+            if (!readFully(input, buf, len)) throw IOException("truncated tar entry")
+            var written = 0
+            var block = 0
+            while (block + PAGE <= len) {
+                if (zeros(buf, block)) {
+                    if (block > written) out.write(buf, written, block - written)
+                    channel.position(channel.position() + PAGE)
+                    written = block + PAGE
+                }
+                block += PAGE
+            }
+            if (len > written) out.write(buf, written, len - written)
+            left -= len
         }
+        if (channel.size() < size) channel.write(ByteBuffer.wrap(ByteArray(1)), size - 1) // trailing hole
     }
 
-    private fun readFully(input: InputStream, buf: ByteArray): Boolean {
+    private fun zeros(buf: ByteArray, from: Int): Boolean {
+        for (i in from until from + PAGE) if (buf[i].toInt() != 0) return false
+        return true
+    }
+
+    private fun readFully(input: InputStream, buf: ByteArray, len: Int = buf.size): Boolean {
         var off = 0
-        while (off < buf.size) {
-            val n = input.read(buf, off, buf.size - off)
+        while (off < len) {
+            val n = input.read(buf, off, len - off)
             if (n < 0) {
                 if (off == 0) return false
                 throw IOException("truncated tar block")
@@ -256,5 +275,6 @@ class TarExtractor(
 
     companion object {
         private const val BLOCK = 512
+        private const val PAGE = 4096
     }
 }

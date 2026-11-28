@@ -1423,6 +1423,13 @@ class _ImagePreviewState extends ConsumerState<_ImagePreview> {
     if (old.revision != widget.revision) unawaited(_load());
   }
 
+  @override
+  void dispose() {
+    // _load evicts before showing, so a decoded copy left in the cache is never reused here.
+    if (_file case final file?) PaintingBinding.instance.imageCache.evict(FileImage(file), includeLive: false);
+    super.dispose();
+  }
+
   Future<void> _load() async {
     final token = ++_token;
     final files = ref.read(artifactFilesProvider);
