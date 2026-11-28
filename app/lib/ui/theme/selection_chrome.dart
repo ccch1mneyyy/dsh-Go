@@ -49,7 +49,7 @@ class _GlassHandle extends StatelessWidget {
     final color = TextSelectionTheme.of(context).selectionHandleColor ?? scheme.primary;
     return TweenAnimationBuilder<double>(
       // 和工具栏的淡入同一个节拍:先小一号,再弹到位。
-      tween: const Tween(begin: 0.72, end: 1),
+      tween: Tween(begin: 0.72, end: 1),
       duration: const Duration(milliseconds: 160),
       curve: Curves.easeOutBack,
       builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
