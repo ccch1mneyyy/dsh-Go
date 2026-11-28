@@ -18,6 +18,11 @@ import '../chat/support/harness.dart';
 import '../plugins/support/fake_plugin_host.dart';
 import '../shell/golden_harness.dart' show FakeRuntime, runningStatus;
 
+class _RestoreSettings extends SettingsController {
+  @override
+  AppSettings build() => const AppSettings(autoApproveCommands: true);
+}
+
 void main() {
   for (final surface in ['settings', 'session']) {
     for (final scenario in [
@@ -70,6 +75,7 @@ void main() {
                 ? const PermissionPage()
                 : const Scaffold(body: SessionPermissionPage(sessionId: 's1')),
             overrides: [
+              if (restoreLocal) settingsProvider.overrideWith(_RestoreSettings.new),
               sessionModesProvider.overrideWith((ref, id) => SessionModes(preset: preset)),
               activeConnectionProvider.overrideWith((ref) {
                 final host = ref.watch(activeHostProvider);
