@@ -2,9 +2,14 @@
 // SPDX-License-Identifier: MIT
 // See THIRD_PARTY_NOTICES.md.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show TickerCanceled;
+
+import 'glass.dart';
+import 'shapes.dart';
 
 /// 选择手柄的边长。Material 默认是 22,这里放大一点更好按,也留得下内衬。
 const glassSelectionHandleSize = 26.0;
@@ -38,10 +43,44 @@ class _GlassSelectionControls extends TextSelectionControls with TextSelectionHa
   };
 }
 
-class _GlassHandle extends StatelessWidget {
+class _GlassHandle extends StatefulWidget {
   const _GlassHandle({this.onTap});
 
   final VoidCallback? onTap;
+
+  @override
+  State<_GlassHandle> createState() => _GlassHandleState();
+}
+
+class _GlassHandleState extends State<_GlassHandle> with SingleTickerProviderStateMixin {
+  /// 入场后轻呼吸两下，停在一点常亮的辉光上。只呼吸有限次：无限循环会让
+  /// 任何 pumpAndSettle 永远等不到静止。
+  late final _breath = AnimationController(vsync: this, duration: _pulseStep, value: 0.3);
+
+  static const _pulseStep = Duration(milliseconds: 500);
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_pulse());
+  }
+
+  Future<void> _pulse() async {
+    try {
+      for (var i = 0; i < 2; i++) {
+        await _breath.animateTo(1, duration: _pulseStep, curve: Curves.easeOut).orCancel;
+        await _breath.animateTo(0.3, duration: _pulseStep, curve: Curves.easeIn).orCancel;
+      }
+    } on TickerCanceled {
+      // 手柄先消失：呼吸到此为止。
+    }
+  }
+
+  @override
+  void dispose() {
+    _breath.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,8 +96,10 @@ class _GlassHandle extends StatelessWidget {
         dimension: glassSelectionHandleSize,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTap: onTap,
-          child: CustomPaint(painter: _GlassHandlePainter(color, dark: scheme.brightness == Brightness.dark)),
+          onTap: widget.onTap,
+          child: CustomPaint(
+            painter: _GlassHandlePainter(color, dark: scheme.brightness == Brightness.dark, breath: _breath),
+          ),
         ),
       ),
     );
@@ -66,10 +107,11 @@ class _GlassHandle extends StatelessWidget {
 }
 
 class _GlassHandlePainter extends CustomPainter {
-  _GlassHandlePainter(this.color, {required this.dark});
+  _GlassHandlePainter(this.color, {required this.dark, required this.breath}) : super(repaint: breath);
 
   final Color color;
   final bool dark;
+  final Animation<double> breath;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -77,6 +119,15 @@ class _GlassHandlePainter extends CustomPainter {
     final path = Path()
       ..addOval(Rect.fromCircle(center: Offset(radius, radius), radius: radius))
       ..addRect(Rect.fromLTWH(0, 0, radius, radius));
+
+    // 呼吸辉光：压在形状外面一圈同色柔光，随动画变亮变宽。
+    final glow = breath.value;
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color.withValues(alpha: (dark ? 0.20 : 0.15) * glow)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 3 + 3 * glow),
+    );
 
     // 柔影:玻璃是浮在字上的,不是贴上去的。
     canvas.drawPath(
@@ -121,4 +172,24 @@ class _GlassHandlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GlassHandlePainter oldDelegate) => oldDelegate.color != color || oldDelegate.dark != dark;
+}
+
+/// 选中文字后的操作条：内容还是框架的 [TextSelectionToolbarTextButton]，
+/// 定位和溢出交给 [TextSelectionToolbar]；换掉的只有外层那张 Material 卡片。
+Widget glassSelectionToolbar(TextSelectionToolbarAnchors anchors, List<ContextMenuButtonItem> items) {
+  if (items.isEmpty) return const SizedBox.shrink();
+  return TextSelectionToolbar(
+    anchorAbove: anchors.primaryAnchor,
+    anchorBelow: anchors.secondaryAnchor ?? anchors.primaryAnchor,
+    toolbarBuilder: (context, child) =>
+        GlassSurface(tier: GlassTier.chrome, borderRadius: AppShape.radiusLg, child: child),
+    children: [
+      for (var i = 0; i < items.length; i++)
+        TextSelectionToolbarTextButton(
+          padding: TextSelectionToolbarTextButton.getPadding(i, items.length),
+          onPressed: items[i].onPressed,
+          child: Text(items[i].label ?? ''),
+        ),
+    ],
+  );
 }

@@ -96,44 +96,41 @@ class _MessageSelectionState extends State<MessageSelection> with AutomaticKeepA
               onMore();
             },
           );
-    return AdaptiveTextSelectionToolbar.buttonItems(
-      anchors: region.contextMenuAnchors,
-      buttonItems: [
-        if (onEdit != null)
-          ContextMenuButtonItem(
-            label: MessageAction.edit.label,
-            onPressed: () {
-              region.hideToolbar();
-              region.clearSelection();
-              onEdit();
-            },
-          ),
-        ?item(ContextMenuButtonType.copy),
-        if (some && onQuote != null)
-          ContextMenuButtonItem(
-            label: MessageAction.quote.label,
-            onPressed: () {
-              region.clearSelection();
-              onQuote(selected);
-            },
-          ),
-        // Keep the full menu visible when edit takes a slot on a narrow screen.
-        if (onEdit != null) ?more,
-        ?item(ContextMenuButtonType.share),
-        if (some)
-          ContextMenuButtonItem(
-            label: MessageAction.readAloud.label,
-            onPressed: () {
-              region.hideToolbar();
-              // Its own id: another passage starts over, the same one stops.
-              readAloudReply(this.context, 'selection:$selected', speakableSelection(selected, widget.text));
-            },
-          ),
-        if (onEdit == null) ?more,
-        ?item(ContextMenuButtonType.selectAll),
-        ...system.where((i) => !ours.contains(i.type)),
-      ],
-    );
+    return glassSelectionToolbar(region.contextMenuAnchors, [
+      if (onEdit != null)
+        ContextMenuButtonItem(
+          label: MessageAction.edit.label,
+          onPressed: () {
+            region.hideToolbar();
+            region.clearSelection();
+            onEdit();
+          },
+        ),
+      ?item(ContextMenuButtonType.copy),
+      if (some && onQuote != null)
+        ContextMenuButtonItem(
+          label: MessageAction.quote.label,
+          onPressed: () {
+            region.clearSelection();
+            onQuote(selected);
+          },
+        ),
+      // Keep the full menu visible when edit takes a slot on a narrow screen.
+      if (onEdit != null) ?more,
+      ?item(ContextMenuButtonType.share),
+      if (some)
+        ContextMenuButtonItem(
+          label: MessageAction.readAloud.label,
+          onPressed: () {
+            region.hideToolbar();
+            // Its own id: another passage starts over, the same one stops.
+            readAloudReply(this.context, 'selection:$selected', speakableSelection(selected, widget.text));
+          },
+        ),
+      if (onEdit == null) ?more,
+      ?item(ContextMenuButtonType.selectAll),
+      ...system.where((i) => !ours.contains(i.type)),
+    ]);
   }
 
   @override

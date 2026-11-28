@@ -349,7 +349,7 @@ class _SelectTextSheetState extends State<_SelectTextSheet> {
         ),
       );
     }
-    return AdaptiveTextSelectionToolbar.buttonItems(anchors: region.contextMenuAnchors, buttonItems: items);
+    return glassSelectionToolbar(region.contextMenuAnchors, items);
   }
 
   @override
