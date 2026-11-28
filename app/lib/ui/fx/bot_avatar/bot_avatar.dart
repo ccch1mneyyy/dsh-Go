@@ -172,6 +172,9 @@ class BotAvatar extends StatefulWidget {
   final String? semanticLabel;
   final bool excludeFromSemantics;
 
+  /// Drops cached master images. Mounted avatars own separate handles.
+  static void clearStillCache() => _StillCache.clear();
+
   /// 按 id 选形状（稳定）。
   static BotAvatarType typeFor(String id) => BotAvatarType.values[_mixed(id) % BotAvatarType.values.length];
 
@@ -419,6 +422,13 @@ class _StillPainter extends CustomPainter {
 /// Still frames shared by every avatar that looks the same (a handle each).
 abstract final class _StillCache {
   static final _images = <String, ui.Image>{};
+
+  static void clear() {
+    for (final image in _images.values) {
+      image.dispose();
+    }
+    _images.clear();
+  }
 
   static ui.Image get(String key, ui.Image Function() make) {
     var img = _images.remove(key);

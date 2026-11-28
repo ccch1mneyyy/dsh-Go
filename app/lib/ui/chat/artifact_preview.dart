@@ -1411,6 +1411,13 @@ class _ImagePreviewState extends ConsumerState<_ImagePreview> {
   }
 
   @override
+  void dispose() {
+    // Its full-size decode would sit in the image cache; the next visit evicts it first anyway.
+    if (_file case final file?) PaintingBinding.instance.imageCache.evict(FileImage(file), includeLive: false);
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(_ImagePreview old) {
     super.didUpdateWidget(old);
     if (old.revision != widget.revision) unawaited(_load());

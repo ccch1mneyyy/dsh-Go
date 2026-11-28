@@ -1,5 +1,7 @@
 // Portions derived from Libraries.dev Bot avatars (https://github.com/Jakubantalik/Libraries.dev), MIT, Copyright (c) 2026 Jakub Antalik. See THIRD_PARTY_NOTICES.md.
 
+import 'dart:ui' as ui;
+
 import 'package:dsh_app/ui/fx/bot_avatar/bot_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,36 @@ Widget _host(Widget child, {bool reduced = false}) => MaterialApp(
 );
 
 void main() {
+  testWidgets('memory pressure releases the still master while its mounted clone survives', (tester) async {
+    BotAvatar.clearStillCache();
+    final previous = ui.Image.onCreate;
+    final images = <ui.Image>[];
+    ui.Image.onCreate = (image) {
+      previous?.call(image);
+      if (image.width == 72 && image.height == 72) images.add(image);
+    };
+    addTearDown(() {
+      ui.Image.onCreate = previous;
+      BotAvatar.clearStillCache();
+    });
+
+    final avatar = _host(const BotAvatar(id: 'pressure', shading: BotAvatarShading.crisp, size: 48));
+    await tester.pumpWidget(avatar);
+    expect(images, hasLength(2));
+    final master = images.first;
+    final mounted = images.last;
+    expect(mounted.isCloneOf(master), isTrue);
+
+    BotAvatar.clearStillCache();
+    expect(master.debugDisposed, isTrue);
+    expect(mounted.debugDisposed, isFalse);
+    await tester.pumpWidget(const SizedBox());
+    expect(mounted.debugDisposed, isTrue);
+    await tester.pumpWidget(avatar);
+    expect(images, hasLength(4));
+    expect(images.last.isCloneOf(master), isFalse);
+  });
+
   testWidgets('a working avatar animates, an idle one is a still frame', (tester) async {
     /* crisp needs no bake, so the still path is taken at once */
     await tester.pumpWidget(_host(const BotAvatar(id: 'a', shading: BotAvatarShading.crisp, size: 48)));
