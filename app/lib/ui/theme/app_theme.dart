@@ -539,7 +539,13 @@ ThemeData _build(
 
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: scheme.primary,
-      selectionColor: scheme.primary.withValues(alpha: isDark ? 0.28 : 0.24),
+      // 选中底色只能是一个颜色，做不了模糊；把主色往白里提一点，深色下更亮，
+      // 和玻璃手柄一起读作一块被光透过的玻璃。
+      selectionColor: Color.lerp(
+        scheme.primary,
+        Colors.white,
+        isDark ? 0.16 : 0.08,
+      )!.withValues(alpha: isDark ? 0.34 : 0.26),
       selectionHandleColor: scheme.primary,
     ),
 

@@ -2,14 +2,18 @@
 // SPDX-License-Identifier: MIT
 // See THIRD_PARTY_NOTICES.md.
 
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../speech/speech_ui.dart';
+import '../../theme/theme.dart';
 import '../secret_mask.dart';
 import 'message_menu.dart';
 
@@ -50,9 +54,29 @@ class MessageSelection extends StatefulWidget {
   State<MessageSelection> createState() => _MessageSelectionState();
 }
 
-class _MessageSelectionState extends State<MessageSelection> {
+class _MessageSelectionState extends State<MessageSelection> with AutomaticKeepAliveClientMixin {
+  late final _edgeSelection = _MessageEdgeSelection();
+
   /// What is selected right now (plain text).
   String _selected = '';
+
+  @override
+  bool get wantKeepAlive => _selected.isNotEmpty;
+
+  void _onSelectionChanged(SelectedContent? content) {
+    final had = _selected.isNotEmpty;
+    _selected = content?.plainText ?? '';
+    final has = _selected.isNotEmpty;
+    // 选词的那一下给个轻触觉:手柄弹出来的动画对不上手指,震动对得上。
+    if (!had && has) HapticFeedback.selectionClick();
+    if (had != has) updateKeepAlive();
+  }
+
+  @override
+  void dispose() {
+    _edgeSelection.dispose();
+    super.dispose();
+  }
 
   Widget _toolbar(BuildContext context, SelectableRegionState region) {
     final system = region.contextMenuButtonItems;
@@ -113,11 +137,74 @@ class _MessageSelectionState extends State<MessageSelection> {
   }
 
   @override
-  Widget build(BuildContext context) => SelectionArea(
-    onSelectionChanged: (content) => _selected = content?.plainText ?? '',
-    contextMenuBuilder: _toolbar,
-    child: _HeldSelectables(live: widget.live, child: widget.child),
-  );
+  Widget build(BuildContext context) {
+    super.build(context);
+    final scrollable = Scrollable.maybeOf(context, axis: Axis.vertical);
+    final content = _HeldSelectables(live: widget.live, child: widget.child);
+    return SelectionArea(
+      selectionControls: glassSelectionControls,
+      onSelectionChanged: _onSelectionChanged,
+      contextMenuBuilder: _toolbar,
+      child: scrollable == null
+          ? content
+          : Builder(
+              builder: (context) {
+                _edgeSelection
+                  ..scrollable = scrollable
+                  ..status = SelectableRegionSelectionStatusScope.maybeOf(context)!;
+                return SelectionContainer(delegate: _edgeSelection, child: content);
+              },
+            ),
+    );
+  }
+}
+
+/// Inline messages have the inverse of Flutter's usual selection/scroll
+/// nesting: the list owns the scroll position, each message its own selection.
+class _MessageEdgeSelection extends StaticSelectionContainerDelegate {
+  late ScrollableState scrollable;
+  late ValueListenable<SelectableRegionSelectionStatus> status;
+  bool _stepping = false;
+
+  @override
+  SelectionResult dispatchSelectionEvent(SelectionEvent event) {
+    final result = super.dispatchSelectionEvent(event);
+    if (event is! SelectionEdgeUpdateEvent || result == SelectionResult.pending) return result;
+
+    final viewport = scrollable.context.findRenderObject()! as RenderBox;
+    final y = viewport.globalToLocal(event.globalPosition).dy;
+    final height = viewport.size.height;
+    final band = math.min(64.0, height / 3);
+    final over = y < band ? y - band : math.max(0.0, y - (height - band));
+    if (over == 0) return result;
+
+    // Stop at the selected message's edge, not at the end of the conversation.
+    final bounds = MatrixUtils.transformRect(getTransformTo(viewport), Offset.zero & containerSize);
+    final room = over < 0 ? -bounds.top : bounds.bottom - height;
+    final step = math.min(room, over.abs().clamp(4.0, 24.0));
+    if (step < 1) return result;
+    final position = scrollable.position;
+    final direction = scrollable.axisDirection == AxisDirection.up ? -over.sign : over.sign;
+    final target = (position.pixels + direction * step)
+        .clamp(position.minScrollExtent, position.maxScrollExtent)
+        .toDouble();
+    if (target == position.pixels) return result;
+
+    // The region retries a pending edge on the next frame while a handle is
+    // moving. Its first update sets the status after dispatch, so request a
+    // frame but don't scroll yet: a simple tap never enters the retry loop.
+    if (status.value == SelectableRegionSelectionStatus.finalized) {
+      SchedulerBinding.instance.ensureVisualUpdate();
+    } else if (!_stepping) {
+      _stepping = true;
+      unawaited(
+        position.animateTo(target, duration: const Duration(milliseconds: 32), curve: Curves.linear).whenComplete(() {
+          _stepping = false;
+        }),
+      );
+    }
+    return SelectionResult.pending;
+  }
 }
 
 /// Holds back the text that registers for selection below it while [live].

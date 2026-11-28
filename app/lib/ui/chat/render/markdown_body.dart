@@ -813,7 +813,7 @@ class _MarkdownBodyState extends State<MarkdownBody> {
       markdown = MarkdownReplyScope(reply: false, child: markdown);
     }
     if (widget.reveal) markdown = _RevealStreaming(streaming: widget.streaming, blocks: _blocks, child: markdown);
-    if (widget.selectable) markdown = SelectionArea(child: markdown);
+    if (widget.selectable) markdown = SelectionArea(selectionControls: glassSelectionControls, child: markdown);
     return MarkdownImageFont(
       size: body.fontSize!,
       child: MarkdownGalleryScope(child: markdown),

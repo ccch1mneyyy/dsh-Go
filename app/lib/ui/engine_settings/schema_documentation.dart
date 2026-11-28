@@ -247,6 +247,7 @@ class SchemaDocumentationSheet extends StatelessWidget {
       actions: EditorSheetActions(busy: false, onDone: () => Navigator.of(context).maybePop()),
       children: [
         SelectionArea(
+          selectionControls: glassSelectionControls,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

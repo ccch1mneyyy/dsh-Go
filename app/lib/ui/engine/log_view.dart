@@ -35,6 +35,7 @@ class LogView extends StatelessWidget {
             child: Text(emptyText ?? l10n.phoneLogEmpty, style: base.copyWith(color: colors.textTertiary)),
           )
         : SelectionArea(
+            selectionControls: glassSelectionControls,
             child: ListView.builder(
               reverse: true,
               padding: terminal ? const EdgeInsets.fromLTRB(16, 4, 16, 14) : const EdgeInsets.fromLTRB(14, 12, 14, 12),

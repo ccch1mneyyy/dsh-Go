@@ -597,11 +597,18 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
 
   bool _onScroll(ScrollNotification n) {
     if (n.depth != 0) return false;
-    // Only this list's drag dismisses the keyboard. A code well's inner
-    // horizontal drag must keep its SelectionArea focused.
-    if (n is ScrollUpdateNotification && n.dragDetails != null) {
-      final scope = FocusScope.of(context);
-      if (scope.hasFocus && !scope.hasPrimaryFocus) FocusManager.instance.primaryFocus?.unfocus();
+    // Dismiss the keyboard only for this list's own drag and a focused text
+    // input in its scope. SelectionArea also takes focus, but losing it clears
+    // the message's selection.
+    if (n is ScrollUpdateNotification && n.dragDetails != null && FocusScope.of(context).hasFocus) {
+      final focus = FocusManager.instance.primaryFocus;
+      final focusContext = focus?.context;
+      if (focusContext != null && focusContext.mounted) {
+        final editor = focusContext.findAncestorStateOfType<EditableTextState>();
+        if (editor != null && !editor.widget.readOnly && identical(editor.widget.focusNode, focus)) {
+          editor.widget.focusNode.unfocus();
+        }
+      }
     }
     _consumeScrollMetrics(n.metrics, (metrics) => _applyScroll(n, metrics));
     return false;

@@ -6,6 +6,7 @@
 import 'package:dsh_app/ui/chat/widgets/message_selection.dart';
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -134,6 +135,56 @@ void main() {
     await _copyAll(tester);
     expect(copied, [_words]);
   });
+
+  testWidgets('holding a selection handle at the edge extends into offscreen lines', (tester) async {
+    usePhoneView(tester);
+    final text = List.generate(80, (i) => 'token line $i').join('\n');
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    final list = find.byType(ListView);
+    await tester.pumpWidget(
+      testApp(
+        Scaffold(
+          body: Center(
+            child: SizedBox(
+              height: 320,
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                children: [MessageSelection(text: text, child: Text(text))],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    final view = tester.getRect(list);
+    final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+    final start = text.indexOf('token line 5\n');
+    final word = TextSelection(baseOffset: start, extentOffset: start + 'token'.length);
+    final box = paragraph.getBoxesForSelection(word).single.toRect();
+    await _hold(tester, paragraph.localToGlobal(box.center));
+    await tester.pumpAndSettle();
+    expect(paragraph.selections.single, word);
+    final belowFirstPage = paragraph.getPositionForOffset(paragraph.globalToLocal(view.bottomLeft)).offset;
+
+    final handle = paragraph.localToGlobal(box.bottomRight + const Offset(1, 5));
+    final drag = await tester.startGesture(handle);
+    await drag.moveBy(const Offset(0, 30));
+    await drag.moveTo(Offset(handle.dx, view.bottom - 12));
+    for (var frame = 0; frame < 48; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(controller.offset, greaterThan(180));
+    expect(paragraph.selections.single.start, word.start);
+    expect(paragraph.selections.single.end, greaterThan(belowFirstPage));
+    final releasedAt = controller.offset;
+    final selected = paragraph.selections.single;
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(controller.offset - releasedAt, inInclusiveRange(0, 24));
+    expect(paragraph.selections.single, selected);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
   testWidgets('a finished message is selectable from the start', (tester) async {
     final copied = _clipboard(tester);

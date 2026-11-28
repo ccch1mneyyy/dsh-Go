@@ -552,7 +552,7 @@ class _CodeBlockState extends State<CodeBlock> {
     // SelectableText 会吃掉 Android 上的横向拖动)。外面已有选区(选择文字
     // 页)时并进那一个。
     if (SelectionContainer.maybeOf(context) == null) {
-      body = SelectionArea(child: body);
+      body = SelectionArea(selectionControls: glassSelectionControls, child: body);
     }
     if (widget.showLineNumbers) {
       final lineCount = '\n'.allMatches(code).length + 1;

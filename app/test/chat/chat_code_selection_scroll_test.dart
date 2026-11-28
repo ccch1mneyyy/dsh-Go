@@ -180,6 +180,57 @@ void main() {
     await selectThenScroll(tester, 'sheet');
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
+  testWidgets('vertically dragging the message list keeps the selected reply text', (tester) async {
+    usePhoneView(tester);
+    // A focus loss clears SelectionArea only while the app is active.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    const word = 'selectedWord';
+    final reply = [
+      ...List.filled(40, 'Earlier reply paragraph.'),
+      word,
+      ...List.filled(10, 'Later reply paragraph.'),
+    ].join('\n\n');
+    final harness = ChatHarness(
+      session: 's1',
+      states: {
+        's1': ChatState(loading: false, items: [assistant(1, reply)]),
+      },
+    );
+    await tester.pumpWidget(
+      testApp(
+        const Scaffold(body: ChatList(sessionId: 's1', topInset: 24, bottomInset: 0)),
+        overrides: harness.overrides,
+      ),
+    );
+    await pumpFrames(tester, 4);
+
+    final target = find.byWidgetPredicate((w) => w is RichText && w.text.toPlainText().contains(word));
+    final paragraph = tester.renderObject<RenderParagraph>(target);
+    final start = paragraph.text.toPlainText().indexOf(word);
+    final box = paragraph
+        .getBoxesForSelection(TextSelection(baseOffset: start, extentOffset: start + word.length))
+        .single;
+    await tester.longPressAt(paragraph.localToGlobal(box.toRect().center));
+    await tester.pumpAndSettle();
+    expect(selected(paragraph), word);
+    final range = paragraph.selections.single;
+    final focus = FocusManager.instance.primaryFocus;
+    expect(focus, isNotNull);
+
+    final position = listPosition(tester);
+    final before = position.pixels;
+    // Start in the gutter, away from the toolbar and selection handles.
+    final gutter = tester.getTopLeft(find.byType(ChatList)) + const Offset(8, 120);
+    await tester.dragFrom(gutter, const Offset(0, 140));
+    await tester.pumpAndSettle();
+
+    expect(position.pixels, lessThan(before - 80));
+    expect(FocusManager.instance.primaryFocus, same(focus));
+    expect(selected(paragraph), word);
+    expect(paragraph.selections.single, range);
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
   testWidgets('dragging the message list still dismisses its input keyboard', (tester) async {
     final focus = await focusedInput(tester);
     final position = listPosition(tester);

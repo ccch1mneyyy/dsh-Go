@@ -365,6 +365,7 @@ class _CollapsibleReasoningBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SelectionArea(
+    selectionControls: glassSelectionControls,
     child: Semantics(
       button: true,
       hint: context.l10n.commonCollapse,

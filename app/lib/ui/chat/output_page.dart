@@ -228,6 +228,7 @@ class _OutputPageState extends State<OutputPage> {
                       child: Squircle.clip(
                         radius: AppShape.md,
                         child: SelectionArea(
+                          selectionControls: glassSelectionControls,
                           child: Scrollbar(
                             controller: _controller,
                             // 拖滑块等于滚到很远的地方,行多了同样会卡。

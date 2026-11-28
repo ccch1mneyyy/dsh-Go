@@ -13,6 +13,7 @@ export 'motion.dart';
 export 'oklch.dart';
 export 'page_transitions.dart';
 export 'palette.dart';
+export 'selection_chrome.dart';
 export 'semantic_colors.dart';
 export 'shapes.dart';
 export 'squircle.dart';

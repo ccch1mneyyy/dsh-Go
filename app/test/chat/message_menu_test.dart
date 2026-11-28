@@ -8,7 +8,9 @@ import 'dart:convert';
 import 'package:dsh_app/ui/chat/widgets/message_menu.dart';
 import 'package:dsh_app/ui/common/app_sheet.dart';
 import 'package:dsh_app/ui/settings/settings_widgets.dart' show SettingsTile;
+import 'package:dsh_app/ui/theme/selection_chrome.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/harness.dart';
@@ -148,6 +150,7 @@ void main() {
     final quoted = <String>[];
     await _host(tester, (context) => showSelectTextSheet(context, _reply, markdown: true, onQuote: quoted.add));
     expect(find.byType(SelectionArea), findsOneWidget);
+    expect(tester.widget<SelectionArea>(find.byType(SelectionArea)).selectionControls, same(glassSelectionControls));
     await tester.longPress(find.textContaining('服务端', findRichText: true));
     await tester.pumpAndSettle();
     expect(find.text('引用'), findsOneWidget);
@@ -159,6 +162,39 @@ void main() {
     // The sheet closed with it.
     expect(find.byType(SelectionArea), findsNothing);
   });
+
+  testWidgets('select-text sheet extends the start handle above the visible page', (tester) async {
+    final text = List.generate(140, (i) => 'token line $i').join('\n');
+    await _host(tester, (context) => showSelectTextSheet(context, text));
+    final scrollable = find.byType(Scrollable);
+    final position = tester.state<ScrollableState>(scrollable).position;
+    final view = tester.getRect(scrollable);
+    final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+    final start = text.indexOf('token line 70\n');
+    final word = TextSelection(baseOffset: start, extentOffset: start + 'token'.length);
+    final box = paragraph.getBoxesForSelection(word).single.toRect();
+    position.jumpTo(box.center.dy - view.height / 2);
+    await tester.pumpAndSettle();
+    final before = position.pixels;
+    final aboveFirstPage = paragraph.getPositionForOffset(paragraph.globalToLocal(view.topLeft)).offset;
+    await tester.longPressAt(paragraph.localToGlobal(box.center));
+    await tester.pumpAndSettle();
+    expect(paragraph.selections.single.start, word.start);
+    expect(paragraph.selections.single.end, word.end);
+
+    final handle = paragraph.localToGlobal(box.bottomLeft + const Offset(-1, 5));
+    final drag = await tester.startGesture(handle);
+    await drag.moveBy(const Offset(0, -30));
+    await drag.moveTo(Offset(handle.dx, view.top - 45));
+    for (var frame = 0; frame < 32; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(position.pixels, lessThan(before - 80));
+    expect(paragraph.selections.single.start, lessThan(aboveFirstPage));
+    expect(paragraph.selections.single.end, word.end);
+    await drag.up();
+    await tester.pumpAndSettle();
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
   testWidgets('选择文字 of a prompt has no 引用', (tester) async {
     await _host(tester, (context) => showSelectTextSheet(context, '帮我看看测试为什么失败'));

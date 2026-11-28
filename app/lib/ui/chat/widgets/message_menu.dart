@@ -364,11 +364,13 @@ class _SelectTextSheetState extends State<_SelectTextSheet> {
           actions: [TextButton(onPressed: widget.onCopyAll, child: Text(l10n.chatCopyAll))],
         ),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
-            child: SelectionArea(
-              onSelectionChanged: (content) => _selected = content?.plainText ?? '',
-              contextMenuBuilder: _toolbar,
+          // Scrollables inside the region participate in Flutter's edge auto-scroll.
+          child: SelectionArea(
+            selectionControls: glassSelectionControls,
+            onSelectionChanged: (content) => _selected = content?.plainText ?? '',
+            contextMenuBuilder: _toolbar,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
               child: widget.markdown
                   ? MarkdownBody(text: widget.text, selectable: false)
                   : Text(widget.text, style: AppType.chatBody(context, color: theme.colorScheme.onSurface)),
