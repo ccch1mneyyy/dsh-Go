@@ -159,7 +159,9 @@ void main() {
       ),
     );
     final view = tester.getRect(list);
-    final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.byWidgetPredicate((w) => w is RichText && w.text.toPlainText() == text),
+    );
     final start = text.indexOf('token line 5\n');
     final word = TextSelection(baseOffset: start, extentOffset: start + 'token'.length);
     final box = paragraph.getBoxesForSelection(word).single.toRect();

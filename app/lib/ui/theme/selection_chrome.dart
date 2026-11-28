@@ -181,8 +181,12 @@ Widget glassSelectionToolbar(TextSelectionToolbarAnchors anchors, List<ContextMe
   return TextSelectionToolbar(
     anchorAbove: anchors.primaryAnchor,
     anchorBelow: anchors.secondaryAnchor ?? anchors.primaryAnchor,
-    toolbarBuilder: (context, child) =>
-        GlassSurface(tier: GlassTier.chrome, borderRadius: AppShape.radiusLg, child: child),
+    // 框架的按钮是 TextButton，必须有 Material 祖先；玻璃本身不是 Material。
+    toolbarBuilder: (context, child) => GlassSurface(
+      tier: GlassTier.chrome,
+      borderRadius: AppShape.radiusLg,
+      child: Material(type: MaterialType.transparency, child: child),
+    ),
     children: [
       for (var i = 0; i < items.length; i++)
         TextSelectionToolbarTextButton(

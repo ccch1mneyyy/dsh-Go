@@ -169,7 +169,9 @@ void main() {
     final scrollable = find.byType(Scrollable);
     final position = tester.state<ScrollableState>(scrollable).position;
     final view = tester.getRect(scrollable);
-    final paragraph = tester.renderObject<RenderParagraph>(find.text(text));
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.byWidgetPredicate((w) => w is RichText && w.text.toPlainText() == text),
+    );
     final start = text.indexOf('token line 70\n');
     final word = TextSelection(baseOffset: start, extentOffset: start + 'token'.length);
     final box = paragraph.getBoxesForSelection(word).single.toRect();
