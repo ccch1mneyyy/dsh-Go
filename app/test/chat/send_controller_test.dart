@@ -486,12 +486,20 @@ void main() {
     // A complete synthetic-only line for the separate Node admission check.
     // ignore: avoid_print
     print('P179_RESULT ${jsonEncode(observation)}');
-    expect(client.prompts.last.requestId, isNot(firstId),
-        reason: 'A different selected photo must not reuse the uncertain old submission.');
+    expect(
+      client.prompts.last.requestId,
+      isNot(firstId),
+      reason: 'A different selected photo must not reuse the uncertain old submission.',
+    );
   });
 
   test('P179 iOS same selected image retains uncertain retry identity', () async {
-    final image = DraftAttachment.sniff('photo.png', base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAIAAAASFvFNAAAAFUlEQVR4nGO8IyfHwMDAwMDAxAADABSqARxxpky/AAAAAElFTkSuQmCC'));
+    final image = DraftAttachment.sniff(
+      'photo.png',
+      base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAIAAAASFvFNAAAAFUlEQVR4nGO8IyfHwMDAwMDAxAADABSqARxxpky/AAAAAElFTkSuQmCC',
+      ),
+    );
     client.promptError = const DshCarrierLostException('synthetic lost response');
     expect(await chat().send('看看这张照片', attachments: [image]), isFalse);
     final firstId = client.prompts.single.requestId;
@@ -1335,6 +1343,13 @@ void main() {
       return ids.values.toList();
     }
 
+    Future<List<PendingPrompt>> sendNowAfterStop(PendingPrompt prompt) async {
+      final sending = chat().sendNow(prompt);
+      await waitForChat((next) => next.stopping);
+      client.events.add(const SessionStatusEvent('s1', false));
+      return sending;
+    }
+
     testWidgets('waiting waits for a delayed inbox publication before send-now', (tester) async {
       var publishes = 0;
       await runZoned(
@@ -1360,7 +1375,10 @@ void main() {
             await waitingReady;
             expect(returnedBeforePublication, isFalse, reason: 'waiting must observe the public inbox, not a delay.');
             expect(bubble('插话一').inboxId, 'i-插话一');
-            expect(await chat().sendNow(bubble('插话一')), isEmpty);
+            final sending = sendNowAfterStop(bubble('插话一'));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 32));
+            expect(await sending, isEmpty);
             expect(client.calls, ['remove:i-插话一', 'cancel', 'remove:i-排队', 'prompt:steer:插话一', 'prompt:queue:排队']);
           } finally {
             container.dispose();
@@ -1379,13 +1397,29 @@ void main() {
       );
     });
 
-    test('立即发送: out, stop, back under the same request id', () async {
+    test('立即发送: cancel acknowledgement alone cannot start the next turn', () async {
+      log('turn/start', {'turn': 1});
       final ids = await waiting(['用中文']);
-      expect(bubble('用中文').slot, InboxSlot.nextStep);
-      expect(await chat().sendNow(bubble('用中文')), isEmpty);
+      final sending = chat().sendNow(bubble('用中文'));
+      await waitForChat((next) => next.stopping);
+      await container.pump();
+      expect(client.calls, ['remove:i-用中文', 'cancel']);
+
+      log('turn/end', {
+        'turn': 1,
+        'reason': {
+          'kind': 'aborted',
+          'reason': {'kind': 'user'},
+        },
+      });
+      log('turn/start', {'turn': 2});
+      await container.pump();
+      expect(client.calls, ['remove:i-用中文', 'cancel'], reason: 'The Host is still busy after the earlier turn ends.');
+      client.events.add(const SessionStatusEvent('s1', false));
+      expect(await sending, isEmpty);
       expect(client.calls, ['remove:i-用中文', 'cancel', 'prompt:steer:用中文']);
       expect(client.prompts.last.requestId, ids.single);
-      expect(state().stopping, isTrue);
+      expect(state().stopping, isFalse);
     });
 
     test('立即发送: the bubble stays put while it is out', () async {
@@ -1401,6 +1435,7 @@ void main() {
       expect(out.inboxId, isNull);
       expect(out.mode, SendMode.now);
       // Back before the inbox says so: still there.
+      client.events.add(const SessionStatusEvent('s1', false));
       client.promptResult!.complete(ids.single);
       expect(await sending, isEmpty);
       await settle();
@@ -1429,7 +1464,7 @@ void main() {
       splice('next-step', inserted: [msg('i1', '看看这个', id)]);
       await settle();
       client.calls.clear();
-      expect(await chat().sendNow(bubble('看看这个')), isEmpty);
+      expect(await sendNowAfterStop(bubble('看看这个')), isEmpty);
       // Taking it out retired the receipt of the first upload.
       expect(client.calls, ['remove:i1', 'cancel', 'upload:notes.md', 'prompt:steer:看看这个']);
       expect(client.prompts.last.receipts, ['receipt-notes.md']);
@@ -1439,23 +1474,69 @@ void main() {
 
     test('立即发送: the queue behind it goes back after it', () async {
       await waiting(['插话'], ['先排的', '后排的']);
-      expect(await chat().sendNow(bubble('先排的')), isEmpty);
+      expect(await sendNowAfterStop(bubble('先排的')), isEmpty);
       expect(client.calls, ['remove:i-先排的', 'cancel', 'remove:i-后排的', 'prompt:queue:先排的', 'prompt:queue:后排的']);
     });
 
     test('立即发送 on an interjection: the whole queue goes after it', () async {
       await waiting(['插话一', '插话二'], ['排队']);
-      expect(await chat().sendNow(bubble('插话一')), isEmpty);
+      expect(await sendNowAfterStop(bubble('插话一')), isEmpty);
       expect(client.calls, ['remove:i-插话一', 'cancel', 'remove:i-排队', 'prompt:steer:插话一', 'prompt:queue:排队']);
     });
 
-    test('立即发送: a stop that fails still puts it back', () async {
-      await waiting(['用中文']);
+    test('立即发送: a failed stop keeps a retry card even if the removal event is late', () async {
+      final ids = await waiting(['用中文'], ['后排的']);
       client.cancelError = StateError('raw');
       expect(await chat().sendNow(bubble('用中文')), isEmpty);
-      expect(client.calls, ['remove:i-用中文', 'cancel', 'prompt:steer:用中文']);
+      expect(client.calls, ['remove:i-用中文', 'cancel']);
       expect(state().stopping, isFalse);
       expect(state().error, '没能停下，再试一次');
+      splice('next-step', removed: 1, canceled: true);
+      await waitForChat((next) => next.pending.any((p) => p.requestId == ids.first && p.inboxId == null));
+      final failed = bubble('用中文');
+      expect(failed.failed, isTrue);
+      expect(failed.requestId, ids.first);
+      expect(bubble('后排的').inboxId, 'i-后排的');
+    });
+
+    test('立即发送: replacing the same Host follow during stop retains the removed message', () async {
+      final ids = await waiting(['用中文']);
+      final sending = chat().sendNow(bubble('用中文'));
+      await waitForChat((next) => next.stopping);
+      await container.pump();
+      splice('next-step', removed: 1, canceled: true);
+      client.events.add(SessionSyncEvent(SessionFollowEpoch()));
+      expect(await sending, isEmpty);
+      expect(client.calls, ['remove:i-用中文', 'cancel']);
+      expect(state().controlReady, isFalse);
+      expect(bubble('用中文').failed, isTrue);
+      expect(bubble('用中文').requestId, ids.single);
+    });
+
+    testWidgets('立即发送: a stop timeout never resends the message', (tester) async {
+      await inTestClock(tester);
+      try {
+        final ready = waiting(['用中文']);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 32));
+        await tester.pump(const Duration(milliseconds: 32));
+        final ids = await ready;
+        final sending = chat().sendNow(bubble('用中文'));
+        await tester.pump();
+        splice('next-step', removed: 1, canceled: true);
+        await tester.pump(const Duration(milliseconds: 32));
+        expect(state().stopping, isTrue);
+
+        await tester.pump(const Duration(seconds: 10));
+        expect(await sending, isEmpty);
+        expect(client.calls, ['remove:i-用中文', 'cancel']);
+        expect(state().stopping, isFalse);
+        expect(state().error, '没能停下，再试一次');
+        expect(bubble('用中文').failed, isTrue);
+        expect(bubble('用中文').requestId, ids.single);
+      } finally {
+        container.dispose();
+      }
     });
 
     test('立即发送: not back in goes to the caller, bubble gone', () async {
@@ -1464,7 +1545,7 @@ void main() {
       final prompt = bubble('用中文');
       // What DSH reports for the removal.
       splice('next-step', removed: 1, canceled: true);
-      final lost = await chat().sendNow(prompt);
+      final lost = await sendNowAfterStop(prompt);
       expect([for (final p in lost) p.text], ['用中文']);
       await settle();
       expect(state().pending, isEmpty);
@@ -1474,7 +1555,7 @@ void main() {
     test('立即发送: an unknown outcome keeps the request id for a retry', () async {
       final ids = await waiting(['用中文']);
       client.promptError = const DshCarrierLostException('gone');
-      expect(await chat().sendNow(bubble('用中文')), hasLength(1));
+      expect(await sendNowAfterStop(bubble('用中文')), hasLength(1));
       client.promptError = null;
       await chat().send('用中文');
       expect(client.prompts.last.requestId, ids.single);
@@ -1503,6 +1584,8 @@ void main() {
       await publish();
       // Ours while it is out: the bubble stays.
       expect(bubble('电脑上发的').requestId, 'other');
+      client.events.add(const SessionStatusEvent('s1', false));
+      await publish();
       client.promptResult!.complete('other');
       await sending;
       expect(client.calls, ['remove:i1', 'cancel', 'prompt:queue:电脑上发的']);

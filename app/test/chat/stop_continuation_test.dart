@@ -464,6 +464,7 @@ void main() {
     final old = h.chat.sendNow(prompt);
     await until(() => a.wire.at('session/cancel').length == 1);
     a.wire.answer('session/cancel', 0);
+    a.events.add(const SessionStatusEvent('S', false));
     await until(() => a.wire.at('fileUploads/upload').length == 1);
     await h.use(b);
     await h.ready(b);
