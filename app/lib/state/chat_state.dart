@@ -872,9 +872,12 @@ class ChatController extends Notifier<ChatState> {
               final inbox = {for (final q in _transcript.inbox) ?q.requestId: q};
               _claimedAt.removeWhere((id, _) => inbox.containsKey(id));
               _withdrawn.removeAll(inbox.keys);
+              final restored = event is InboxSplicedEvent
+                  ? {for (final message in event.inserted) ?message.source.requestId}
+                  : inbox.keys.toSet();
               _pending = List.unmodifiable([
                 for (final prompt in _pending)
-                  if (prompt.failed && inbox.containsKey(prompt.requestId))
+                  if (prompt.failed && restored.contains(prompt.requestId))
                     // Keep local prompts unplaced: _placePending derives the
                     // current inbox slot, or hides it while a move is in flight.
                     prompt.placed(null, null)
@@ -1937,9 +1940,16 @@ class ChatController extends Notifier<ChatState> {
         // A replacement Host must never get the old Host's text or attachments.
         if (ref.mounted && identical(hostScope, _approvalScope)) {
           _finishMoving(operation, prompt.requestId);
-          _pending = List.unmodifiable([
-            for (final p in _pending) p.requestId == prompt.requestId ? p.failedAt(_transcript.cursor) : p,
-          ]);
+          final existing = _pending.where((p) => p.requestId == prompt.requestId).firstOrNull;
+          if (existing != null) {
+            _pending = List.unmodifiable([
+              for (final p in _pending) identical(p, existing) ? p.failedAt(_transcript.cursor) : p,
+            ]);
+          } else if (!_inboxIds().contains(prompt.requestId) &&
+              !_transcript.items.whereType<UserChatItem>().any((item) => item.requestId == prompt.requestId)) {
+            // A fresh follow can have already removed the local optimistic copy.
+            _pending = List.unmodifiable([..._pending, prompt.failedAt(_transcript.cursor)]);
+          }
           state = state.copyWith(pending: _placePending(), error: appL10n.stateChatStopFailed);
         }
         return const [];

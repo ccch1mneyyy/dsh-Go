@@ -38,6 +38,7 @@ class _FakeClient extends DshClient {
   Object? uploadError;
   Object? promptError;
   Object? cancelError;
+  Completer<void>? cancelResult;
   Object? responseError;
 
   /// Holds the prompt's result until completed.
@@ -96,6 +97,7 @@ class _FakeClient extends DshClient {
     calls.add('cancel');
     cancels++;
     if (cancelError case final e?) throw e;
+    if (cancelResult case final result?) await result.future;
   }
 
   @override
@@ -1491,8 +1493,10 @@ void main() {
       expect(client.calls, ['remove:i-用中文', 'cancel']);
       expect(state().stopping, isFalse);
       expect(state().error, '没能停下，再试一次');
+      splice('next-turn', start: 1, inserted: [msg('new', '另一条', 'new-request')]);
+      await waitForChat((next) => next.pending.any((p) => p.inboxId == 'new'));
       splice('next-step', removed: 1, canceled: true);
-      await waitForChat((next) => next.pending.any((p) => p.requestId == ids.first && p.inboxId == null));
+      await waitForChat((next) => next.pending.every((p) => p.inboxId != 'i-用中文'));
       final failed = bubble('用中文');
       expect(failed.failed, isTrue);
       expect(failed.requestId, ids.first);
@@ -1509,6 +1513,21 @@ void main() {
       expect(await sending, isEmpty);
       expect(client.calls, ['remove:i-用中文', 'cancel']);
       expect(state().controlReady, isFalse);
+      expect(bubble('用中文').failed, isTrue);
+      expect(bubble('用中文').requestId, ids.single);
+    });
+
+    test('立即发送: recovery retains the message after the old card was pruned', () async {
+      final ids = await waiting(['用中文']);
+      client.cancelResult = Completer<void>();
+      final sending = chat().sendNow(bubble('用中文'));
+      await waitForChat((next) => next.stopping);
+      splice('next-step', removed: 1, canceled: true);
+      client.events.add(SessionSyncEvent(SessionFollowEpoch()));
+      await waitForChat((next) => !next.controlReady && next.pending.isEmpty);
+      client.cancelResult!.complete();
+      expect(await sending, isEmpty);
+      expect(client.calls, ['remove:i-用中文', 'cancel']);
       expect(bubble('用中文').failed, isTrue);
       expect(bubble('用中文').requestId, ids.single);
     });
