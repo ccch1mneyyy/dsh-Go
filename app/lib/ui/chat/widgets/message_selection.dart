@@ -96,7 +96,7 @@ class _MessageSelectionState extends State<MessageSelection> with AutomaticKeepA
               onMore();
             },
           );
-    return glassSelectionToolbar(region.contextMenuAnchors, [
+    return glassSelectionToolbar(context, region.contextMenuAnchors, [
       if (onEdit != null)
         ContextMenuButtonItem(
           label: MessageAction.edit.label,

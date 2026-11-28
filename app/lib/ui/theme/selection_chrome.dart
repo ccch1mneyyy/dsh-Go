@@ -176,7 +176,11 @@ class _GlassHandlePainter extends CustomPainter {
 
 /// 选中文字后的操作条：内容还是框架的 [TextSelectionToolbarTextButton]，
 /// 定位和溢出交给 [TextSelectionToolbar]；换掉的只有外层那张 Material 卡片。
-Widget glassSelectionToolbar(TextSelectionToolbarAnchors anchors, List<ContextMenuButtonItem> items) {
+Widget glassSelectionToolbar(
+  BuildContext context,
+  TextSelectionToolbarAnchors anchors,
+  List<ContextMenuButtonItem> items,
+) {
   if (items.isEmpty) return const SizedBox.shrink();
   return TextSelectionToolbar(
     anchorAbove: anchors.primaryAnchor,
@@ -187,12 +191,15 @@ Widget glassSelectionToolbar(TextSelectionToolbarAnchors anchors, List<ContextMe
       borderRadius: AppShape.radiusLg,
       child: Material(type: MaterialType.transparency, child: child),
     ),
+    // 系统给的 item 常常没有 label（由框架用 MaterialLocalizations 补），
+    // 照它的映射来，不然按钮会是空白。
     children: [
       for (var i = 0; i < items.length; i++)
         TextSelectionToolbarTextButton(
           padding: TextSelectionToolbarTextButton.getPadding(i, items.length),
           onPressed: items[i].onPressed,
-          child: Text(items[i].label ?? ''),
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(AdaptiveTextSelectionToolbar.getButtonLabel(context, items[i])),
         ),
     ],
   );
