@@ -7,22 +7,29 @@ import '../common/app_dialog.dart';
 
 const marketDisclaimerAcceptedKey = 'plugin_market_disclaimer_accepted_v1';
 
-final marketDisclaimerProvider = Provider<Future<bool> Function(BuildContext)>((ref) => _MarketDisclaimer().confirm);
+final marketDisclaimerProvider = AsyncNotifierProvider<MarketDisclaimer, bool>(MarketDisclaimer.new);
 
-class _MarketDisclaimer {
+class MarketDisclaimer extends AsyncNotifier<bool> {
   Future<bool>? _pending;
+  SharedPreferences? _prefs;
+
+  @override
+  Future<bool> build() async {
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      return _prefs?.getBool(marketDisclaimerAcceptedKey) == true;
+    } on Exception {
+      debugPrint('Could not load the plugin market disclaimer preference.');
+      return false;
+    }
+  }
 
   Future<bool> confirm(BuildContext context) => _pending ??= _confirm(context).whenComplete(() => _pending = null);
 
   Future<bool> _confirm(BuildContext context) async {
-    SharedPreferences? prefs;
-    try {
-      prefs = await SharedPreferences.getInstance();
-    } on Exception {
-      debugPrint('Could not load the plugin market disclaimer preference.');
-    }
+    final alreadyAccepted = await future;
     if (!context.mounted) return false;
-    if (prefs?.getBool(marketDisclaimerAcceptedKey) == true) return true;
+    if (alreadyAccepted) return true;
 
     final accepted = await showAppDialog<bool>(
       context: context,
@@ -54,6 +61,7 @@ class _MarketDisclaimer {
     );
     if (accepted != true) return false;
     // A storage failure may require acknowledgement again, but does not invalidate this one.
+    final prefs = _prefs;
     try {
       if (prefs != null && !await prefs.setBool(marketDisclaimerAcceptedKey, true)) {
         debugPrint('Could not save the plugin market disclaimer acknowledgement.');
@@ -61,6 +69,7 @@ class _MarketDisclaimer {
     } on Exception {
       debugPrint('Could not save the plugin market disclaimer acknowledgement.');
     }
+    if (ref.mounted) state = const AsyncData(true);
     return true;
   }
 }

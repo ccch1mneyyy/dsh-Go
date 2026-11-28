@@ -4,6 +4,7 @@ import 'package:dsh_app/state/connection_state.dart';
 import 'package:dsh_app/state/hosts_state.dart';
 import 'package:dsh_app/state/plugins_state.dart';
 import 'package:dsh_app/ui/plugins/installed_tab.dart';
+import 'package:dsh_app/ui/plugins/market_disclaimer.dart';
 import 'package:dsh_app/ui/plugins/market_tab.dart';
 import 'package:dsh_app/ui/plugins/plugin_widgets.dart';
 import 'package:dsh_app/ui/plugins/plugins_screen.dart';
@@ -394,6 +395,7 @@ void main() {
         testApp(
           const PluginsScreen(initialTab: PluginsTab.market),
           overrides: [
+            marketDisclaimerProvider.overrideWithBuild((ref, notifier) => true),
             activeConnectionProvider.overrideWithValue(AsyncData(fakeHost(client))),
             localSafeModeProvider.overrideWithValue(false),
             marketIndexFetcherProvider.overrideWithValue((url) async {

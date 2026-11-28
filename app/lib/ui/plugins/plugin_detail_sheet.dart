@@ -36,8 +36,10 @@ import 'seats/plugin_web_places.dart';
 /// comes from, the trust warning, live progress and the one primary action.
 Future<void> showMarketPluginSheet(BuildContext context, MarketEntry entry) async {
   final ownerRoute = ModalRoute.of(context);
-  final confirm = ProviderScope.containerOf(context, listen: false).read(marketDisclaimerProvider);
-  if (!await confirm(context) || !context.mounted) return;
+  final container = ProviderScope.containerOf(context, listen: false);
+  if (container.read(marketDisclaimerProvider).value != true) {
+    if (!await container.read(marketDisclaimerProvider.notifier).confirm(context) || !context.mounted) return;
+  }
   await showAppSheet<void>(
     context,
     heightFactor: 0.88,

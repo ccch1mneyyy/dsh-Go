@@ -2,6 +2,7 @@ import 'package:dsh_app/state/connection_state.dart';
 import 'package:dsh_app/state/hosts_state.dart';
 import 'package:dsh_app/state/plugins_state.dart';
 import 'package:dsh_app/state/read_list_identity.dart';
+import 'package:dsh_app/ui/plugins/market_disclaimer.dart';
 import 'package:dsh_app/ui/plugins/market_tab.dart';
 import 'package:dsh_app/ui/plugins/plugin_widgets.dart';
 import 'package:dsh_app/ui/plugins/plugins_screen.dart';
@@ -42,6 +43,7 @@ void main() {
         testApp(
           const PluginsScreen(initialTab: PluginsTab.market),
           overrides: [
+            marketDisclaimerProvider.overrideWithBuild((ref, notifier) => true),
             activeHostProvider.overrideWith(FixedHost.new),
             switchConnectionProvider.overrideWith(() => SwitchConnection(ah)),
             activeConnectionProvider.overrideWith((ref) => ref.watch(switchConnectionProvider)),

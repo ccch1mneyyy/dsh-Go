@@ -41,9 +41,13 @@ class _PluginsScreenState extends ConsumerState<PluginsScreen> {
   void initState() {
     super.initState();
     if (widget.initialTab == PluginsTab.market) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(_selectTab(PluginsTab.market));
-      });
+      if (ref.read(marketDisclaimerProvider).value == true) {
+        _tab = PluginsTab.market;
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_selectTab(PluginsTab.market));
+        });
+      }
     }
     // A list read earlier (the chat page keeps it) may miss what was added
     // since, in the terminal or by the agent: read it again, quietly.
@@ -57,7 +61,9 @@ class _PluginsScreenState extends ConsumerState<PluginsScreen> {
   }
 
   Future<void> _selectTab(PluginsTab tab) async {
-    if (tab == PluginsTab.market && !await ref.read(marketDisclaimerProvider)(context)) return;
+    if (tab == PluginsTab.market && ref.read(marketDisclaimerProvider).value != true) {
+      if (!await ref.read(marketDisclaimerProvider.notifier).confirm(context)) return;
+    }
     if (mounted && _tab != tab) setState(() => _tab = tab);
   }
 

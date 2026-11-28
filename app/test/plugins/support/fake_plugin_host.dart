@@ -151,7 +151,7 @@ List<Override> pluginOverrides(
   // or credential identity. Dedicated read_list_* tests cover cache admission.
   readListIdentityProvider.overrideWithValue(null),
   localSafeModeProvider.overrideWithValue(safeMode),
-  if (bypassMarketDisclaimer) marketDisclaimerProvider.overrideWithValue((_) async => true),
+  if (bypassMarketDisclaimer) marketDisclaimerProvider.overrideWithBuild((ref, notifier) => true),
   marketIndexFetcherProvider.overrideWithValue((url) async => parseMarketIndex(index ?? sampleIndex, url)),
   officialMarketFetcherProvider.overrideWithValue(official ?? () async => emptyOfficialMarket),
   npmIntegrityProvider.overrideWithValue(npmIntegrity ?? (_, _) async => null),
