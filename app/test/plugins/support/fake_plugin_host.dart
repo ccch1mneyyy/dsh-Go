@@ -6,6 +6,7 @@ import 'package:dsh_app/state/connection_state.dart';
 import 'package:dsh_app/state/hosts_state.dart';
 import 'package:dsh_app/state/plugins_state.dart';
 import 'package:dsh_app/state/read_list_identity.dart';
+import 'package:dsh_app/ui/plugins/market_disclaimer.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -134,6 +135,7 @@ class _SelectedHost extends ActiveHostController {
 /// test overrides `activeHostProvider` itself (a provider is overridden once).
 /// [official]: the official market (default: not published yet, empty);
 /// [npmIntegrity]: what npm reports (default: no answer).
+/// [bypassMarketDisclaimer]: skip the notice unless testing the market gate.
 List<Override> pluginOverrides(
   HostConnection? host, {
   Map<String, Object?>? index,
@@ -141,6 +143,7 @@ List<Override> pluginOverrides(
   NpmIntegrityReader? npmIntegrity,
   bool safeMode = false,
   bool selectHost = true,
+  bool bypassMarketDisclaimer = true,
 }) => [
   if (selectHost) activeHostProvider.overrideWith(() => _SelectedHost(host)),
   activeConnectionProvider.overrideWithValue(AsyncData(host)),
@@ -148,6 +151,7 @@ List<Override> pluginOverrides(
   // or credential identity. Dedicated read_list_* tests cover cache admission.
   readListIdentityProvider.overrideWithValue(null),
   localSafeModeProvider.overrideWithValue(safeMode),
+  if (bypassMarketDisclaimer) marketDisclaimerProvider.overrideWithValue((_) async => true),
   marketIndexFetcherProvider.overrideWithValue((url) async => parseMarketIndex(index ?? sampleIndex, url)),
   officialMarketFetcherProvider.overrideWithValue(official ?? () async => emptyOfficialMarket),
   npmIntegrityProvider.overrideWithValue(npmIntegrity ?? (_, _) async => null),

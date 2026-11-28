@@ -1,4 +1,8 @@
 {
+  "marketDisclaimerTitle": "插件市场风险提示与免责声明",
+  "marketDisclaimerBody": "第三方插件由各自的开发者提交和维护。收录、上架或通过自动检查不代表 DSH Go 官方推荐，也不保证插件的安全性、隐私保护或兼容性。插件内的外部链接、推广及付费服务不是 DSH Go 官方服务。\n\n插件可能联网、加载远程内容，或在其运行权限范围内读取、修改或传输数据。安装或更新前，请核对开发者、插件来源、所需权限和隐私说明。不要向不可信的插件提供密码、API 密钥或其他敏感信息，也不要通过不明链接登录或付款。\n\n第三方开发者依法对其插件及服务承担相应责任。本声明不限制用户依法享有的权利，也不免除 DSH Go 依法应承担的责任。发现异常时，请停用插件并通过项目反馈渠道提交插件名称、版本和问题描述。请勿附带密钥或未脱敏的日志。",
+  "marketDisclaimerLeave": "暂不进入",
+  "marketDisclaimerAccept": "我已阅读，进入市场",
   "marketSectionOfficial": "官方",
   "marketSectionAdapted": "适配 DSH Go",
   "marketSectionAll": "全部",

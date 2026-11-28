@@ -12571,6 +12571,19 @@ class L10nEn extends L10n {
   String get localEnvTavernDetail => 'Bring DeepSeek chats over here too · nothing to install';
 
   @override
+  String get marketDisclaimerTitle => 'Plugin marketplace risks and disclaimer';
+
+  @override
+  String get marketDisclaimerBody =>
+      'Third-party plugins are submitted and maintained by their developers. Being listed or passing automated checks is not an official DSH Go endorsement or a guarantee of security, privacy, or compatibility. External links, promotions, and paid services within plugins are not official DSH Go services.\n\nPlugins may connect to the internet, load remote content, or read, change, and transmit data within the permissions they run with. Before installing or updating, check the developer, source, permissions, and privacy information. Do not share passwords, API keys, or other sensitive information with untrusted plugins, or sign in or pay through unfamiliar links.\n\nThird-party developers are responsible for their plugins and services as required by law. This disclaimer does not limit your legal rights or exclude any liability DSH Go has under applicable law. If something looks wrong, disable the plugin and report its name, version, and what happened through the project’s feedback channels. Do not include keys or unredacted logs.';
+
+  @override
+  String get marketDisclaimerLeave => 'Not now';
+
+  @override
+  String get marketDisclaimerAccept => 'I’ve read this. Continue';
+
+  @override
   String get marketSectionOfficial => 'Official';
 
   @override

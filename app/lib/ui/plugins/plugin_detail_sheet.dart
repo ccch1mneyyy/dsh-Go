@@ -22,6 +22,7 @@ import '../share_code/plugin_share_sheet.dart';
 import '../theme/app_icons.dart';
 import '../theme/theme.dart';
 import 'config/plugin_config_entries.dart';
+import 'market_disclaimer.dart';
 import 'market_widgets.dart';
 import 'plugin_reload_action.dart';
 import 'native/native_plugin_section.dart';
@@ -33,9 +34,11 @@ import 'seats/plugin_web_places.dart';
 
 /// Market entry detail and the install confirmation: what it is, where it
 /// comes from, the trust warning, live progress and the one primary action.
-Future<void> showMarketPluginSheet(BuildContext context, MarketEntry entry) {
+Future<void> showMarketPluginSheet(BuildContext context, MarketEntry entry) async {
   final ownerRoute = ModalRoute.of(context);
-  return showAppSheet<void>(
+  final confirm = ProviderScope.containerOf(context, listen: false).read(marketDisclaimerProvider);
+  if (!await confirm(context) || !context.mounted) return;
+  await showAppSheet<void>(
     context,
     heightFactor: 0.88,
     builder: (_) => SheetNavigator(

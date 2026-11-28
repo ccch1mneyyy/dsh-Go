@@ -13,6 +13,7 @@ import '../features/feature_kit.dart';
 import '../shell/page_frame.dart';
 import '../theme/app_icons.dart';
 import 'installed_tab.dart';
+import 'market_disclaimer.dart';
 import 'market_tab.dart';
 
 enum PluginsTab { installed, market }
@@ -33,12 +34,17 @@ class PluginsScreen extends ConsumerStatefulWidget {
 }
 
 class _PluginsScreenState extends ConsumerState<PluginsScreen> {
-  late PluginsTab _tab = widget.initialTab;
+  PluginsTab _tab = PluginsTab.installed;
   bool _refreshing = false;
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialTab == PluginsTab.market) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_selectTab(PluginsTab.market));
+      });
+    }
     // A list read earlier (the chat page keeps it) may miss what was added
     // since, in the terminal or by the agent: read it again, quietly.
     if (ref.read(installedPluginsProvider).hasValue) {
@@ -48,6 +54,11 @@ class _PluginsScreenState extends ConsumerState<PluginsScreen> {
         unawaited(ref.read(installedPluginsProvider.notifier).refresh().catchError((Object _) {}));
       });
     }
+  }
+
+  Future<void> _selectTab(PluginsTab tab) async {
+    if (tab == PluginsTab.market && !await ref.read(marketDisclaimerProvider)(context)) return;
+    if (mounted && _tab != tab) setState(() => _tab = tab);
   }
 
   Future<void> _refresh() async {
@@ -113,14 +124,14 @@ class _PluginsScreenState extends ConsumerState<PluginsScreen> {
                 PillSegment(PluginsTab.market, l10n.pluginsMarketTitle),
               ],
               selected: _tab,
-              onChanged: (t) => setState(() => _tab = t),
+              onChanged: (t) => unawaited(_selectTab(t)),
             ),
           ),
         ),
         switch (_tab) {
           PluginsTab.installed when host == null && ref.watch(pluginListViewProvider).value == null =>
             const SliverToBoxAdapter(child: _NotConnected()),
-          PluginsTab.installed => InstalledPluginsSliver(onBrowse: () => setState(() => _tab = PluginsTab.market)),
+          PluginsTab.installed => InstalledPluginsSliver(onBrowse: () => unawaited(_selectTab(PluginsTab.market))),
           PluginsTab.market => const MarketSliver(),
         },
       ],
