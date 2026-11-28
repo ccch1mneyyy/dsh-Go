@@ -20,9 +20,16 @@ import '../shell/golden_harness.dart' show FakeRuntime, runningStatus;
 
 void main() {
   for (final surface in ['settings', 'session']) {
-    for (final scenario in ['switch to local', 'same remote', 'same local']) {
+    for (final scenario in [
+      'switch to local',
+      'same remote',
+      'same local',
+      if (surface == 'session') 'restore local',
+    ]) {
       testWidgets('permission default confirmation: $surface / $scenario', (tester) async {
-        SharedPreferences.setMockInitialValues({});
+        final restoreLocal = scenario == 'restore local';
+        final preset = restoreLocal ? 'workspace-write' : 'danger-full-access';
+        SharedPreferences.setMockInitialValues({if (restoreLocal) 'auto_approve_commands': true});
         usePhoneView(tester);
         final remoteCarrier = FakePluginCarrier();
         final localCarrier = FakePluginCarrier();
@@ -48,12 +55,12 @@ void main() {
             'kind': 'sequenced',
             'asOfSeq': 1,
             'values': {
-              'permissions': {'currentValue': 'danger-full-access'},
+              'permissions': {'currentValue': preset},
             },
           };
           carrier.handlers['settings/mutate'] = (_) => {
             'ns': 'permission',
-            'value': {'defaultPreset': 'danger-full-access'},
+            'value': {'defaultPreset': preset},
             'revision': 5,
           };
         }
@@ -63,7 +70,7 @@ void main() {
                 ? const PermissionPage()
                 : const Scaffold(body: SessionPermissionPage(sessionId: 's1')),
             overrides: [
-              sessionModesProvider.overrideWith((ref, id) => const SessionModes(preset: 'danger-full-access')),
+              sessionModesProvider.overrideWith((ref, id) => SessionModes(preset: preset)),
               activeConnectionProvider.overrideWith((ref) {
                 final host = ref.watch(activeHostProvider);
                 return AsyncData(
@@ -82,9 +89,22 @@ void main() {
         final container = ProviderScope.containerOf(
           tester.element(find.byType(surface == 'settings' ? PermissionPage : SessionPermissionPage)),
         );
-        if (scenario != 'same local') container.read(activeHostProvider.notifier).select(const HostRef.ssh('pc'));
+        if (scenario == 'switch to local' || scenario == 'same remote') {
+          container.read(activeHostProvider.notifier).select(const HostRef.ssh('pc'));
+        }
         await tester.pumpAndSettle();
-        expect(container.read(settingsProvider).autoApproveCommands, isFalse);
+        expect(container.read(settingsProvider).autoApproveCommands, restoreLocal);
+        if (restoreLocal) {
+          expect(find.text('新对话默认：完全权限'), findsOneWidget);
+          await tester.tap(find.text('设为新对话默认'));
+          await tester.pumpAndSettle();
+          expect(find.text('新对话默认：工作区内修改'), findsOneWidget);
+          expect(find.text('设为新对话默认'), findsNothing);
+          expect(container.read(settingsProvider).autoApproveCommands, isFalse);
+          expect(localCarrier.argsOf('settings/mutate'), hasLength(1));
+          expect(tester.takeException(), isNull);
+          return;
+        }
         await tester.tap(find.text(surface == 'settings' ? '完全权限' : '设为新对话默认').last);
         await tester.pumpAndSettle();
         expect(find.text('开启完全权限？'), findsOneWidget);
@@ -114,6 +134,10 @@ void main() {
         );
         expect(remoteCarrier.argsOf('settings/mutate').length, scenario == 'same remote' ? 1 : 0);
         expect(localCarrier.argsOf('settings/mutate'), isEmpty);
+        if (surface == 'session' && scenario == 'same local') {
+          expect(find.text('新对话默认：完全权限'), findsOneWidget);
+          expect(find.text('设为新对话默认'), findsNothing);
+        }
         expect(tester.takeException(), isNull);
       });
     }
