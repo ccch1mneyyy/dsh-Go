@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/harness.dart';
 
@@ -159,6 +160,7 @@ List<String> _composerTexts(WidgetTester tester) => [
 
 void main() {
   setUpAll(loadTestFonts);
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('ChatController message actions', () {
     late _Carrier carrier;
@@ -386,7 +388,7 @@ void main() {
       expect(container.read(draftStoreProvider).drafts['s1']!.text, '原对话草稿');
       expect(_composerTexts(tester), contains('帮我看看测试为什么失败'));
       expect(harness.controllers['fork-session']!.sent, isEmpty);
-      expect(find.text('已在新对话中打开'), findsOneWidget);
+      expect(find.text('正在编辑，发送后保留为新版本'), findsOneWidget);
     });
 
     testWidgets('a failed fork stays put', (tester) async {

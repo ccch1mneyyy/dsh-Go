@@ -9,6 +9,7 @@ import 'package:dsh_app/ui/settings/settings_widgets.dart' show SettingsTile;
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/harness.dart';
 
@@ -40,6 +41,7 @@ void main() {
   });
 
   testWidgets('the bubble and 编辑后重发 show only what was said', (tester) async {
+    SharedPreferences.setMockInitialValues({});
     usePhoneView(tester);
     mockClipboard(tester);
     final harness = ChatHarness(
@@ -69,8 +71,12 @@ void main() {
     await pumpFrames(tester);
     await tester.tap(find.widgetWithText(TextSelectionToolbarTextButton, '更多'));
     await pumpFrames(tester);
-    await tester.tap(find.widgetWithText(SettingsTile, '编辑后重发'));
+    final edit = find.widgetWithText(SettingsTile, '编辑后重发').hitTestable();
+    expect(edit, findsOneWidget);
+    await tester.tap(edit);
     await pumpFrames(tester);
+    expect(chat.edited, [1]);
+    expect(harness.controllers, contains('fork-session'));
     final field = tester.widget<TextField>(
       find.descendant(of: find.byType(Composer), matching: find.byType(TextField)),
     );

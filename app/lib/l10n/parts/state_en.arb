@@ -130,7 +130,7 @@
   "stateChatBranchLastReply": "Branch from the last reply of a finished turn",
   "stateChatBranchFailed": "Couldn’t branch",
   "stateChatEarlierHistoryFailed": "Couldn’t load earlier history",
-  "stateChatNoEarlierHistory": "There’s no history before this message. Start a new chat.",
+  "stateChatNoEarlierHistory": "This action needs earlier chat history, but none is available.",
   "stateCommandNewDescription": "Start a new chat",
   "stateModelLabel": "Model",
   "stateCommandModelDescription": "Change model and thinking depth",

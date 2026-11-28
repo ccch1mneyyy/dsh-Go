@@ -131,13 +131,20 @@ extension MessageActions on DshClient {
   ///   `session/updateQueue`; otherwise the fork's next turn would pick them up
   ///   together with the next message;
   /// * an inherited title `T` becomes `T (1)` (`T (2)` from `T (1)`), named
-  ///   from [sourceTitle] when given — what the official web client does. A
-  ///   fork without a title keeps automatic titling.
+  ///   from [sourceTitle] when given — what the official web client does.
+  ///   A manual fork without an inherited title keeps automatic titling.
+  ///   Pass [bumpTitle] as false to preserve [sourceTitle] for an in-chat version,
+  ///   even when it was set after the fork point.
   ///
   /// Throws [DshRemoteException] when the fork itself fails
   /// (`session/fork-unavailable` for a seq the source does not have). The
   /// clean-up steps never throw: the fork exists by then.
-  Future<ForkOutcome> forkAt(String sessionId, int atSeq, {String? sourceTitle}) async {
+  Future<ForkOutcome> forkAt(
+    String sessionId,
+    int atSeq, {
+    String? sourceTitle,
+    bool bumpTitle = true,
+  }) async {
     final child = await forkSession(sessionId, atSeq: atSeq);
     SessionProjections? projections;
     try {
@@ -155,14 +162,17 @@ extension MessageActions on DshClient {
         left++;
       }
     }
-    String? title;
     final inherited = projections?.title;
-    if (inherited != null && inherited.trim().isNotEmpty) {
-      final base = sourceTitle != null && sourceTitle.trim().isNotEmpty ? sourceTitle : inherited;
+    final source = sourceTitle?.trim().isNotEmpty == true ? sourceTitle : null;
+    String? title = bumpTitle ? null : inherited;
+    final desired = bumpTitle
+        ? (inherited == null || inherited.trim().isEmpty ? null : bumpedForkTitle(source ?? inherited))
+        : source;
+    if (desired != null && (bumpTitle || desired != inherited)) {
       try {
-        title = await renameSession(child, bumpedForkTitle(base));
+        title = await renameSession(child, desired);
       } catch (_) {
-        title = null;
+        // The fork still exists. Report only the title we know it has.
       }
     }
     return ForkOutcome(child, title: title, leftQueued: left);

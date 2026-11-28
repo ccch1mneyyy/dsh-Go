@@ -142,20 +142,28 @@ Future<void> folderActionsFlow(
   }
 }
 
-/// 移到文件夹 for [ids] (one row, or the multi-select). Ends multi-select
+/// 移到文件夹 for [sessionIds] (one row, or the multi-select). Ends multi-select
 /// once something moved.
-Future<void> moveToFolderFlow(BuildContext context, WidgetRef ref, List<String> ids) async {
-  if (ids.isEmpty) return;
+Future<void> moveToFolderFlow(BuildContext context, WidgetRef ref, List<String> sessionIds) async {
+  if (sessionIds.isEmpty) return;
   final view = ref.read(drawerViewProvider);
   final viewNotifier = ref.read(drawerViewProvider.notifier);
   final selection = ref.read(drawerSelectionProvider.notifier);
-  final folderOf = view.folderOf;
-  final homes = {for (final id in ids) folderOf[id]};
-  final listed = {for (final s in ref.read(drawerScopeProvider)?.sessions ?? const <SessionSummary>[]) s.sessionId};
+  final organization = ref.read(drawerOrganizationProvider);
+  final ids = sessionIds.expand(organization.folderTargets).toSet().toList();
+  final homes = sessionIds.map(organization.folderIdFor).toSet();
+  final listed = {
+    for (final s in ref.read(drawerScopeProvider)?.sessions ?? const <SessionSummary>[])
+      organization.groupId(s.sessionId): organization.folderIdFor(s.sessionId),
+  };
+  final counts = <String, int>{};
+  for (final folderId in listed.values.nonNulls) {
+    counts.update(folderId, (count) => count + 1, ifAbsent: () => 1);
+  }
   final pick = await showMoveToFolderSheet(
     context,
     folders: view.folders,
-    counts: {for (final f in view.folders) f.id: f.sessionIds.where(listed.contains).length},
+    counts: counts,
     currentFolder: homes.length == 1 ? homes.first : null,
     anyFiled: homes.any((h) => h != null),
   );
@@ -169,6 +177,7 @@ Future<void> moveToFolderFlow(BuildContext context, WidgetRef ref, List<String> 
       target = null;
     case PickNewFolder():
       // The editor files them; undo takes them back out (the folder stays).
+      final folderOf = view.folderOf;
       final before = {for (final id in ids) id: folderOf[id]};
       final id = await createFolderFlow(context, ref, sessionIds: ids);
       if (id == null) return;
@@ -192,8 +201,9 @@ Future<void> moveToFolderFlow(BuildContext context, WidgetRef ref, List<String> 
 Future<void> pinSelectionFlow(BuildContext context, WidgetRef ref) async {
   final container = ProviderScope.containerOf(context, listen: false);
   final chosen = container.read(drawerSelectionProvider);
-  final ids = chosen?.toList() ?? const [];
-  if (ids.isEmpty) return;
+  if (chosen == null || chosen.isEmpty) return;
+  final organization = container.read(drawerOrganizationProvider);
+  final ids = chosen.expand(organization.pinTargets).toSet().toList();
   final selectedHost = container.read(activeHostProvider);
   final connection = container.read(readListLiveConnectionProvider);
   if (connection == null) return;

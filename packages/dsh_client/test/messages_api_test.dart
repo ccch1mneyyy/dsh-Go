@@ -263,6 +263,21 @@ void main() {
       expect(carrier.endpoints, ['session/fork', 'session/projections']);
     });
 
+    test('in-chat versions keep the current title even when the prefix lacks it', () async {
+      childProjections();
+      final outcome = await client.forkAt('src', 2, sourceTitle: '我改过的标题', bumpTitle: false);
+      expect(outcome.title, '我改过的标题');
+      expect(carrier.endpoints, ['session/fork', 'session/projections', 'session/rename']);
+      expect(carrier.calls.last.$2, {'sessionId': 'child', 'title': '我改过的标题'});
+    });
+
+    test('in-chat versions do not rename an already matching title', () async {
+      childProjections(title: 'T');
+      final outcome = await client.forkAt('src', 13, sourceTitle: 'T', bumpTitle: false);
+      expect(outcome.title, 'T');
+      expect(carrier.endpoints, ['session/fork', 'session/projections']);
+    });
+
     test('clean-up failures are reported, not thrown', () async {
       childProjections(title: 'T', queued: ['q1', 'gone']);
       carrier.handlers['session/updateQueue'] = (request) => RpcError(

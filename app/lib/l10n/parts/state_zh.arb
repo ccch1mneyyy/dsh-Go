@@ -130,7 +130,7 @@
   "stateChatBranchLastReply": "只能从已完成的一轮的最后一条回复分叉",
   "stateChatBranchFailed": "分叉失败",
   "stateChatEarlierHistoryFailed": "读取更早的记录失败",
-  "stateChatNoEarlierHistory": "这条消息之前没有能保留的记录，直接新建对话就好",
+  "stateChatNoEarlierHistory": "缺少这条消息之前的记录，无法继续此操作",
   "stateCommandNewDescription": "开始一个新对话",
   "stateModelLabel": "模型",
   "stateCommandModelDescription": "切换模型与思考深度",

@@ -24,10 +24,12 @@ import '../../state/attachments.dart' show DraftAttachment;
 import '../../state/chat_reveal.dart';
 import '../../state/chat_state.dart';
 import '../../state/connection_state.dart';
+import '../../state/fork_prompt_receipt.dart' show firstOwnForkPrompt;
 import '../../companion/companion_reply.dart' show companionHasMarks, companionWithoutMarks;
 import '../../companion/companion_state.dart' show companionSessionFilterProvider;
-import '../../state/hosts_state.dart' show HostKind, activeHostProvider;
+import '../../state/hosts_state.dart' show HostKind, HostRef, activeHostProvider;
 import '../../state/regenerate.dart';
+import '../../state/reply_versions_state.dart';
 import '../../state/sessions_state.dart';
 import '../../state/settings_state.dart';
 import '../common/app_dialog.dart';
@@ -270,6 +272,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
   /// The rows above are measured as they come into view, so the top can turn out nearer or further
   /// than it first looked: stop on arriving, and go on if it's further. A finger takes over.
   Future<void> _runToTop() async {
+    _openingVersion = null;
     if (!_scroll.hasClients) return;
     _stopGlide();
     _pinned = false;
@@ -382,6 +385,11 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
 
   /// The turn is running (queued bubbles can still be moved into it).
   bool _running = false;
+  bool _hasVersions = false;
+  ChatReveal? _openingVersion;
+  bool _readingVersionHistory = false;
+  int? _versionReadCursor;
+  int? _bindingVersionSeq;
 
   /// 正在分叉的那条回复(挡连点)。
   String? _forkingId;
@@ -413,6 +421,11 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
   void initState() {
     super.initState();
     widget.toTop?.onTap = _goToTop;
+    final reveal = ref.read(chatRevealProvider);
+    if (reveal != null && reveal.sessionId == widget.sessionId && reveal.promptSeq != null) {
+      if (reveal.host == ref.read(activeHostProvider)) _openingVersion = reveal;
+      _afterFrame(() => ref.read(chatRevealProvider.notifier).consumeVersion(reveal));
+    }
   }
 
   @override
@@ -532,6 +545,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
   }
 
   void jumpToBottom() {
+    _openingVersion = null;
     _pinned = true;
     _goingUp = false;
     _followNow = true;
@@ -597,6 +611,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
 
   bool _onScroll(ScrollNotification n) {
     if (n.depth != 0) return false;
+    if (n is UserScrollNotification && n.direction != ScrollDirection.idle) _openingVersion = null;
     // Only this list's drag dismisses the keyboard. A code well's inner
     // horizontal drag must keep its SelectionArea focused.
     if (n is ScrollUpdateNotification && n.dragDetails != null) {
@@ -639,7 +654,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
   }
 
   void _maybeLoadOlder(ScrollMetrics metrics) {
-    if (metrics.pixels - metrics.minScrollExtent > 800) return;
+    if (_openingVersion != null || metrics.pixels - metrics.minScrollExtent > 800) return;
     final state = ref.read(chatProvider(widget.sessionId));
     if (state.hasMoreHistory && !state.loadingOlder && !state.loading) {
       ref.read(chatProvider(widget.sessionId).notifier).loadOlder();
@@ -809,7 +824,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
         'held': _held,
       });
     }
-    if (s.hasMoreHistory) {
+    if (s.hasMoreHistory && _openingVersion == null) {
       // 内容不满一屏时没有滚动事件可等:帧后看一眼是否已经在顶端。
       _afterFrame(() {
         if (_scroll.hasClients) _maybeLoadOlder(_scroll.position);
@@ -874,6 +889,78 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) action();
     });
+  }
+
+  bool _ownsVersionOpen(ChatReveal reveal) =>
+      mounted &&
+      identical(_openingVersion, reveal) &&
+      ref.read(activeHostProvider) == reveal.host &&
+      ref.read(currentSessionProvider) == reveal.sessionId &&
+      widget.sessionId == reveal.sessionId;
+
+  void _locateOpeningVersion(ChatState s, ChatReveal reveal) {
+    if (s.loading || _readingVersionHistory) return;
+    final key = _openingVersionKey(reveal);
+    if (key != null) {
+      if (_splitKey != key) _historySliver = null;
+      _splitChosen = true;
+      _splitKey = key;
+      _pinned = key == _rows.lastOrNull?.key;
+      if (_pinned) _follow();
+      _afterFrame(() {
+        if (!_ownsVersionOpen(reveal)) return;
+        if (!_pinned && _scroll.hasClients) {
+          final position = _scroll.position;
+          // The new center is the requested row, but a previous layout may
+          // have moved the offset. Zero, when in bounds, reveals that center.
+          final offset = 0.0.clamp(position.minScrollExtent, position.maxScrollExtent).toDouble();
+          if (offset != position.pixels) position.jumpTo(offset);
+          _showJump.value = !_atBottom(160);
+        }
+        _openingVersion = null;
+      });
+      return;
+    }
+    if (s.loadingOlder) return;
+    final chat = ref.read(chatProvider(reveal.sessionId).notifier);
+    // Use loadOlder's cursor, not visible rows: metadata-only pages can
+    // advance the log. Once it passes the prompt, older pages cannot help.
+    final cursor = chat.events.firstOrNull?.seq;
+    final previous = _versionReadCursor;
+    if (!s.hasMoreHistory || cursor == null || cursor <= reveal.promptSeq! || previous != null && cursor >= previous) {
+      // Leave the ordinary initial split in place and suppress prefetch for
+      // this frame too, so a stalled version request is not retried at once.
+      _afterFrame(() {
+        if (_ownsVersionOpen(reveal)) _openingVersion = null;
+      });
+      return;
+    }
+    _readingVersionHistory = true;
+    _versionReadCursor = cursor;
+    _afterFrame(() async {
+      if (!_ownsVersionOpen(reveal)) {
+        _readingVersionHistory = false;
+        return;
+      }
+      await chat.loadOlder();
+      if (_ownsVersionOpen(reveal)) setState(() => _readingVersionHistory = false);
+    });
+  }
+
+  String? _openingVersionKey(ChatReveal reveal) {
+    String? key;
+    for (final row in _rows) {
+      if (row case UserRow(:final item)) {
+        if (key != null) break;
+        if (item.seq == reveal.promptSeq) {
+          key = row.key;
+          if (!reveal.afterReply) break;
+        }
+      } else if (key != null && row is AssistantRow && row.showActions && row.stable) {
+        key = row.key;
+      }
+    }
+    return key;
   }
 
   String? _lastStableKey({int? beforeSeq}) {
@@ -964,14 +1051,41 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final s = ref.watch(chatProvider(widget.sessionId));
     _running = s.running;
+    final host = ref.watch(activeHostProvider);
+    final versionFlags = widget.onResend == null
+        ? null
+        : ref.watch(
+            replyVersionsProvider.select((value) {
+              final index = value.value;
+              if (index == null || index.host != host) return null;
+              return (
+                hasVersions: index.sessionIdsFor(widget.sessionId).length > 1,
+                needsPrompt: index.needsPrompt(widget.sessionId),
+              );
+            }),
+          );
+    if (_hasVersions != (versionFlags?.hasVersions ?? false)) {
+      _hasVersions = versionFlags?.hasVersions ?? false;
+      _forgetBuiltRows();
+    }
+    if (versionFlags?.needsPrompt == true && s.controlReady && !s.loading) _restoreVersionBinding(host);
     // Her conversation reads as talk: marks out, what she used folded away.
-    _hers = ref.watch(companionSessionFilterProvider)(ref.watch(activeHostProvider), widget.sessionId);
+    _hers = ref.watch(companionSessionFilterProvider)(host, widget.sessionId);
     _deriveRows(
       s,
       foldTurns: _hers || ref.watch(settingsProvider.select((s) => s.foldCompletedTurns)),
       artifacts: ref.watch(sessionArtifactsProvider(widget.sessionId)),
       compactTools: _hers,
     );
+    if (_openingVersion case final reveal?) {
+      ref.listen(activeHostProvider, (_, next) {
+        if (next != reveal.host) _openingVersion = null;
+      });
+      ref.listen(currentSessionProvider, (_, next) {
+        if (next != reveal.sessionId) _openingVersion = null;
+      });
+      _locateOpeningVersion(s, reveal);
+    }
     final rows = _rows;
     final split = _split;
     _fluid = AppMotion.fluid(context);
@@ -1003,7 +1117,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
     });
     // Back in the app to read a result (a finished phone task): the newest line.
     ref.listen(chatRevealProvider, (_, reveal) {
-      if (reveal?.sessionId == widget.sessionId) jumpToBottom();
+      if (reveal?.sessionId == widget.sessionId && reveal?.promptSeq == null) jumpToBottom();
     });
     return MarkdownImageScope(
       sessionId: widget.sessionId,
@@ -1033,6 +1147,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
               Listener(
                 onPointerDown: (_) {
                   _fingers++;
+                  _openingVersion = null;
                   // The list stops where it is, under the finger.
                   if (_gliding) {
                     _stopGlide();
@@ -1297,7 +1412,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
   }
 
   // ---------------------------------------------------------------------------
-  // 消息操作:分叉打开的是一个新对话,原对话不动。
+  // 显式分叉打开新对话；重答和编辑保留为同一对话的版本。
 
   /// This is the companion's conversation (伙伴小屋).
   bool _hers = false;
@@ -1346,7 +1461,15 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
             ),
       onReply: chat.send,
       onAskResend: chat.send,
-      child: message,
+      child: showActions && _hasVersions && item.seq != null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                message,
+                _VersionNavigation(sessionId: widget.sessionId, seq: item.seq!, afterReply: true),
+              ],
+            )
+          : message,
     );
   }
 
@@ -1371,9 +1494,7 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
     }
   }
 
-  /// 「重新回答」: read the prompt's images back, fork just before it, open
-  /// the fork, and let the screen send the prompt there again. The source
-  /// stays as it was. A failure before the fork stays here, in the banner.
+  /// Read the same prompt and images into a new version of this conversation.
   Future<void> _regenerate(AssistantChatItem item, UserChatItem prompt) async {
     final resend = widget.onResend;
     if (resend == null || _forkingId != null || _regeneratingId != null) {
@@ -1382,6 +1503,8 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
     // Image loading precedes the controller operation. Keep that preparation
     // attached to the connection on which the user chose to regenerate.
     final sessionId = widget.sessionId;
+    final host = ref.read(activeHostProvider);
+    final selected = ref.read(currentSessionProvider.notifier).selectionRevision;
     final client = ref.read(activeConnectionProvider).value?.client;
     final generation = client?.mux.generation;
     final readyGeneration = client?.mux.lastReadyGenerationNumber;
@@ -1393,6 +1516,8 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
         mounted &&
         !retired &&
         widget.sessionId == sessionId &&
+        ref.read(activeHostProvider) == host &&
+        ref.read(currentSessionProvider.notifier).selectionRevision == selected &&
         identical(ref.read(activeConnectionProvider).value?.client, client) &&
         identical(client?.mux.generation, generation) &&
         client?.mux.lastReadyGenerationNumber == readyGeneration;
@@ -1410,8 +1535,9 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
       if (!current()) return;
       final outcome = await chat.forkBeforePrompt(prompt, action: appL10n.chatRegenerateFailed);
       if (outcome == null || !current()) return;
+      await _recordVersion(host, prompt, outcome);
+      if (!current()) return;
       _openFork(outcome, messenger, appL10n.chatRegeneratedInNewChat);
-      // This list goes with the switch; the screen stays and sends.
       unawaited(resend(outcome.sessionId, prompt.text, images));
     } finally {
       connection.close();
@@ -1420,14 +1546,40 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
   }
 
   Future<void> _editPrompt(UserChatItem item) async {
+    if (_forkingId != null || _regeneratingId != null) return;
     final messenger = ScaffoldMessenger.maybeOf(context);
     final compose = widget.onEditPrompt;
-    final outcome = await ref.read(chatProvider(widget.sessionId).notifier).forkBeforePrompt(item);
-    if (outcome == null || !mounted) return;
-    final attached = item.images.isNotEmpty || item.files.isNotEmpty;
-    _openFork(outcome, messenger, attached ? appL10n.chatOpenedInNewChatReattach : appL10n.chatOpenedInNewChat);
-    compose?.call(withoutAppNotes(item.text));
+    final host = ref.read(activeHostProvider);
+    final selected = ref.read(currentSessionProvider.notifier).selectionRevision;
+    final client = ref.read(activeConnectionProvider).value?.client;
+    bool current() =>
+        mounted &&
+        ref.read(activeHostProvider) == host &&
+        ref.read(currentSessionProvider.notifier).selectionRevision == selected &&
+        identical(ref.read(activeConnectionProvider).value?.client, client);
+    _clearBuiltRows(() => _forkingId = 'edit:${item.seq}');
+    try {
+      final outcome = await ref.read(chatProvider(widget.sessionId).notifier).forkBeforePrompt(item);
+      if (outcome == null || !current()) return;
+      await _recordVersion(host, item, outcome, edited: true);
+      if (!current()) return;
+      final attached = item.images.isNotEmpty || item.files.isNotEmpty;
+      _openFork(outcome, messenger, attached ? appL10n.chatOpenedInNewChatReattach : appL10n.chatOpenedInNewChat);
+      compose?.call(withoutAppNotes(item.text));
+    } finally {
+      if (mounted) _clearBuiltRows(() => _forkingId = null);
+    }
   }
+
+  Future<void> _recordVersion(HostRef host, UserChatItem prompt, ForkOutcome outcome, {bool edited = false}) => ref
+      .read(replyVersionsProvider.notifier)
+      .recordFork(
+        host,
+        parentSessionId: widget.sessionId,
+        parentPromptSeq: prompt.seq,
+        childSessionId: outcome.sessionId,
+        edited: edited,
+      );
 
   /// Switches to the fork; the toast offers the way back.
   void _openFork(ForkOutcome outcome, ScaffoldMessengerState? messenger, String message) {
@@ -1546,17 +1698,41 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
     return MarkdownImageScope(sessionId: widget.sessionId, baseDir: cwd, turn: turn, child: body);
   }
 
+  void _restoreVersionBinding(HostRef host) {
+    final id = widget.sessionId;
+    final seq = firstOwnForkPrompt(ref.read(chatProvider(id).notifier).events);
+    if (seq == null || seq == _bindingVersionSeq) return;
+    _bindingVersionSeq = seq;
+    _afterFrame(() {
+      if (widget.sessionId == id && ref.read(activeHostProvider) == host) {
+        unawaited(ref.read(replyVersionsProvider.notifier).bindChildPrompt(host, id, seq));
+      }
+    });
+  }
+
+  Widget _userBubble(UserChatItem item) {
+    final bubble = UserBubble(
+      text: withoutAppNotes(item.text),
+      attachments: item.images.isEmpty && item.files.isEmpty
+          ? null
+          : SentAttachments.echoed(sessionId: widget.sessionId, images: item.images, files: item.files),
+      onEdit: widget.onEditPrompt == null ? null : () => _editPrompt(item),
+      onQuote: widget.onQuote == null ? null : _quote,
+    );
+    if (!_hasVersions) return bubble;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        bubble,
+        _VersionNavigation(sessionId: widget.sessionId, seq: item.seq),
+      ],
+    );
+  }
+
   Widget _rowContent(ChatRow row) {
     return switch (row) {
       UserRow(:final item) when dshUiReplyChip(item.text) != null => DshUiReplyChip(label: dshUiReplyChip(item.text)!),
-      UserRow(:final item) => UserBubble(
-        text: withoutAppNotes(item.text),
-        attachments: item.images.isEmpty && item.files.isEmpty
-            ? null
-            : SentAttachments.echoed(sessionId: widget.sessionId, images: item.images, files: item.files),
-        onEdit: widget.onEditPrompt == null ? null : () => _editPrompt(item),
-        onQuote: widget.onQuote == null ? null : _quote,
-      ),
+      UserRow(:final item) => _userBubble(item),
       PendingRow(:final prompt) => _pendingBubble(prompt),
       AssistantRow(:final item, :final showActions, :final footnote) => _reply(item, showActions, footnote),
       TurnFootnoteRow(:final trace) => Bleed(
@@ -1596,6 +1772,92 @@ class _ChatListState extends ConsumerState<ChatList> with SingleTickerProviderSt
       ),
     };
   }
+}
+
+// A retry normally puts its switcher below the reply. Edits put it below
+// the question; a retry without a completed reply uses the question too.
+class _VersionNavigation extends ConsumerWidget {
+  const _VersionNavigation({required this.sessionId, required this.seq, this.afterReply = false});
+
+  final String sessionId;
+  final int seq;
+  final bool afterReply;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final family = ref.watch(replyVersionsProvider).value;
+    if (family == null || family.host != ref.watch(activeHostProvider)) return const SizedBox.shrink();
+    final anchor = ref.watch(chatProvider(sessionId).select((s) => _versionAnchor(s, seq, afterReply: afterReply)));
+    if (anchor == null) return const SizedBox.shrink();
+    final known = ref.watch(hostSessionsProvider);
+    final archived = ref.read(sessionsProvider.notifier).archivedSessions.map((session) => session.sessionId).toSet();
+    final selection = family.selectionFor(
+      sessionId,
+      anchor.promptSeq,
+      availableSessionIds: known.isEmpty && archived.isEmpty
+          ? null
+          : family
+                .sessionIdsFor(sessionId)
+                .where((id) => (known.isEmpty || known.containsKey(id)) && !archived.contains(id))
+                .toSet(),
+    );
+    if (selection == null || afterReply != (!selection.hasEdits && anchor.hasReply)) {
+      return const SizedBox.shrink();
+    }
+    final (:versions, :index, hasEdits: _) = selection;
+    final muted = DshColors.of(context).textTertiary;
+    final style = IconButton.styleFrom(
+      minimumSize: const Size.square(36),
+      padding: EdgeInsets.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      iconSize: 17,
+      foregroundColor: muted,
+    );
+    Widget arrow(int target, IconData icon, String label) => IconButton(
+      tooltip: label,
+      style: style,
+      onPressed: target < 0 || target >= versions.length
+          ? null
+          : () {
+              final version = versions[target];
+              ref
+                  .read(chatRevealProvider.notifier)
+                  .reveal(version.sessionId, promptSeq: version.promptSeq, afterReply: afterReply);
+              ref.read(currentSessionProvider.notifier).select(version.sessionId);
+            },
+      icon: Icon(icon),
+    );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        arrow(index - 1, AppIcons.keyLeft, appL10n.chatPreviousReplyVersion),
+        Text('${index + 1}/${versions.length}', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: muted)),
+        arrow(index + 1, AppIcons.keyRight, appL10n.chatNextReplyVersion),
+      ],
+    );
+  }
+}
+
+({int promptSeq, bool hasReply})? _versionAnchor(ChatState state, int seq, {required bool afterReply}) {
+  int? prompt, reply;
+  for (final item in state.items) {
+    if (item is UserChatItem) {
+      if (afterReply ? item.seq > seq : prompt == seq) break;
+      prompt = item.seq;
+      reply = null;
+    } else if (item is AssistantChatItem && !item.streaming && !item.interrupted && item.text.trim().isNotEmpty) {
+      reply = item.seq ?? reply;
+    }
+  }
+  if (prompt == null || (afterReply ? reply != seq : prompt != seq)) return null;
+  final candidate = reply;
+  final hasReply =
+      candidate != null &&
+      state.turns.any((turn) {
+        final end = turn.endSeq;
+        return end != null && turn.startSeq <= candidate && candidate <= end;
+      });
+  return (promptSeq: prompt, hasReply: hasReply);
 }
 
 /// Intercept only the focused question editor's original reveal request,

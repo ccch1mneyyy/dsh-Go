@@ -7103,19 +7103,19 @@ abstract class L10n {
   /// No description provided for @chatRegeneratedInNewChat.
   ///
   /// In zh, this message translates to:
-  /// **'已在新对话中重新回答'**
+  /// **'正在重新回答'**
   String get chatRegeneratedInNewChat;
 
   /// No description provided for @chatOpenedInNewChatReattach.
   ///
   /// In zh, this message translates to:
-  /// **'已在新对话中打开，附件需重新添加'**
+  /// **'发送后保留为新版本，附件需重新添加'**
   String get chatOpenedInNewChatReattach;
 
   /// No description provided for @chatOpenedInNewChat.
   ///
   /// In zh, this message translates to:
-  /// **'已在新对话中打开'**
+  /// **'正在编辑，发送后保留为新版本'**
   String get chatOpenedInNewChat;
 
   /// No description provided for @chatForkQueuedLeft.
@@ -8390,6 +8390,18 @@ abstract class L10n {
   /// **'重新回答'**
   String get chatRegenerate;
 
+  /// No description provided for @chatPreviousReplyVersion.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一版回答'**
+  String get chatPreviousReplyVersion;
+
+  /// No description provided for @chatNextReplyVersion.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一版回答'**
+  String get chatNextReplyVersion;
+
   /// No description provided for @chatBranchFromHere.
   ///
   /// In zh, this message translates to:
@@ -8405,7 +8417,7 @@ abstract class L10n {
   /// No description provided for @chatRegenerateHint.
   ///
   /// In zh, this message translates to:
-  /// **'在新对话中重新生成，原对话不变'**
+  /// **'保留原回答，在同一对话里切换版本'**
   String get chatRegenerateHint;
 
   /// No description provided for @chatBranchHint.
@@ -8417,7 +8429,7 @@ abstract class L10n {
   /// No description provided for @chatEditResendHint.
   ///
   /// In zh, this message translates to:
-  /// **'在新对话中改写，图片和文件需重新添加；原对话不变'**
+  /// **'在输入框修改，重发后可切换版本；附件需重新添加'**
   String get chatEditResendHint;
 
   /// No description provided for @chatSaveToPhotos.
@@ -39309,7 +39321,7 @@ abstract class L10n {
   /// No description provided for @stateChatNoEarlierHistory.
   ///
   /// In zh, this message translates to:
-  /// **'这条消息之前没有能保留的记录，直接新建对话就好'**
+  /// **'缺少这条消息之前的记录，无法继续此操作'**
   String get stateChatNoEarlierHistory;
 
   /// No description provided for @stateCommandNewDescription.

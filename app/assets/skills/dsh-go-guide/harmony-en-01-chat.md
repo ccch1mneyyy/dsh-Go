@@ -92,10 +92,10 @@ The row under a reply copies, shares, branches and regenerates in one tap. Touch
 
 Touch and hold the text of your sent message, then tap **Edit and resend** in the toolbar. **More** opens the full menu.
 
-**Regenerate**, **Branch here** and **Edit and resend** continue in a new chat and leave the original as is. The notice that appears has **Back to original chat**; after it's gone, the original is still in the chat list.
-
-- **Regenerate** works on the last reply of the chat and resends right away. It's unavailable while the AI replies, while messages are steered or queued, or when the question had files attached.
-- **Edit and resend** needs attachments added again.
+- **Regenerate** only works on the last reply in the chat and resends the original question right away. It's unavailable while the AI is replying, while messages are steered or queued, or when the question had files attached. When regeneration starts, the notice offers **Back to original chat**.
+- **Edit and resend** puts your original message in the composer so you can change it. Add attachments again. Before sending, tap **Back to original chat** on the notice to cancel. Sending the edit adds a version and keeps the original.
+- Both actions keep all versions under the same chat entry in the native UI. Tap **Previous reply version** or **Next reply version** below the reply to switch. If there’s an edited version, the buttons are below your message instead. Continue chatting from the selected version. The version index is stored on this device and doesn't sync from other devices.
+- **Branch here** still creates a separate chat and leaves the original as is. The notice has **Back to original chat**; after the notice disappears, you can still find the original in the chat list. Older standalone branches stay separate too.
 
 ## All features
 

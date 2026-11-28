@@ -3821,13 +3821,13 @@ class L10nZh extends L10n {
   String get chatRegenerateFailed => '重新回答失败';
 
   @override
-  String get chatRegeneratedInNewChat => '已在新对话中重新回答';
+  String get chatRegeneratedInNewChat => '正在重新回答';
 
   @override
-  String get chatOpenedInNewChatReattach => '已在新对话中打开，附件需重新添加';
+  String get chatOpenedInNewChatReattach => '发送后保留为新版本，附件需重新添加';
 
   @override
-  String get chatOpenedInNewChat => '已在新对话中打开';
+  String get chatOpenedInNewChat => '正在编辑，发送后保留为新版本';
 
   @override
   String chatForkQueuedLeft(String message, int left) {
@@ -4538,19 +4538,25 @@ class L10nZh extends L10n {
   String get chatRegenerate => '重新回答';
 
   @override
+  String get chatPreviousReplyVersion => '上一版回答';
+
+  @override
+  String get chatNextReplyVersion => '下一版回答';
+
+  @override
   String get chatBranchFromHere => '从这里分叉';
 
   @override
   String get chatEditAndResend => '编辑后重发';
 
   @override
-  String get chatRegenerateHint => '在新对话中重新生成，原对话不变';
+  String get chatRegenerateHint => '保留原回答，在同一对话里切换版本';
 
   @override
   String get chatBranchHint => '在新对话中继续，原对话不变';
 
   @override
-  String get chatEditResendHint => '在新对话中改写，图片和文件需重新添加；原对话不变';
+  String get chatEditResendHint => '在输入框修改，重发后可切换版本；附件需重新添加';
 
   @override
   String get chatSaveToPhotos => '保存到相册';
@@ -21335,7 +21341,7 @@ class L10nZh extends L10n {
   String get stateChatEarlierHistoryFailed => '读取更早的记录失败';
 
   @override
-  String get stateChatNoEarlierHistory => '这条消息之前没有能保留的记录，直接新建对话就好';
+  String get stateChatNoEarlierHistory => '缺少这条消息之前的记录，无法继续此操作';
 
   @override
   String get stateCommandNewDescription => '开始一个新对话';

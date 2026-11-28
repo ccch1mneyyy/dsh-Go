@@ -12,7 +12,6 @@ import '../../../state/drawer_view_state.dart';
 import '../../../state/session_attention_state.dart';
 import '../../../state/session_created_state.dart';
 import '../../../state/sessions_state.dart';
-import '../../../state/workspaces_state.dart';
 import '../../common/empty_view.dart';
 import '../../theme/app_icons.dart';
 import '../../theme/motion.dart';
@@ -59,9 +58,11 @@ class DrawerConversationList extends ConsumerWidget {
     final selecting = !readOnly && ref.watch(drawerSelectionProvider.select((s) => s != null));
     final filter = ref.watch(drawerFilterProvider);
     final current = ref.watch(currentSessionProvider);
+    final versions = ref.watch(drawerReplyVersionsProvider);
+    String rowId(String id) => versions?.drawerGroupId(id) ?? id;
+    final currentGroup = current == null || readOnly ? null : rowId(current);
     final pending = ref.watch(pendingInteractionsProvider);
     final unread = ref.watch(unreadSessionIdsProvider);
-    final pinned = ref.watch(workspacesProvider.select((s) => s.pinnedSessionIds)).toSet();
     final sort = ref.watch(drawerViewProvider.select((v) => v.sort));
     if (!readOnly && sort == DrawerSort.created) {
       final ids = [
@@ -74,18 +75,18 @@ class DrawerConversationList extends ConsumerWidget {
     }
     final selectionNotifier = ref.read(drawerSelectionProvider.notifier);
 
-    Widget tile(SessionSummary s, {bool inFolder = false}) {
+    Widget tile(SessionSummary s, {bool inFolder = false, bool pinned = false}) {
       final id = s.sessionId;
       final title = sessionTitle(s);
       return Consumer(
-        key: ValueKey('session-$id'),
+        key: ValueKey('session-${rowId(id)}'),
         builder: (context, ref, _) => SessionTile(
           title: title,
           running: s.running,
-          current: id == current,
+          current: id == current || rowId(id) == currentGroup,
           pending: readOnly ? null : pending[id],
           unread: !readOnly && unread.contains(id),
-          pinned: inFolder && pinned.contains(id),
+          pinned: pinned,
           indent: inFolder ? SessionTile.folderIndent : 0,
           selecting: selecting,
           selected: ref.watch(drawerSelectionProvider.select((s) => s?.contains(id) ?? false)),
@@ -105,7 +106,7 @@ class DrawerConversationList extends ConsumerWidget {
     void add(Key key, WidgetBuilder builder) => rows.add((key: key, builder: builder));
     void addSessions(List<SessionSummary> items) {
       for (final s in items) {
-        add(ValueKey('session-${s.sessionId}'), (_) => tile(s));
+        add(ValueKey('session-${rowId(s.sessionId)}'), (_) => tile(s));
       }
     }
 
@@ -126,7 +127,7 @@ class DrawerConversationList extends ConsumerWidget {
           const key = ValueKey('pinned-label');
           add(key, (_) => DrawerEyebrow(l10n.commonPin, key: key));
           addSessions(items);
-        case FolderBlock(:final folder, :final items):
+        case FolderBlock(:final folder, :final items, :final pinnedIds):
           if (!foldersLabelled) {
             foldersLabelled = true;
             const key = ValueKey('folders-label');
@@ -151,7 +152,9 @@ class DrawerConversationList extends ConsumerWidget {
             (_) => DrawerFolderBody(
               key: bodyKey,
               open: !folder.collapsed,
-              childrenBuilder: () => [for (final s in items) tile(s, inFolder: true)],
+              childrenBuilder: () => [
+                for (final s in items) tile(s, inFolder: true, pinned: pinnedIds.contains(s.sessionId)),
+              ],
             ),
           );
         case DayBlock(:final day, :final items):

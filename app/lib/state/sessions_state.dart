@@ -14,6 +14,7 @@ import 'hosts_state.dart';
 import '../runtime/local_paths.dart';
 import 'read_list_cache.dart';
 import 'read_list_identity.dart';
+import 'reply_versions_state.dart';
 import 'settings_state.dart';
 import 'workspaces_state.dart';
 
@@ -981,6 +982,7 @@ class CurrentSessionController extends Notifier<String?> {
     final host = ref.read(activeHostProvider);
     ref.read(pendingSessionFolderProvider.notifier).select(null);
     state = sessionId;
+    if (sessionId != null) unawaited(ref.read(replyVersionsProvider.notifier).select(host, sessionId));
     unawaited(_persist(host, sessionId));
   }
 

@@ -21,6 +21,7 @@ import 'bots_state.dart';
 import 'hosts_state.dart';
 import 'read_list_cache.dart';
 import 'read_list_identity.dart';
+import 'reply_versions_state.dart';
 import 'session_attention_state.dart';
 import 'session_created_state.dart';
 import 'sessions_state.dart';
@@ -498,7 +499,8 @@ class DrawerScope {
     this.workspaceLabel,
   });
 
-  /// Listed conversations, newest activity first.
+  /// All conversations in scope before status filtering and version folding,
+  /// newest activity first.
   final List<SessionSummary> sessions;
 
   /// DS Bot's conversations in scope.
@@ -628,6 +630,52 @@ final drawerScopeProvider = Provider<DrawerScope?>((ref) {
   return result;
 });
 
+/// The reply-version index is local to the current host.
+final drawerReplyVersionsProvider = Provider<ReplyVersionsState?>((ref) {
+  final versions = ref.watch(replyVersionsProvider).value;
+  return versions?.host == ref.watch(activeHostProvider) ? versions : null;
+});
+
+/// Existing pin and folder assignments, grouped without rewriting stored ids.
+/// Opening, selecting and deleting a row still use its real representative.
+class DrawerOrganization {
+  DrawerOrganization(DrawerView view, List<String> pinnedIds, this._versions) : _folderOf = view.folderOf {
+    for (final id in pinnedIds) {
+      (_pinned[groupId(id)] ??= []).add(id);
+    }
+    for (final id in _folderOf.keys) {
+      (_filed[groupId(id)] ??= []).add(id);
+    }
+  }
+
+  final ReplyVersionsState? _versions;
+  final Map<String, String> _folderOf;
+  final _pinned = <String, List<String>>{};
+  final _filed = <String, List<String>>{};
+
+  String groupId(String id) => _versions?.drawerGroupId(id) ?? id;
+  bool isPinned(String id) => _pinned.containsKey(groupId(id));
+
+  String? folderIdFor(String id) {
+    final group = groupId(id);
+    // Prefer the original's assignment if older branches disagree.
+    return _folderOf[group] ?? _folderOf[_filed[group]?.first];
+  }
+
+  // Manage existing assignments under their real ids; a new assignment uses
+  // the displayed branch. Resolve duplicate assignments together on removal.
+  Iterable<String> pinTargets(String id) => _pinned[groupId(id)] ?? [id];
+  Iterable<String> folderTargets(String id) => _filed[groupId(id)] ?? [id];
+}
+
+final drawerOrganizationProvider = Provider<DrawerOrganization>(
+  (ref) => DrawerOrganization(
+    ref.watch(drawerViewProvider),
+    ref.watch(workspacesProvider.select((s) => s.pinnedSessionIds)),
+    ref.watch(drawerReplyVersionsProvider),
+  ),
+);
+
 /// One block of the drawer list.
 sealed class DrawerBlock {
   const DrawerBlock(this.items);
@@ -642,9 +690,10 @@ final class PinnedBlock extends DrawerBlock {
 
 /// A folder and its members in scope (pinned members first).
 final class FolderBlock extends DrawerBlock {
-  const FolderBlock(this.folder, super.items);
+  const FolderBlock(this.folder, super.items, {this.pinnedIds = const {}});
 
   final DrawerFolder folder;
+  final Set<String> pinnedIds;
 }
 
 /// The rest, by day of the sort key.
@@ -673,6 +722,7 @@ List<DrawerBlock> drawerBlocks({
   required Map<String, DateTime> createdAt,
   required DateTime now,
   bool scoped = false,
+  ReplyVersionsState? versions,
 }) {
   DateTime keyOf(SessionSummary s) =>
       view.sort == DrawerSort.created ? (createdAt[s.sessionId] ?? s.updatedAt) : s.updatedAt;
@@ -682,7 +732,10 @@ List<DrawerBlock> drawerBlocks({
     DrawerFilter.unread => unread.contains(s.sessionId),
     DrawerFilter.all => true,
   };
-  final sorted = (filter == DrawerFilter.all ? [...sessions] : sessions.where(matches).toList())
+  // Workspace and status decide eligibility before the last selected branch
+  // can represent its group. Never fold the inventory shared with search.
+  final eligible = filter == DrawerFilter.all ? sessions : sessions.where(matches).toList();
+  final sorted = [...(versions?.collapse(eligible) ?? eligible)]
     ..sort((a, b) {
       final byKey = keyOf(b).compareTo(keyOf(a));
       return byKey != 0 ? byKey : a.sessionId.compareTo(b.sessionId);
@@ -690,35 +743,38 @@ List<DrawerBlock> drawerBlocks({
   if (filter != DrawerFilter.all) {
     return [FilteredBlock(filter, sorted)];
   }
-  final folderOf = view.folderOf;
-  final pinnedSet = pinnedIds.toSet();
-  final byId = {for (final s in sorted) s.sessionId: s};
+  final organization = DrawerOrganization(view, pinnedIds, versions);
+  final byGroup = {for (final s in sorted) organization.groupId(s.sessionId): s};
   final blocks = <DrawerBlock>[];
   final pinned = [
-    for (final id in pinnedIds)
-      if (byId[id] case final s? when !folderOf.containsKey(id)) s,
+    for (final group in organization._pinned.keys)
+      if (byGroup[group] case final s? when organization.folderIdFor(s.sessionId) == null) s,
   ];
   if (pinned.isNotEmpty) blocks.add(PinnedBlock(pinned));
   final membersByFolder = <String, List<SessionSummary>>{};
   for (final s in sorted) {
-    final folderId = folderOf[s.sessionId];
+    final folderId = organization.folderIdFor(s.sessionId);
     if (folderId != null) membersByFolder.putIfAbsent(folderId, () => []).add(s);
   }
   for (final folder in view.folders) {
     final members = membersByFolder[folder.id] ?? const <SessionSummary>[];
     if (members.isEmpty && scoped) continue;
+    final pinned = {
+      for (final s in members)
+        if (organization.isPinned(s.sessionId)) s.sessionId,
+    };
     blocks.add(
       FolderBlock(folder, [
         for (final s in members)
-          if (pinnedSet.contains(s.sessionId)) s,
+          if (pinned.contains(s.sessionId)) s,
         for (final s in members)
-          if (!pinnedSet.contains(s.sessionId)) s,
-      ]),
+          if (!pinned.contains(s.sessionId)) s,
+      ], pinnedIds: pinned),
     );
   }
   final days = <SessionDay, List<SessionSummary>>{};
   for (final s in sorted) {
-    if (folderOf.containsKey(s.sessionId) || pinnedSet.contains(s.sessionId)) continue;
+    if (organization.folderIdFor(s.sessionId) != null || organization.isPinned(s.sessionId)) continue;
     days.putIfAbsent(sessionDayOf(keyOf(s), now), () => []).add(s);
   }
   for (final day in SessionDay.values) {
@@ -753,5 +809,6 @@ List<DrawerBlock>? watchDrawerBlocks(WidgetRef ref, {DateTime? now}) {
     createdAt: view.sort == DrawerSort.created ? ref.watch(sessionCreatedProvider) : const {},
     now: now ?? ref.watch(drawerClockProvider)(),
     scoped: scope.scoped,
+    versions: ref.watch(drawerReplyVersionsProvider),
   );
 }

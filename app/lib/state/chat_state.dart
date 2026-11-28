@@ -2357,16 +2357,16 @@ class ChatController extends Notifier<ChatState> {
       state = state.copyWith(error: appL10n.stateChatNoEarlierHistory);
       return null;
     }
-    return _forkAt(cut, action: action, operation: operation);
+    return _forkAt(cut, action: action, operation: operation, bumpTitle: false);
   }
 
-  Future<ForkOutcome?> _forkAt(int cut, {String? action, _ChatOperation? operation}) async {
+  Future<ForkOutcome?> _forkAt(int cut, {String? action, _ChatOperation? operation, bool bumpTitle = true}) async {
     final client = operation?.client ?? _client;
     if (client == null) return null;
     final owner = operation ?? _ChatOperation(ref, client, _syncScope);
     if (!_currentOperation(owner)) return null;
     try {
-      final outcome = await client.forkAt(sessionId, cut, sourceTitle: state.title);
+      final outcome = await client.forkAt(sessionId, cut, sourceTitle: state.title, bumpTitle: bumpTitle);
       return _currentOperation(owner) ? outcome : null;
     } catch (e) {
       if (!_currentOperation(owner)) return null;

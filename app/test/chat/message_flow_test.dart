@@ -5,8 +5,12 @@
 // composer, sent as a blockquote, shown as a quote in the bubble, split back
 // out on 编辑后重发); and 保存到相册 on a picture in a message.
 
+import 'dart:async';
+
 import 'package:dsh_app/state/attachments.dart' show sessionImageProvider;
 import 'package:dsh_app/state/chat_state.dart';
+import 'package:dsh_app/state/hosts_state.dart' show activeHostProvider;
+import 'package:dsh_app/state/reply_versions_state.dart';
 import 'package:dsh_app/state/sessions_state.dart';
 import 'package:dsh_app/ui/chat/chat_screen.dart';
 import 'package:dsh_app/ui/chat/widgets/assistant_message.dart';
@@ -20,6 +24,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/harness.dart';
 
@@ -70,8 +75,55 @@ List<String> _composerTexts(WidgetTester tester) => [
 
 Finder _lastReply() => find.byType(AssistantMessage).last;
 
+class _PagedVersionChat extends FakeChatController {
+  _PagedVersionChat() : super('fork-session', const ChatState());
+
+  final tail = <ChatItem>[for (var seq = 100; seq < 140; seq++) _user(seq, 'Recent prompt $seq')];
+  final pages = <Future<void> Function()>[];
+  int _oldest = 100;
+
+  void show(int oldest, {List<ChatItem>? items}) {
+    _oldest = oldest;
+    emit(ChatState(items: items ?? tail, hasMoreHistory: true, loading: false));
+  }
+
+  @override
+  Iterable<SessionLogEvent> get events => [UnknownEvent(_oldest, DateTime.utc(2026), 'fixture', const {})];
+
+  @override
+  Future<void> loadOlder() async {
+    final index = loadOlderCalls++;
+    emit(state.copyWith(loadingOlder: true));
+    if (index < pages.length) await pages[index]();
+    emit(state.copyWith(loadingOlder: false));
+  }
+}
+
+Future<ProviderContainer> _openPagedVersion(WidgetTester tester, _PagedVersionChat chat) async {
+  await _pump(tester, overrides: [chatProvider(chat.sessionId).overrideWith(() => chat)]);
+  final container = _container(tester);
+  final record = container
+      .read(replyVersionsProvider.notifier)
+      .recordFork(
+        container.read(activeHostProvider),
+        parentSessionId: 's1',
+        parentPromptSeq: 1,
+        childSessionId: chat.sessionId,
+        childPromptSeq: 10,
+        edited: true,
+      );
+  await pumpFrames(tester);
+  await record;
+  await tester.tap(find.byTooltip('下一版回答'));
+  await tester.pump();
+  expect(container.read(currentSessionProvider), chat.sessionId);
+  expect(chat.loadOlderCalls, 0, reason: 'wait for the first snapshot');
+  return container;
+}
+
 void main() {
   setUpAll(loadTestFonts);
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('重新回答', () {
     testWidgets('forks before the prompt, opens the fork, sends it there', (tester) async {
@@ -84,7 +136,7 @@ void main() {
       expect(source.edited, [1]);
       expect(source.forkActions, ['重新回答失败']);
       expect(_container(tester).read(currentSessionProvider), 'fork-session');
-      expect(find.text('已在新对话中重新回答'), findsOneWidget);
+      expect(find.text('正在重新回答'), findsOneWidget);
       final fork = harness.controllers['fork-session']!;
       expect(fork.sent, [_question]);
       expect(fork.sentAttachments.single, isEmpty);
@@ -94,6 +146,37 @@ void main() {
       await tester.tap(find.text('返回原对话'));
       await pumpFrames(tester);
       expect(_container(tester).read(currentSessionProvider), 's1');
+    });
+
+    testWidgets('arrows switch the actual conversation that receives the next prompt', (tester) async {
+      final harness = await _pump(tester);
+      await tester.tap(find.byTooltip('重新回答'));
+      await pumpFrames(tester);
+      final container = _container(tester);
+      final index = container.read(replyVersionsProvider.notifier);
+      final bind = index.bindChildPrompt(container.read(activeHostProvider), 'fork-session', 10);
+      await pumpFrames(tester);
+      await bind;
+      harness.controllers['fork-session']!.emit(
+        ChatState(items: [_user(10, _question), _assistant(11, '新版回答')], loading: false),
+      );
+      await pumpFrames(tester);
+      expect(find.text('2/2'), findsOneWidget);
+      expect(find.text('新版回答', findRichText: true), findsOneWidget);
+
+      await tester.tap(find.byTooltip('上一版回答'));
+      await pumpFrames(tester);
+      expect(container.read(currentSessionProvider), 's1');
+      expect(find.text('1/2'), findsOneWidget);
+      await tester.tap(find.byTooltip('下一版回答'));
+      await pumpFrames(tester);
+      expect(container.read(currentSessionProvider), 'fork-session');
+      await tester.enterText(find.byType(TextField), '接着这个版本问');
+      await tester.pump();
+      await tester.tap(find.byIcon(AppIcons.send));
+      await pumpFrames(tester);
+      expect(harness.controllers['s1']!.sent, isEmpty);
+      expect(harness.controllers['fork-session']!.sent, [_question, '接着这个版本问']);
     });
 
     testWidgets('the prompt\'s images go again, read back from the session', (tester) async {
@@ -174,6 +257,52 @@ void main() {
     });
   });
 
+  testWidgets('version arrows page past the first snapshot and reveal the older prompt', (tester) async {
+    final chat = _PagedVersionChat();
+    chat.pages.addAll([
+      () async => chat.show(60), // An older cursor, but no new rows.
+      () async => chat.show(10, items: [_user(10, 'Older version prompt'), ...chat.tail]),
+    ]);
+    await _openPagedVersion(tester, chat);
+    chat.show(100);
+    await pumpFrames(tester, 12);
+
+    expect(chat.loadOlderCalls, 2, reason: 'stop on a hit even with more history');
+    expect(find.text('Older version prompt').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('上一版回答').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('a version lookup with no cursor progress falls back without reloading', (tester) async {
+    final chat = _PagedVersionChat();
+    chat.pages.add(() async => chat.show(100, items: [chat.tail.last]));
+    await _openPagedVersion(tester, chat);
+    chat.show(100, items: [chat.tail.last]);
+    await pumpFrames(tester, 12);
+
+    expect(chat.loadOlderCalls, 1);
+    expect(find.text('Recent prompt 139').hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('leaving the version stops paging after the current read', (tester) async {
+    final chat = _PagedVersionChat();
+    final firstPage = Completer<void>();
+    chat.pages.add(() async {
+      await firstPage.future;
+      chat.show(60);
+    });
+    final container = await _openPagedVersion(tester, chat);
+    chat.show(100);
+    await pumpFrames(tester);
+    expect(chat.loadOlderCalls, 1);
+
+    container.read(currentSessionProvider.notifier).select('s1');
+    await tester.pump();
+    firstPage.complete();
+    await pumpFrames(tester);
+    expect(chat.loadOlderCalls, 1);
+    expect(find.text(_question).hitTestable(), findsOneWidget);
+  });
+
   testWidgets('⋯ opens the same menu as a long-press', (tester) async {
     await _pump(tester);
     await tester.tap(find.byTooltip('更多'));
@@ -251,6 +380,35 @@ void main() {
       expect(_composerTexts(tester), contains('那为什么会重试？'));
       expect(find.descendant(of: find.byType(QuoteChip), matching: find.text('第一次在 30 秒时超时')), findsOneWidget);
     });
+  });
+
+  testWidgets('editing keeps the old question and restores it with the same arrows', (tester) async {
+    final harness = await _pump(tester);
+    await tester.longPress(find.text(_question));
+    await pumpFrames(tester);
+    await tester.tap(find.widgetWithText(TextSelectionToolbarTextButton, '编辑后重发').hitTestable());
+    await pumpFrames(tester);
+    expect(find.text('2/2'), findsNothing, reason: 'an unsent edit is still just a draft');
+    await tester.enterText(find.byType(TextField), '改一下这条提问');
+    await tester.pump();
+    await tester.tap(find.byIcon(AppIcons.send));
+    await pumpFrames(tester);
+    final container = _container(tester);
+    final index = container.read(replyVersionsProvider.notifier);
+    final bind = index.bindChildPrompt(container.read(activeHostProvider), 'fork-session', 10);
+    await pumpFrames(tester);
+    await bind;
+    final edited = harness.controllers['fork-session']!;
+    expect(edited.sent, ['改一下这条提问']);
+    edited.emit(ChatState(items: [_user(10, '改一下这条提问'), _assistant(11, '新版回答')], loading: false));
+    await pumpFrames(tester);
+    expect(find.text('2/2'), findsOneWidget);
+    await tester.tap(find.byTooltip('上一版回答'));
+    await pumpFrames(tester);
+    expect(container.read(currentSessionProvider), 's1');
+    expect(find.text(_question), findsOneWidget);
+    expect(find.text('改一下这条提问'), findsNothing);
+    expect(find.byTooltip('下一版回答'), findsOneWidget);
   });
 
   testWidgets('long-press a sent picture: 保存到相册', (tester) async {

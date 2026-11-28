@@ -4021,13 +4021,13 @@ class L10nEn extends L10n {
   String get chatRegenerateFailed => 'Couldn’t regenerate';
 
   @override
-  String get chatRegeneratedInNewChat => 'Regenerated in a new chat';
+  String get chatRegeneratedInNewChat => 'Regenerating reply';
 
   @override
-  String get chatOpenedInNewChatReattach => 'Opened in a new chat. Add attachments again.';
+  String get chatOpenedInNewChatReattach => 'Sending saves a new version. Add attachments again.';
 
   @override
-  String get chatOpenedInNewChat => 'Opened in a new chat';
+  String get chatOpenedInNewChat => 'Editing. Send to save a new version.';
 
   @override
   String chatForkQueuedLeft(String message, int left) {
@@ -4824,19 +4824,25 @@ class L10nEn extends L10n {
   String get chatRegenerate => 'Regenerate';
 
   @override
+  String get chatPreviousReplyVersion => 'Previous reply version';
+
+  @override
+  String get chatNextReplyVersion => 'Next reply version';
+
+  @override
   String get chatBranchFromHere => 'Branch here';
 
   @override
   String get chatEditAndResend => 'Edit and resend';
 
   @override
-  String get chatRegenerateHint => 'Regenerate in a new chat. The original stays as is.';
+  String get chatRegenerateHint => 'Keep the original reply and switch versions in this chat.';
 
   @override
   String get chatBranchHint => 'Continue in a new chat. The original stays as is.';
 
   @override
-  String get chatEditResendHint => 'Rewrite in a new chat. Reattach images and files; the original stays as is.';
+  String get chatEditResendHint => 'Edit in the composer, then send to add a version. Add attachments again.';
 
   @override
   String get chatSaveToPhotos => 'Save to Photos';
@@ -22542,7 +22548,7 @@ class L10nEn extends L10n {
   String get stateChatEarlierHistoryFailed => 'Couldn’t load earlier history';
 
   @override
-  String get stateChatNoEarlierHistory => 'There’s no history before this message. Start a new chat.';
+  String get stateChatNoEarlierHistory => 'This action needs earlier chat history, but none is available.';
 
   @override
   String get stateCommandNewDescription => 'Start a new chat';

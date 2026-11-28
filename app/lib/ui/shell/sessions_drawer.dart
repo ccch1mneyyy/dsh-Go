@@ -570,8 +570,9 @@ class _SessionList extends ConsumerWidget {
   ) async {
     final title = sessionTitle(s);
     final workspaces = ref.read(workspacesProvider);
-    final pinned = workspaces.pinnedSessionIds.contains(s.sessionId);
-    final inFolder = ref.read(drawerViewProvider).folderOf.containsKey(s.sessionId);
+    final organization = ref.read(drawerOrganizationProvider);
+    final pinned = organization.isPinned(s.sessionId);
+    final inFolder = organization.folderIdFor(s.sessionId) != null;
     final action = await showAppSheet<String>(
       context,
       isScrollControlled: true,
@@ -641,7 +642,10 @@ class _SessionList extends ConsumerWidget {
       case 'pin' || 'unpin':
         try {
           final notifier = ref.read(workspacesProvider.notifier);
-          await (action == 'pin' ? notifier.pinSession(s.sessionId) : notifier.unpinSession(s.sessionId));
+          for (final id in organization.pinTargets(s.sessionId)) {
+            if (!context.mounted || deletionOwner?.isCurrent(ref) != true) return;
+            await (action == 'pin' ? notifier.pinSession(id) : notifier.unpinSession(id));
+          }
         } catch (_) {
           messenger?.showSnackBar(
             SnackBar(content: Text(action == 'pin' ? appL10n.shellPinFailed : appL10n.shellUnpinFailed)),

@@ -44,12 +44,14 @@ import '../../state/drawer_view_state.dart';
 import '../../state/engine_control.dart';
 import '../../state/engine_settings_state.dart' show engineSettingsProvider;
 import '../../state/features_state.dart' show agentPresetsProvider, permissionStateProvider;
+import '../../state/fork_prompt_receipt.dart';
 import '../../state/hosts_state.dart' show HostKind, HostRef, activeHostProvider, hostLabel;
 import '../../state/media_generation.dart';
 import '../../state/mention_state.dart';
 import '../../state/models_state.dart';
 import '../../state/new_chat_modes.dart';
 import '../../state/session_search.dart' show folderLabel;
+import '../../state/reply_versions_state.dart';
 import '../../state/safe_mode_state.dart';
 import '../../state/session_modes.dart';
 import '../../state/sessions_state.dart';
@@ -798,7 +800,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
             current.openApproval == null) {
       ok = await chat.answer(request, [QuestionAnswer(request.questions.single.id, custom: text)]);
     } else {
-      ok = await chat.send(text, attachments: drafts, mode: mode);
+      ok = await _sendVersionPrompt(chat, sessionId, text, client, attachments: drafts, mode: mode);
       // A generation request, counted on top of its turn.
       if (ok && generate != null && mounted) ref.read(usageStatsProvider.notifier).count(UsageCount.gen);
     }
@@ -840,12 +842,63 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     _saveDraft();
   }
 
-  /// 「重新回答」, second half: the fork is open; send the prompt there as
-  /// it was. Not sent: it waits in that conversation's composer.
+  Future<bool> _sendVersionPrompt(
+    ChatController chat,
+    String sessionId,
+    String text,
+    DshClient client, {
+    required List<DraftAttachment> attachments,
+    SendMode mode = SendMode.now,
+  }) async {
+    final host = ref.read(activeHostProvider);
+    final index = ref.read(replyVersionsProvider).value;
+    if (index == null || index.host != host || !index.needsPrompt(sessionId)) {
+      return chat.send(text, attachments: attachments, mode: mode);
+    }
+    final container = ProviderScope.containerOf(context, listen: false);
+    final versions = ref.read(replyVersionsProvider.notifier);
+    String? requestId;
+    final sent = await chat.send(
+      text,
+      attachments: attachments,
+      mode: mode,
+      beforeDeliver: (id) async {
+        requestId = id;
+        return true;
+      },
+    );
+    final dispatched = requestId;
+    if (dispatched != null && (sent || chat.awaitingPromptOutcome(dispatched))) {
+      unawaited(_bindVersionPrompt(container, versions, host, client, sessionId, dispatched));
+    }
+    return sent;
+  }
+
+  Future<void> _bindVersionPrompt(
+    ProviderContainer container,
+    ReplyVersionsController versions,
+    HostRef host,
+    DshClient client,
+    String sessionId,
+    String requestId,
+  ) async {
+    final seq = await waitForForkPrompt(container, sessionId: sessionId, requestId: requestId, client: client);
+    if (seq == null) return;
+    try {
+      if (container.read(activeHostProvider) != host) return;
+    } on StateError {
+      // The scope closed after the receipt arrived.
+      return;
+    }
+    await versions.bindChildPrompt(host, sessionId, seq);
+  }
+
+  /// Send the original prompt in the new version. A failed send keeps its draft.
   Future<void> _resend(String sessionId, String text, List<DraftAttachment> images) async {
     final client = ref.read(activeConnectionProvider).value?.client;
     if (client == null) return;
-    final ok = await ref.read(chatProvider(sessionId).notifier).send(text, attachments: images);
+    final chat = ref.read(chatProvider(sessionId).notifier);
+    final ok = await _sendVersionPrompt(chat, sessionId, text, client, attachments: images);
     if (ok || !_sameHost(client)) return;
     final (:quote, :body) = splitQuote(text);
     _giveBack(sessionId, quote == null ? text : body, images, quote: quote);
