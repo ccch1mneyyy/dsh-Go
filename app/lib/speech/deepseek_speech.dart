@@ -268,7 +268,8 @@ class BridgeDeepSeekSpeech implements DeepSeekSpeech {
         _detail(response.body),
       );
     }
-    if (response.body.isNotEmpty) yield Uint8List.fromList(response.body);
+    // The body is this request's own buffer: no copy.
+    if (response.body.isNotEmpty) yield response.body;
   }
 
   @override

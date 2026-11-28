@@ -395,7 +395,8 @@ extension CompanionMemoryMaintenanceStore on CompanionMemoryStore {
       ];
     }
 
-    final selected = checked ? cards : current();
+    // No cards to match: the domain read could only come back empty.
+    final selected = checked || cards.isEmpty ? cards : current();
     final context = _agentContext(characterId, localDay, zoneId, scopedSources, selected, const []);
     if (_agentContextTokens(context, estimateTokens, estimateContextTokens) > memoryBatchInputTokens) return context;
     final tickets = <MemoryRow>[];
