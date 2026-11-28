@@ -10,6 +10,7 @@ import 'package:flutter/scheduler.dart' show TickerCanceled;
 
 import 'glass.dart';
 import 'shapes.dart';
+import 'surfaces.dart';
 
 /// 选择手柄的边长。Material 默认是 22,这里放大一点更好按,也留得下内衬。
 const glassSelectionHandleSize = 26.0;
